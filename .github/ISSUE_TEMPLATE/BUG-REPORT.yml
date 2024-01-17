@@ -46,7 +46,7 @@ body:
     id: pfsense-version
     attributes:
       label: pfSense® version
-      description: What version of pfSense® are you using? Please note that only versions officially supported by Netgate® as listed in the [documentation](https://docs.netgate.com/pfsense/en/latest/releases/versions.html) will be considered.
+      description: What version of pfSense® are you using? Please note that only versions officially supported by Netgate® as listed in the [Releases](https://docs.netgate.com/pfsense/en/latest/releases/versions.html) page will be considered.
       placeholder: e.g. 23.09.1
     validations:
       required: true

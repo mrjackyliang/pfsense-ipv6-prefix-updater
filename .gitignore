@@ -75,5 +75,6 @@ package-lock.json
 ##########################
 #### Project Excludes ####
 ##########################
-build/
-config.php
+backups/
+cache/
+update.lock
