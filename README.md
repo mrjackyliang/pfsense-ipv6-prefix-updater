@@ -9,7 +9,7 @@ pfSense® Dynamic IPv6 Prefix Updater
 
 This script is specifically crafted to run on pfSense® environments to help automatically update the configuration when your Internet Service Provider (ISP) changes your dynamic IPv6 prefix.
 
-It aids in updating global IPv6 addresses associated with firewall aliases, static IP assignments, and virtual addresses for IPsec / OpenVPN / WireGuard.
+It assists in automatically updating global IPv6 addresses saved in firewall aliases, static IPs, and virtual addresses used in IPsec, OpenVPN, and WireGuard configurations.
 
 To use this updater, here are three simple steps you need to follow:
 1. Download the **Cron** package from **Package Manager**.
@@ -20,7 +20,7 @@ To use this updater, here are three simple steps you need to follow:
 To download this updater, first login to **pfSense®** > **Diagnostics** > **Command Prompt**. Copy the provided command and then click the **Execute** button.
 
 ```shell
-cd /root && fetch -o pfsense-ipv6-prefix-updater-install.sh https://raw.githubusercontent.com/mrjackyliang/pfsense-ipv6-prefix-updater/main/install.sh | sh
+cd /root && fetch -o pfsense-ipv6-prefix-updater-install.sh https://raw.githubusercontent.com/mrjackyliang/pfsense-ipv6-prefix-updater/main/install.sh && sh pfsense-ipv6-prefix-updater-install.sh
 ```
 
 __NOTE:__ The script runs as `root` and will reside in the `/root` folder.
@@ -41,7 +41,7 @@ __NOTE:__ To calculate the cron schedule expression, visit the [crontab guru](ht
 __NOTE 2:__ When monitoring multiple interfaces, ensure that you run them at distinct time intervals, as only one instance is permitted to run simultaneously.
 
 ## WireGuard Peer Configurations
-Although the script can aid in updating the configuration on your pfSense® system, it is important to note that due to the design of WireGuard, manual updates to peer configuration files are necessary in order to allow IPv6 to continue working.
+Even though the script can streamline the process of updating configurations on your pfSense® system, manual updates to peer configuration files are required due to the design of WireGuard. This is necessary to maintain the proper functioning of IPv6.
 
 If you wish to be notified everytime the prefix is changed, please set up notifications in **System** > **Advanced** > **Notifications**.
 
