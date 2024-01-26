@@ -23,7 +23,7 @@ To download this updater, first login to **pfSense®** > **Diagnostics** > **Com
 cd /root && fetch -o pfsense-ipv6-prefix-updater-install.sh https://raw.githubusercontent.com/mrjackyliang/pfsense-ipv6-prefix-updater/main/install.sh && sh pfsense-ipv6-prefix-updater-install.sh
 ```
 
-__NOTE:__ The script runs as `root` and will reside in the `/root` folder.
+__Note:__ The script runs as `root` and will reside in the `/root` folder.
 
 ## Setup Cron Scheduling
 After downloading the script, go to **Services** > **Cron** > **Add** tab. Fill in the properties shown below (after determining the cron schedule, interface name, and prefix length) then click the **Save** button.
@@ -36,11 +36,11 @@ After downloading the script, go to **Services** > **Cron** > **Add** tab. Fill 
 - __User:__ `root`
 - __Command:__ `php /root/pfsense-ipv6-prefix-updater/update.php [INTERFACE NAME] [PREFIX LENGTH]`
 
-__NOTE:__ DO NOT use `wan` for the `INTERFACE NAME` since that 100% a /128 address. The `PREFIX LENGTH` will be defined by your Internet Service Provider (ISP) and should be between 48 and 64.
+__Note:__ DO NOT use `wan` for the `INTERFACE NAME` since that 100% a /128 address. The `PREFIX LENGTH` will be defined by your Internet Service Provider (ISP) and should be between 48 and 64.
 
-__NOTE 2:__ To calculate the cron schedule expression, visit the [crontab guru](https://crontab.guru) website.
+__Note 2:__ To calculate the cron schedule expression, visit the [crontab guru](https://crontab.guru) website.
 
-__NOTE 3:__ When monitoring multiple interfaces, ensure that you run them at distinct time intervals, as only one instance is permitted to run simultaneously.
+__Note 3:__ When monitoring multiple interfaces, ensure that you run them at distinct time intervals, as only one instance is permitted to run simultaneously.
 
 ## WireGuard Peer Configurations
 Even though the script can streamline the process of updating configurations on your pfSense® system, manual updates to peer configuration files are required due to the design of WireGuard. This is necessary to maintain the proper functioning of IPv6.
