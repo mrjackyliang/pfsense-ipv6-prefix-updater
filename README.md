@@ -13,7 +13,7 @@ It assists in automatically updating global IPv6 addresses saved in firewall ali
 
 To use this updater, here are three simple steps you need to follow:
 1. Download the **Cron** package from **Package Manager**.
-2. Choose an interface, and configure your system using the assigned IPv6 address.
+2. Choose an interface, and configure your system with the given global IPv6 address.
 3. Download the updater by following the [setup instructions](#setup-instructions).
 
 ## Setup Instructions
@@ -36,9 +36,11 @@ After downloading the script, go to **Services** > **Cron** > **Add** tab. Fill 
 - __User:__ `root`
 - __Command:__ `php /root/pfsense-ipv6-prefix-updater/update.php [INTERFACE NAME] [PREFIX LENGTH]`
 
-__NOTE:__ To calculate the cron schedule expression, visit the [crontab guru](https://crontab.guru) website.
+__NOTE:__ DO NOT use `wan` for the `INTERFACE NAME` since that 100% a /128 address. The `PREFIX LENGTH` will be defined by your Internet Service Provider (ISP) and should be between 48 and 64.
 
-__NOTE 2:__ When monitoring multiple interfaces, ensure that you run them at distinct time intervals, as only one instance is permitted to run simultaneously.
+__NOTE 2:__ To calculate the cron schedule expression, visit the [crontab guru](https://crontab.guru) website.
+
+__NOTE 3:__ When monitoring multiple interfaces, ensure that you run them at distinct time intervals, as only one instance is permitted to run simultaneously.
 
 ## WireGuard Peer Configurations
 Even though the script can streamline the process of updating configurations on your pfSense® system, manual updates to peer configuration files are required due to the design of WireGuard. This is necessary to maintain the proper functioning of IPv6.
