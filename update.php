@@ -10,7 +10,7 @@
 	 *
 	 * @since 1.0.0
 	 */
-	$version = "1.0.0";
+	$version = "1.0.1";
 	$root_path = dirname(__FILE__);
 
 	require_once($root_path . "/lib/ip.php");
@@ -97,9 +97,9 @@
 
 	$prefixed_address = get_ipv6_prefix($network_interfaces[$defined_interface_name]["address"], $defined_prefix_length);
 
-	echo color_text("1;4", "Defined interface") . ": " . $defined_interface_name . PHP_EOL;
-	echo color_text("1;4", "Defined prefix length") . ": " . $defined_prefix_length . PHP_EOL;
-	echo color_text("1;4", "Prefixed address") . ": " . $prefixed_address . PHP_EOL;
+	echo "Defined interface: " . $defined_interface_name . PHP_EOL;
+	echo "Defined prefix length: " . $defined_prefix_length . PHP_EOL;
+	echo "Prefixed address: " . $prefixed_address . PHP_EOL;
 
 	echo PHP_EOL;
 
@@ -126,8 +126,8 @@
 	$cached_address = $cached[0];
 	$cached_prefix = $cached[1];
 
-	echo color_text("1;4", "Cached address") . ": " . $cached_address . PHP_EOL;
-	echo color_text("1;4", "Cached prefix") . ": " . $cached_prefix . PHP_EOL;
+	echo "Cached address: " . $cached_address . PHP_EOL;
+	echo "Cached prefix: " . $cached_prefix . PHP_EOL;
 
 	echo PHP_EOL;
 

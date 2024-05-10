@@ -24,20 +24,6 @@
 	}
 
 	/**
-	 * Color text.
-	 *
-	 * @param string $color_code - Color code.
-	 * @param string $message - Message.
-	 *
-	 * @return string
-	 *
-	 * @since 1.0.0
-	 */
-	function color_text(string $color_code, string $message): string {
-		return "\033[" . $color_code . "m" . $message . "\033[0m";
-	}
-
-	/**
 	 * Create cache file.
 	 *
 	 * @param string $cache_name - Cache name.
@@ -105,10 +91,10 @@
 	 */
 	function generate_log_string(#[ExpectedValues(["success", "progress", "notice", "error"])] string $type, string $message): string {
 		return match ($type) {
-			"success" => color_text("92;1", "SUCCESS") . ": " . $message . "." . PHP_EOL,
-			"progress" => color_text("93;1", "IN PROGRESS") . ": " . $message . " ..." . PHP_EOL,
-			"notice" => color_text("94;1", "NOTICE") . ": " . $message . "." . PHP_EOL,
-			"error" => color_text("91;1", "ERROR") . ": " . $message . "." . PHP_EOL,
+			"success" => "SUCCESS: " . $message . "." . PHP_EOL,
+			"progress" => "IN PROGRESS: " . $message . " ..." . PHP_EOL,
+			"notice" => "NOTICE: " . $message . "." . PHP_EOL,
+			"error" => "ERROR: " . $message . "." . PHP_EOL,
 			default => $message . " ..." . PHP_EOL,
 		};
 	}
@@ -222,7 +208,7 @@
 
 			// Only replace the old value with the new value if they are different.
 			if ($old_value !== $new_value) {
-				echo generate_log_string("progress", "Updating the \"" . color_text("95", $path) . "\" key from " . color_text("92", $old_value) . " to " . color_text("92", $new_value));
+				echo generate_log_string("progress", "Updating the \"" . $path . "\" key from " . $old_value . " to " . $new_value);
 
 				// Increment the changes count.
 				$changes_count += 1;
@@ -248,7 +234,7 @@
 	 * @since 1.0.0
 	 */
 	function print_available_interfaces(): void {
-		echo color_text("1;4", "Available interfaces") . ": " . PHP_EOL;
+		echo "Available interfaces: " . PHP_EOL;
 		foreach (get_network_interfaces() as $interface => $prefix) {
 			echo $interface . " => " . $prefix["address"] . " / " . $prefix["prefixlen"] . PHP_EOL;
 		}
@@ -264,7 +250,7 @@
 	 * @since 1.0.0
 	 */
 	function print_locations_to_replace($found_keys): void {
-		echo color_text("1;4", "Locations to replace") . ": " . PHP_EOL;
+		echo "Locations to replace: " . PHP_EOL;
 		foreach ($found_keys as $found_key) {
 			$config_path = "\$config";
 
@@ -290,12 +276,12 @@
 	 * @since 1.0.0
 	 */
 	function print_script_header(string $version): void {
-		echo color_text("96", "#####################################################################") . PHP_EOL;
-		echo color_text("96", "###          pfSense® Dynamic IPv6 Prefix Updater v" . $version . "          ###") . PHP_EOL;
-		echo color_text("96", "###  https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater  ###") . PHP_EOL;
-		echo color_text("96", "###                                                               ###") . PHP_EOL;
-		echo color_text("96", "###      Copyright (c) 2024 Jacky Liang. All Rights Reserved      ###") . PHP_EOL;
-		echo color_text("96", "#####################################################################") . PHP_EOL;
+		echo "#####################################################################" . PHP_EOL;
+		echo "###          pfSense® Dynamic IPv6 Prefix Updater v" . $version . "          ###" . PHP_EOL;
+		echo "###  https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater  ###" . PHP_EOL;
+		echo "###                                                               ###" . PHP_EOL;
+		echo "###      Copyright (c) 2024 Jacky Liang. All Rights Reserved      ###" . PHP_EOL;
+		echo "#####################################################################" . PHP_EOL;
 	}
 
 	/**
@@ -308,8 +294,8 @@
 	 * @since 1.0.0
 	 */
 	function print_system_config(array $g): void {
-		echo color_text("1;4", "System") . ": " . $g["product_label"] . " " . $g["product_version"] . PHP_EOL;
-		echo color_text("1;4", "Debug mode") . ": " . (($g["debug"] === true) ? "enabled" : "disabled") . PHP_EOL;
+		echo "System: " . $g["product_label"] . " " . $g["product_version"] . PHP_EOL;
+		echo "Debug mode: " . (($g["debug"] === true) ? "enabled" : "disabled") . PHP_EOL;
 	}
 
 	/**
@@ -322,9 +308,9 @@
 	 * @since 1.0.0
 	 */
 	function print_system_versions($g): void {
-		echo color_text("1;4", "FreeBSD version") . ": " . shell_exec("uname -r");
-		echo color_text("1;4", "Configuration version") . ": " . $g["latest_config"] . PHP_EOL;
-		echo color_text("1;4", "PHP version") . ": " . shell_exec("php -v | head -n 1 | awk '{print $2}'");
+		echo "FreeBSD version: " . shell_exec("uname -r");
+		echo "Configuration version: " . $g["latest_config"] . PHP_EOL;
+		echo "PHP version: " . shell_exec("php -v | head -n 1 | awk '{print $2}'");
 	}
 
 	/**
@@ -343,7 +329,7 @@
 			die(generate_log_string("error", "The cache file (" . $cache_name . ") does not exist. Please run the create_cache_file() function first."));
 		}
 
-		echo generate_log_string("progress", "Updating the \"" . color_text("95", $cache_name) . "\" to reflect the latest changes");
+		echo generate_log_string("progress", "Updating the \"" . $cache_name . "\" to reflect the latest changes");
 
 		$cache_file = fopen($cache_path . "/" . $cache_name, "w");
 		fwrite($cache_file, $cache_contents);
