@@ -20,7 +20,7 @@ To use this updater, here are three simple steps you need to follow:
 To download this updater, first login to **pfSense®** > **Diagnostics** > **Command Prompt**. Copy the provided command and then click the **Execute** button.
 
 ```shell
-cd /root && fetch -o pfsense-ipv6-prefix-updater-install.sh https://raw.githubusercontent.com/mrjackyliang/pfsense-ipv6-prefix-updater/main/install.sh && sh pfsense-ipv6-prefix-updater-install.sh
+cd /root && fetch -o pfsense-ipv6-prefix-updater-install.sh https://cdn.jsdelivr.net/gh/mrjackyliang/pfsense-ipv6-prefix-updater/install.sh && sh pfsense-ipv6-prefix-updater-install.sh
 ```
 
 __Note:__ The script runs as `root` and will reside in the `/root` folder.
