@@ -60,7 +60,7 @@
 		foreach ($lines as $line) {
 			if (preg_match("/^([0-9a-z._]+):/", $line, $matches)) {
 				$currentInterface = $matches[1];
-			} elseif ($currentInterface !== "" && preg_match("/inet6 ((?!fe80:|ff00:|::1)[0-9a-f:]+) prefixlen ([0-9]{1,3})/", $line, $matches)) {
+			} elseif ($currentInterface !== "" && preg_match("/inet6 ([23][0-9a-f:]+) prefixlen ([0-9]{1,3})/i", $line, $matches)) {
 				$interfaces[$currentInterface]["address"] = $matches[1];
 				$interfaces[$currentInterface]["prefixlen"] = $matches[2];
 			}

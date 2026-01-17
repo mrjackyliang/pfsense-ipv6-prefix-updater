@@ -10,7 +10,7 @@
 	 *
 	 * @since 1.0.0
 	 */
-	$version = "1.0.1";
+	$version = "1.0.2";
 	$root_path = dirname(__FILE__);
 
 	require_once($root_path . "/lib/ip.php");
