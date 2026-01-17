@@ -105,7 +105,7 @@
 
 	// Cache name and path properties.
 	$cache_name = $defined_interface_name . ".cache";
-	$cache_path = $root_path . "/cache";
+	$cache_path = $root_path . "/../pfsense-ipv6-prefix-updater-cache";
 	$cache_location = $cache_path . "/" . $cache_name;
 	$cache_contents = $prefixed_address . "||" . $defined_prefix_length;
 
@@ -157,7 +157,7 @@
 
 	// Backup name and path properties.
 	$backup_name = $defined_interface_name . "-" . time() . ".xml";
-	$backup_path = $root_path . "/backups";
+	$backup_path = $root_path . "/../pfsense-ipv6-prefix-updater-backups";
 
 	// Backup the configuration file.
 	backup_config_file($backup_name, $g["conf_path"], $backup_path);
