@@ -146,6 +146,34 @@
 	}
 
 	/**
+	 * Filter excluded keys.
+	 *
+	 * @param array $found_keys - Found keys.
+	 * @param array $excluded_paths - Excluded paths.
+	 *
+	 * @return array
+	 *
+	 * @since 1.0.3
+	 */
+	function filter_excluded_keys(array $found_keys, array $excluded_paths): array {
+		if (count($excluded_paths) === 0) {
+			return $found_keys;
+		}
+
+		$filtered_keys = array_filter($found_keys, function ($key_path) use ($excluded_paths) {
+			foreach ($excluded_paths as $excluded_path) {
+				if (array_slice($key_path, 0, count($excluded_path)) === $excluded_path) {
+					return false;
+				}
+			}
+
+			return true;
+		});
+
+		return array_values($filtered_keys);
+	}
+
+	/**
 	 * Is pfsense os.
 	 *
 	 * @param string $etc_path - Etc path.

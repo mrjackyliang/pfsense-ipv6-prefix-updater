@@ -10,7 +10,7 @@
 	 *
 	 * @since 1.0.0
 	 */
-	$version = "1.0.2";
+	$version = "1.0.3";
 	$root_path = dirname(__FILE__);
 
 	require_once($root_path . "/lib/ip.php");
@@ -147,8 +147,24 @@
 	 */
 	parse_config(true);
 
+	// Paths to skip when applying replacements.
+	$excluded_key_paths = array(
+		array("revision"),
+	);
+
 	// Loop through the entire configuration and find properties that we need to update.
 	$found_keys = get_keys($config, $cached_address);
+
+	// Filter out unwanted paths.
+	$excluded_count = count($found_keys);
+	$found_keys = filter_excluded_keys($found_keys, $excluded_key_paths);
+	$excluded_count -= count($found_keys);
+
+	if ($excluded_count > 0) {
+		echo generate_log_string("notice", "Skipping " . $excluded_count . " location(s) because they match excluded paths");
+
+		echo PHP_EOL;
+	}
 
 	// Print locations to replace.
 	print_locations_to_replace($found_keys);
