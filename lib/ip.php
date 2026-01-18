@@ -41,7 +41,7 @@
 			$prefix_segments[] = sprintf("%x", $last_block);
 		}
 
-		return implode(":", $prefix_segments);
+		return strtolower(implode(":", $prefix_segments));
 	}
 
 	/**
@@ -60,9 +60,17 @@
 		foreach ($lines as $line) {
 			if (preg_match("/^([0-9a-z._]+):/", $line, $matches)) {
 				$currentInterface = $matches[1];
-			} elseif ($currentInterface !== "" && preg_match("/inet6 ([23][0-9a-f:]+) prefixlen ([0-9]{1,3})/i", $line, $matches)) {
-				$interfaces[$currentInterface]["address"] = $matches[1];
-				$interfaces[$currentInterface]["prefixlen"] = $matches[2];
+			} elseif (
+				$currentInterface !== ""
+				&& preg_match("/inet6 ([23][0-9a-f:]+) prefixlen ([0-9]{1,3})/i", $line, $matches)
+				&& stripos($line, "temporary") === false
+				&& stripos($line, "deprecated") === false
+			) {
+				// Prefer the first stable global address.
+				if (!isset($interfaces[$currentInterface]["address"])) {
+					$interfaces[$currentInterface]["address"] = strtolower($matches[1]);
+					$interfaces[$currentInterface]["prefixlen"] = $matches[2];
+				}
 			}
 		}
 

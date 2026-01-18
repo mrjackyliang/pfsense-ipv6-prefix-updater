@@ -10,7 +10,7 @@
 	 *
 	 * @since 1.0.0
 	 */
-	$version = "1.0.3";
+	$version = "1.1.0";
 	$root_path = dirname(__FILE__);
 
 	require_once($root_path . "/lib/ip.php");
@@ -95,7 +95,7 @@
 		die(generate_log_string("error", "The prefix length specified (" . $defined_interface_name . ") must be between 48 and 64"));
 	}
 
-	$prefixed_address = get_ipv6_prefix($network_interfaces[$defined_interface_name]["address"], $defined_prefix_length);
+	$prefixed_address = strtolower(get_ipv6_prefix($network_interfaces[$defined_interface_name]["address"], $defined_prefix_length));
 
 	echo "Defined interface: " . $defined_interface_name . PHP_EOL;
 	echo "Defined prefix length: " . $defined_prefix_length . PHP_EOL;
@@ -123,7 +123,7 @@
 	}
 
 	$cached = explode("||", $cache_contents);
-	$cached_address = $cached[0];
+	$cached_address = strtolower($cached[0]);
 	$cached_prefix = $cached[1];
 
 	echo "Cached address: " . $cached_address . PHP_EOL;
@@ -132,7 +132,7 @@
 	echo PHP_EOL;
 
 	// If the cached address and the interface address are equivalent.
-	if ($cached_address === $prefixed_address) {
+	if (strcasecmp($cached_address, $prefixed_address) === 0) {
 		delete_lock_file($root_path);
 
 		exit(generate_log_string("notice", "The IPv6 prefix for this interface is already up-to-date"));

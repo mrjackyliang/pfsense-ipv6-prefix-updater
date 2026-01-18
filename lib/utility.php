@@ -128,6 +128,7 @@
 	 */
 	function get_keys(array $array, string $search_text, array $current_path = []): array {
 		$keys = array();
+		$search_lower = strtolower($search_text);
 
 		foreach ($array as $key => $value) {
 			// Build the current path
@@ -136,13 +137,54 @@
 			if (is_array($value)) {
 				// Recursively search nested arrays.
 				$keys = array_merge($keys, get_keys($value, $search_text, $current_key_path));
-			} elseif (is_string($value) && str_contains($value, $search_text)) {
+			} elseif (is_string($value) && str_contains(strtolower($value), $search_lower)) {
 				// Found the property, add the entire path to the array.
 				$keys[] = $current_key_path;
+			} elseif (is_string($value)) {
+				$decoded_value = get_base64_decoded_value($value);
+
+				if ($decoded_value !== false && stripos($decoded_value, $search_text) !== false) {
+					// Found the property within a base64-encoded value, add the path to the array.
+					$keys[] = $current_key_path;
+				}
 			}
 		}
 
 		return $keys;
+	}
+
+	/**
+	 * Get base64 decoded value if valid.
+	 *
+	 * @param string $value - Value.
+	 *
+	 * @return string|false
+	 *
+	 * @since 1.0.4
+	 */
+	function get_base64_decoded_value(string $value): string|false {
+		$trimmed_value = trim($value);
+
+		// Fast-fail for empty strings.
+		if ($trimmed_value === "") {
+			return false;
+		}
+
+		// Allow base64 with whitespace (e.g., wrapped lines).
+		$sanitized_value = preg_replace("/\\s+/", "", $trimmed_value);
+
+		if ($sanitized_value === "") {
+			return false;
+		}
+
+		$decoded_value = base64_decode($sanitized_value, true);
+
+		// Ensure the value was valid base64 and not just random text.
+		if ($decoded_value === false || base64_encode($decoded_value) !== $sanitized_value) {
+			return false;
+		}
+
+		return $decoded_value;
 	}
 
 	/**
@@ -232,7 +274,29 @@
 				$old_value = &$old_value[$property];
 			}
 
-			$new_value = str_replace($old_address, $new_address, $old_value);
+			// Handle base64-encoded values that contain the old address.
+			$base64_decoded_value = is_string($old_value) ? get_base64_decoded_value($old_value) : false;
+
+			if ($base64_decoded_value !== false && stripos($base64_decoded_value, $old_address) !== false) {
+				$new_decoded_value = str_ireplace($old_address, $new_address, $base64_decoded_value);
+				$new_value = base64_encode($new_decoded_value);
+
+				if ($old_value !== $new_value) {
+					echo generate_log_string("progress", "Updating the \"" . $path . "\" key (base64-decoded) from " . $old_address . " to " . $new_address);
+
+					// Increment the changes count.
+					$changes_count += 1;
+
+					// Replacing the old value with the new value.
+					$old_value = $new_value;
+				}
+
+				continue;
+			}
+
+			$new_value = is_string($old_value)
+				? str_ireplace($old_address, $new_address, $old_value)
+				: str_replace($old_address, $new_address, $old_value);
 
 			// Only replace the old value with the new value if they are different.
 			if ($old_value !== $new_value) {
