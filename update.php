@@ -28,11 +28,11 @@
 
 	// Check if the required pfSense® functions exist.
 	if (
-		!function_exists("parse_config")
+		!function_exists("config_read_file")
 		|| !function_exists("write_config")
 		|| !function_exists("notify_all_remote")
 	) {
-		die(generate_log_string("error", "This script requires the usage of \"parse_config()\", \"write_config()\", \"notify_all_remote()\" functions"));
+		die(generate_log_string("error", "This script requires the usage of \"config_read_file()\", \"write_config()\", \"notify_all_remote()\" functions"));
 	}
 
 	global $g;
@@ -145,7 +145,7 @@
 	 *
 	 * @since 1.0.0
 	 */
-	parse_config(true);
+	config_read_file(true,true);
 
 	// Paths to skip when applying replacements.
 	$excluded_key_paths = array(
