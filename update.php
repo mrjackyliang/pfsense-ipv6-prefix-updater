@@ -10,7 +10,7 @@
 	 *
 	 * @since 1.0.0
 	 */
-	$version = "1.1.0";
+	$version = "1.1.1";
 	$root_path = dirname(__FILE__);
 
 	require_once($root_path . "/lib/ip.php");
@@ -28,11 +28,11 @@
 
 	// Check if the required pfSense® functions exist.
 	if (
-		!function_exists("config_read_file")
+		(!function_exists("config_read_file") && !function_exists("parse_config"))
 		|| !function_exists("write_config")
 		|| !function_exists("notify_all_remote")
 	) {
-		die(generate_log_string("error", "This script requires the usage of \"config_read_file()\", \"write_config()\", \"notify_all_remote()\" functions"));
+		die(generate_log_string("error", "This script requires the usage of \"config_read_file()\" or \"parse_config()\", \"write_config()\", \"notify_all_remote()\" functions"));
 	}
 
 	global $g;
@@ -145,7 +145,13 @@
 	 *
 	 * @since 1.0.0
 	 */
-	config_read_file(true,true);
+	if (function_exists("config_read_file")) {
+		// pfSense Plus 26.03-RELEASE and later.
+		config_read_file(true, true);
+	} else {
+		// pfSense CE and pre-26.03 pfSense Plus.
+		parse_config(true);
+	}
 
 	// Paths to skip when applying replacements.
 	$excluded_key_paths = array(
