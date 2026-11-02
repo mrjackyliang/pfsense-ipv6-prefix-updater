@@ -332,11 +332,11 @@ if (is_array($detected)):
 			<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px;">
 				<div>
 					<button type="button" class="btn btn-success btn-sm" id="ipu-auto-select">
-						<i class="fa fa-magic icon-embed-btn"></i>
+						<i class="fa fa-solid fa-magic icon-embed-btn"></i>
 						<?=htmlspecialchars(Translator::translate('fields_auto_select'))?>
 					</button>
 					<button type="button" class="btn btn-danger btn-sm" id="ipu-clear-all">
-						<i class="fa fa-times icon-embed-btn"></i>
+						<i class="fa fa-solid fa-times icon-embed-btn"></i>
 						<?=htmlspecialchars(Translator::translate('fields_clear_all'))?>
 					</button>
 				</div>
@@ -363,7 +363,7 @@ if (is_array($detected)):
 <?php endforeach; ?>
 			</ul>
 			<button type="submit" class="btn btn-warning btn-sm" name="fields_forget_missing" value="1">
-				<i class="fa fa-trash icon-embed-btn"></i>
+				<i class="fa fa-solid fa-trash icon-embed-btn"></i>
 				<?=htmlspecialchars(Translator::translate('fields_forget_missing'))?>
 			</button>
 		</div>
@@ -411,7 +411,7 @@ foreach ($detected['groups'] as $group => $detectedGroup):
 <?php if (is_string($row['field_id'])): ?>
 								<input type="checkbox" class="ipu-field" name="field[]" value="<?=htmlspecialchars($row['field_id'])?>" data-group="<?=htmlspecialchars($group)?>"<?=($row['selected']) ? ' checked' : ''?> aria-label="<?=htmlspecialchars(trim((string) $row['record'] . ' ' . $rowLabel))?>" />
 <?php else: ?>
-								<i class="fa fa-link text-muted" title="<?=htmlspecialchars(Translator::translate('fields_no_identity'))?>"></i>
+								<i class="fa fa-solid fa-link text-muted" title="<?=htmlspecialchars(Translator::translate('fields_no_identity'))?>"></i>
 <?php endif; ?>
 							</td>
 							<td>
@@ -433,7 +433,7 @@ foreach ($detected['groups'] as $group => $detectedGroup):
 <?php endforeach; ?>
 	<nav class="action-buttons">
 		<button type="submit" class="btn btn-primary btn-sm" name="fields_save" value="1">
-			<i class="fa fa-save icon-embed-btn"></i>
+			<i class="fa fa-solid fa-save icon-embed-btn"></i>
 			<?=htmlspecialchars(Translator::translate('fields_save'))?>
 		</button>
 	</nav>

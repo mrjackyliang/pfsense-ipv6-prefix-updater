@@ -1,5 +1,10 @@
 # pfsense-pkg-ipv6-prefix-updater
 
+## 2.0.1 - 2026-11-02
+
+### FIXED
+- Fixed missing WebGUI icons on current pfSense releases while retaining pfSense 2.7.2 compatibility.
+
 ## 2.0.0 - 2026-11-02
 
 ### ADDED

@@ -133,9 +133,9 @@ print_info_box(htmlspecialchars(Translator::translate('backups_help', [BackupSto
 						<td class="text-nowrap"><?=htmlspecialchars(format_bytes($backup['size']))?></td>
 						<td class="text-nowrap">
 							<?php // Icon links match Config History; "usepost" makes pfSense submit them as POST with the CSRF token. ?>
-							<a class="fa fa-download" title="<?=htmlspecialchars(Translator::translate('download'))?>" href="ipv6-prefix-updater-backups.php?download=1&amp;backup_id=<?=urlencode($backup['id'])?>" usepost></a>
+							<a class="fa fa-solid fa-download" title="<?=htmlspecialchars(Translator::translate('download'))?>" href="ipv6-prefix-updater-backups.php?download=1&amp;backup_id=<?=urlencode($backup['id'])?>" usepost></a>
 							<?php // "no-confirm" skips pfSense's English-only prompt; the translated prompt below stops the POST on cancel. ?>
-							<a class="fa fa-trash no-confirm" title="<?=htmlspecialchars(Translator::translate('delete'))?>" href="ipv6-prefix-updater-backups.php?delete=1&amp;backup_id=<?=urlencode($backup['id'])?>" usepost onclick="if (!confirm(<?=htmlspecialchars($deleteConfirmation)?>)) { event.stopImmediatePropagation(); return false; }"></a>
+							<a class="fa fa-solid fa-trash no-confirm" title="<?=htmlspecialchars(Translator::translate('delete'))?>" href="ipv6-prefix-updater-backups.php?delete=1&amp;backup_id=<?=urlencode($backup['id'])?>" usepost onclick="if (!confirm(<?=htmlspecialchars($deleteConfirmation)?>)) { event.stopImmediatePropagation(); return false; }"></a>
 						</td>
 					</tr>
 <?php endforeach; ?>

@@ -285,7 +285,7 @@ $cleanUpButton = new Form_Button(
     'clean_up_now',
     Translator::translate('clean_up_now'),
     null,
-    'fa-eraser',
+    'fa-solid fa-eraser',
 );
 $cleanUpConfirmation = json_encode(
     Translator::translate('clean_up_confirm'),

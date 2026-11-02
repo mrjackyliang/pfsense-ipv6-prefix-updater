@@ -467,8 +467,14 @@ if (statusPage.includes('/pkg_edit.php?xml=ipv6-prefix-updater.xml&id=0') === fa
   throw new Error('The status page Settings tab must link directly to the singleton package editor.');
 }
 
-if (statusPage.includes('\'fa-search\'') === false) {
-  throw new Error('The dry-run button must use a pfSense-compatible search icon.');
+for (const iconClass of [
+  'fa-solid fa-play',
+  'fa-solid fa-search',
+  'fa-solid fa-check-circle',
+]) {
+  if (statusPage.includes(`'${iconClass}'`) === false) {
+    throw new Error(`The status action icon must include its Font Awesome style: ${iconClass}.`);
+  }
 }
 
 if (statusPage.includes('new Form_Textarea(') === false
@@ -494,8 +500,7 @@ if (statusPage.includes('Translator::translate(\'last_run_skipped_fields\')') ==
   throw new Error('The status page must list the fields and package settings the last run skipped or applied again.');
 }
 
-if (statusPage.includes('\'fa-check-circle\'') === false
-  || statusPage.includes('Translator::translate(\'accept_current_prefix_confirm\')') === false
+if (statusPage.includes('Translator::translate(\'accept_current_prefix_confirm\')') === false
   || statusPage.includes('\'return confirm(\'') === false) {
   throw new Error('The baseline recovery action must use a distinct icon and explicit confirmation.');
 }
@@ -557,8 +562,55 @@ if (fieldsPage.includes('id="ipu-auto-select"') === false
   throw new Error('The Fields page must offer Auto-select and Clear All that set the switches on the page.');
 }
 
+for (const iconClass of [
+  'fa fa-solid fa-magic',
+  'fa fa-solid fa-times',
+  'fa fa-solid fa-trash',
+  'fa fa-solid fa-link',
+  'fa fa-solid fa-save',
+]) {
+  if (fieldsPage.includes(`class="${iconClass}`) === false) {
+    throw new Error(`The Fields page icon must support old and current pfSense: ${iconClass}.`);
+  }
+}
+
 if (fieldsPage.includes('pfsensePackageIpv6PrefixUpdaterTabs(\'fields\')') === false) {
   throw new Error('The Fields page must show the package tabs with Fields active.');
+}
+
+/**
+ * Check Package - Cleanup Page.
+ *
+ * Current pfSense requires an explicit Font Awesome style on Form_Button icons.
+ * The complete class also remains valid when pfSense 2.7.2 prepends its legacy class.
+ *
+ * @since 2.0.1
+ */
+const cleanupPage = await readFile(
+  join(workspaceDirectory, 'port', 'files', 'usr', 'local', 'www', 'ipv6-prefix-updater-cleanup.php'),
+  'utf-8',
+);
+
+if (cleanupPage.includes('\'fa-solid fa-eraser\'') === false) {
+  throw new Error('The cleanup action icon must include its Font Awesome style.');
+}
+
+/**
+ * Check Package - Backups Page.
+ *
+ * Directly rendered icons keep the legacy fa class for pfSense 2.7.2 and add the
+ * explicit solid style required by current pfSense releases.
+ *
+ * @since 2.0.1
+ */
+const backupsPage = await readFile(
+  join(workspaceDirectory, 'port', 'files', 'usr', 'local', 'www', 'ipv6-prefix-updater-backups.php'),
+  'utf-8',
+);
+
+if (backupsPage.includes('class="fa fa-solid fa-download"') === false
+  || backupsPage.includes('class="fa fa-solid fa-trash no-confirm"') === false) {
+  throw new Error('Backup action icons must support old and current pfSense.');
 }
 
 process.stdout.write('pfSense package sources are structurally valid.\n');

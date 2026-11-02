@@ -380,13 +380,13 @@ $runButton = new Form_Button(
     'run_now',
     Translator::translate('run_now'),
     null,
-    'fa-play',
+    'fa-solid fa-play',
 );
 $dryRunButton = new Form_Button(
     'dry_run',
     Translator::translate('dry_run'),
     null,
-    'fa-search',
+    'fa-solid fa-search',
 );
 
 $runButton->addClass('btn-success');
@@ -401,7 +401,7 @@ $acceptButton = new Form_Button(
     'accept_current_prefix',
     Translator::translate('accept_current_prefix'),
     null,
-    'fa-check-circle',
+    'fa-solid fa-check-circle',
 );
 $acceptConfirmation = json_encode(
     Translator::translate('accept_current_prefix_confirm'),
