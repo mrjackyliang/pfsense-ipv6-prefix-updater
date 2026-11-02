@@ -54,7 +54,7 @@ As versões 1.x contêm apenas o <Terminology title="script update.php original 
 Execute este comando na shell do pfSense:
 
 ```shell
-pkg add https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
+pkg add -f https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
 ```
 
 O `pkg` transfere o pacote da versão mais recente e executa o respetivo passo de instalação, que regista **Services → IPv6 Prefix Updater** no pfSense.
@@ -71,7 +71,7 @@ sha256 -q pfSense-pkg-Ipv6PrefixUpdater.pkg
 cat pfSense-pkg-Ipv6PrefixUpdater.pkg.sha256
 ```
 
-Os dois últimos comandos mostram o mesmo valor quando a transferência está íntegra. Pode depois instalar o ficheiro verificado com `pkg add /tmp/pfSense-pkg-Ipv6PrefixUpdater.pkg`.
+Os dois últimos comandos mostram o mesmo valor quando a transferência está íntegra. Pode depois instalar o ficheiro verificado com `pkg add -f /tmp/pfSense-pkg-Ipv6PrefixUpdater.pkg`.
 
 ## Confirmar na WebGUI \{#confirm-in-the-webgui}
 

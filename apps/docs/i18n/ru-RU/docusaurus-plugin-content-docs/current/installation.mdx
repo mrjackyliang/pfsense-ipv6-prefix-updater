@@ -54,7 +54,7 @@ pfSense IPv6 Prefix Updater — <Terminology title="пакет из GitHub, а �
 Выполните эту команду в командной оболочке pfSense:
 
 ```shell
-pkg add https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
+pkg add -f https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
 ```
 
 `pkg` загружает пакет из последнего выпуска и выполняет его этап установки, который регистрирует **Services → IPv6 Prefix Updater** в pfSense.
@@ -71,7 +71,7 @@ sha256 -q pfSense-pkg-Ipv6PrefixUpdater.pkg
 cat pfSense-pkg-Ipv6PrefixUpdater.pkg.sha256
 ```
 
-Если загрузка не повреждена, последние две команды выводят одно и то же значение. Затем проверенный файл можно установить командой `pkg add /tmp/pfSense-pkg-Ipv6PrefixUpdater.pkg`.
+Если загрузка не повреждена, последние две команды выводят одно и то же значение. Затем проверенный файл можно установить командой `pkg add -f /tmp/pfSense-pkg-Ipv6PrefixUpdater.pkg`.
 
 ## Проверка в WebGUI \{#confirm-in-the-webgui}
 

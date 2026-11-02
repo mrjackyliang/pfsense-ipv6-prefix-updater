@@ -51,13 +51,13 @@ Version 1.x releases contain only the <Terminology title="original update.php sc
 
 ## Install the Package
 
-Run this command from the pfSense shell:
+Run this same command from the pfSense shell for a first installation or an update:
 
 ```shell
-pkg add https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
+pkg add -f https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
 ```
 
-`pkg` downloads the package from the latest release and runs its install step, which registers **Services → IPv6 Prefix Updater** with pfSense.
+`pkg` downloads the package from the latest release and runs its install step, which registers **Services → IPv6 Prefix Updater** with pfSense. The `-f` flag lets the same command replace an installed release and still installs normally when the package is not present.
 
 ## Verify the Download First
 
@@ -71,7 +71,7 @@ sha256 -q pfSense-pkg-Ipv6PrefixUpdater.pkg
 cat pfSense-pkg-Ipv6PrefixUpdater.pkg.sha256
 ```
 
-The last two commands print the same value when the download is intact. You can then install the checked file with `pkg add /tmp/pfSense-pkg-Ipv6PrefixUpdater.pkg`.
+The last two commands print the same value when the download is intact. You can then install or update from the checked file with `pkg add -f /tmp/pfSense-pkg-Ipv6PrefixUpdater.pkg`.
 
 ## Confirm in the WebGUI
 

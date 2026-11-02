@@ -54,7 +54,7 @@ Utgivelser av versjon 1.x inneholder bare det <Terminology title="opprinnelig up
 Kjør denne kommandoen fra pfSense-skallet:
 
 ```shell
-pkg add https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
+pkg add -f https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
 ```
 
 `pkg` laster ned pakken fra den nyeste utgivelsen og kjører installasjonstrinnet, som registrerer **Services → IPv6 Prefix Updater** i pfSense.
@@ -71,7 +71,7 @@ sha256 -q pfSense-pkg-Ipv6PrefixUpdater.pkg
 cat pfSense-pkg-Ipv6PrefixUpdater.pkg.sha256
 ```
 
-De to siste kommandoene skriver ut samme verdi når nedlastingen er intakt. Deretter kan du installere den kontrollerte filen med `pkg add /tmp/pfSense-pkg-Ipv6PrefixUpdater.pkg`.
+De to siste kommandoene skriver ut samme verdi når nedlastingen er intakt. Deretter kan du installere den kontrollerte filen med `pkg add -f /tmp/pfSense-pkg-Ipv6PrefixUpdater.pkg`.
 
 ## Bekreft i WebGUI \{#confirm-in-the-webgui}
 

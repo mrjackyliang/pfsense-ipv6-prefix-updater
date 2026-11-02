@@ -54,7 +54,7 @@ Izdanja verzije 1.x sadrže samo <Terminology title="originalna skripta update.p
 Pokrenite ovu naredbu u pfSense ljusci:
 
 ```shell
-pkg add https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
+pkg add -f https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
 ```
 
 `pkg` preuzima paket iz najnovijeg izdanja i izvršava njegov korak instalacije, koji u pfSense-u registruje **Services → IPv6 Prefix Updater**.
@@ -71,7 +71,7 @@ sha256 -q pfSense-pkg-Ipv6PrefixUpdater.pkg
 cat pfSense-pkg-Ipv6PrefixUpdater.pkg.sha256
 ```
 
-Posljednje dvije naredbe ispisuju istu vrijednost kada je preuzimanje ispravno. Zatim provjerenu datoteku možete instalirati naredbom `pkg add /tmp/pfSense-pkg-Ipv6PrefixUpdater.pkg`.
+Posljednje dvije naredbe ispisuju istu vrijednost kada je preuzimanje ispravno. Zatim provjerenu datoteku možete instalirati naredbom `pkg add -f /tmp/pfSense-pkg-Ipv6PrefixUpdater.pkg`.
 
 ## Potvrda u WebGUI-ju \{#confirm-in-the-webgui}
 

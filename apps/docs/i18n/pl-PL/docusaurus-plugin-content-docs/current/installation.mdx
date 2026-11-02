@@ -54,7 +54,7 @@ Wydania w wersji 1.x zawierają tylko <Terminology title="pierwotny skrypt updat
 Uruchom to polecenie w powłoce pfSense:
 
 ```shell
-pkg add https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
+pkg add -f https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
 ```
 
 `pkg` pobiera pakiet z najnowszego wydania i wykonuje jego krok instalacji, który rejestruje w pfSense pozycję **Services → IPv6 Prefix Updater**.
@@ -71,7 +71,7 @@ sha256 -q pfSense-pkg-Ipv6PrefixUpdater.pkg
 cat pfSense-pkg-Ipv6PrefixUpdater.pkg.sha256
 ```
 
-Dwa ostatnie polecenia wyświetlają tę samą wartość, gdy pobrany plik jest nienaruszony. Następnie możesz zainstalować sprawdzony plik poleceniem `pkg add /tmp/pfSense-pkg-Ipv6PrefixUpdater.pkg`.
+Dwa ostatnie polecenia wyświetlają tę samą wartość, gdy pobrany plik jest nienaruszony. Następnie możesz zainstalować sprawdzony plik poleceniem `pkg add -f /tmp/pfSense-pkg-Ipv6PrefixUpdater.pkg`.
 
 ## Potwierdzenie w WebGUI \{#confirm-in-the-webgui}
 

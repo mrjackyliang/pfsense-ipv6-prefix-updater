@@ -54,7 +54,7 @@ pfSense IPv6 Prefix Updater는 <Terminology title="Netgate 저장소가 아닌 G
 pfSense 셸에서 다음 명령을 실행합니다.
 
 ```shell
-pkg add https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
+pkg add -f https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
 ```
 
 `pkg`는 최신 릴리스에서 패키지를 다운로드하고 설치 단계를 실행하며, 이 단계에서 **Services → IPv6 Prefix Updater**가 pfSense에 등록됩니다.
@@ -71,7 +71,7 @@ sha256 -q pfSense-pkg-Ipv6PrefixUpdater.pkg
 cat pfSense-pkg-Ipv6PrefixUpdater.pkg.sha256
 ```
 
-다운로드가 손상되지 않았다면 마지막 두 명령은 같은 값을 출력합니다. 그런 다음 검증한 파일을 `pkg add /tmp/pfSense-pkg-Ipv6PrefixUpdater.pkg`로 설치할 수 있습니다.
+다운로드가 손상되지 않았다면 마지막 두 명령은 같은 값을 출력합니다. 그런 다음 검증한 파일을 `pkg add -f /tmp/pfSense-pkg-Ipv6PrefixUpdater.pkg`로 설치할 수 있습니다.
 
 ## WebGUI에서 확인 \{#confirm-in-the-webgui}
 

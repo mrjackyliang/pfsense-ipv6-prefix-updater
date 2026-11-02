@@ -54,7 +54,7 @@ pfSense IPv6 Prefix Updater 是<Terminology title="從 GitHub 而非 Netgate 套
 在 pfSense shell 中執行以下命令：
 
 ```shell
-pkg add https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
+pkg add -f https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
 ```
 
 `pkg` 會從最新的發行版本下載套件並執行其安裝步驟，在 pfSense 中註冊 **Services → IPv6 Prefix Updater**（服務 → IPv6 Prefix Updater）。
@@ -71,7 +71,7 @@ sha256 -q pfSense-pkg-Ipv6PrefixUpdater.pkg
 cat pfSense-pkg-Ipv6PrefixUpdater.pkg.sha256
 ```
 
-下載內容完整無誤時，最後兩個命令會輸出相同的值。之後即可使用 `pkg add /tmp/pfSense-pkg-Ipv6PrefixUpdater.pkg` 安裝已驗證的檔案。
+下載內容完整無誤時，最後兩個命令會輸出相同的值。之後即可使用 `pkg add -f /tmp/pfSense-pkg-Ipv6PrefixUpdater.pkg` 安裝已驗證的檔案。
 
 ## 在 WebGUI 中確認 \{#confirm-in-the-webgui}
 
