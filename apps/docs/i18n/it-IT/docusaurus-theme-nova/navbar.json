@@ -1,0 +1,11 @@
+{
+  "item.label.Guides": {
+    "message": "Documentazione"
+  },
+  "item.label.Safety": {
+    "message": "Sicurezza e funzionamento"
+  },
+  "item.label.Troubleshooting": {
+    "message": "Risoluzione dei problemi"
+  }
+}

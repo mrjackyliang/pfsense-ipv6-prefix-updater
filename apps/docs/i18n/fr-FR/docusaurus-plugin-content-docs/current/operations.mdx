@@ -1,0 +1,66 @@
+---
+id: operations
+title: Modèle de sécurité
+description: Voyez les contrôles, la sauvegarde et l’écriture unique effectués avant toute modification de pfSense, les exécutions sans écriture et ce qui peut encore affecter le trafic.
+keywords:
+  - pfsense ipv6 prefix updater
+  - modèle de sécurité
+  - sauvegarde de configuration
+  - vérification
+  - rechargement de service
+tags:
+  - safety
+  - backup
+  - verification
+sidebar_position: 6
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Découvrez les protections que le paquet applique avant de modifier votre configuration et ce qui peut encore affecter le trafic.
+
+## Ce qui se passe lors d’un changement de préfixe \{#what-happens-on-a-prefix-change}
+
+Quand le paquet détecte un <Terminology title="écart avec le dernier préfixe réussi ou sa longueur" to="/docs/reference/terminology#prefix-transition">changement de préfixe</Terminology>, il procède dans cet ordre :
+
+1. Lit l’<Terminology title="adresse IPv6 publique comprise dans 2000::/3" to="/docs/reference/terminology#global-unicast-address">adresse globale</Terminology> de chaque <Terminology title="interface dont l’adresse révèle le préfixe actuel" to="/docs/reference/terminology#monitored-interface">interface surveillée</Terminology> et calcule son préfixe.
+2. Compare le préfixe au <Terminology title="préfixe auquel la prochaine vérification se compare" to="/docs/reference/terminology#last-successful-prefix">dernier préfixe réussi</Terminology>.
+3. Repère les <Terminology title="champ de configuration précis que le paquet peut réécrire" to="/docs/reference/terminology#approved-field">champs approuvés</Terminology> qui utilisent encore l’ancien préfixe et établit le <Terminology title="liste complète des modifications, établie avant l’écriture" to="/docs/reference/terminology#change-plan">plan de modifications</Terminology> complet.
+4. Confirme que pfSense peut recharger chaque service concerné et qu’aucun champ prévu n’a changé depuis sa lecture.
+5. Enregistre une <Terminology title="copie de la configuration enregistrée avant une écriture" to="/docs/reference/terminology#configuration-backup">sauvegarde de configuration</Terminology>.
+6. Applique toutes les modifications et enregistre la configuration une seule fois.
+7. Vérifie les valeurs enregistrées, recharge uniquement les services concernés, puis vérifie de nouveau les valeurs.
+8. Déplace la <Terminology title="préfixe de départ enregistré sans modifier la configuration" to="/docs/reference/terminology#baseline">référence</Terminology> vers le nouveau préfixe, consigne le résultat et envoie une <Terminology title="alerte envoyée après une mise à jour réussie et vérifiée" to="/docs/reference/terminology#change-notification">notification de changement</Terminology> si elle est activée.
+
+Si une étape antérieure à la sauvegarde échoue, la configuration reste telle quelle.
+
+## Ce qui ne provoque jamais d’écriture \{#what-never-causes-a-write}
+
+Le paquet ne modifie pas la configuration lorsque le résultat est l’un des suivants :
+
+- <Terminology title="résultat : référence enregistrée, configuration inchangée" to="/docs/reference/terminology#initialized">Initialisé</Terminology> et <Terminology title="résultat : simulation lancée avant toute référence" to="/docs/reference/terminology#initialization-preview">Aperçu de l’initialisation</Terminology>.
+- <Terminology title="résultat : préfixe inchangé, rien d’analysé ni d’écrit" to="/docs/reference/terminology#no-change">Aucun changement</Terminology>.
+- <Terminology title="aperçu qui ne sauvegarde ni n’écrit jamais" to="/docs/reference/terminology#dry-run">Simulation</Terminology>.
+- <Terminology title="résultat : préfixe changé, mais aucun champ approuvé correspondant" to="/docs/reference/terminology#warning">Avertissement</Terminology>.
+- Un <Terminology title="résultat : une vérification ou une étape de sécurité a arrêté l’exécution" to="/docs/reference/terminology#failure">Échec</Terminology> qui survient avant la sauvegarde.
+
+## Ce qui peut encore affecter le trafic \{#what-can-still-affect-traffic}
+
+- **<Terminology title="action pfSense qui applique les paramètres modifiés" to="/docs/reference/terminology#service-reload">Rechargements de services</Terminology>** : les modifications d’interfaces statiques ou d’<Terminology title="adresse d’interface supplémentaire, comme CARP ou IP Alias" to="/docs/reference/terminology#virtual-ip">IP virtuelles</Terminology> rechargent toutes les interfaces, puis le filtre du pare-feu. Les modifications de passerelles et de routes statiques rechargent le routage et le filtre, les modifications OpenVPN rechargent toutes les instances OpenVPN, et les modifications DHCPv6, d’annonces de routeur et DNS redémarrent les services concernés.
+- **Échecs après l’enregistrement** : si une vérification ou un <Terminology title="action pfSense qui applique les paramètres modifiés" to="/docs/reference/terminology#service-reload">rechargement de service</Terminology> échoue après l’enregistrement, les nouvelles valeurs restent enregistrées et rien n’est annulé. La <Terminology title="préfixe de départ enregistré sans modifier la configuration" to="/docs/reference/terminology#baseline">référence</Terminology> reste sur l’ancien préfixe, comme l’explique [Résultats d’exécution](/docs/operate/run-outcomes#failures-after-the-save).
+- **Valeurs qui vous attendent** : les passerelles, les routes statiques, les surcharges de domaines DNS et les autres valeurs du groupe [Autres paramètres](/docs/configure/configuration-scopes#other-settings) conservent l’ancien préfixe jusqu’à ce que vous les cochiez, tout comme les champs d’un groupe désactivé.
+
+## Chemin de récupération \{#recovery-path}
+
+Chaque écriture est précédée d’une <Terminology title="copie de la configuration enregistrée avant une écriture" to="/docs/reference/terminology#configuration-backup">sauvegarde de configuration</Terminology> de l’état antérieur dans <Terminology title="liste pfSense des révisions de configuration enregistrées" to="/docs/reference/terminology#config-history">Config History</Terminology>. La révision qui porte le nom du paquet contient la configuration mise à jour ; [Sauvegardes et récupération](/docs/operate/backups-and-recovery) indique donc quelle révision restaurer.
+
+Il est recommandé de conserver aussi vos sauvegardes pfSense habituelles hors de l’appareil.
+
+## Ce que vous pouvez vérifier \{#what-you-can-verify}
+
+L’onglet État affiche l’<Terminology title="adresse globale signalée par pfSense pour l’interface surveillée" to="/docs/reference/terminology#source-address">adresse source</Terminology>, le <Terminology title="adresse source masquée à la longueur du préfixe" to="/docs/reference/terminology#observed-prefix">préfixe observé</Terminology>, le résultat, le nombre de champs modifiés, l’état de la sauvegarde, les <Terminology title="action pfSense qui applique les paramètres modifiés" to="/docs/reference/terminology#service-reload">services rechargés</Terminology>, l’heure et le résumé de la dernière exécution. La <Terminology title="résultats en lecture seule affichés après Exécuter maintenant ou Simulation" to="/docs/reference/terminology#command-output">sortie de commande</Terminology> affiche les mêmes détails juste après une <Terminology title="vérification lancée depuis l’onglet État" to="/docs/reference/terminology#manual-run">exécution manuelle</Terminology>.
+
+## En savoir plus \{#learn-more}
+
+- **[Fonctionnement des mises à jour](/docs/safety/how-updates-work)** : chaque étape d’une exécution et les points où elle peut s’arrêter.
+- **[Vérifier avant d’automatiser](/docs/safety/testing-and-verification)** : une liste de contrôle à dérouler sur votre pare-feu avant d’activer la planification.

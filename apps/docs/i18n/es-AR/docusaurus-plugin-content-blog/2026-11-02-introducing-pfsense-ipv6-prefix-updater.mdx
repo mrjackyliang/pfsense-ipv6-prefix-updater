@@ -1,0 +1,60 @@
+---
+title: "Presento pfSense IPv6 Prefix Updater: un sucesor más seguro"
+description: pfSense IPv6 Prefix Updater, sucesor del script update.php, sigue el prefijo nuevo, conserva la parte de host y hace copia de seguridad antes de cada cambio.
+slug: introducing-pfsense-ipv6-prefix-updater
+authors:
+  - mrjackyliang
+keywords:
+  - pfsense ipv6 prefix updater
+  - paquete de pfsense
+  - prefijo ipv6 dinámico
+  - delegación de prefijos ipv6
+  - actualizador heredado
+tags:
+  - release
+  - ipv6
+  - pfsense
+---
+
+Muchos ISP delegan un prefijo IPv6 que puede cambiar sin aviso. Cuando eso pasa, las direcciones del prefijo anterior que figuran en los alias, las interfaces y la configuración de VPN de pfSense se desactualizan todas juntas, y los servicios pueden fallar de maneras difíciles de rastrear.
+
+pfSense IPv6 Prefix Updater es mi respuesta: un paquete nativo de pfSense que sigue el prefijo nuevo y actualiza las direcciones en las áreas de configuración que aprobás.
+
+{/* truncate */}
+
+## Por qué lo armé \{#why-i-built-it}
+
+Este proyecto arrancó como `update.php`, un script instalado en `/root` y ejecutado por una entrada del paquete Cron. Demostró que pfSense podía detectar un prefijo nuevo, hacer una copia de seguridad de la configuración y reescribir las direcciones viejas.
+
+Pero las instalaciones y las actualizaciones eran poco confiables, y el script reemplazaba el texto del prefijo anterior en cualquier parte de la configuración. Quería un sucesor que cambiara solo los campos que entiende y que mostrara lo que hizo, sin la instalación manual ni la entrada del paquete Cron que había que crear a mano.
+
+## Qué hace \{#what-it-does}
+
+El paquete vigila las interfaces que elijas. Cuando cambia un prefijo:
+
+- **Conserva la parte de host** — Solo cambian los bits del prefijo, así que cada dispositivo mantiene el mismo sufijo de dirección.
+- **Cambia solo los campos aprobados** — Once grupos de pfSense, como Alias, Reglas del firewall, Servidor DHCPv6 y WireGuard, arrancan activados, y la pestaña Campos te permite desactivar un grupo o destildar un campo individual.
+- **Hace una copia de seguridad antes de escribir** — Una copia de seguridad de la configuración queda en el historial de configuración y después todos los cambios se guardan en una sola escritura.
+- **Verifica el resultado** — Revisa los valores guardados, recarga solo los servicios afectados y vuelve a revisar los valores.
+
+Las redes VPN remotas y los pares solo cambian cuando los tildás en [Otra configuración](/docs/configure/configuration-scopes#other-settings), y después de cada actualización correcta llega una notificación de cambios opcional.
+
+## Cómo lo configurás \{#how-you-set-it-up}
+
+En la pestaña Configuración de **Services → IPv6 Prefix Updater**, agregá una fila de Interfaces supervisadas con la Longitud del prefijo delegado de tu ISP por cada interfaz que quieras vigilar y guardá.
+
+Después, en la pestaña Estado, hacé clic en **Ejecutar ahora**. La primera ejecución solo registra una referencia, así que podés verificar la dirección y el prefijo y revisar la pestaña Campos antes de activar las actualizaciones programadas, que por defecto corren cada hora mediante una entrada de cron administrada por pfSense.
+
+Una comprobación que encuentra el mismo prefijo no escribe nada, y **Simulación** ejecuta una comprobación sin copia de seguridad ni escritura.
+
+:::info
+
+Este paquete no oficial se instala desde una versión de GitHub con `pkg`, y Netgate no lo revisa ni le da soporte. Las versiones 1.x solo contienen el script, así que si la última versión no tiene ningún archivo `.pkg`, `pkg add` falla con un error de no encontrado (404).
+
+:::
+
+## Pasar del script al paquete \{#moving-from-the-script}
+
+Si `update.php` todavía se ejecuta desde el paquete Cron, dejalo donde está e instalá el paquete. El paquete traslada las entradas de Cron, los prefijos guardados y las copias de seguridad del script y borra los archivos viejos, como explica [Migrar desde el script](/docs/migrate-from-legacy).
+
+¿Recién llegás al proyecto? Empezá por [Instalar el paquete](/docs/installation).

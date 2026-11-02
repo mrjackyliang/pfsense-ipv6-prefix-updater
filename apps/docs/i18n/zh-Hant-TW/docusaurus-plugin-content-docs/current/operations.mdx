@@ -1,0 +1,66 @@
+---
+id: operations
+title: 安全模型
+description: 了解套件在變更 pfSense 之前執行的檢查、備份與單次寫入，哪些執行絕不寫入，以及哪些情況仍可能影響流量。
+keywords:
+  - pfsense ipv6 prefix updater
+  - 安全模型
+  - 設定備份
+  - 驗證
+  - 服務重新載入
+tags:
+  - safety
+  - backup
+  - verification
+sidebar_position: 6
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+了解套件在變更設定之前採取的保護措施，以及哪些情況仍可能影響流量。
+
+## 前綴變更時會發生什麼 \{#what-happens-on-a-prefix-change}
+
+套件發現<Terminology title="與上次成功前綴或長度不同" to="/docs/reference/terminology#prefix-transition">前綴變更</Terminology>後，會依下列順序運作：
+
+1. 讀取每個<Terminology title="其位址可反映目前前綴的介面" to="/docs/reference/terminology#monitored-interface">監控介面</Terminology>的<Terminology title="位於 2000::/3 內的公用 IPv6 位址" to="/docs/reference/terminology#global-unicast-address">全域位址</Terminology>並計算其前綴。
+2. 將該前綴與<Terminology title="下次檢查用來比較的前綴" to="/docs/reference/terminology#last-successful-prefix">上次成功前綴</Terminology>比較。
+3. 找出仍在使用舊前綴的<Terminology title="套件可改寫的確切設定欄位" to="/docs/reference/terminology#approved-field">已核准欄位</Terminology>，並建立完整的<Terminology title="寫入前建立的完整欄位變更清單" to="/docs/reference/terminology#change-plan">變更計畫</Terminology>。
+4. 確認 pfSense 能重新載入每個受影響的服務，且規劃中的欄位自讀取後都沒有被更動。
+5. 儲存<Terminology title="寫入前儲存的設定副本" to="/docs/reference/terminology#configuration-backup">設定備份</Terminology>。
+6. 套用所有變更，並只儲存一次設定。
+7. 檢查已儲存的值，只重新載入受影響的服務，然後再次檢查這些值。
+8. 將<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>移到新前綴，記錄結果，並在已開啟時傳送<Terminology title="更新驗證成功後傳送的警示" to="/docs/reference/terminology#change-notification">變更通知</Terminology>。
+
+如果備份之前的任何一個步驟失敗，設定都會維持原狀。
+
+## 哪些情況絕不會寫入 \{#what-never-causes-a-write}
+
+出現以下結果時，套件不會變更設定：
+
+- <Terminology title="結果：已記錄基準，設定未變更" to="/docs/reference/terminology#initialized">已初始化</Terminology>與<Terminology title="結果：尚無基準時的試執行" to="/docs/reference/terminology#initialization-preview">初始化預覽</Terminology>。
+- <Terminology title="結果：前綴未變更，未掃描或寫入任何內容" to="/docs/reference/terminology#no-change">無變更</Terminology>。
+- <Terminology title="不備份也不寫入的預覽" to="/docs/reference/terminology#dry-run">試執行</Terminology>。
+- <Terminology title="結果：前綴已變更，但沒有符合的已核准欄位" to="/docs/reference/terminology#warning">警告</Terminology>。
+- 在備份之前就停止的<Terminology title="結果：檢查或安全階段中止了執行" to="/docs/reference/terminology#failure">失敗</Terminology>。
+
+## 仍可能影響流量的情況 \{#what-can-still-affect-traffic}
+
+- **<Terminology title="套用已變更設定的 pfSense 動作" to="/docs/reference/terminology#service-reload">服務重新載入</Terminology>**：變更靜態介面或<Terminology title="額外的介面位址，例如 CARP 或 IP Alias" to="/docs/reference/terminology#virtual-ip">虛擬 IP</Terminology> 會重新載入所有介面，接著重新載入防火牆篩選器。變更閘道與靜態路由會重新載入路由與篩選器，變更 OpenVPN 會重新載入所有 OpenVPN 執行個體；DHCPv6、路由器通告與 DNS 的變更則會重新啟動這些服務。
+- **儲存後的失敗**：如果儲存後的檢查或<Terminology title="套用已變更設定的 pfSense 動作" to="/docs/reference/terminology#service-reload">服務重新載入</Terminology>失敗，新值仍會保持已儲存狀態，且不會回復任何變更。如[執行結果](/docs/operate/run-outcomes#failures-after-the-save)所述，<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>仍停留在舊前綴。
+- **等待您勾選的值**：閘道、靜態路由、DNS 網域覆寫，以及[其他設定](/docs/configure/configuration-scopes#other-settings)中的其他值，在您勾選之前都會保留舊前綴；位於關閉群組中的欄位也是如此。
+
+## 復原途徑 \{#recovery-path}
+
+每次寫入之前的設定都在<Terminology title="pfSense 已儲存設定修訂版本的清單" to="/docs/reference/terminology#config-history">設定歷程</Terminology>中留有一份<Terminology title="寫入前儲存的設定副本" to="/docs/reference/terminology#configuration-backup">設定備份</Terminology>。以套件命名的修訂版本保存的是更新後的設定，因此要還原哪個修訂版本，請參閱[備份與復原](/docs/operate/backups-and-recovery)。
+
+建議同時保留您平常存放在裝置以外的 pfSense 備份。
+
+## 您可以核對的內容 \{#what-you-can-verify}
+
+「狀態」分頁會顯示最近一次執行的<Terminology title="pfSense 回報的監控介面全域位址" to="/docs/reference/terminology#source-address">來源位址</Terminology>、<Terminology title="依前綴長度遮罩後的來源位址" to="/docs/reference/terminology#observed-prefix">觀察到的前綴</Terminology>、結果、已變更欄位數、備份結果、<Terminology title="套用已變更設定的 pfSense 動作" to="/docs/reference/terminology#service-reload">已重新載入的服務</Terminology>、時間與摘要。<Terminology title="從「狀態」分頁啟動的檢查" to="/docs/reference/terminology#manual-run">手動執行</Terminology>結束後，<Terminology title="立即執行或試執行後顯示的唯讀結果" to="/docs/reference/terminology#command-output">命令輸出</Terminology>會立即顯示相同的詳細資訊。
+
+## 深入了解 \{#learn-more}
+
+- **[更新運作方式](/docs/safety/how-updates-work)**：一次執行的各個階段，以及可能在哪裡停止。
+- **[自動化前的檢查](/docs/safety/testing-and-verification)**：開啟排程更新前，在您的防火牆上逐項執行的檢查清單。

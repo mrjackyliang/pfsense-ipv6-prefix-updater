@@ -1,0 +1,38 @@
+{
+  "layout.learn.title": {
+    "message": "Guias"
+  },
+  "layout.resources.title": {
+    "message": "Recursos"
+  },
+  "sections.learn.0.label": {
+    "message": "Instalar e configurar"
+  },
+  "sections.learn.1.label": {
+    "message": "Interfaces monitorizadas / Comprimento do prefixo delegado"
+  },
+  "sections.learn.2.label": {
+    "message": "Estado / Ações"
+  },
+  "sections.learn.3.label": {
+    "message": "Resolução de problemas"
+  },
+  "sections.resources.0.label": {
+    "message": "Segurança e funcionamento"
+  },
+  "sections.resources.1.label": {
+    "message": "Resultados e testes"
+  },
+  "sections.resources.2.label": {
+    "message": "Documentação pfSense"
+  },
+  "sections.resources.3.label": {
+    "message": "Código-fonte"
+  },
+  "sections.resources.4.label": {
+    "message": "Blogue"
+  },
+  "copyright": {
+    "message": "Copyright © 2023-2026 Jacky Liang. Publicado sob a licença MIT."
+  }
+}

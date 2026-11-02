@@ -1,0 +1,76 @@
+---
+id: first-run
+title: Basislinie festlegen
+description: Zeichnen Sie das aktuelle IPv6-Präfix mit Jetzt ausführen als Basislinie auf, prüfen Sie die gemeldete Adresse und das Präfix, sehen Sie die Registerkarte Felder durch und schalten Sie erst dann geplante Aktualisierungen ein.
+keywords:
+  - pfsense ipv6 prefix updater
+  - erster lauf
+  - basislinie
+  - jetzt ausführen
+  - initialisiert
+tags:
+  - setup
+  - baseline
+  - status
+sidebar_position: 3
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Zeichnen Sie das aktuelle Präfix als <Terminology title="Ausgangspräfix, aufgezeichnet ohne Konfigurationsänderung" to="/docs/reference/terminology#baseline">Basislinie</Terminology> auf und prüfen Sie es, bevor Sie <Terminology title="automatische Prüfungen über einen von pfSense verwalteten Cron-Eintrag" to="/docs/reference/terminology#scheduled-updates">geplante Aktualisierungen</Terminology> einschalten.
+
+## Anfangseinstellungen speichern \{#save-the-initial-settings}
+
+1. Öffnen Sie **Services → IPv6 Prefix Updater** und dann die Registerkarte **Einstellungen**.
+2. Lassen Sie **<Terminology title="automatische Prüfungen über einen von pfSense verwalteten Cron-Eintrag" to="/docs/reference/terminology#scheduled-updates">Geplante Aktualisierungen aktivieren</Terminology>** deaktiviert.
+3. Fügen Sie unter **<Terminology title="Schnittstelle, deren Adresse das aktuelle Präfix verrät" to="/docs/reference/terminology#monitored-interface">Überwachte Schnittstellen</Terminology>** eine Zeile für jede Schnittstelle hinzu, deren <Terminology title="öffentliche IPv6-Adresse innerhalb von 2000::/3" to="/docs/reference/terminology#global-unicast-address">globale Adresse</Terminology> aus dem <Terminology title="IPv6-Netz, das Ihr Internetanbieter zur Firewall routet" to="/docs/reference/terminology#delegated-prefix">delegierten Präfix</Terminology> stammt, wie unter [Schnittstelle und Präfix](/docs/configure/interface-and-prefix) beschrieben.
+4. Wählen Sie in jeder Zeile unter **<Terminology title="Einstellung für die Präfixgröße des Anbieters, /48 bis /64" to="/docs/reference/terminology#delegated-prefix-length">Länge des delegierten Präfixes</Terminology>** die Länge, die Ihr Internetanbieter delegiert.
+5. Speichern Sie und prüfen Sie, ob die Meldung `Einstellungen gespeichert.` erscheint.
+
+## Erste Prüfung ausführen \{#run-the-first-check}
+
+Wählen Sie auf der Registerkarte **Status** die Option **Jetzt ausführen**. Da noch keine <Terminology title="Ausgangspräfix, aufgezeichnet ohne Konfigurationsänderung" to="/docs/reference/terminology#baseline">Basislinie</Terminology> existiert, zeichnet der Lauf für jede Schnittstelle die <Terminology title="globale Adresse, die pfSense für die überwachte Schnittstelle meldet" to="/docs/reference/terminology#source-address">Quelladresse</Terminology> und das Präfix auf und meldet <Terminology title="Ergebnis: Basislinie aufgezeichnet, Konfiguration unverändert" to="/docs/reference/terminology#initialized">Initialisiert</Terminology>.
+
+Das Aufzeichnen einer <Terminology title="Ausgangspräfix, aufgezeichnet ohne Konfigurationsänderung" to="/docs/reference/terminology#baseline">Basislinie</Terminology> ändert die Konfiguration nicht, erstellt keine Sicherung und sendet keine Benachrichtigung.
+
+## Ergebnis prüfen \{#verify-the-result}
+
+Prüfen Sie diese Werte in jeder Zeile unter **Aktueller Zustand**:
+
+- **<Terminology title="Schnittstelle, deren Adresse das aktuelle Präfix verrät" to="/docs/reference/terminology#monitored-interface">Überwachte Schnittstelle</Terminology>** zeigt die gewünschte Schnittstelle mit ihrer Beschreibung und ihrem internen Namen, etwa `LAN (lan)`.
+- **<Terminology title="globale Adresse, die pfSense für die überwachte Schnittstelle meldet" to="/docs/reference/terminology#source-address">Letzte erfolgreiche Quelladresse</Terminology>** stimmt mit der Adresse dieser Schnittstelle unter **Status → Interfaces** überein.
+- **<Terminology title="Präfix, mit dem die nächste Prüfung vergleicht" to="/docs/reference/terminology#last-successful-prefix">Letztes erfolgreiches Präfix</Terminology>** stimmt mit dem Präfix überein, das Ihr Internetanbieter delegiert.
+- **Letzte erfolgreiche Aktualisierung** zeigt die Zeit dieses Laufs in UTC.
+
+Die <Terminology title="schreibgeschützte Ergebnisse nach Jetzt ausführen oder Testlauf" to="/docs/reference/terminology#command-output">Befehlsausgabe</Terminology> sollte `Status: Initialisiert`, `Geplante oder geänderte Felder: 0` und `Konfigurationssicherung: Nicht erstellt` zeigen. Die Dokumentationsadresse `2001:db8:abcd:78aa::1` gehört zum Beispiel bei einer Länge von `/56` zu `2001:db8:abcd:7800::/56`.
+
+:::warning
+
+Wenn die Schnittstelle oder die Länge falsch ist, empfiehlt es sich, die Einstellungen zu korrigieren, bevor Sie den Zeitplan einschalten. Eine andere Schnittstelle zeichnet eine neue <Terminology title="Ausgangspräfix, aufgezeichnet ohne Konfigurationsänderung" to="/docs/reference/terminology#baseline">Basislinie</Terminology> auf, während eine andere Länge als <Terminology title="Abweichung vom letzten erfolgreichen Präfix oder dessen Länge" to="/docs/reference/terminology#prefix-transition">Präfixwechsel</Terminology> zählt, wie [Schnittstelle und Präfix](/docs/configure/interface-and-prefix#changing-the-prefix-length) erklärt.
+
+:::
+
+## Felder durchsehen \{#review-the-fields}
+
+Öffnen Sie die Registerkarte **Felder**. Sobald die <Terminology title="Ausgangspräfix, aufgezeichnet ohne Konfigurationsänderung" to="/docs/reference/terminology#baseline">Basislinie</Terminology> aufgezeichnet ist, listet sie jede Adresse innerhalb des Präfixes auf und zeigt, welche davon die nächste Änderung aktualisieren würde.
+
+1. Schalten Sie die <Terminology title="Gruppe von Feldern mit einem Schalter auf der Registerkarte Felder" to="/docs/reference/terminology#field-group">Feldgruppen</Terminology> aus, die die Firewall nicht nutzt. Alle elf pfSense-Gruppen sind anfangs eingeschaltet.
+2. Entfernen Sie das Häkchen bei einzelnen Feldern, die ihren Wert behalten sollen, und kreuzen Sie jedes Feld eines anderen Pakets an, das dem Präfix folgen soll.
+3. Kreuzen Sie unter **Weitere Einstellungen** jedes Feld an, das dem Präfix folgen soll, etwa ein Gateway oder eine statische Route.
+4. Wählen Sie **Speichern** und prüfen Sie, ob die Meldung `Feldauswahl gespeichert.` erscheint.
+
+[Felder](/docs/configure/configuration-scopes) erklärt jede Gruppe und jedes Bedienelement.
+
+## Was ein Testlauf jetzt zeigt \{#what-a-dry-run-shows-now}
+
+Bei unverändertem Präfix meldet **<Terminology title="Vorschau, die nie sichert oder schreibt" to="/docs/reference/terminology#dry-run">Testlauf</Terminology>** <Terminology title="Ergebnis: Präfix unverändert, nichts durchsucht oder geschrieben" to="/docs/reference/terminology#no-change">Keine Änderung</Terminology>, ohne die Konfiguration zu durchsuchen, weil die Planung erst nach einem echten <Terminology title="Abweichung vom letzten erfolgreichen Präfix oder dessen Länge" to="/docs/reference/terminology#prefix-transition">Präfixwechsel</Terminology> beginnt. Die Registerkarte Felder zeigt, welche Felder eine künftige Änderung betreffen würde.
+
+Ein <Terminology title="Vorschau, die nie sichert oder schreibt" to="/docs/reference/terminology#dry-run">Testlauf</Terminology>, der vor dem Anlegen einer <Terminology title="Ausgangspräfix, aufgezeichnet ohne Konfigurationsänderung" to="/docs/reference/terminology#baseline">Basislinie</Terminology> ausgeführt wird, meldet <Terminology title="Ergebnis: Testlauf, bevor eine Basislinie existiert" to="/docs/reference/terminology#initialization-preview">Initialisierungsvorschau</Terminology> und zeichnet nichts auf.
+
+## Zeitplan einschalten \{#turn-on-the-schedule}
+
+Wenn die Werte übereinstimmen, aktivieren Sie **<Terminology title="automatische Prüfungen über einen von pfSense verwalteten Cron-Eintrag" to="/docs/reference/terminology#scheduled-updates">Geplante Aktualisierungen aktivieren</Terminology>**, wählen einen **Zeitplan** und speichern. [Zeitplan und Benachrichtigungen](/docs/configure/schedule-and-notifications) erklärt jede Option.
+
+Nach dem ersten geplanten Zeitpunkt zeigt **Zeitstempel (UTC)** unter **Letzter Lauf**, wann diese Prüfung lief.
+
+Fahren Sie mit [Vor der Automatisierung prüfen](/docs/safety/testing-and-verification) fort, um eine vollständige Checkliste zu erhalten.

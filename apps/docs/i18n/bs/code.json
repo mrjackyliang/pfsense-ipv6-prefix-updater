@@ -1,0 +1,173 @@
+{
+  "home.meta.description": {
+    "message": "Otkrijte promjene dodijeljenog prefiksa, ažurirajte samo odobrena pfSense polja, sačuvajte bitove hosta i provjerite svaku transakciju."
+  },
+  "home.meta.title": {
+    "message": "Ažuriranje IPv6 prefiksa - Sigurno uskladite dinamičke IPv6 prefikse."
+  },
+  "home.hero.eyebrow": {
+    "message": "Izvorni pfSense paket"
+  },
+  "home.hero.heading": {
+    "message": "Sigurno uskladite dinamičke IPv6 prefikse."
+  },
+  "home.hero.tagline": {
+    "message": "Otkrijte promjene dodijeljenog prefiksa, ažurirajte samo odobrena pfSense polja, sačuvajte bitove hosta i provjerite svaku transakciju."
+  },
+  "home.hero.primaryAction": {
+    "message": "Instalacija i podešavanje"
+  },
+  "home.hero.secondaryAction": {
+    "message": "Pregled sigurnog rada"
+  },
+  "home.preview.ariaLabel": {
+    "message": "Dužina dodijeljenog prefiksa: /56"
+  },
+  "home.preview.dryRun": {
+    "message": "Probno pokretanje"
+  },
+  "home.preview.detected": {
+    "message": "Uočena izvorna adresa"
+  },
+  "home.preview.previous": {
+    "message": "Prethodni prefiks"
+  },
+  "home.preview.current": {
+    "message": "Trenutni prefiks"
+  },
+  "home.preview.prefixChanged": {
+    "message": "Uočeni prefiks"
+  },
+  "home.preview.hostPreserved": {
+    "message": "Dužina dodijeljenog prefiksa"
+  },
+  "home.preview.result": {
+    "message": "Probno pokretanje pronašlo je 2 odobrenih promjena polja za 2001:db8:abcd:8800::/56; konfiguracija nije izmijenjena."
+  },
+  "home.workflow.eyebrow": {
+    "message": "Sigurnost i rad"
+  },
+  "home.workflow.heading": {
+    "message": "Sigurna transakcija"
+  },
+  "home.workflow.detect": {
+    "message": "Uočena izvorna adresa"
+  },
+  "home.workflow.plan": {
+    "message": "Promijenjena polja"
+  },
+  "home.workflow.backup": {
+    "message": "Napravljena sigurnosna kopija konfiguracije"
+  },
+  "home.workflow.write": {
+    "message": "Trenutni prefiks"
+  },
+  "home.workflow.verify": {
+    "message": "Uspjeh"
+  },
+  "home.workflow.notify": {
+    "message": "Obavještenja"
+  },
+  "home.features.interface.title": {
+    "message": "Nadzirana sučelja"
+  },
+  "home.features.interface.description": {
+    "message": "Dodajte po jedan red za svako sučelje čija primarna aktivna globalna IPv6 adresa nosi dodijeljeni prefiks. Za DHCPv6 samo s prefiksom na WAN-u odaberite praćeno sučelje iza njega. Bitovi hosta nakon dužine prefiksa čuvaju se tačno, a adresa koju pfSense odabere za svako sučelje prikazuje se na kartici Status."
+  },
+  "home.features.prefix.title": {
+    "message": "Dužina dodijeljenog prefiksa"
+  },
+  "home.features.prefix.description": {
+    "message": "Unesite granicu prefiksa koju je dodijelio ISP. Bitovi hosta nakon te granice čuvaju se tačno."
+  },
+  "home.features.scopes.title": {
+    "message": "Polja"
+  },
+  "home.features.scopes.description": {
+    "message": "Na kartici Polja odaberite koja se polja konfiguracije mijenjaju s prefiksom."
+  },
+  "home.features.dryRun.title": {
+    "message": "Probno pokretanje"
+  },
+  "home.features.dryRun.description": {
+    "message": "Pokreni sada može ažurirati odobrena polja nakon otkrivene promjene. Probno pokretanje samo bilježi pregled i nikada ne upisuje konfiguraciju vatrozida."
+  },
+  "home.features.backup.title": {
+    "message": "Napravljena sigurnosna kopija konfiguracije"
+  },
+  "home.features.backup.description": {
+    "message": "Napravljena sigurnosna kopija konfiguracije: Da."
+  },
+  "home.features.notify.title": {
+    "message": "Obavještenja"
+  },
+  "home.features.notify.description": {
+    "message": "Koristi podešene pfSense kanale obavještenja nakon provjerenog uspješnog ažuriranja prefiksa. Provjere bez promjene nikada ne šalju obavještenje."
+  },
+  "home.stats.heading": {
+    "message": "Sigurnost i rad"
+  },
+  "home.stats.boundaries": {
+    "message": "Dužina dodijeljenog prefiksa"
+  },
+  "home.stats.backups": {
+    "message": "Napravljena sigurnosna kopija konfiguracije"
+  },
+  "home.stats.writes": {
+    "message": "Promijenjena polja"
+  },
+  "home.stats.noChange": {
+    "message": "Aktivni IPv6 prefiks nije promijenjen; nijedan odobreni cilj konfiguracije nije pročitan niti upisan."
+  },
+  "home.routes.eyebrow": {
+    "message": "Vodiči"
+  },
+  "home.routes.heading": {
+    "message": "Instalacija i podešavanje"
+  },
+  "home.routes.install.title": {
+    "message": "Instalacija paketa"
+  },
+  "home.routes.install.description": {
+    "message": "Pokrenite ovu naredbu u pfSense ljusci da biste instalirali najnovije izdanje direktno sa GitHuba."
+  },
+  "home.routes.open": {
+    "message": "Počnite čitati"
+  },
+  "home.routes.configure.title": {
+    "message": "Nadzirana sučelja / Dužina dodijeljenog prefiksa"
+  },
+  "home.routes.configure.description": {
+    "message": "Dodajte po jedan red za svako sučelje čija primarna aktivna globalna IPv6 adresa nosi dodijeljeni prefiks. Za DHCPv6 samo s prefiksom na WAN-u odaberite praćeno sučelje iza njega. Bitovi hosta nakon dužine prefiksa čuvaju se tačno, a adresa koju pfSense odabere za svako sučelje prikazuje se na kartici Status."
+  },
+  "home.routes.status.title": {
+    "message": "Status / Izlaz naredbe"
+  },
+  "home.routes.status.description": {
+    "message": "Pokreni sada može ažurirati odobrena polja nakon otkrivene promjene. Probno pokretanje samo bilježi pregled i nikada ne upisuje konfiguraciju vatrozida."
+  },
+  "home.routes.troubleshoot.title": {
+    "message": "Rješavanje problema"
+  },
+  "home.routes.troubleshoot.description": {
+    "message": "Ako je izvorna adresa pogrešna, odaberite nizvodno praćeno sučelje koje stvarno ima globalnu adresu; nemojte pogađati dužinu prefiksa."
+  },
+  "home.spotlight.heading": {
+    "message": "Izlaz naredbe"
+  },
+  "home.spotlight.description": {
+    "message": "Provjerite svako pokretanje na stranici Status: izvornu adresu, izvedeni prefiks, sigurnosnu kopiju i ishod."
+  },
+  "home.spotlight.statusAction": {
+    "message": "Status / Izlaz naredbe"
+  },
+  "home.spotlight.testsAction": {
+    "message": "Ishodi i testovi"
+  },
+  "home.blogPreview.heading": {
+    "message": "Iz bloga"
+  },
+  "home.blogPreview.description": {
+    "message": "Napomene o izdanjima, vodiči za podešavanje i članci o dinamičkim IPv6 prefiksima."
+  }
+}

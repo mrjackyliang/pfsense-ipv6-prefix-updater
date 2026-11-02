@@ -1,0 +1,122 @@
+---
+id: status-and-actions
+title: Status and Actions
+description: Read the Current State and Last Run panels, run checks and previews, recover the baseline, and understand Command Output on the Status tab.
+keywords:
+  - pfsense ipv6 prefix updater
+  - status tab
+  - run now
+  - dry run
+  - command output
+tags:
+  - operations
+  - status
+  - dry run
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import unchangedRun from './_assets_/status-and-actions-1.png';
+import changedRun from './_assets_/status-and-actions-2.png';
+import runByInterface from './_assets_/status-and-actions-3.png';
+
+See what the current baseline and latest run recorded, and start a check, preview, or baseline recovery from the Status tab.
+
+## Current State
+
+The **Status** tab under **Services → IPv6 Prefix Updater** starts with this table, which has one row per monitored interface and describes the <Terminology title="starting prefix recorded without changing configuration" to="/docs/reference/terminology#baseline">baseline</Terminology> that the next check compares against:
+
+- **<Terminology title="interface whose address reveals the current prefix" to="/docs/reference/terminology#monitored-interface">Monitored Interface</Terminology>**: the interface description followed by pfSense's internal name, such as `LAN (lan)`.
+- **<Terminology title="prefix the next check compares against" to="/docs/reference/terminology#last-successful-prefix">Last Successful Prefix</Terminology>**: the prefix and its length, such as `2001:db8:abcd:7800::/56`.
+- **<Terminology title="global address pfSense reports for the monitored interface" to="/docs/reference/terminology#source-address">Last Successful Source Address</Terminology>**: the address in <Terminology title="lowercase, shortest standard spelling of an address" to="/docs/reference/terminology#canonical-form">canonical form</Terminology>. A <Terminology title="outcome: prefix unchanged, nothing scanned or written" to="/docs/reference/terminology#no-change">No change</Terminology> run also refreshes it.
+- **Last Successful Update**: the UTC time when the <Terminology title="starting prefix recorded without changing configuration" to="/docs/reference/terminology#baseline">baseline</Terminology> was initialized, accepted, or moved after the last <Terminology title="outcome: fields updated, saved, reloaded, and verified" to="/docs/reference/terminology#success">Success</Terminology>, such as `2026-10-24T14:00:00+00:00`.
+
+Before an interface's first run, its row shows `Not initialized. Run a normal check once to establish a safe baseline.` A <Terminology title="starting prefix recorded without changing configuration" to="/docs/reference/terminology#baseline">baseline</Terminology> taken over from the legacy updater shows `Not recorded by this package version` as its source address until the first check.
+
+## Last Run
+
+This panel records the latest run. When you monitor one interface, it shows that interface's result directly:
+
+- **Outcome**: the result, explained in [Run Outcomes](/docs/operate/run-outcomes).
+- **Timestamp (UTC)**: when the run finished.
+- **<Terminology title="global address pfSense reports for the monitored interface" to="/docs/reference/terminology#source-address">Observed Source Address</Terminology>**: the address pfSense returned for the <Terminology title="interface whose address reveals the current prefix" to="/docs/reference/terminology#monitored-interface">Monitored Interface</Terminology>.
+- **<Terminology title="source address masked at the prefix length" to="/docs/reference/terminology#observed-prefix">Observed Prefix</Terminology>**: the network calculated from that address and the <Terminology title="setting for the ISP prefix size, /48 to /64" to="/docs/reference/terminology#delegated-prefix-length">Delegated Prefix Length</Terminology>.
+- **Changed Fields**: the number of <Terminology title="exact configuration field the package may rewrite" to="/docs/reference/terminology#approved-field">approved fields</Terminology> the run changed, or would change after a <Terminology title="preview that never backs up or writes" to="/docs/reference/terminology#dry-run">dry run</Terminology>.
+- **<Terminology title="copy of the configuration saved before a write" to="/docs/reference/terminology#configuration-backup">Configuration Backup Created</Terminology>**: `Yes`, or `No - this run did not write configuration`.
+- **<Terminology title="pfSense action that applies changed settings" to="/docs/reference/terminology#service-reload">Reloaded Services</Terminology>**: the services the run reloaded, or would reload after a <Terminology title="preview that never backs up or writes" to="/docs/reference/terminology#dry-run">dry run</Terminology>.
+- **Summary**: one sentence about the result, including the previous prefix after a <Terminology title="change from the last successful prefix or length" to="/docs/reference/terminology#prefix-transition">prefix transition</Terminology>.
+- **Packages**: shown when the run changed another package's settings, with one line per package, such as `Applied the <package> package settings again.` [Fields](/docs/configure/configuration-scopes#other-packages-settings) lists each message.
+- **Skipped Fields**: shown when ticked fields no longer exist, with `These selected fields no longer exist, so the run skipped them. Review them on the Fields tab.` and each field's identity.
+
+It is recommended to check the observed address and prefix first. They show whether pfSense returned the intended address and whether the length produced the expected network.
+
+**Last Run** isn't updated when another check holds the <Terminology title="guard that stops two checks running at once" to="/docs/reference/terminology#run-lock">run lock</Terminology> or when a run stops before reading its <Terminology title="package file holding the baseline and last run" to="/docs/reference/terminology#package-state">package state</Terminology>, such as when no monitored interface has a <Terminology title="public IPv6 address inside 2000::/3" to="/docs/reference/terminology#global-unicast-address">global address</Terminology>. A <Terminology title="outcome: a check or safety stage stopped the run" to="/docs/reference/terminology#failure">Failure</Terminology> always shows `0` changed fields, as [Run Outcomes](/docs/operate/run-outcomes#failures-after-the-save) explains.
+
+### Last Run by Interface
+
+When you monitor more than one interface, **Last Run** shows the totals and **Summary** counts the interfaces that were updated, unchanged, or need attention. The **Last Run by Interface** table below it lists each interface with its own outcome, observed prefix, changed fields, and summary.
+
+- **Changed Fields** in **Last Run** counts each field once, even when two interfaces that share a <Terminology title="IPv6 network your ISP routes to the firewall" to="/docs/reference/terminology#delegated-prefix">delegated prefix</Terminology> both planned it.
+- An interface without a <Terminology title="public IPv6 address inside 2000::/3" to="/docs/reference/terminology#global-unicast-address">global address</Terminology> reports <Terminology title="outcome: a check or safety stage stopped the run" to="/docs/reference/terminology#failure">Failure</Terminology> in its own row while the other interfaces are still checked.
+- If two interfaces plan different values for the same field, the run stops before writing anything and reports which field disagreed.
+
+## Actions
+
+| Action                                                                                                                    | What it does                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+|---------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Run Now                                                                                                                   | Runs a full check, even while <Terminology title="automatic checks run from a pfSense-managed cron entry" to="/docs/reference/terminology#scheduled-updates">scheduled updates</Terminology> are off. It records a <Terminology title="starting prefix recorded without changing configuration" to="/docs/reference/terminology#baseline">baseline</Terminology> when none exists and applies a <Terminology title="change from the last successful prefix or length" to="/docs/reference/terminology#prefix-transition">prefix transition</Terminology> when it finds one. |
+| <Terminology title="preview that never backs up or writes" to="/docs/reference/terminology#dry-run">Dry Run</Terminology> | Runs the same check without a backup or a write. Before a <Terminology title="starting prefix recorded without changing configuration" to="/docs/reference/terminology#baseline">baseline</Terminology> exists, it reports <Terminology title="outcome: dry run before a baseline exists" to="/docs/reference/terminology#initialization-preview">Initialization preview</Terminology>.                                                                                                                                                                                     |
+| Accept Current Prefix                                                                                                     | After confirmation, records the active source address, prefix, and length as the new <Terminology title="starting prefix recorded without changing configuration" to="/docs/reference/terminology#baseline">baseline</Terminology>. It does not inspect approved fields, create a backup, write configuration, or reload services.                                                                                                                                                                                                                                          |
+
+Run Now and <Terminology title="preview that never backs up or writes" to="/docs/reference/terminology#dry-run">Dry Run</Terminology> are <Terminology title="check started from the Status tab" to="/docs/reference/terminology#manual-run">manual runs</Terminology>. **Accept Current Prefix** is a recovery action and should be used only after the saved addresses and affected services have been verified.
+
+Each action displays a completion or warning banner. The confirmation on **Accept Current Prefix** is the final safeguard before the package replaces its comparison baseline.
+
+A check that finds another run in progress also shows the completed banner, so it is recommended to read the <Terminology title="read-only results shown after Run Now or Dry Run" to="/docs/reference/terminology#command-output">Command Output</Terminology> as well.
+
+## Command Output
+
+After an action, a read-only **Latest Run** box appears under **<Terminology title="read-only results shown after Run Now or Dry Run" to="/docs/reference/terminology#command-output">Command Output</Terminology>**:
+
+```text
+Status: No change
+Interface: lan
+Observed source address: 2001:db8:abcd:78aa::1
+Previous prefix: 2001:db8:abcd:7800::
+Current prefix: 2001:db8:abcd:7800::/56
+Planned or changed fields: 0
+Configuration backup: Not created
+Reloaded services: None
+Summary: The active IPv6 prefix is unchanged; no approved configuration targets were read or written.
+```
+
+The previous prefix is printed without its length. A failed run shows a single line that starts with `IPv6 Prefix Updater failed:` instead.
+
+After a <Terminology title="preview that never backs up or writes" to="/docs/reference/terminology#dry-run">dry run</Terminology> or a change, `Field changes:` follows with each address the run replaced, or would replace, and the field it belongs to:
+
+```text
+Field changes:
+- aliases/alias/0/address: 2001:db8:abcd:78aa::10 → 2001:db8:abcd:88aa::10
+```
+
+## Choosing Fields
+
+Which fields a run updates is chosen on the **Fields** tab, which lists every address inside each <Terminology title="starting prefix recorded without changing configuration" to="/docs/reference/terminology#baseline">baseline</Terminology> prefix. [Fields](/docs/configure/configuration-scopes) explains the groups, single-field exceptions, and Other Settings.
+
+## Screenshots
+
+The first screenshot shows a <Terminology title="outcome: prefix unchanged, nothing scanned or written" to="/docs/reference/terminology#no-change">No change</Terminology> result for two monitored interfaces, with no fields changed and no backup.
+
+<img src={unchangedRun} alt="IPv6 Prefix Updater Status tab showing Last Run and Last Run by Interface for two unchanged interfaces, with zero changed fields and no backup" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+The second screenshot shows a <Terminology title="outcome: fields updated, saved, reloaded, and verified" to="/docs/reference/terminology#success">Success</Terminology> that changed one <Terminology title="exact configuration field the package may rewrite" to="/docs/reference/terminology#approved-field">approved field</Terminology>, created a <Terminology title="copy of the configuration saved before a write" to="/docs/reference/terminology#configuration-backup">configuration backup</Terminology>, and reloaded the firewall filter.
+
+<img src={changedRun} alt="IPv6 Prefix Updater Status tab showing a successful /56 prefix transition for two monitored interfaces with one changed field, a configuration backup, and a firewall filter reload" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+The third screenshot shows the **Last Run by Interface** table for that run, where LAN and LAB share one <Terminology title="IPv6 network your ISP routes to the firewall" to="/docs/reference/terminology#delegated-prefix">delegated prefix</Terminology> and each reports the same changed field.
+
+<img src={runByInterface} alt="IPv6 Prefix Updater Last Run by Interface table showing LAN and LAB both reporting Success with one changed field from the same /56 prefix transition" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+The `2001:db8::/32` addresses in these screenshots are reserved documentation examples.
+
+Review [Run Outcomes](/docs/operate/run-outcomes) for every outcome and [Backups and Recovery](/docs/operate/backups-and-recovery) before you rely on a changed run.

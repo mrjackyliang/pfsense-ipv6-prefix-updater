@@ -1,0 +1,50 @@
+{
+  "layout.learn.title": {
+    "message": "Guides",
+    "description": "Title of footer column \"learn\""
+  },
+  "layout.resources.title": {
+    "message": "Resources",
+    "description": "Title of footer column \"resources\""
+  },
+  "sections.learn.0.label": {
+    "message": "Install and configure",
+    "description": "Label of link 1 in footer section \"learn\""
+  },
+  "sections.learn.1.label": {
+    "message": "Interface and prefix",
+    "description": "Label of link 2 in footer section \"learn\""
+  },
+  "sections.learn.2.label": {
+    "message": "Status and actions",
+    "description": "Label of link 3 in footer section \"learn\""
+  },
+  "sections.learn.3.label": {
+    "message": "Troubleshooting",
+    "description": "Label of link 4 in footer section \"learn\""
+  },
+  "sections.resources.0.label": {
+    "message": "Safety model",
+    "description": "Label of link 1 in footer section \"resources\""
+  },
+  "sections.resources.1.label": {
+    "message": "Check before automation",
+    "description": "Label of link 2 in footer section \"resources\""
+  },
+  "sections.resources.2.label": {
+    "message": "pfSense documentation",
+    "description": "Label of link 3 in footer section \"resources\""
+  },
+  "sections.resources.3.label": {
+    "message": "Source code",
+    "description": "Label of link 4 in footer section \"resources\""
+  },
+  "copyright": {
+    "message": "Copyright © 2023-2026 Jacky Liang. Released under MIT.",
+    "description": "The footer copyright text"
+  },
+  "sections.resources.4.label": {
+    "message": "Blog",
+    "description": "Label of link 5 in footer section \"resources\""
+  }
+}

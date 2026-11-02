@@ -1,0 +1,120 @@
+---
+id: backups-and-recovery
+title: Sigurnosne kopije i oporavak
+description: Pronađite konfiguraciju od prije ažuriranja paketa na kartici Sigurnosne kopije ili u Config History, vratite je pomoću pfSense-a i oporavite se od pokretanja koje nije uspjelo nakon čuvanja.
+keywords:
+  - pfsense ipv6 prefix updater
+  - sigurnosna kopija konfiguracije
+  - config history
+  - vraćanje
+  - oporavak
+tags:
+  - operations
+  - backup
+  - recovery
+  - config history
+sidebar_position: 3
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import backupList from './_assets_/backups-and-recovery-1.png';
+
+Pronađite konfiguraciju od prije ažuriranja na kartici **Sigurnosne kopije** ili u pfSense <Terminology title="pfSense lista sačuvanih revizija konfiguracije" to="/docs/reference/terminology#config-history">Config History</Terminology> i vratite je vlastitim alatima pfSense-a.
+
+## Kada se pravi sigurnosna kopija \{#when-a-backup-is-created}
+
+Paket pravi <Terminology title="kopija konfiguracije napravljena prije upisa" to="/docs/reference/terminology#configuration-backup">sigurnosnu kopiju konfiguracije</Terminology> samo pri pokretanju koje upisuje, neposredno prije nego što promijeni bilo koje polje. **<Terminology title="kopija konfiguracije napravljena prije upisa" to="/docs/reference/terminology#configuration-backup">Napravljena sigurnosna kopija konfiguracije</Terminology>** na kartici Status pokazuje da li ju je posljednje pokretanje napravilo.
+
+Sigurnosna kopija se ne pravi kada pokretanje završi ishodom:
+
+- <Terminology title="ishod: početno stanje zabilježeno, konfiguracija nepromijenjena" to="/docs/reference/terminology#initialized">Inicijalizirano</Terminology> ili <Terminology title="ishod: probno pokretanje prije postojanja početnog stanja" to="/docs/reference/terminology#initialization-preview">Pregled inicijalizacije</Terminology>.
+- <Terminology title="ishod: prefiks nepromijenjen, ništa nije skenirano ni upisano" to="/docs/reference/terminology#no-change">Bez promjene</Terminology>.
+- <Terminology title="pregled bez sigurnosne kopije i bez upisa" to="/docs/reference/terminology#dry-run">Probno pokretanje</Terminology>.
+- **Prihvaćeno**, jer prihvatanje trenutnog prefiksa mijenja samo <Terminology title="datoteka paketa s početnim stanjem i posljednjim pokretanjem" to="/docs/reference/terminology#package-state">stanje paketa</Terminology>.
+- <Terminology title="ishod: prefiks promijenjen, ali nijedno odobreno polje nije odgovaralo" to="/docs/reference/terminology#warning">Upozorenje</Terminology>.
+- <Terminology title="ishod: kontrola ili sigurnosna faza zaustavila je pokretanje" to="/docs/reference/terminology#failure">Greška</Terminology> prije faze sigurnosne kopije, na primjer zbog problema s postavkama, adresom ili mogućnošću ponovnog učitavanja.
+
+## Kartica Sigurnosne kopije \{#backups-tab}
+
+Kartica **Services → IPv6 Prefix Updater → Sigurnosne kopije** navodi vlastite kopije datoteke `config.xml` koje je napravio paket, od najnovije. Ostaju dostupne i nakon što pfSense rotacijom ukloni starije revizije iz <Terminology title="pfSense lista sačuvanih revizija konfiguracije" to="/docs/reference/terminology#config-history">Config History</Terminology>.
+
+<img src={backupList} alt="Kartica Sigurnosne kopije paketa IPv6 Prefix Updater sa sigurnosnim kopijama paketa napravljenim prije ažuriranja prefiksa i prije migracije sa starog programa za ažuriranje, te sa sigurnosnim kopijama uvezenim iz starog programa za ažuriranje, svaka s radnjama Preuzmi i Izbriši" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+- **Prije ažuriranja prefiksa**: napravljena neposredno prije nego što pokretanje upiše konfiguraciju. **Detalji** navode stari i novi prefiks svakog sučelja.
+- **Prije prelaska sa 1.x**: napravljena prije nego što je paket [premjestio stari program za ažuriranje](/docs/migrate-from-legacy) u svoje postavke.
+- **Skripta 1.x**: sigurnosna kopija koju je napravio <Terminology title="originalna skripta update.php koju pokreće Cron paket" to="/docs/reference/terminology#legacy-updater">stari program za ažuriranje</Terminology>, uvezena s originalnim nazivom i vremenom.
+
+Čuva se samo 10 najnovijih sigurnosnih kopija paketa, dok uvezene kopije starog programa ostaju dok ih ne izbrišete. Svaka sigurnosna kopija čuva se u `/cf/conf/ipv6-prefix-updater/backups`, može je čitati samo root i preživljava ponovna pokretanja sistema i uklanjanje paketa.
+
+Da biste vratili jednu, odaberite **Preuzmi**, a zatim otpremite datoteku u **Diagnostics → Backup & Restore → Restore Backup**. Vraćanje zamjenjuje cijelu konfiguraciju, pa se upozorenja u nastavku odnose i na ove datoteke.
+
+## Kako su revizije označene \{#how-the-revisions-are-labelled}
+
+Svako ažuriranje ostavlja dvije revizije u <Terminology title="pfSense lista sačuvanih revizija konfiguracije" to="/docs/reference/terminology#config-history">Config History</Terminology>, a samo starija poništava ažuriranje:
+
+- **Konfiguracija prije ažuriranja**: <Terminology title="kopija konfiguracije napravljena prije upisa" to="/docs/reference/terminology#configuration-backup">sigurnosna kopija konfiguracije</Terminology> je kopija ove revizije. Zadržava opis promjene koja je sačuvana prije ažuriranja.
+- **Ažurirana konfiguracija**: paket čuva svoju promjenu kao novu reviziju s opisom `Ažuriranje IPv6 prefiksa promijenilo je <count> odobrenih polja za sučelje <interface>`.
+
+:::warning
+
+Revizija s opisom paketa sadrži ažuriranu konfiguraciju. Njeno vraćanje ne poništava ažuriranje.
+
+:::
+
+## Pronalaženje prave revizije \{#find-the-right-revision}
+
+1. Otvorite **Diagnostics → Backup & Restore → Config History**.
+2. Pronađite najnoviju reviziju s opisom `Ažuriranje IPv6 prefiksa promijenilo je ... za sučelje ...`. Ako nakon ažuriranja ništa nije sačuvano, to je trenutna konfiguracija.
+3. Odaberite reviziju sačuvanu neposredno prije nje, a to je konfiguracija od prije ažuriranja.
+4. Uporedite dvije revizije u prikazu razlika. Osim detalja revizije, trebaju se razlikovati samo polja izbrojana u **Promijenjena polja**.
+5. Provjerite da li su nakon ažuriranja sačuvane druge promjene, jer vraćanje starije revizije uklanja i njih.
+
+## Vraćanje revizije \{#restore-the-revision}
+
+1. Koristite pfSense radnju vraćanja na reviziji od prije ažuriranja i slijedite njena uputstva.
+2. Otvorite **Services → IPv6 Prefix Updater → Postavke** i provjerite **<Terminology title="automatske provjere iz cron unosa kojim upravlja pfSense" to="/docs/reference/terminology#scheduled-updates">Omogući zakazana ažuriranja</Terminology>**, jer vraćena revizija vraća postavke paketa iz tog vremena.
+3. Na kartici Status odaberite **<Terminology title="pregled bez sigurnosne kopije i bez upisa" to="/docs/reference/terminology#dry-run">Probno pokretanje</Terminology>** da vidite šta bi uradilo sljedeće pokretanje.
+
+Šta će sljedeće pokretanje uraditi zavisi od ishoda koji poništavate:
+
+- **Nakon ishoda <Terminology title="ishod: kontrola ili sigurnosna faza zaustavila je pokretanje" to="/docs/reference/terminology#failure">Greška</Terminology>**: <Terminology title="početni prefiks zabilježen bez promjene konfiguracije" to="/docs/reference/terminology#baseline">početno stanje</Terminology> i dalje sadrži stari prefiks, pa sljedeće pokretanje ponovo planira isto ažuriranje.
+- **Nakon ishoda <Terminology title="ishod: polja ažurirana, sačuvana, ponovo učitana i provjerena" to="/docs/reference/terminology#success">Uspjeh</Terminology>**: <Terminology title="početni prefiks zabilježen bez promjene konfiguracije" to="/docs/reference/terminology#baseline">početno stanje</Terminology> već sadrži novi prefiks, pa kasnija pokretanja prijavljuju ishod <Terminology title="ishod: prefiks nepromijenjen, ništa nije skenirano ni upisano" to="/docs/reference/terminology#no-change">Bez promjene</Terminology> i ne primjenjuju ažuriranje ponovo. Vraćene adrese zadržavaju stari prefiks dok ih ne promijenite.
+
+:::warning
+
+Vraćanje revizije zamjenjuje cijelu konfiguraciju, uključujući svaku promjenu sačuvanu nakon te revizije.
+
+:::
+
+## Nakon neuspjelog pokretanja \{#after-a-failed-run}
+
+Počnite od polja **<Terminology title="kopija konfiguracije napravljena prije upisa" to="/docs/reference/terminology#configuration-backup">Napravljena sigurnosna kopija konfiguracije</Terminology>** i **Sažetak** u panelu **Posljednje pokretanje**. Ishod <Terminology title="ishod: kontrola ili sigurnosna faza zaustavila je pokretanje" to="/docs/reference/terminology#failure">Greška</Terminology> uvijek prikazuje `0` pod **Promijenjena polja**, čak i kada su polja već upisana.
+
+- **<Terminology title="kopija konfiguracije napravljena prije upisa" to="/docs/reference/terminology#configuration-backup">Napravljena sigurnosna kopija konfiguracije</Terminology> prikazuje Ne**: pokretanje se zaustavilo prije upisa, pa je konfiguracija nepromijenjena. Uputstvo [Rješavanje problema](/docs/operate/troubleshooting#run-failed) navodi uzroke.
+- **Sažetak glasi `Pokretanje nije uspjelo: pfSense nije mogao upisati planiranu konfiguraciju.`**: pfSense je prijavio da upis nije uspio. Paket je prije zaustavljanja vratio originalne vrijednosti u memoriju.
+- **Bilo koja druga greška sa sigurnosnom kopijom**: nove vrijednosti su već sačuvane i ništa nije vraćeno. <Terminology title="početni prefiks zabilježen bez promjene konfiguracije" to="/docs/reference/terminology#baseline">Početno stanje</Terminology> i dalje sadrži stari prefiks, pa kasnija pokretanja prijavljuju ishod <Terminology title="ishod: prefiks promijenjen, ali nijedno odobreno polje nije odgovaralo" to="/docs/reference/terminology#warning">Upozorenje</Terminology> jer mu sačuvane vrijednosti više ne pripadaju.
+
+U posljednjem slučaju odaberite oporavak koji odgovara sačuvanoj konfiguraciji:
+
+- **Ponovna primjena ažuriranja**: otklonite uzrok neuspjele kontrole ili ponovnog učitavanja, vratite reviziju od prije ažuriranja, izvršite <Terminology title="pregled bez sigurnosne kopije i bez upisa" to="/docs/reference/terminology#dry-run">Probno pokretanje</Terminology>, a zatim odaberite **Pokreni sada**.
+- **Zadržavanje sačuvanih vrijednosti s novim prefiksom**: prvo sami provjerite odobrene adrese i pogođene usluge. Zatim otvorite **Status → Radnje → Oporavak početnog stanja**, odaberite **Prihvati trenutni prefiks** i potvrdite radnju.
+
+**Prihvati trenutni prefiks** bilježi aktivnu izvornu adresu, prefiks i dužinu prefiksa kao novo <Terminology title="početni prefiks zabilježen bez promjene konfiguracije" to="/docs/reference/terminology#baseline">početno stanje</Terminology>. Ne skenira konfiguraciju vatrozida, ne pravi sigurnosnu kopiju, ne upisuje konfiguraciju i ne učitava ponovo nijednu uslugu; ishod je **Prihvaćeno**, a sljedeća obična provjera trebala bi prijaviti ishod <Terminology title="ishod: prefiks nepromijenjen, ništa nije skenirano ni upisano" to="/docs/reference/terminology#no-change">Bez promjene</Terminology>.
+
+:::warning
+
+Ne prihvatajte trenutni prefiks samo da biste uklonili upozorenje. Prihvatite ga tek nakon što potvrdite da je svaka adresa koja treba koristiti novi prefiks već ispravna i, nakon neuspjelog ponovnog učitavanja, da pogođena usluga radi sa sačuvanom konfiguracijom.
+
+:::
+
+Ako se **Posljednje pokretanje** uopće nije promijenilo, pokretanje se zaustavilo prije nego što je pročitalo <Terminology title="datoteka paketa s početnim stanjem i posljednjim pokretanjem" to="/docs/reference/terminology#package-state">stanje paketa</Terminology>. Razlog se nalazi u odjeljku <Terminology title="rezultati samo za čitanje nakon Pokreni sada ili Probnog pokretanja" to="/docs/reference/terminology#command-output">Izlaz naredbe</Terminology> i u <Terminology title="opći pfSense dnevnik u koji paket upisuje" to="/docs/reference/terminology#system-log">sistemskom dnevniku</Terminology>.
+
+## Čuvanje sigurnosnih kopija izvan uređaja \{#keep-off-device-backups}
+
+<Terminology title="pfSense lista sačuvanih revizija konfiguracije" to="/docs/reference/terminology#config-history">Config History</Terminology> se čuva na samom vatrozidu. Preporučuje se da prije instalacije ili ažuriranja paketa, odnosno prije uključivanja <Terminology title="automatske provjere iz cron unosa kojim upravlja pfSense" to="/docs/reference/terminology#scheduled-updates">zakazanih ažuriranja</Terminology>, preuzmete i sigurnosnu kopiju iz **Diagnostics → Backup & Restore**.
+
+## Čuvanje dokaza \{#preserve-evidence}
+
+Prije vraćanja preporučuje se da kopirate panel **Posljednje pokretanje**, <Terminology title="rezultati samo za čitanje nakon Pokreni sada ili Probnog pokretanja" to="/docs/reference/terminology#command-output">Izlaz naredbe</Terminology> i redove <Terminology title="opći pfSense dnevnik u koji paket upisuje" to="/docs/reference/terminology#system-log">sistemskog dnevnika</Terminology> koji počinju sa `IPv6 Prefix Updater:`. Zajedno pokazuju koja se faza zaustavila i da li je konfiguracija upisana.
+
+Pregledajte uputstvo [Rješavanje problema](/docs/operate/troubleshooting) za poruke o greškama i uputstvo [Provjera prije automatizacije](/docs/safety/testing-and-verification) prije nego što ponovo uključite raspored.

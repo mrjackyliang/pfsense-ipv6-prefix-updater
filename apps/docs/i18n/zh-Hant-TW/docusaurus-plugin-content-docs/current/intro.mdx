@@ -1,0 +1,90 @@
+---
+id: intro
+title: 概觀
+description: 讓 pfSense 別名、介面與 VPN 位址在 ISP 委派新前綴時自動跟上目前的 IPv6 前綴，並在每次變更前先建立備份。
+keywords:
+  - pfsense ipv6 prefix updater
+  - 概觀
+  - IPv6 前綴委派
+  - 動態前綴
+  - pfSense 套件
+tags:
+  - setup
+  - overview
+  - ipv6
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+讓 pfSense 中儲存的 IPv6 位址在 ISP 指派新的<Terminology title="ISP 路由到防火牆的 IPv6 網路" to="/docs/reference/terminology#delegated-prefix">委派前綴</Terminology>後，繼續使用目前的前綴。
+
+## 功能簡介 \{#what-it-does}
+
+pfSense IPv6 Prefix Updater（中文介面顯示為「IPv6 前綴更新器」）是一個 pfSense 套件，會監看您選擇的介面是否出現新的前綴。前綴變更時，它會改寫您所選欄位中的相符位址，並保留每個位址的<Terminology title="委派前綴之後的位址位元" to="/docs/reference/terminology#host-portion">主機部分</Terminology>。
+
+## 為什麼要使用這個套件？ \{#why-use-this-package}
+
+1. 保留每個位址的<Terminology title="委派前綴之後的位址位元" to="/docs/reference/terminology#host-portion">主機部分</Terminology>，前綴變更後每部裝置的位址尾碼都維持不變。
+2. 只變更您在「欄位」分頁上選取的<Terminology title="套件可改寫的確切設定欄位" to="/docs/reference/terminology#approved-field">已核准欄位</Terminology>，遠端 VPN 網路、對等端、閘道與路由都維持您設定的樣子。
+3. 每次寫入前都會儲存<Terminology title="寫入前儲存的設定副本" to="/docs/reference/terminology#configuration-backup">設定備份</Terminology>，先前的設定隨時可在<Terminology title="pfSense 已儲存設定修訂版本的清單" to="/docs/reference/terminology#config-history">設定歷程</Terminology>中找到。
+4. 依 pfSense 管理的排程執行，不需要 Cron 套件，也不必在主目錄中放置指令碼。
+5. 在「狀態」分頁顯示每次執行的結果，方便您查看變更了什麼、哪些服務已重新載入，以及是否建立了備份。
+
+## 會更新的內容 \{#what-it-updates}
+
+- **別名**：主機別名與網路別名中的位址和網路。
+- **靜態介面**：設定類型為 Static IPv6 的介面位址。
+- **<Terminology title="額外的介面位址，例如 CARP 或 IP Alias" to="/docs/reference/terminology#virtual-ip">虛擬 IP 位址</Terminology>**：CARP 與 IP Alias 類型的<Terminology title="額外的介面位址，例如 CARP 或 IP Alias" to="/docs/reference/terminology#virtual-ip">虛擬 IP</Terminology>。
+- **IPsec**：Tunnel IPv6 與 Routed (VTI) 模式<Terminology title="描述本機與遠端網路的 IPsec 項目" to="/docs/reference/terminology#ipsec-phase-2">階段 2</Terminology> 項目的本機端。
+- **OpenVPN**：伺服器與<Terminology title="伺服器上針對個別用戶端的 OpenVPN 設定" to="/docs/reference/terminology#client-specific-override">用戶端特定覆寫</Terminology>中的 IPv6 通道網路與本機網路，以及用戶端中的 IPv6 通道網路。
+- **WireGuard**：<Terminology title="指派給 pfSense WireGuard 通道的位址" to="/docs/reference/terminology#wireguard-tunnel-address">通道位址</Terminology>（需已安裝 WireGuard 套件）。
+- **DHCPv6 伺服器**：位址範圍、前綴委派範圍與位址池範圍、靜態對應，以及分配給用戶端的 DNS 與 NTP 伺服器。
+- **路由器通告**：通告的 DNS 伺服器與 RA 子網路。
+- **DNS 主機覆寫**：DNS 解析器與 DNS 轉送器中的主機覆寫。
+- **防火牆規則**：直接填寫在規則中的來源與目的地位址。
+- **NAT 與 NPt**：連接埠轉送、輸出 NAT 與 1:1 NAT 中直接填寫的位址，以及 NPt 前綴。
+- **其他套件的設定**：只限您勾選的欄位；變更後，本套件會重新套用該套件的設定。
+
+**欄位** 分頁會列出您前綴內的所有位址，每個<Terminology title="「欄位」分頁上共用一個開關的一組欄位" to="/docs/reference/terminology#field-group">欄位群組</Terminology>各有一個開關，每個欄位各有一個核取方塊。
+
+## 等待您勾選的內容 \{#what-waits-for-you}
+
+**其他設定** 群組預設關閉，因此這些值只有在您勾選後才會變更：
+
+- VPN 的遠端，例如 IPsec 與 OpenVPN 的遠端網路，以及 WireGuard 的對等端、允許的 IP 與端點。
+- 閘道、靜態路由、DNS 網域覆寫、憑證、機密資訊、Base64 編碼的值，以及描述。
+- 連接埠、URL 及其他類型的別名。
+
+透過 DHCPv6、SLAAC 或 <Terminology title="位址取自另一介面委派前綴的介面" to="/docs/reference/terminology#tracked-interface">Track Interface</Terminology> 取得位址的介面絕不會被變更，因為這些位址由 pfSense 產生。IPv4 位址、主機名稱，以及不屬於舊前綴的 IPv6 位址也同樣不會被變更。完整清單請見[其他設定](/docs/configure/configuration-scopes#other-settings)。
+
+## 檢查如何進行 \{#how-a-check-works}
+
+1. 讀取每個<Terminology title="其位址可反映目前前綴的介面" to="/docs/reference/terminology#monitored-interface">監控介面</Terminology>的<Terminology title="位於 2000::/3 內的公用 IPv6 位址" to="/docs/reference/terminology#global-unicast-address">全域位址</Terminology>並計算其前綴。
+2. 與<Terminology title="下次檢查用來比較的前綴" to="/docs/reference/terminology#last-successful-prefix">上次成功前綴</Terminology>比較，兩者相同時以<Terminology title="結果：前綴未變更，未掃描或寫入任何內容" to="/docs/reference/terminology#no-change">無變更</Terminology>結束。
+3. 發生<Terminology title="與上次成功前綴或長度不同" to="/docs/reference/terminology#prefix-transition">前綴變更</Terminology>時，為仍在使用舊前綴的<Terminology title="套件可改寫的確切設定欄位" to="/docs/reference/terminology#approved-field">已核准欄位</Terminology>建立<Terminology title="寫入前建立的完整欄位變更清單" to="/docs/reference/terminology#change-plan">變更計畫</Terminology>。
+4. 儲存<Terminology title="寫入前儲存的設定副本" to="/docs/reference/terminology#configuration-backup">設定備份</Terminology>，一次儲存所有變更，只重新載入受影響的服務，然後再次檢查這些值。
+5. 在「狀態」分頁記錄結果，並在已開啟時傳送<Terminology title="更新驗證成功後傳送的警示" to="/docs/reference/terminology#change-notification">變更通知</Terminology>。
+
+[安全模型](/docs/operations)說明了每個步驟的保護措施。
+
+## 開始之前 \{#before-you-start}
+
+:::warning
+
+pfSense IPv6 Prefix Updater 是<Terminology title="從 GitHub 而非 Netgate 套件庫安裝的套件" to="/docs/reference/terminology#unofficial-package">非官方套件</Terminology>。它透過 `pkg` 從 GitHub 安裝，Netgate 不會審查或支援它。
+
+:::
+
+套件版本發布在專案的 GitHub Releases 頁面上。1.x 版只包含<Terminology title="由 Cron 套件執行的原始 update.php 指令碼" to="/docs/reference/terminology#legacy-updater">舊版更新器</Terminology>，不包含此套件。
+
+## 語言 \{#languages}
+
+套件的所有分頁、<Terminology title="立即執行或試執行後顯示的唯讀結果" to="/docs/reference/terminology#command-output">命令輸出</Terminology>以及套件的訊息，都會依照 pfSense 中選取的語言顯示。套件內建 18 種 pfSense 語言選項的翻譯，其他語言則會退回英文。
+
+## 後續步驟 \{#next-steps}
+
+- **[安裝套件](/docs/installation)**：從 GitHub 發行版本新增套件。
+- **[建立基準](/docs/first-run)**：在開啟排程更新前記錄並檢查目前的前綴。
+- **[從指令碼遷移](/docs/migrate-from-legacy)**：從 1.x 版指令碼切換過來。
+- **[安全模型](/docs/operations)**：了解套件保護哪些內容，以及仍可能影響哪些內容。

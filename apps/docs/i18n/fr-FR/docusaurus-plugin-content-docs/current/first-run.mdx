@@ -1,0 +1,76 @@
+---
+id: first-run
+title: Établir la référence
+description: Enregistrez le préfixe IPv6 actuel comme référence avec Exécuter maintenant, contrôlez l’adresse et le préfixe signalés, examinez l’onglet Champs, puis activez les mises à jour planifiées.
+keywords:
+  - pfsense ipv6 prefix updater
+  - première exécution
+  - référence
+  - exécuter maintenant
+  - initialisé
+tags:
+  - setup
+  - baseline
+  - status
+sidebar_position: 3
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Enregistrez le préfixe actuel comme <Terminology title="préfixe de départ enregistré sans modifier la configuration" to="/docs/reference/terminology#baseline">référence</Terminology> et vérifiez-le avant d’activer les <Terminology title="vérifications automatiques via une entrée cron gérée par pfSense" to="/docs/reference/terminology#scheduled-updates">mises à jour planifiées</Terminology>.
+
+## Enregistrer les paramètres initiaux \{#save-the-initial-settings}
+
+1. Ouvrez **Services → IPv6 Prefix Updater**, puis l’onglet **Paramètres**.
+2. Laissez la case **<Terminology title="vérifications automatiques via une entrée cron gérée par pfSense" to="/docs/reference/terminology#scheduled-updates">Activer les mises à jour planifiées</Terminology>** décochée.
+3. Ajoutez une ligne **<Terminology title="interface dont l’adresse révèle le préfixe actuel" to="/docs/reference/terminology#monitored-interface">Interfaces surveillées</Terminology>** pour chaque interface dont l’<Terminology title="adresse IPv6 publique comprise dans 2000::/3" to="/docs/reference/terminology#global-unicast-address">adresse globale</Terminology> provient du <Terminology title="réseau IPv6 que votre FAI route vers le pare-feu" to="/docs/reference/terminology#delegated-prefix">préfixe délégué</Terminology>, comme décrit dans [Interface et préfixe](/docs/configure/interface-and-prefix).
+4. Dans chaque ligne, sélectionnez dans **<Terminology title="paramètre de taille du préfixe du FAI, de /48 à /64" to="/docs/reference/terminology#delegated-prefix-length">Longueur du préfixe délégué</Terminology>** la longueur que votre FAI délègue.
+5. Enregistrez, puis vérifiez que le message `Paramètres enregistrés.` s’affiche.
+
+## Lancer la première vérification \{#run-the-first-check}
+
+Dans l’onglet **État**, cliquez sur **Exécuter maintenant**. En l’absence de <Terminology title="préfixe de départ enregistré sans modifier la configuration" to="/docs/reference/terminology#baseline">référence</Terminology>, l’exécution enregistre l’<Terminology title="adresse globale signalée par pfSense pour l’interface surveillée" to="/docs/reference/terminology#source-address">adresse source</Terminology> et le préfixe de chaque interface, puis signale <Terminology title="résultat : référence enregistrée, configuration inchangée" to="/docs/reference/terminology#initialized">Initialisé</Terminology>.
+
+L’enregistrement d’une <Terminology title="préfixe de départ enregistré sans modifier la configuration" to="/docs/reference/terminology#baseline">référence</Terminology> ne modifie pas la configuration, ne crée pas de sauvegarde et n’envoie pas de notification.
+
+## Vérifier le résultat \{#verify-the-result}
+
+Vérifiez ces valeurs dans chaque ligne sous **État actuel** :
+
+- **<Terminology title="interface dont l’adresse révèle le préfixe actuel" to="/docs/reference/terminology#monitored-interface">Interface surveillée</Terminology>** affiche l’interface prévue avec sa description et son nom interne, par exemple `LAN (lan)`.
+- **<Terminology title="adresse globale signalée par pfSense pour l’interface surveillée" to="/docs/reference/terminology#source-address">Dernière adresse source réussie</Terminology>** correspond à l’adresse indiquée sous **Status → Interfaces** pour cette interface.
+- **<Terminology title="préfixe auquel la prochaine vérification se compare" to="/docs/reference/terminology#last-successful-prefix">Dernier préfixe réussi</Terminology>** correspond au préfixe que votre FAI délègue.
+- **Dernière mise à jour réussie** affiche l’heure de cette exécution en UTC.
+
+La <Terminology title="résultats en lecture seule affichés après Exécuter maintenant ou Simulation" to="/docs/reference/terminology#command-output">sortie de commande</Terminology> doit afficher `État: Initialisé`, `Champs planifiés ou modifiés: 0` et `Sauvegarde de configuration: Non créée`. Par exemple, l’adresse de documentation `2001:db8:abcd:78aa::1` avec une longueur `/56` appartient à `2001:db8:abcd:7800::/56`.
+
+:::warning
+
+Si l’interface ou la longueur est incorrecte, il est recommandé de corriger les paramètres avant d’activer la planification. Une autre interface enregistre une nouvelle <Terminology title="préfixe de départ enregistré sans modifier la configuration" to="/docs/reference/terminology#baseline">référence</Terminology>, tandis qu’une autre longueur compte comme un <Terminology title="écart avec le dernier préfixe réussi ou sa longueur" to="/docs/reference/terminology#prefix-transition">changement de préfixe</Terminology>, comme l’explique [Interface et préfixe](/docs/configure/interface-and-prefix#changing-the-prefix-length).
+
+:::
+
+## Examiner les champs \{#review-the-fields}
+
+Ouvrez l’onglet **Champs**. Une fois la <Terminology title="préfixe de départ enregistré sans modifier la configuration" to="/docs/reference/terminology#baseline">référence</Terminology> enregistrée, il liste toutes les adresses comprises dans le préfixe et indique celles que le prochain changement mettrait à jour.
+
+1. Désactivez les <Terminology title="groupe de champs avec un seul interrupteur dans l’onglet Champs" to="/docs/reference/terminology#field-group">groupes de champs</Terminology> que le pare-feu n’utilise pas. Les onze groupes pfSense sont activés au départ.
+2. Décochez les champs isolés qui doivent garder leur valeur, et cochez tout champ d’un autre paquet qui doit suivre le préfixe.
+3. Cochez sous **Autres paramètres** tout champ qui doit suivre le préfixe, comme une passerelle ou une route statique.
+4. Cliquez sur **Enregistrer**, puis vérifiez que le message `Sélection des champs enregistrée.` s’affiche.
+
+[Champs](/docs/configure/configuration-scopes) explique chaque groupe et chaque commande.
+
+## Ce que montre une simulation à ce stade \{#what-a-dry-run-shows-now}
+
+Tant que le préfixe ne change pas, **<Terminology title="aperçu qui ne sauvegarde ni n’écrit jamais" to="/docs/reference/terminology#dry-run">Simulation</Terminology>** signale <Terminology title="résultat : préfixe inchangé, rien d’analysé ni d’écrit" to="/docs/reference/terminology#no-change">Aucun changement</Terminology> sans analyser la configuration, car le plan de modifications n’est établi qu’après un véritable <Terminology title="écart avec le dernier préfixe réussi ou sa longueur" to="/docs/reference/terminology#prefix-transition">changement de préfixe</Terminology>. L’onglet Champs montre les champs qu’un futur changement toucherait.
+
+Une <Terminology title="aperçu qui ne sauvegarde ni n’écrit jamais" to="/docs/reference/terminology#dry-run">simulation</Terminology> lancée avant qu’une <Terminology title="préfixe de départ enregistré sans modifier la configuration" to="/docs/reference/terminology#baseline">référence</Terminology> existe signale <Terminology title="résultat : simulation lancée avant toute référence" to="/docs/reference/terminology#initialization-preview">Aperçu de l’initialisation</Terminology> et n’enregistre rien.
+
+## Activer la planification \{#turn-on-the-schedule}
+
+Quand les valeurs correspondent, cochez **<Terminology title="vérifications automatiques via une entrée cron gérée par pfSense" to="/docs/reference/terminology#scheduled-updates">Activer les mises à jour planifiées</Terminology>**, choisissez une **Planification** et enregistrez. [Planification et notifications](/docs/configure/schedule-and-notifications) explique chaque option.
+
+Après la première échéance planifiée, **Horodatage (UTC)** sous **Dernière exécution** indique quand cette vérification a eu lieu.
+
+Continuez avec [Vérifier avant d’automatiser](/docs/safety/testing-and-verification) pour une liste de contrôle complète.

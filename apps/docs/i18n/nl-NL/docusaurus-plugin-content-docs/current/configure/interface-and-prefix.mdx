@@ -1,0 +1,95 @@
+---
+id: interface-and-prefix
+title: Interface en prefix
+description: Kies de bewaakte interfaces die je gedelegeerde prefixen dragen, voer voor elk de prefixlengte van je ISP in en zie wat een latere wijziging van een van beide doet.
+keywords:
+  - pfsense ipv6 prefix updater
+  - bewaakte interface
+  - lengte gedelegeerde prefix
+  - dhcpv6 prefix delegation
+  - hostbits
+tags:
+  - configuration
+  - interface
+  - prefix length
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import monitoredInterfaces from './_assets_/interface-and-prefix-1.png';
+
+Kies de interfaces die je huidige prefixen verraden en voer voor elk de <Terminology title="aantal voorloopbits van het netwerk, zoals /56" to="/docs/reference/terminology#prefix-length">prefixlengte</Terminology> in die je ISP delegeert.
+
+## De bewaakte interfaces kiezen \{#choose-the-monitored-interfaces}
+
+Voeg in **Bewaakte interfaces** een rij toe voor elke interface waarvan het <Terminology title="openbaar IPv6-adres binnen 2000::/3" to="/docs/reference/terminology#global-unicast-address">globale adres</Terminology> uit de <Terminology title="IPv6-netwerk dat je ISP naar de firewall routeert" to="/docs/reference/terminology#delegated-prefix">gedelegeerde prefix</Terminology> komt. Het pakket leest elk adres bij elke uitvoering opnieuw en valt nooit terug op een <Terminology title="fe80::-adres dat alleen op één link werkt" to="/docs/reference/terminology#link-local-address">link-local-adres</Terminology>.
+
+Krijgt WAN alleen een <Terminology title="IPv6-netwerk dat je ISP naar de firewall routeert" to="/docs/reference/terminology#delegated-prefix">gedelegeerde prefix</Terminology>, dan heeft meestal een <Terminology title="interface met een adres uit de gedelegeerde prefix van een andere" to="/docs/reference/terminology#tracked-interface">gevolgde interface</Terminology> zoals LAN daaruit een <Terminology title="openbaar IPv6-adres binnen 2000::/3" to="/docs/reference/terminology#global-unicast-address">globaal adres</Terminology>, en is die de juiste keuze.
+
+<img src={monitoredInterfaces} alt="Tabblad Instellingen van IPv6 Prefix Updater met twee rijen in Bewaakte interfaces, LAN en LAB, elk ingesteld op een gedelegeerde prefixlengte van /56, en een verwijzing naar het tabblad Velden" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+- **Toevoegen**: voegt een rij toe. Elke interface mag maar in één rij staan, en opslaan zonder rijen wordt geweigerd.
+- **Verwijderen**: verwijdert een rij. pfSense verbergt deze knop zolang er maar één rij over is.
+- **Eén uitvoering voor alle rijen**: elke geplande controle leest alle bewaakte interfaces en legt hun wijzigingen vast in één schrijfactie met back-up.
+
+De meeste firewalls hebben één rij nodig. Voeg er meer toe als meerdere interfaces een eigen gedelegeerde prefix krijgen, zoals bij twee WAN-verbindingen, of als je het adres van elk LAN-segment wilt laten controleren.
+
+Zo bevestig je de keuze:
+
+1. Sla de instellingen op met **<Terminology title="automatische controles via een door pfSense beheerde cronjob" to="/docs/reference/terminology#scheduled-updates">Geplande updates inschakelen</Terminology>** uitgevinkt.
+2. Selecteer op het tabblad Status **Nu uitvoeren**.
+3. Vergelijk **<Terminology title="globaal adres dat pfSense voor de bewaakte interface meldt" to="/docs/reference/terminology#source-address">Waargenomen bronadres</Terminology>** met het adres onder **Status → Interfaces**.
+4. Hoort het adres bij het verkeerde netwerk, selecteer dan een andere interface en herhaal de stappen.
+
+Het tabblad Status toont de beschrijving van elke interface, gevolgd door de interne pfSense-naam, zoals `LAN (lan)`.
+
+## De lengte van de gedelegeerde prefix invoeren \{#enter-the-delegated-prefix-length}
+
+Selecteer de lengte uit de servicegegevens van je ISP of uit de grootte van de DHCPv6-prefixdelegatie op de WAN-interface. **<Terminology title="instelling voor de prefixgrootte van de ISP, /48 tot /64" to="/docs/reference/terminology#delegated-prefix-length">Lengte gedelegeerde prefix</Terminology>** accepteert `/48` tot en met `/64`, begint op `/56` en wordt nooit automatisch gedetecteerd.
+
+:::tip
+
+Het is aan te raden om de lengte vóór de eerste keer **Nu uitvoeren** te bevestigen, omdat de <Terminology title="startprefix, vastgelegd zonder de configuratie te wijzigen" to="/docs/reference/terminology#baseline">baseline</Terminology> de lengte samen met de prefix opslaat.
+
+:::
+
+## Het berekende netwerk controleren \{#check-the-calculated-network}
+
+Na een uitvoering toont **<Terminology title="bronadres, gemaskeerd op de prefixlengte" to="/docs/reference/terminology#observed-prefix">Waargenomen prefix</Terminology>** het berekende netwerk. Lengtes die midden in een hexadecimaal cijfer eindigen, zoals `/57` of `/63`, werken op dezelfde manier, omdat het pakket adressen bit voor bit maskeert.
+
+Voor een `/56`-delegatie die verandert van `2001:db8:abcd:7800::/56` naar `2001:db8:abcd:8800::/56`:
+
+```text
+Source address:    2001:db8:abcd:88aa::1
+Current prefix:    2001:db8:abcd:8800::/56
+Previous address:  2001:db8:abcd:78aa::42
+Updated address:   2001:db8:abcd:88aa::42
+```
+
+Alleen de eerste 56 bits veranderen, en het <Terminology title="adresbits na de gedelegeerde prefix" to="/docs/reference/terminology#host-portion">hostgedeelte</Terminology> `aa::42` blijft gelijk. Adressen onder `2001:db8::/32` zijn in deze handleidingen documentatievoorbeelden.
+
+## De interfaces wijzigen \{#changing-the-interfaces}
+
+:::warning
+
+Voeg je een <Terminology title="interface waarvan het adres de huidige prefix verraadt" to="/docs/reference/terminology#monitored-interface">bewaakte interface</Terminology> toe, of zet je een rij om naar een andere interface, dan legt de volgende uitvoering daarvoor een nieuwe <Terminology title="startprefix, vastgelegd zonder de configuratie te wijzigen" to="/docs/reference/terminology#baseline">baseline</Terminology> vast zonder de configuratie te wijzigen. Was de prefix ervan veranderd en had het pakket die wijziging nog niet toegepast, dan wordt ze overgeslagen.
+
+:::
+
+Verwijder je een rij, dan blijft de <Terminology title="startprefix, vastgelegd zonder de configuratie te wijzigen" to="/docs/reference/terminology#baseline">baseline</Terminology> van die interface bewaard in de <Terminology title="pakketbestand met de baseline en de laatste uitvoering" to="/docs/reference/terminology#package-state">pakketstatus</Terminology>. Voeg je de interface later weer toe, dan vergelijkt de volgende uitvoering met die opgeslagen baseline in plaats van een nieuwe vast te leggen.
+
+## De prefixlengte wijzigen \{#changing-the-prefix-length}
+
+Een wijziging van **<Terminology title="instelling voor de prefixgrootte van de ISP, /48 tot /64" to="/docs/reference/terminology#delegated-prefix-length">Lengte gedelegeerde prefix</Terminology>** nadat de <Terminology title="startprefix, vastgelegd zonder de configuratie te wijzigen" to="/docs/reference/terminology#baseline">baseline</Terminology> bestaat, telt als <Terminology title="afwijking van de laatste geslaagde prefix of lengte" to="/docs/reference/terminology#prefix-transition">prefixwissel</Terminology>, ook als het netwerk zelf hetzelfde blijft. Het pakket vergelijkt adressen met de lengte die in de <Terminology title="startprefix, vastgelegd zonder de configuratie te wijzigen" to="/docs/reference/terminology#baseline">baseline</Terminology> is opgeslagen en vervangt bits met de nieuwe lengte.
+
+:::danger
+
+Versmal je de lengte, dan worden de subnetbits van elk overeenkomend adres overschreven. Met het <Terminology title="globaal adres dat pfSense voor de bewaakte interface meldt" to="/docs/reference/terminology#source-address">bronadres</Terminology> `2001:db8:1234:ab00::1` en een `/56`-<Terminology title="startprefix, vastgelegd zonder de configuratie te wijzigen" to="/docs/reference/terminology#baseline">baseline</Terminology> maakt een wijziging naar `/64` van `2001:db8:1234:abcc::42` het adres `2001:db8:1234:ab00::42`.
+
+:::
+
+Verbreed je de lengte, bijvoorbeeld van `/64` naar `/56`, dan heeft de uitvoering misschien niets te wijzigen. Elke uitvoering meldt dan <Terminology title="resultaat: prefix gewijzigd, maar geen goedgekeurd veld kwam overeen" to="/docs/reference/terminology#warning">Waarschuwing</Terminology> totdat de prefix zelf verandert of totdat je de opgeslagen adressen controleert en [de huidige prefix als nieuwe baseline accepteert](/docs/operate/backups-and-recovery#after-a-failed-run).
+
+Voordat je de lengte wijzigt, is het aan te raden om in dezelfde opslagactie **<Terminology title="automatische controles via een door pfSense beheerde cronjob" to="/docs/reference/terminology#scheduled-updates">Geplande updates inschakelen</Terminology>** uit te vinken. Een **<Terminology title="voorbeeld dat nooit een back-up maakt of schrijft" to="/docs/reference/terminology#dry-run">Testuitvoering</Terminology>** toont dan het aantal geplande velden, elke geplande wijziging onder `Veldwijzigingen` en de **Samenvatting** voordat je **Nu uitvoeren** selecteert.
+
+Leg nu [de baseline vast](/docs/first-run) en kies daarna de velden op het tabblad [Velden](/docs/configure/configuration-scopes).

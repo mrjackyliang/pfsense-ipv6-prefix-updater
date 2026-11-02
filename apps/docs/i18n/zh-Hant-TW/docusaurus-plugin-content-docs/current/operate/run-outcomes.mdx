@@ -1,0 +1,71 @@
+---
+id: run-outcomes
+title: 執行結果
+description: 了解「狀態」分頁上每種結果的意義，包括已初始化、已接受、無變更、警告、成功與失敗，以及哪些結果需要您處理。
+keywords:
+  - pfsense ipv6 prefix updater
+  - 執行結果
+  - 警告
+  - 失敗
+  - 狀態分頁
+tags:
+  - operations
+  - outcomes
+  - status
+sidebar_position: 2
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+依據每次執行的結果，判斷它是正常結束還是需要您處理。
+
+## 結果參考 \{#outcome-reference}
+
+| 結果                                                                                                            | 意義                                                                                                                                                                                                                           | 設定                  | <Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology> |
+|---------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------|-----------------------------------------------------------------------------------------------|
+| <Terminology title="結果：已記錄基準，設定未變更" to="/docs/reference/terminology#initialized">已初始化</Terminology>           | 該介面先前沒有<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>                                                                                                                         | 未變更                 | 已記錄                                                                                           |
+| <Terminology title="結果：尚無基準時的試執行" to="/docs/reference/terminology#initialization-preview">初始化預覽</Terminology> | <Terminology title="不備份也不寫入的預覽" to="/docs/reference/terminology#dry-run">試執行</Terminology>發現沒有<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>，並顯示它將記錄的基準                       | 未變更                 | 未記錄                                                                                           |
+| <Terminology title="結果：前綴未變更，未掃描或寫入任何內容" to="/docs/reference/terminology#no-change">無變更</Terminology>         | <Terminology title="依前綴長度遮罩後的來源位址" to="/docs/reference/terminology#observed-prefix">觀察到的前綴</Terminology>及其長度與<Terminology title="下次檢查用來比較的前綴" to="/docs/reference/terminology#last-successful-prefix">上次成功前綴</Terminology>相同 | 未掃描                 | 不變                                                                                            |
+| <Terminology title="不備份也不寫入的預覽" to="/docs/reference/terminology#dry-run">試執行</Terminology>                    | <Terminology title="不備份也不寫入的預覽" to="/docs/reference/terminology#dry-run">試執行</Terminology>發現了<Terminology title="與上次成功前綴或長度不同" to="/docs/reference/terminology#prefix-transition">前綴變更</Terminology>，並規劃了至少一項欄位變更            | 未變更                 | 不變                                                                                            |
+| <Terminology title="結果：前綴已變更，但沒有符合的已核准欄位" to="/docs/reference/terminology#warning">警告</Terminology>           | 發現了<Terminology title="與上次成功前綴或長度不同" to="/docs/reference/terminology#prefix-transition">前綴變更</Terminology>，但沒有<Terminology title="套件可改寫的確切設定欄位" to="/docs/reference/terminology#approved-field">已核准欄位</Terminology>屬於舊前綴     | 未變更                 | 不變                                                                                            |
+| 已接受                                                                                                           | 管理人員確認已儲存的位址已在使用目前作用中的前綴，並選取了 **接受目前前綴**                                                                                                                                                                                     | 未掃描也未變更已核准欄位        | 移到目前作用中的前綴                                                                                    |
+| <Terminology title="結果：欄位已更新、儲存、重新載入並驗證" to="/docs/reference/terminology#success">成功</Terminology>            | 備份、單次寫入、<Terminology title="套用已變更設定的 pfSense 動作" to="/docs/reference/terminology#service-reload">服務重新載入</Terminology>與值檢查均已完成                                                                                                | 寫入一次                | 移到新前綴                                                                                         |
+| <Terminology title="結果：檢查或安全階段中止了執行" to="/docs/reference/terminology#failure">失敗</Terminology>                | 檢查或安全階段中止了執行                                                                                                                                                                                                                 | 未變更；若執行在儲存後才停止，則已儲存 | 不變                                                                                            |
+
+第九種結果<Terminology title="結果：更新關閉時略過的排程檢查" to="/docs/reference/terminology#disabled">已停用</Terminology>只會在<Terminology title="由 pfSense 管理的 cron 項目執行的自動檢查" to="/docs/reference/terminology#scheduled-updates">排程更新</Terminology>關閉、且從 shell 不帶選項執行套件命令時出現。它不會被記錄，因此「狀態」分頁從不顯示它。
+
+## 「目前狀態」與「上次執行」的差異 \{#current-state-versus-last-run}
+
+**目前狀態** 只會在<Terminology title="結果：已記錄基準，設定未變更" to="/docs/reference/terminology#initialized">已初始化</Terminology>、**已接受** 與<Terminology title="結果：欄位已更新、儲存、重新載入並驗證" to="/docs/reference/terminology#success">成功</Terminology>時改變。失敗的嘗試永遠不會成為下一次比較的依據，除非管理人員事後核對已儲存的值並明確接受目前作用中的前綴；**上次執行** 則會記錄表中任何結果的最近一次執行。
+
+當另一個檢查持有<Terminology title="防止兩個檢查同時執行的保護機制" to="/docs/reference/terminology#run-lock">執行鎖定</Terminology>，或執行在讀取<Terminology title="保存基準與上次執行的套件檔案" to="/docs/reference/terminology#package-state">套件狀態</Terminology>之前就已停止（例如沒有任何監控介面具有<Terminology title="位於 2000::/3 內的公用 IPv6 位址" to="/docs/reference/terminology#global-unicast-address">全域位址</Terminology>）時，**上次執行** 維持不變。這些執行會將原因留在<Terminology title="立即執行或試執行後顯示的唯讀結果" to="/docs/reference/terminology#command-output">命令輸出</Terminology>與<Terminology title="套件寫入的 pfSense 一般記錄" to="/docs/reference/terminology#system-log">系統記錄</Terminology>中。
+
+## 警告：沒有相符的欄位 \{#warning-no-matching-fields}
+
+<Terminology title="結果：前綴已變更，但沒有符合的已核准欄位" to="/docs/reference/terminology#warning">警告</Terminology>表示前綴已變更，但沒有任何<Terminology title="套件可改寫的確切設定欄位" to="/docs/reference/terminology#approved-field">已核准欄位</Terminology>屬於舊前綴。不會寫入任何內容，<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>也停留在舊前綴，因此下一次執行會再次檢查同一個<Terminology title="與上次成功前綴或長度不同" to="/docs/reference/terminology#prefix-transition">前綴變更</Terminology>。
+
+每次<Terminology title="結果：前綴已變更，但沒有符合的已核准欄位" to="/docs/reference/terminology#warning">警告</Terminology>都會新增一則 <Terminology title="顯示在 pfSense 通知清單中的警示" to="/docs/reference/terminology#webgui-notice">WebGUI 通知</Terminology>，<Terminology title="不備份也不寫入的預覽" to="/docs/reference/terminology#dry-run">試執行</Terminology>產生的警告也不例外。如果原因沒有排除，每次排程執行都會再新增一則通知。
+
+常見原因：
+
+- 包含這些位址的<Terminology title="「欄位」分頁上共用一個開關的一組欄位" to="/docs/reference/terminology#field-group">欄位群組</Terminology>已關閉，或這些欄位未勾選。
+- 這些位址已在套件之外被變更。
+- 這些位址位於[其他設定](/docs/configure/configuration-scopes#other-settings)群組中，此群組在您勾選這些位址之前會保持關閉。
+- 先前的一次<Terminology title="結果：檢查或安全階段中止了執行" to="/docs/reference/terminology#failure">失敗</Terminology>已儲存新值，但保留了舊的<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>。
+- <Terminology title="ISP 前綴大小設定，/48 至 /64" to="/docs/reference/terminology#delegated-prefix-length">委派前綴長度</Terminology>被[改得較短](/docs/configure/interface-and-prefix#changing-the-prefix-length)（網路範圍變寬），但前綴本身並未變更。
+
+[疑難排解](/docs/operate/troubleshooting#warning-on-every-run)逐一說明了這些原因。
+
+如果這些位址已經正確變更，請在核對已儲存的位址與受影響的服務後，使用 **狀態 → 動作 → 基準復原 → 接受目前前綴**。這會記錄一個 **已接受** 結果，既不掃描已核准欄位，也不變更防火牆設定；如果已核准欄位中仍包含舊前綴，請不要使用它。
+
+## 儲存後的失敗 \{#failures-after-the-save}
+
+如果在儲存之後的值檢查或<Terminology title="套用已變更設定的 pfSense 動作" to="/docs/reference/terminology#service-reload">服務重新載入</Terminology>中發生<Terminology title="結果：檢查或安全階段中止了執行" to="/docs/reference/terminology#failure">失敗</Terminology>，新值仍會保持已儲存狀態。系統不會自動回復任何變更，<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>也停留在舊前綴。
+
+這類執行的 **<Terminology title="寫入前儲存的設定副本" to="/docs/reference/terminology#configuration-backup">已建立設定備份</Terminology>** 顯示「是」。[備份與復原](/docs/operate/backups-and-recovery#after-a-failed-run)說明了如何還原後重試，或透過 **接受目前前綴** 保留已核對的已儲存值。
+
+## 通知失敗 \{#notification-failures}
+
+如果<Terminology title="更新驗證成功後傳送的警示" to="/docs/reference/terminology#change-notification">變更通知</Terminology>無法傳送，結果仍為<Terminology title="結果：欄位已更新、儲存、重新載入並驗證" to="/docs/reference/terminology#success">成功</Terminology>，<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>也照樣移到新前綴。「狀態」分頁不會顯示傳送狀態，<Terminology title="套件寫入的 pfSense 一般記錄" to="/docs/reference/terminology#system-log">系統記錄</Terminology>則會記錄 `設定已成功更新，但變更通知失敗。`
+
+每種結果對應的欄位請參閱[狀態與動作](/docs/operate/status-and-actions)，各階段的順序請參閱[更新運作方式](/docs/safety/how-updates-work)。

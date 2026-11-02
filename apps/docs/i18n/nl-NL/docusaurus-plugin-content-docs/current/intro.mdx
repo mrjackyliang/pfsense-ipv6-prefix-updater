@@ -1,0 +1,90 @@
+---
+id: intro
+title: Overzicht
+description: Houd pfSense-aliassen, interfaces en VPN-adressen op je huidige IPv6-prefix wanneer je ISP een nieuwe delegeert, met een back-up vóór elke wijziging.
+keywords:
+  - pfsense ipv6 prefix updater
+  - overzicht
+  - ipv6-prefixdelegatie
+  - dynamische prefix
+  - pfsense-pakket
+tags:
+  - setup
+  - overview
+  - ipv6
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Houd de IPv6-adressen die in pfSense zijn opgeslagen op je huidige prefix wanneer je ISP een nieuwe <Terminology title="IPv6-netwerk dat je ISP naar de firewall routeert" to="/docs/reference/terminology#delegated-prefix">gedelegeerde prefix</Terminology> toewijst.
+
+## Wat het pakket doet \{#what-it-does}
+
+pfSense IPv6 Prefix Updater is een pfSense-pakket dat de interfaces die je kiest in de gaten houdt om een nieuwe prefix op te merken. Verandert de prefix, dan herschrijft het de bijbehorende adressen in de velden die je selecteert en behoudt het van elk adres het <Terminology title="adresbits na de gedelegeerde prefix" to="/docs/reference/terminology#host-portion">hostgedeelte</Terminology>.
+
+## Waarom dit pakket? \{#why-use-this-package}
+
+1. Behoudt het <Terminology title="adresbits na de gedelegeerde prefix" to="/docs/reference/terminology#host-portion">hostgedeelte</Terminology> van elk adres, zodat elk apparaat na een prefixwijziging hetzelfde achtervoegsel houdt.
+2. Wijzigt alleen de <Terminology title="exact configuratieveld dat het pakket mag herschrijven" to="/docs/reference/terminology#approved-field">goedgekeurde velden</Terminology> die je op het tabblad Velden selecteert, zodat externe VPN-netwerken, peers, gateways en routes blijven zoals je ze hebt ingesteld.
+3. Slaat vóór elke schrijfactie een <Terminology title="kopie van de configuratie van vóór een schrijfactie" to="/docs/reference/terminology#configuration-backup">configuratieback-up</Terminology> op, zodat de vorige configuratie klaarstaat in <Terminology title="pfSense-lijst met opgeslagen configuratierevisies" to="/docs/reference/terminology#config-history">Config History</Terminology>.
+4. Draait volgens een schema dat pfSense beheert, zodat je geen Cron-pakket of script in een thuismap nodig hebt.
+5. Toont elk resultaat op het tabblad Status, zodat je ziet wat er is gewijzigd, welke services opnieuw zijn geladen en of er een back-up is gemaakt.
+
+## Wat het bijwerkt \{#what-it-updates}
+
+- **Aliassen**: adressen en netwerken in Host- en Network-aliassen.
+- **Statische interfaces**: adressen van interfaces die op Static IPv6 staan.
+- **<Terminology title="extra interfaceadres, zoals CARP of IP Alias" to="/docs/reference/terminology#virtual-ip">Virtuele IP-adressen</Terminology>**: <Terminology title="extra interfaceadres, zoals CARP of IP Alias" to="/docs/reference/terminology#virtual-ip">virtuele IP's</Terminology> van het type CARP en IP Alias.
+- **IPsec**: de lokale kant van <Terminology title="IPsec-item dat lokale en externe netwerken beschrijft" to="/docs/reference/terminology#ipsec-phase-2">fase-2</Terminology>-items in de modi Tunnel IPv6 en Routed (VTI).
+- **OpenVPN**: IPv6-tunnel- en lokale netwerken op servers en in <Terminology title="OpenVPN-instellingen voor één client op een server" to="/docs/reference/terminology#client-specific-override">clientspecifieke overschrijvingen</Terminology>, en IPv6-tunnelnetwerken op clients.
+- **WireGuard**: <Terminology title="adres van een WireGuard-tunnel in pfSense" to="/docs/reference/terminology#wireguard-tunnel-address">tunneladressen</Terminology>, als het WireGuard-pakket is geïnstalleerd.
+- **DHCPv6-server**: adresbereiken, bereiken voor prefixdelegatie en poolbereiken, statische toewijzingen en de DNS- en NTP-servers die aan clients worden uitgedeeld.
+- **Router Advertisements**: geadverteerde DNS-servers en RA-subnetten.
+- **DNS-hostoverschrijvingen**: hostoverschrijvingen in de DNS Resolver en DNS Forwarder.
+- **Firewallregels**: bron- en doeladressen die in regels zijn ingetypt.
+- **NAT en NPt**: ingetypte adressen in port forwards, uitgaande NAT en 1:1-NAT, en NPt-prefixen.
+- **Instellingen van andere pakketten**: alleen de velden die je aanvinkt, waarna het pakket de instellingen van dat pakket opnieuw toepast.
+
+Het tabblad **Velden** toont elk adres binnen je prefix, met een schakelaar voor elke <Terminology title="groep velden met één schakelaar op het tabblad Velden" to="/docs/reference/terminology#field-group">veldgroep</Terminology> en een vakje voor elk veld.
+
+## Wat op je wacht \{#what-waits-for-you}
+
+De groep **Overige instellingen** staat standaard uit, dus deze waarden veranderen alleen als je ze aanvinkt:
+
+- De externe kant van een VPN, zoals externe netwerken van IPsec en OpenVPN en WireGuard-peers, toegestane IP's en eindpunten.
+- Gateways, statische routes, DNS-domeinoverschrijvingen, certificaten, geheimen, Base64-gecodeerde waarden en beschrijvingen.
+- Port-, URL- en andere aliastypen.
+
+Interfaces die hun adres krijgen via DHCPv6, SLAAC of <Terminology title="interface met een adres uit de gedelegeerde prefix van een andere" to="/docs/reference/terminology#tracked-interface">Track Interface</Terminology> worden nooit gewijzigd, omdat pfSense die adressen genereert. Hetzelfde geldt voor IPv4-adressen, hostnamen en IPv6-adressen buiten de oude prefix. [Overige instellingen](/docs/configure/configuration-scopes#other-settings) bevat de volledige lijst.
+
+## Zo werkt een controle \{#how-a-check-works}
+
+1. Leest het <Terminology title="openbaar IPv6-adres binnen 2000::/3" to="/docs/reference/terminology#global-unicast-address">globale adres</Terminology> van elke <Terminology title="interface waarvan het adres de huidige prefix verraadt" to="/docs/reference/terminology#monitored-interface">bewaakte interface</Terminology> en berekent de prefix ervan.
+2. Vergelijkt die met de <Terminology title="prefix waarmee de volgende controle vergelijkt" to="/docs/reference/terminology#last-successful-prefix">laatste geslaagde prefix</Terminology> en stopt met <Terminology title="resultaat: prefix ongewijzigd, niets gescand of geschreven" to="/docs/reference/terminology#no-change">Geen wijziging</Terminology> als ze overeenkomen.
+3. Stelt bij een <Terminology title="afwijking van de laatste geslaagde prefix of lengte" to="/docs/reference/terminology#prefix-transition">prefixwissel</Terminology> een <Terminology title="volledige lijst met veldwijzigingen, opgesteld vóór het schrijven" to="/docs/reference/terminology#change-plan">wijzigingsplan</Terminology> op voor de <Terminology title="exact configuratieveld dat het pakket mag herschrijven" to="/docs/reference/terminology#approved-field">goedgekeurde velden</Terminology> die nog de oude prefix gebruiken.
+4. Slaat een <Terminology title="kopie van de configuratie van vóór een schrijfactie" to="/docs/reference/terminology#configuration-backup">configuratieback-up</Terminology> op, schrijft alle wijzigingen in één keer weg, herlaadt alleen de betrokken services en controleert de waarden opnieuw.
+5. Legt het resultaat vast op het tabblad Status en verstuurt een <Terminology title="melding na een geverifieerde, geslaagde update" to="/docs/reference/terminology#change-notification">wijzigingsmelding</Terminology> als die aan staat.
+
+[Veiligheidsmodel](/docs/operations) beschrijft de beveiligingen bij elke stap.
+
+## Voordat je begint \{#before-you-start}
+
+:::warning
+
+pfSense IPv6 Prefix Updater is een <Terminology title="pakket van GitHub, niet uit de repository van Netgate" to="/docs/reference/terminology#unofficial-package">onofficieel pakket</Terminology>. Je installeert het met `pkg` vanaf GitHub, en Netgate beoordeelt of ondersteunt het niet.
+
+:::
+
+Pakketreleases verschijnen op de GitHub Releases-pagina van het project. Releases van versie 1.x bevatten alleen de <Terminology title="oorspronkelijk update.php-script, uitgevoerd via het Cron-pakket" to="/docs/reference/terminology#legacy-updater">legacy-updater</Terminology>, niet dit pakket.
+
+## Talen \{#languages}
+
+Alle tabbladen van het pakket, de <Terminology title="alleen-lezen resultaten na Nu uitvoeren of Testuitvoering" to="/docs/reference/terminology#command-output">Opdrachtuitvoer</Terminology> en de meldingen van het pakket volgen de taal die in pfSense is gekozen. Het pakket bevat vertalingen voor 18 taalopties van pfSense en valt bij elke andere taal terug op Engels.
+
+## Volgende stappen \{#next-steps}
+
+- **[Het pakket installeren](/docs/installation)**: voeg het pakket toe vanuit een GitHub-release.
+- **[De baseline vastleggen](/docs/first-run)**: leg de huidige prefix vast en controleer hem voordat je het schema inschakelt.
+- **[Migreren vanaf het script](/docs/migrate-from-legacy)**: stap over van het script van versie 1.x.
+- **[Veiligheidsmodel](/docs/operations)**: bekijk wat het pakket beschermt en wat het toch kan beïnvloeden.

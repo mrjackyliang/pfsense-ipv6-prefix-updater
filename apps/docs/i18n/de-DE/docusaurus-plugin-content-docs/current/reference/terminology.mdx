@@ -1,0 +1,203 @@
+---
+id: terminology
+title: Terminologie
+description: Schlagen Sie die Begriffe zu Adressen, Präfixen, Einstellungen, Laufergebnissen und pfSense nach, die die Registerkarten Einstellungen, Status und Felder und diese Dokumentation verwenden.
+keywords:
+  - pfsense ipv6 prefix updater
+  - terminologie
+  - glossar
+  - delegiertes präfix
+  - basislinie
+  - laufergebnisse
+tags:
+  - reference
+  - terminology
+  - glossary
+sidebar_position: 1
+---
+
+Schlagen Sie die Begriffe nach, die die Registerkarten Einstellungen, Status und Felder und diese Anleitungen für Adressen, Präfixe, Läufe und pfSense-Funktionen verwenden.
+
+## Delegiertes Präfix \{#delegated-prefix}
+
+Das IPv6-Netz, das Ihr Internetanbieter zur Firewall routet, meist über DHCPv6 Prefix Delegation. Das Paket folgt diesem Präfix, fordert es aber nie an, erneuert es nie und ändert es nie.
+
+## Präfixlänge \{#prefix-length}
+
+Die Anzahl der führenden Bits, die ein Netz kennzeichnen, geschrieben als Schrägstrich mit Zahl, etwa `/56`. Ein CIDR-Suffix an einem konfigurierten Wert, etwa `/64`, bleibt wie geschrieben, wenn das Paket die Adresse umschreibt.
+
+## Länge des delegierten Präfixes \{#delegated-prefix-length}
+
+Die Einstellung **Länge des delegierten Präfixes**, die die Größe des Präfixes enthält, das Ihr Internetanbieter delegiert, von `/48` bis `/64`. Sie steht anfangs auf `/56`, das Paket erkennt sie nie selbst, und eine Änderung nach dem Anlegen der Basislinie zählt als Präfixwechsel.
+
+## Globale Unicast-Adresse \{#global-unicast-address}
+
+Eine IPv6-Adresse innerhalb von `2000::/3`, die einzige Adressart, die das Paket als Quelle liest oder umschreibt. Link-Local-, Unique-Local- (`fc00::/7`), Multicast-, Loopback-, unspezifizierte und IPv4-gemappte Adressen werden als Quelle abgelehnt und in der Konfiguration nicht verändert.
+
+## Link-Local-Adresse \{#link-local-address}
+
+Eine Adresse, die nur auf einem einzigen Netzwerklink funktioniert und mit `fe80` beginnt. Das Paket greift nie auf eine solche Adresse zurück, daher schlägt der Lauf fehl, wenn eine Schnittstelle keine globale Adresse hat.
+
+## Hostanteil \{#host-portion}
+
+Alle Adressbits nach der Länge des delegierten Präfixes, auch Hostbits genannt. Das Paket kopiert diese Bits unverändert in die neue Adresse, selbst wenn die Grenze innerhalb einer Hexadezimalziffer liegt.
+
+## Kanonische Form \{#canonical-form}
+
+Die standardisierte, kleingeschriebene und kürzeste Schreibweise einer IPv6-Adresse, etwa `2001:db8::1` für `2001:0DB8:0:0::1`. Das Paket vergleicht Adressen in dieser Form und schreibt umgeschriebene Werte so, daher kann ein Wert anders aussehen und trotzdem dieselbe Adresse bedeuten.
+
+## Track-Schnittstelle \{#tracked-interface}
+
+Eine pfSense-Schnittstelle, deren IPv6-Adresse über den Konfigurationstyp **Track Interface** aus dem delegierten Präfix einer anderen Schnittstelle stammt. Sie ist oft die richtige überwachte Schnittstelle, wenn WAN keine globale Adresse hat, und das Paket schreibt ihre Adresse nie um, weil pfSense sie erzeugt.
+
+## Überwachte Schnittstelle \{#monitored-interface}
+
+Eine Zeile der Einstellung **Überwachte Schnittstellen**, die eine Schnittstelle benennt, deren globale Adresse ein aktuelles Präfix verrät. Die Registerkarte Status zeigt die Beschreibung der Schnittstelle, gefolgt vom internen pfSense-Namen, etwa `LAN (lan)`.
+
+Wenn Sie eine Schnittstelle hinzufügen, zeichnet der nächste Lauf für sie eine neue Basislinie auf, statt Präfixe zu vergleichen.
+
+## Quelladresse \{#source-address}
+
+Die primäre globale Adresse, die pfSense für die überwachte Schnittstelle meldet und die bei jedem Lauf neu gelesen wird. Die Registerkarte Status zeigt sie in kanonischer Form als **Beobachtete Quelladresse** und **Letzte erfolgreiche Quelladresse**.
+
+## Beobachtetes Präfix \{#observed-prefix}
+
+Das Netz, das aus der Quelladresse und der Länge des delegierten Präfixes berechnet und auf der Registerkarte Status mit seiner Länge angezeigt wird. Jeder Lauf vergleicht es mit dem letzten erfolgreichen Präfix.
+
+## Basislinie \{#baseline}
+
+Das Präfix und die Quelladresse, die das Paket als Ausgangspunkt aufzeichnet, ohne die Konfiguration zu ändern. Eine Basislinie wird beim ersten Lauf für jede überwachte Schnittstelle aufgezeichnet, immer wenn der Paketzustand fehlt, wenn ein Administrator das aktive Präfix ausdrücklich übernimmt und bei einer Migration aus dem gespeicherten Präfix des Legacy-Updaters.
+
+## Letztes erfolgreiches Präfix \{#last-successful-prefix}
+
+Das gespeicherte Präfix samt Länge, mit dem die nächste Prüfung vergleicht. Nur die Ergebnisse Initialisiert, Übernommen und Erfolg ändern es, jedes andere Ergebnis lässt es unverändert.
+
+## Präfixwechsel \{#prefix-transition}
+
+Ein Unterschied zwischen dem letzten erfolgreichen Präfix und dem beobachteten Präfix, auch wenn nur dasselbe Netz eine andere Präfixlänge hat. Nur ein Präfixwechsel veranlasst das Paket, die Konfiguration zu durchsuchen, Änderungen zu planen und zu schreiben.
+
+## Feldgruppe \{#field-group}
+
+Eine Gruppe von Feldern mit einem Schalter auf der Registerkarte Felder. Die elf pfSense-Gruppen sind Statische Schnittstellen, Virtuelle IP-Adressen, Aliase, Firewallregeln, NAT und NPt, DHCPv6-Server, Router Advertisements, DNS-Hostüberschreibungen, IPsec, OpenVPN und WireGuard, und sie sind anfangs eingeschaltet. Die Einstellungen jedes anderen Pakets erhalten eine eigene Gruppe, die anfangs ausgeschaltet ist, und jeder weitere Wert gehört zur Gruppe Weitere Einstellungen, die ebenfalls anfangs ausgeschaltet ist. Eine eingeschaltete Gruppe umfasst jedes Feld ihrer Art, auch später hinzugefügte Felder.
+
+## Genehmigtes Feld \{#approved-field}
+
+Ein exaktes Konfigurationsfeld, das das Paket umschreiben darf: ein Feld in einer eingeschalteten Gruppe, bei dem das Häkchen nicht entfernt wurde, oder ein angekreuztes Feld in einer ausgeschalteten Gruppe. Werte außerhalb genehmigter Felder werden nie geändert.
+
+## Feldausnahme \{#field-exception}
+
+Ein einzelnes Feld, dessen Häkchen auf der Registerkarte Felder von seinem Gruppenschalter abweicht: ein nicht angekreuztes Feld in einer eingeschalteten Gruppe oder ein angekreuztes Feld in einer ausgeschalteten Gruppe. Jede Ausnahme benennt ihren Eintrag statt einer Listenposition, etwa über die Tracker-ID einer Firewallregel.
+
+## Änderungsplan \{#change-plan}
+
+Die vollständige Liste der genehmigten Felder, die sich ändern werden, jeweils mit altem Wert, neuem Wert und neu zu ladendem Dienst. Das Paket erstellt den gesamten Plan, bevor es irgendetwas ändert.
+
+## Geplante Aktualisierungen \{#scheduled-updates}
+
+Automatische Prüfungen, gesteuert über **Geplante Aktualisierungen aktivieren**, standardmäßig deaktiviert, und **Zeitplan**, standardmäßig Stündlich. Beim Speichern der Einstellungen wird ein von pfSense verwalteter Cron-Eintrag hinzugefügt oder entfernt, daher ist das Cron-Paket nicht nötig.
+
+## Manueller Lauf \{#manual-run}
+
+Eine Prüfung, die mit **Jetzt ausführen** oder **Testlauf** auf der Registerkarte Status gestartet wird. Sie läuft auch, wenn geplante Aktualisierungen ausgeschaltet sind.
+
+## Testlauf \{#dry-run}
+
+Eine mit **Testlauf** gestartete Vorschau, die nie eine Sicherung erstellt oder die Konfiguration schreibt. Findet sie einen Präfixwechsel mit zu ändernden Feldern, lautet ihr Ergebnis **Testlauf**, und sie nennt die Anzahl der geplanten Felder.
+
+Bei unverändertem Präfix meldet ein Testlauf Keine Änderung, ohne die Konfiguration zu durchsuchen.
+
+## Befehlsausgabe \{#command-output}
+
+Das schreibgeschützte Feld **Neuester Lauf** unter **Befehlsausgabe**, das nach Jetzt ausführen, Testlauf oder Aktuelles Präfix übernehmen erscheint. Es zeigt die Zeilen des Laufs von `Status` bis `Zusammenfassung`, nach einem Testlauf oder einem Erfolg gefolgt von `Feldänderungen`, oder eine einzelne Zeile, wenn die Aktion fehlschlägt oder ein anderer Lauf die Sperre hält.
+
+## Laufsperre \{#run-lock}
+
+Die Sperre, die immer nur eine Prüfung gleichzeitig laufen lässt. Eine zweite Prüfung wird beendet, ohne die Konfiguration zu lesen, und die Sperre wird freigegeben, sobald die laufende Prüfung endet.
+
+## Paketzustand \{#package-state}
+
+Die Datei `/cf/conf/ipv6-prefix-updater/state.json`, in der das Paket jede Basislinie und seinen letzten Lauf außerhalb der pfSense-Konfiguration speichert. Nur root kann sie lesen, und sie übersteht Neustarts, RAM-Disks und die Entfernung des Pakets, sodass eine Neuinstallation jede Basislinie behält.
+
+## Initialisiert \{#initialized}
+
+Das Ergebnis eines Laufs, der eine neue Basislinie aufzeichnet. Er erstellt keine Sicherung, ändert die Konfiguration nicht und sendet keine Benachrichtigung.
+
+## Initialisierungsvorschau \{#initialization-preview}
+
+Das Ergebnis eines Testlaufs, solange noch keine Basislinie existiert. Es zeigt die Basislinie, die ein normaler Lauf aufzeichnen würde, ohne sie aufzuzeichnen.
+
+## Keine Änderung \{#no-change}
+
+Das Ergebnis, wenn das beobachtete Präfix und seine Länge mit dem letzten erfolgreichen Präfix übereinstimmen, auch No-op-Lauf genannt. Der Lauf durchsucht die Konfiguration nicht, erstellt keine Sicherung, lädt keine Dienste neu und sendet keine Benachrichtigung.
+
+## Warnung \{#warning}
+
+Das Ergebnis, wenn ein Präfixwechsel gefunden wird, aber kein genehmigtes Feld zum alten Präfix gehört. Nichts wird geschrieben, die Basislinie bleibt, wo sie war, und jede Warnung fügt einen WebGUI-Hinweis hinzu.
+
+## Übernommen \{#accepted}
+
+Das Ergebnis, nachdem ein Administrator **Aktuelles Präfix übernehmen** gewählt und bestätigt hat, dass die gespeicherten Adressen bereits das aktive Präfix verwenden. Das Paket verschiebt die Basislinie, ohne genehmigte Felder zu durchsuchen, eine Sicherung zu erstellen, die Konfiguration zu schreiben oder Dienste neu zu laden.
+
+## Erfolg \{#success}
+
+Das Ergebnis, nachdem die Sicherung, der einzelne Schreibvorgang, das Neuladen der Dienste und die Wertprüfungen abgeschlossen sind. Die Basislinie wird auf das neue Präfix verschoben, und eine Änderungsbenachrichtigung wird gesendet, sofern sie eingeschaltet ist.
+
+## Fehler \{#failure}
+
+Das Ergebnis, wenn eine Prüf- oder Sicherheitsstufe den Lauf stoppt. Erfolgt der Stopp erst nach dem Speichern der Konfiguration, bleiben die neuen Werte gespeichert und die Basislinie bleibt auf dem alten Präfix.
+
+## Deaktiviert \{#disabled}
+
+Das Ergebnis einer geplanten Prüfung, die läuft, während **Geplante Aktualisierungen aktivieren** ausgeschaltet ist. Sie stoppt, bevor sie irgendeine Schnittstelle oder den Paketzustand liest, und erscheint nur in der eigenen Ausgabe des Befehls.
+
+## Änderungsbenachrichtigung \{#change-notification}
+
+Die Nachricht, die nach einem Erfolg gesendet wird, wenn **Änderungsbenachrichtigungen senden** aktiviert ist, was standardmäßig der Fall ist. Sie geht an die in pfSense konfigurierten Benachrichtigungskanäle und erscheint außerdem als WebGUI-Hinweis.
+
+## Benachrichtigungskanäle \{#notification-channels}
+
+Die externen Benachrichtigungsdienste, die unter **System → Advanced → Notifications** eingerichtet sind, etwa E-Mail. Änderungsbenachrichtigungen verwenden diese Kanäle, während Hinweise zu Warnung und Fehler lokal bleiben.
+
+## WebGUI-Hinweis \{#webgui-notice}
+
+Ein Eintrag in der Hinweisliste der pfSense-WebGUI, der auf die Registerkarte Status des Pakets verlinkt, nach der Umstellung vom Legacy-Updater auf die Registerkarte Bereinigung. Die Ergebnisse Warnung und Fehler fügen immer einen hinzu, selbst wenn **Änderungsbenachrichtigungen senden** deaktiviert ist.
+
+## Systemprotokoll \{#system-log}
+
+Das allgemeine Protokoll von pfSense unter **Status → System Logs → System → General**. Jede Zeile, die das Paket schreibt, beginnt mit `IPv6 Prefix Updater:`.
+
+## Konfigurationssicherung \{#configuration-backup}
+
+Eine Kopie der Konfiguration, wie sie vor einem Schreibvorgang war, erstellt mit der Sicherungsfunktion von pfSense und zusätzlich auf der Registerkarte **Sicherungen** aufbewahrt. Das Paket erstellt bei jedem schreibenden Lauf eine, bevor sich ein Feld ändert, und bei Läufen ohne Schreibvorgang keine.
+
+## Config History \{#config-history}
+
+Die Liste der gespeicherten Konfigurationsrevisionen unter **Diagnostics → Backup & Restore → Config History**. Die Revision mit der Beschreibung `Die IPv6-Präfixaktualisierung änderte ...` enthält die aktualisierte Konfiguration, daher ist die davor gespeicherte Revision diejenige, die Sie wiederherstellen.
+
+## Neuladen von Diensten \{#service-reload}
+
+Die pfSense-Aktion, die geänderte Einstellungen auf einen laufenden Dienst anwendet. Das Paket lädt nur die Dienste neu, deren Felder sich geändert haben, und listet sie unter **Neu geladene Dienste** auf.
+
+## Virtuelle IP \{#virtual-ip}
+
+Eine zusätzliche Adresse, die einer Schnittstelle unter **Firewall → Virtual IPs** zugewiesen ist. Die Gruppe Virtuelle IP-Adressen aktualisiert nur Einträge vom Typ CARP und IP Alias.
+
+## IPsec Phase 2 \{#ipsec-phase-2}
+
+Ein IPsec-Eintrag, der die lokalen und entfernten Netze eines Tunnels festlegt. Die Gruppe IPsec umfasst die lokale Seite von Einträgen der Modi Tunnel IPv6 und Routed (VTI), und die entfernte Seite gehört zur Gruppe Weitere Einstellungen.
+
+## Clientspezifische Überschreibung \{#client-specific-override}
+
+Ein OpenVPN-Eintrag unter **VPN → OpenVPN → Client Specific Overrides**, der Optionen für einen einzelnen Client festlegt. Das Paket kann sein IPv6-Tunnelnetz und seine lokalen IPv6-Netze aktualisieren.
+
+## WireGuard-Tunneladresse \{#wireguard-tunnel-address}
+
+Eine Schnittstellenadresse, die einem WireGuard-Tunnel in pfSense zugewiesen ist. Zum Aktualisieren ist das WireGuard-Paket nötig, und zulässige IPs und Endpunkte von Peers gehören zur Gruppe Weitere Einstellungen.
+
+## Legacy-Updater \{#legacy-updater}
+
+Version 1.x dieses Projekts, ein `update.php`-Skript, das in `/root` installiert und über einen Eintrag im Cron-Paket ausgeführt wurde. Es ersetzte den alten Präfixtext an beliebiger Stelle der Konfiguration.
+
+## Inoffizielles Paket \{#unofficial-package}
+
+Ein Paket, das mit `pkg add` von GitHub statt aus dem Paket-Repository von Netgate installiert wird. Netgate prüft oder unterstützt es nicht, und Sie installieren seine Updates selbst.

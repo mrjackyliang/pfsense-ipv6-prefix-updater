@@ -1,0 +1,153 @@
+---
+id: configuration-scopes
+title: 欄位
+description: 在「欄位」分頁上選擇哪些設定欄位隨委派前綴變更、設定例外、審查其他套件的設定，並可視需要納入其他任何值。
+keywords:
+  - pfsense ipv6 prefix updater
+  - 欄位分頁
+  - 欄位群組
+  - 防火牆規則
+  - DHCPv6
+  - 套件設定
+tags:
+  - configuration
+  - fields
+  - safety
+sidebar_position: 2
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import fieldsTab from './_assets_/configuration-scopes-1.png';
+import fieldException from './_assets_/configuration-scopes-2.png';
+import otherSettings from './_assets_/configuration-scopes-3.png';
+
+選擇前綴變更時要隨之變更的設定欄位。
+
+## 「欄位」分頁 \{#the-fields-tab}
+
+**Services → IPv6 Prefix Updater** 下的 **欄位** 分頁會依類型分組，列出每個<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>前綴內的所有位址。**基準** 這一行會列出分頁用來比較的前綴。在第一次檢查記錄基準之前，此分頁只會顯示群組開關。
+
+<img src={fieldsTab} alt="IPv6 Prefix Updater 的「欄位」分頁，包含「自動選取」與「全部清除」按鈕、搜尋方塊、篩選器，以及列出 LAN 與 LAB 位址並醒目標示其前綴部分的「靜態介面」群組" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+每一列會顯示：
+
+- **核取方塊**：勾選表示下一次<Terminology title="與上次成功前綴或長度不同" to="/docs/reference/terminology#prefix-transition">前綴變更</Terminology>會更新此欄位。
+- **欄位**：項目（例如規則描述或別名名稱），接著是欄位標籤及其設定路徑。
+- **目前的值**：欄位的值，其中每個位址的前綴部分會醒目標示。只有醒目標示的部分會變更，<Terminology title="委派前綴之後的位址位元" to="/docs/reference/terminology#host-portion">主機部分</Terminology>維持不變。
+
+## 群組開關與例外 \{#group-switches-and-exceptions}
+
+每個<Terminology title="「欄位」分頁上共用一個開關的一組欄位" to="/docs/reference/terminology#field-group">欄位群組</Terminology>的標題列都有一個開關：
+
+- **開啟**：該類型的所有欄位（包括日後新增的欄位）都會隨前綴變更，您取消勾選的欄位除外。
+- **關閉**：只有您勾選的欄位會變更。
+
+勾選狀態與所屬群組開關不一致的欄位，就是<Terminology title="勾選狀態與群組開關相反的單一欄位" to="/docs/reference/terminology#field-exception">欄位例外</Terminology>。群組有例外時，其標題列會顯示一條橫線，**已選取 N / M** 則會統計已勾選的欄位數。按一下標題列會開啟或關閉該群組，並將其中的每個勾選重設為與開關一致。選取 **儲存** 即可保留變更。
+
+<img src={fieldException} alt="「欄位」分頁中已開啟的「防火牆規則」群組：一條規則已取消勾選，因此標題列顯示橫線與「已選取 2 / 3」，另有一條沒有追蹤 ID 的規則跟隨群組開關" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+選擇會跟著項目本身，而不是它在清單中的位置，因此移動或刪除其他項目不會讓選擇改指向別的項目。套件依下列資訊辨識每個項目：
+
+- **防火牆規則**：規則的追蹤 ID。
+- **別名**：別名名稱。
+- **DHCPv6 靜態對應**：DUID，因為 pfSense 以 DUID 而非 MAC 位址識別 DHCPv6 對應。
+- **連接埠轉送與輸出 NAT**：規則的建立時間。
+- **1:1 NAT 與 NPt 項目，以及 DHCPv6 位址池**：描述。
+- **DNS 主機覆寫**：主機、網域，以及該項目保存的是 IPv4 位址、IPv6 位址還是兩者皆有。
+- **其他套件的設定**：能唯一識別每個清單項目的欄位，例如名稱或描述。
+- **其他設定**：能唯一識別每個清單項目且不包含位址的欄位，例如閘道的名稱。對於簡單清單，一個選擇即涵蓋其中的所有項目，例如 **System → General Setup**（系統 → 一般設定）下的 DNS 伺服器。
+- **其他項目**：其介面、名稱或 pfSense ID。一個選擇涵蓋某個介面的所有 DNS 伺服器、NTP 伺服器或 RA 子網路。
+
+如果某一列的項目沒有這類識別碼，或與其他項目共用同一個識別碼，該列就沒有核取方塊，並顯示 `沒有穩定識別碼，因此此欄位跟隨群組開關。` 這些選擇與設定分開保存，因此儲存「設定」分頁不會清除它們。
+
+## pfSense 群組 \{#pfsense-groups}
+
+十一個群組涵蓋 pfSense 本身的設定。全新安裝以及從<Terminology title="由 Cron 套件執行的原始 update.php 指令碼" to="/docs/reference/terminology#legacy-updater">舊版更新器</Terminology>遷移後，這些群組一開始全部都是開啟的。
+
+| 群組                                                                                                                 | 涵蓋內容                                                                                                                                                                                                                     |
+|--------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 靜態介面                                                                                                               | 設定類型為 Static IPv6 的介面位址。DHCPv6、SLAAC、<Terminology title="位址取自另一介面委派前綴的介面" to="/docs/reference/terminology#tracked-interface">Track Interface</Terminology> 及其他模式會被略過。                                                    |
+| <Terminology title="額外的介面位址，例如 CARP 或 IP Alias" to="/docs/reference/terminology#virtual-ip">虛擬 IP 位址</Terminology> | CARP 與 IP Alias 類型的<Terminology title="額外的介面位址，例如 CARP 或 IP Alias" to="/docs/reference/terminology#virtual-ip">虛擬 IP</Terminology>。Proxy ARP 與 Other 類型屬於「其他設定」群組，CIDR 遮罩維持不變。                                           |
+| 別名                                                                                                                 | 主機別名與網路別名中的位址和網路。連接埠、URL、URL 表格及其他類型的別名屬於「其他設定」群組。                                                                                                                                                                       |
+| 防火牆規則                                                                                                              | 直接填寫在防火牆規則（包括浮動規則）中的來源與目的地位址。別名、介面網路（例如 **LAN subnets**）以及 **any** 會被略過。                                                                                                                                                 |
+| NAT 與 NPt                                                                                                          | 連接埠轉送、輸出 NAT 與 1:1 NAT 中直接填寫的位址，以及 NPt 項目的前綴。追蹤某個介面的 NPt 項目會被略過。                                                                                                                                                         |
+| DHCPv6 伺服器                                                                                                         | 位址範圍、前綴委派範圍與附加位址池範圍、靜態對應位址，以及分配給用戶端的 DNS 與 NTP 伺服器。                                                                                                                                                                      |
+| 路由器通告                                                                                                              | 每個介面通告的 DNS 伺服器與 RA 子網路。                                                                                                                                                                                                 |
+| DNS 主機覆寫                                                                                                           | DNS 解析器與 DNS 轉送器中的主機覆寫位址，包括以逗號分隔的清單中的每個位址。網域覆寫屬於「其他設定」群組。                                                                                                                                                                |
+| IPsec                                                                                                              | Tunnel IPv6 與 Routed (VTI) 模式<Terminology title="描述本機與遠端網路的 IPsec 項目" to="/docs/reference/terminology#ipsec-phase-2">階段 2</Terminology> 項目中的 Local Network（本機網路）及其 NAT/BINAT 轉譯，前提是類型為 Address 或 Network。遠端網路屬於「其他設定」群組。 |
+| OpenVPN                                                                                                            | 伺服器上的 IPv6 通道網路與本機網路、用戶端上的 IPv6 通道網路，以及<Terminology title="伺服器上針對個別用戶端的 OpenVPN 設定" to="/docs/reference/terminology#client-specific-override">用戶端特定覆寫</Terminology>中的 IPv6 通道網路與本機網路。遠端網路屬於「其他設定」群組，追蹤某個介面的伺服器通道網路則會被略過。 |
+| WireGuard                                                                                                          | pfSense WireGuard 通道上的<Terminology title="指派給 pfSense WireGuard 通道的位址" to="/docs/reference/terminology#wireguard-tunnel-address">通道位址</Terminology>。對等端、允許的 IP 與端點屬於「其他設定」群組。                                            |
+
+關閉防火牆用不到的群組，可避免非預期的值進入<Terminology title="寫入前建立的完整欄位變更清單" to="/docs/reference/terminology#change-plan">變更計畫</Terminology>。
+
+## 按鈕、搜尋與篩選 \{#buttons-search-and-filters}
+
+- **自動選取**：開啟所有 pfSense 群組並勾選其中的所有欄位。「其他設定」群組與其他套件的設定維持不變。
+- **全部清除**：關閉所有群組並取消勾選所有欄位。
+- **搜尋欄位**：只顯示群組、項目、標籤、值或路徑包含所輸入文字的列。
+- **篩選器**：顯示所有列，或只顯示已選取的列或其他套件的列。
+
+**自動選取** 與 **全部清除** 在您選取 **儲存** 之前只會變更頁面。儲存未選取任何欄位的選擇後，此分頁會顯示警告，且在您重新選取欄位之前，每次執行都會停止並顯示 `未選取任何設定欄位。請在「欄位」分頁中選取欄位。`
+
+當分頁列出的欄位超過 40 個時，各群組一開始會處於摺疊狀態。選取群組名稱即可展開。
+
+## 其他套件的設定 \{#other-packages-settings}
+
+其他套件保存在 `installedpackages` 下的設定各有自己的群組，並以擁有這些設定的已安裝套件命名；如果沒有任何套件擁有它們，則以其區段命名。本套件無法得知這些欄位的意義，因此它們一開始都未勾選，**自動選取** 也絕不會選取它們。請先確認某個欄位在該套件中的作用，再勾選它。
+
+執行變更其中某個欄位後，會像該套件本身的 **Save**（儲存）按鈕一樣，重新套用該套件的設定。「狀態」分頁上的 **上次執行** 會在 **套件** 下列出每個結果：
+
+- `已重新套用 <package> 套件的設定。`
+- `沒有已安裝的套件擁有 <section> 設定。請手動重新啟動使用它們的服務。` 這些值仍會儲存。如果某個套件將部分設定保存在名稱不同的區段下，也會發生這種情況。
+- `無法重新套用 <package> 套件的設定：<reason>` 新值仍保持已儲存狀態，且不會回復任何變更。
+
+這兩種問題也都會新增一則 <Terminology title="顯示在 pfSense 通知清單中的警示" to="/docs/reference/terminology#webgui-notice">WebGUI 通知</Terminology>。
+
+## 已不存在的欄位 \{#fields-that-no-longer-exist}
+
+已勾選欄位所屬的項目被刪除後，該欄位會出現在分頁頂端的 **遺失的欄位** 下。執行會略過它，並將它列在「狀態」分頁的 **略過的欄位** 下。**忘記遺失的欄位** 會移除這些勾選。
+
+## 其他設定 \{#other-settings}
+
+**其他設定** 群組會列出基準前綴內的所有其他位址。此群組預設關閉，因此其中的值只有在您勾選它或開啟群組時才會變更；開啟群組也會涵蓋日後新增的值。每一列都會註明其類型：
+
+- 任何 VPN 的遠端：IPsec 遠端網路與遠端閘道，以及 OpenVPN 遠端網路與伺服器位址。
+- WireGuard 對等端，包括其允許的 IP 與端點。
+- 閘道與靜態路由。
+- 憑證、私密金鑰、密碼與預先共用金鑰，其值會顯示為 `值已隱藏`。
+- 以 Base64 儲存的值，例如 DNS 解析器的自訂選項。這些值會先解碼、改寫，再重新編碼。
+- 描述。
+- 任何其他設定，這類設定會改為顯示其設定名稱，例如 DNS 解析器的網域覆寫，以及 **System → General Setup**（系統 → 一般設定）下的 DNS 伺服器。
+
+<img src={otherSettings} alt="「欄位」分頁上的「其他設定」群組，列出一條靜態路由、一個別名描述、以 Base64 編碼的 DNS 解析器自訂選項、一個網域覆寫與一個閘道，並各自附上類型" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+執行變更其中某個值後，會重新載入 pfSense 在您儲存該設定時所重新載入的內容：
+
+- **閘道與靜態路由**：路由，接著是防火牆篩選器。
+- **System → General Setup（系統 → 一般設定）下的 DNS 伺服器**：系統的 DNS 設定，接著是 DNS 解析器或 DNS 轉送器。
+- **DNS 解析器、DNS 轉送器、IPsec、OpenVPN 與 WireGuard 的值**：對應的服務。
+- **其他套件的值**：該套件的設定，詳見[其他套件的設定](#other-packages-settings)。
+- **描述、憑證以及沒有已知服務的值**：不重新載入任何內容。新值只會被儲存。
+
+建議在基準仍是舊前綴時勾選這些欄位，因為前綴變更後，分頁會改以新前綴進行比較。遠端 VPN 對等端保有各自的設定，因此指向已變更位址的對等端，需要在對方那一端更新。
+
+## 值的比對方式 \{#how-values-are-matched}
+
+- 只有當位址屬於<Terminology title="下次檢查用來比較的前綴" to="/docs/reference/terminology#last-successful-prefix">上次成功前綴</Terminology>（依<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>中儲存的長度計算）時，才會被變更。其他網路的位址、IPv4 位址、主機名稱與別名名稱都維持不變，分頁也不會列出它們。
+- 在清單中（例如別名項目、OpenVPN 本機網路與 DNS 解析器主機覆寫），每個項目都會個別檢查，分隔符號維持原樣。
+- 在其他套件的設定與「其他設定」群組中，文字裡的每個位址都會個別檢查，其餘文字維持原樣。
+- `/64` 等 CIDR 尾碼維持原樣，每個位址的<Terminology title="委派前綴之後的位址位元" to="/docs/reference/terminology#host-portion">主機部分</Terminology>也會保留。
+- 在<Terminology title="位址取自另一介面委派前綴的介面" to="/docs/reference/terminology#tracked-interface">追蹤介面</Terminology>上，DHCPv6 範圍與靜態對應保存的是 `::1000` 這類主機尾碼，這些尾碼會維持原樣。
+- 改寫後的位址以<Terminology title="位址的小寫、最短標準寫法" to="/docs/reference/terminology#canonical-form">標準形式</Terminology>儲存，因此寫法可能與原本輸入的不同。
+
+## 預覽變更 \{#previewing-changes}
+
+<Terminology title="不備份也不寫入的預覽" to="/docs/reference/terminology#dry-run">試執行</Terminology>只有在發生<Terminology title="與上次成功前綴或長度不同" to="/docs/reference/terminology#prefix-transition">前綴變更</Terminology>後才會讀取所選的欄位。前綴未變更時它會回報<Terminology title="結果：前綴未變更，未掃描或寫入任何內容" to="/docs/reference/terminology#no-change">無變更</Terminology>，因此要預覽新的選擇，請使用「欄位」分頁。發生前綴變更後，試執行的<Terminology title="立即執行或試執行後顯示的唯讀結果" to="/docs/reference/terminology#command-output">命令輸出</Terminology>會在 `欄位變更` 下列出它將取代的每個位址。
+
+<Terminology title="不備份也不寫入的預覽" to="/docs/reference/terminology#dry-run">試執行</Terminology>也會略過「pfSense 能否重新載入受影響服務」的檢查。因此，缺少 WireGuard 套件的問題只會在實際執行時浮現。
+
+## WireGuard 套件 \{#wireguard-package}
+
+更新 <Terminology title="指派給 pfSense WireGuard 通道的位址" to="/docs/reference/terminology#wireguard-tunnel-address">WireGuard 通道位址</Terminology>需要 WireGuard 套件。如果這些位址需要變更而該套件未安裝，實際執行會在備份之前停止，並顯示 `所需的 pfSense 相依項目「/usr/local/pkg/wireguard/includes/wg.inc」無法使用。`
+
+[已核准欄位](/docs/reference/approved-fields)列出了每個群組背後的確切設定路徑，以及每個選擇儲存時所用的識別碼。

@@ -1,0 +1,79 @@
+---
+id: how-updates-work
+title: 更新工作原理
+description: 逐阶段跟随一次运行：从读取各接口地址开始，经过规划、备份、单次写入和服务重新加载，直到记录结果。
+keywords:
+  - pfsense ipv6 prefix updater
+  - 更新流程
+  - 变更计划
+  - 服务重新加载
+  - 验证
+tags:
+  - safety
+  - update process
+  - service reload
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+跟随一次运行从读取各接口地址到记录结果的全过程，包括它可能停止的每一个环节。
+
+## 1. 读取与验证 \{#1-read-and-validate}
+
+- **<Terminology title="由 pfSense 管理的 cron 条目运行的自动检查" to="/docs/reference/terminology#scheduled-updates">启用计划更新</Terminology>** 关闭时，计划检查会立即以<Terminology title="结果：更新关闭时跳过的计划检查" to="/docs/reference/terminology#disabled">已禁用</Terminology>停止。<Terminology title="从“状态”选项卡启动的检查" to="/docs/reference/terminology#manual-run">手动运行</Terminology>则会继续。
+- 运行会再次检查已保存的设置，因为自表单保存以来它们可能已被更改。
+- 它会重新读取每个<Terminology title="其地址可反映当前前缀的接口" to="/docs/reference/terminology#monitored-interface">监控接口</Terminology>的<Terminology title="位于 2000::/3 内的公网 IPv6 地址" to="/docs/reference/terminology#global-unicast-address">全局地址</Terminology>（不会回退到<Terminology title="仅在单条链路上有效的 fe80:: 地址" to="/docs/reference/terminology#link-local-address">链路本地地址</Terminology>），并将其转换为<Terminology title="地址的小写、最短标准写法" to="/docs/reference/terminology#canonical-form">规范形式</Terminology>。
+- 它按每个地址所在行的<Terminology title="ISP 前缀大小设置，/48 至 /64" to="/docs/reference/terminology#delegated-prefix-length">委派前缀长度</Terminology>对该地址进行掩码，得到<Terminology title="按前缀长度掩码后的源地址" to="/docs/reference/terminology#observed-prefix">观察到的前缀</Terminology>。
+
+## 2. 比较 \{#2-compare}
+
+- 如果该接口没有<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>，运行会记录一个基线，并以<Terminology title="结果：已记录基线，配置未更改" to="/docs/reference/terminology#initialized">已初始化</Terminology>结束。
+- 如果前缀及其长度与<Terminology title="下次检查用于比较的前缀" to="/docs/reference/terminology#last-successful-prefix">上次成功前缀</Terminology>一致，运行会以<Terminology title="结果：前缀未变化，未扫描或写入任何内容" to="/docs/reference/terminology#no-change">无变化</Terminology>结束，不扫描配置。
+- 前缀或长度不同即为<Terminology title="与上次成功前缀或长度不同" to="/docs/reference/terminology#prefix-transition">前缀变化</Terminology>，运行继续进行。
+
+## 3. 规划 \{#3-plan}
+
+- 运行通过 pfSense 的配置函数读取配置，并且只保留在“字段”选项卡中选择的字段。已不存在的已选择字段会被跳过，并列在 **跳过的字段** 下。
+- <Terminology title="软件包可改写的具体配置字段" to="/docs/reference/terminology#approved-field">已批准字段</Terminology>中每个属于旧前缀（按保存的长度计算）的地址，都会按当前长度换上新的前缀位，同时保留其<Terminology title="委派前缀之后的地址位" to="/docs/reference/terminology#host-portion">主机部分</Terminology>。这些更改共同构成完整的<Terminology title="写入前生成的完整字段变更列表" to="/docs/reference/terminology#change-plan">变更计划</Terminology>。
+- 如果没有需要更改的内容，运行会以<Terminology title="结果：前缀已变化，但没有匹配的已批准字段" to="/docs/reference/terminology#warning">警告</Terminology>结束。有更改的<Terminology title="不备份也不写入的预览" to="/docs/reference/terminology#dry-run">试运行</Terminology>会在此处以<Terminology title="不备份也不写入的预览" to="/docs/reference/terminology#dry-run">试运行</Terminology>结束。
+
+## 4. 预检 \{#4-preflight}
+
+- 运行会确认 pfSense 能够重新加载计划中的每个服务。对于 <Terminology title="分配给 pfSense WireGuard 隧道的地址" to="/docs/reference/terminology#wireguard-tunnel-address">WireGuard 隧道地址</Terminology>，这一步需要已安装 WireGuard 软件包。
+- 它会确认计划中的每个字段仍保持着生成计划时的值。
+
+## 5. 备份并一次性写入 \{#5-back-up-and-write-once}
+
+- pfSense 创建<Terminology title="写入前保存的配置副本" to="/docs/reference/terminology#configuration-backup">配置备份</Terminology>；如果 pfSense 未确认备份成功，运行就会停止。
+- 运行应用所有更改并只保存一次，描述为 `IPv6 前缀更新器为接口 <interface> 更改了 <count> 个已批准字段`。
+- 如果 pfSense 报告保存失败，运行会将原始值恢复到内存中并停止。
+
+## 6. 验证、重新加载、再验证 \{#6-verify-reload-verify}
+
+- 运行检查已保存的值是否与计划一致，重新加载受影响的服务，然后再次检查这些值。
+- 服务按[重新加载操作](/docs/reference/approved-fields#reload-actions)中列出的固定顺序重新加载，从接口到 WireGuard。重新加载接口之后会接着重新加载防火墙过滤器，此后不会再重复加载过滤器。
+- 防火墙过滤器、DNS 解析器和 DNS 转发器的重新加载在返回失败结果时会使运行失败。其他重新加载只有在抛出错误时才会使运行失败。
+- 其他软件包的设置在各项重新加载及其验证完成之后，最后才重新应用。无法重新应用其设置的软件包会被报告，已保存的值保持不变。
+- 此阶段发生失败时，新值仍保持已保存状态。
+
+## 7. 记录与通知 \{#7-record-and-notify}
+
+- <Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>移到新前缀，**上次运行** 记录这次<Terminology title="结果：字段已更新、保存、重新加载并验证" to="/docs/reference/terminology#success">成功</Terminology>，以及已更改字段数和<Terminology title="让更改后的设置生效的 pfSense 操作" to="/docs/reference/terminology#service-reload">已重新加载的服务</Terminology>。
+- 运行会写入一行<Terminology title="软件包写入的 pfSense 常规日志" to="/docs/reference/terminology#system-log">系统日志</Terminology>，并在已开启时发送<Terminology title="更新经验证成功后发送的提醒" to="/docs/reference/terminology#change-notification">变化通知</Terminology>。通知发送失败不会改变结果。
+
+## 运行可能停止的位置 \{#where-a-run-can-stop}
+
+| 停止位置                                                                                                                                                                                                      | 已写入配置              | 已创建备份 | 已更新“上次运行”                                                                                               |
+|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------|-------|---------------------------------------------------------------------------------------------------------|
+| <Terminology title="结果：更新关闭时跳过的计划检查" to="/docs/reference/terminology#disabled">已禁用</Terminology>的计划检查                                                                                                     | 否                  | 否     | 否                                                                                                       |
+| 设置、地址问题或无法读取的<Terminology title="保存基线和上次运行的软件包文件" to="/docs/reference/terminology#package-state">软件包状态</Terminology>                                                                                      | 否                  | 否     | 否                                                                                                       |
+| <Terminology title="结果：已记录基线，配置未更改" to="/docs/reference/terminology#initialized">已初始化</Terminology>或<Terminology title="结果：前缀未变化，未扫描或写入任何内容" to="/docs/reference/terminology#no-change">无变化</Terminology> | 否                  | 否     | 是                                                                                                       |
+| <Terminology title="结果：前缀已变化，但没有匹配的已批准字段" to="/docs/reference/terminology#warning">警告</Terminology>或<Terminology title="不备份也不写入的预览" to="/docs/reference/terminology#dry-run">试运行</Terminology>            | 否                  | 否     | 是                                                                                                       |
+| 预检失败                                                                                                                                                                                                      | 否                  | 否     | 是                                                                                                       |
+| 备份失败                                                                                                                                                                                                      | 否                  | 否     | 是                                                                                                       |
+| 写入失败                                                                                                                                                                                                      | 否（以 pfSense 的报告为准） | 是     | 是                                                                                                       |
+| 验证或重新加载失败                                                                                                                                                                                                 | 是                  | 是     | 是                                                                                                       |
+| 通知失败                                                                                                                                                                                                      | 是                  | 是     | 是，记录为<Terminology title="结果：字段已更新、保存、重新加载并验证" to="/docs/reference/terminology#success">成功</Terminology> |
+
+[已批准字段](/docs/reference/approved-fields)列出了每次重新加载背后的 pfSense 函数，[备份与恢复](/docs/operate/backups-and-recovery)介绍了失败后的恢复方法。

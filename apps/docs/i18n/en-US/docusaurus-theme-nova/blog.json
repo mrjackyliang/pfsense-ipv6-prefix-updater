@@ -1,0 +1,10 @@
+{
+  "layout.heading": {
+    "message": "Blog",
+    "description": "The blog list page heading"
+  },
+  "layout.description": {
+    "message": "Release notes and setup guides",
+    "description": "The blog list page description below the heading"
+  }
+}

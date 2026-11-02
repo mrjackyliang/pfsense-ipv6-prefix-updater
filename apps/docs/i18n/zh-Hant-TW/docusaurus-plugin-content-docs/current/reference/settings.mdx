@@ -1,0 +1,52 @@
+---
+id: settings
+title: 設定參考
+description: 查閱 IPv6 Prefix Updater「設定」分頁上的每個欄位，包括其預設值、可接受的值，以及可能顯示的驗證訊息。
+keywords:
+  - pfsense ipv6 prefix updater
+  - 設定
+  - 預設值
+  - 驗證
+  - WebGUI
+tags:
+  - reference
+  - settings
+  - webgui
+sidebar_position: 2
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+查閱「設定」分頁上的每個欄位及其預設值與可接受的值。
+
+## 前綴監控 \{#prefix-monitoring}
+
+**Services → IPv6 Prefix Updater** 下的 **設定** 分頁以這些欄位開頭，儲存表單後會顯示 `設定已儲存。`
+
+| 欄位                                                                                                                        | 說明                                                                                                                                                                                                                                                                           |
+|---------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| <Terminology title="由 pfSense 管理的 cron 項目執行的自動檢查" to="/docs/reference/terminology#scheduled-updates">啟用排程更新</Terminology> | 依所選的 **排程** 執行檢查。預設關閉，儲存時會新增或移除 cron 項目。                                                                                                                                                                                                                                     |
+| <Terminology title="其位址可反映目前前綴的介面" to="/docs/reference/terminology#monitored-interface">監控介面</Terminology>                | 必填。每個<Terminology title="位於 2000::/3 內的公用 IPv6 位址" to="/docs/reference/terminology#global-unicast-address">全域位址</Terminology>承載<Terminology title="ISP 路由到防火牆的 IPv6 網路" to="/docs/reference/terminology#delegated-prefix">委派前綴</Terminology>的介面各有一列。**新增** 會新增一列，每個介面只能出現一次。 |
+| <Terminology title="ISP 前綴大小設定，/48 至 /64" to="/docs/reference/terminology#delegated-prefix-length">委派前綴長度</Terminology>   | 每一列皆為必填。範圍為 `/48` 到 `/64`，預設選取 `/56`。                                                                                                                                                                                                                                        |
+| 排程                                                                                                                        | 每 15 分鐘、每小時、每 6 小時或每天午夜。預設為每小時。                                                                                                                                                                                                                                              |
+
+## 欄位選取 \{#field-selection}
+
+「設定」分頁會在 **排程** 下方顯示 `在「欄位」分頁中選擇哪些設定欄位隨前綴變更。` <Terminology title="「欄位」分頁上共用一個開關的一組欄位" to="/docs/reference/terminology#field-group">欄位群組</Terminology>與個別欄位都在 **欄位** 分頁中選擇，並與這些設定分開儲存，因此儲存「設定」分頁絕不會變更它們。每個群組及其預設值請見[欄位](/docs/configure/configuration-scopes)頁面。
+
+## 通知 \{#notifications}
+
+| 欄位                                                                                                          | 說明                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+|-------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| <Terminology title="更新驗證成功後傳送的警示" to="/docs/reference/terminology#change-notification">傳送變更通知</Terminology> | 預設勾選。每次<Terminology title="結果：欄位已更新、儲存、重新載入並驗證" to="/docs/reference/terminology#success">成功</Terminology>後傳送<Terminology title="更新驗證成功後傳送的警示" to="/docs/reference/terminology#change-notification">變更通知</Terminology>；無論是否勾選，<Terminology title="結果：前綴已變更，但沒有符合的已核准欄位" to="/docs/reference/terminology#warning">警告</Terminology>與<Terminology title="結果：檢查或安全階段中止了執行" to="/docs/reference/terminology#failure">失敗</Terminology>通知都會出現。 |
+
+## 驗證訊息 \{#validation-messages}
+
+| 訊息                                 | 原因                              |
+|------------------------------------|---------------------------------|
+| `請選擇要監控的已設定 pfSense 介面。`           | 沒有任何列，或某一列的介面不是已設定的 pfSense 介面。 |
+| `每個介面只能列出一次。請移除 <interface> 的多餘列。` | **監控介面** 中有兩列指定了同一個介面。          |
+| `委派前綴長度必須介於 48 到 64。`              | 長度超出可接受的範圍。                     |
+| `請選擇支援的套件排程。`                      | 排程不屬於這四個選項之一。                   |
+
+每次執行都會再次檢查已儲存的設定，因為表單儲存後它們可能已經變更。執行可能回報的訊息請見[疑難排解](/docs/operate/troubleshooting#run-failed)。

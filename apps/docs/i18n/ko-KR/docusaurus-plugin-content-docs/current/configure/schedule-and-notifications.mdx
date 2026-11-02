@@ -1,0 +1,71 @@
+---
+id: schedule-and-notifications
+title: 일정 및 알림
+description: pfSense가 접두사를 확인하는 주기를 고르고 예약 업데이트를 켠 뒤, 업데이트가 성공할 때마다 변경 알림을 보낼지 결정합니다.
+keywords:
+  - pfsense ipv6 prefix updater
+  - 일정
+  - cron
+  - 변경 알림
+  - webgui 알림
+tags:
+  - configuration
+  - scheduling
+  - notifications
+sidebar_position: 3
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+pfSense가 접두사를 확인하는 주기와, 업데이트가 성공한 뒤 <Terminology title="검증된 업데이트가 성공한 뒤 보내는 알림" to="/docs/reference/terminology#change-notification">변경 알림</Terminology>을 받을지를 선택합니다.
+
+## 일정 선택 \{#choose-a-schedule}
+
+| 일정    | 실행 시각                      |
+|-------|----------------------------|
+| 15분마다 | 매시 0분, 15분, 30분, 45분       |
+| 매시간   | 매시 0분(기본값)                 |
+| 6시간마다 | 00:00, 06:00, 12:00, 18:00 |
+| 매일 자정 | 00:00                      |
+
+실행 시각은 방화벽의 시간대를 따르지만, 상태 탭은 UTC로 표시합니다.
+
+## 예약 업데이트 켜기 \{#turn-on-scheduled-updates}
+
+설치 직후에는 **<Terminology title="pfSense가 관리하는 cron 항목으로 실행하는 자동 확인" to="/docs/reference/terminology#scheduled-updates">예약 업데이트 사용</Terminology>**이 꺼져 있습니다. 설정을 저장하면 pfSense가 관리하는 cron 항목이 추가되거나 제거되므로 Cron 패키지나 직접 작성한 cron 작업이 필요하지 않습니다.
+
+이 상자를 해제하면 확인이 자동으로 실행되지 않지만, **지금 실행**과 **<Terminology title="백업도 쓰기도 하지 않는 미리 보기" to="/docs/reference/terminology#dry-run">시험 실행</Terminology>**은 계속 동작합니다. [첫 실행](/docs/first-run)에서 <Terminology title="구성을 바꾸지 않고 기록한 시작 접두사" to="/docs/reference/terminology#baseline">기준선</Terminology>을 기록하고 검증한 뒤에만 켜는 것을 권장합니다.
+
+## 일상적인 확인의 비용 \{#what-a-routine-check-costs}
+
+<Terminology title="결과: 접두사 그대로, 검색이나 쓰기 없음" to="/docs/reference/terminology#no-change">변경 없음</Terminology> 확인은 자체 설정, 모니터링하는 인터페이스의 주소, <Terminology title="기준선과 마지막 실행을 담은 패키지 파일" to="/docs/reference/terminology#package-state">패키지 상태</Terminology>만 읽습니다. 구성을 검색하거나, 백업을 만들거나, 서비스를 다시 로드하거나, 알림을 보내지 않습니다.
+
+그래도 <Terminology title="패키지가 기록하는 pfSense 일반 로그" to="/docs/reference/terminology#system-log">시스템 로그</Terminology>에는 한 줄을 씁니다.
+
+## 실행이 겹치는 경우 \{#overlapping-runs}
+
+<Terminology title="두 확인이 동시에 실행되지 않게 막는 잠금" to="/docs/reference/terminology#run-lock">실행 잠금</Terminology>은 한 번에 하나의 확인만 실행되게 합니다. 다른 확인이 실행 중일 때 시작된 확인은 구성을 읽지 않고 종료하며 **마지막 실행**을 바꾸지 않습니다.
+
+이 확인은 <Terminology title="패키지가 기록하는 pfSense 일반 로그" to="/docs/reference/terminology#system-log">시스템 로그</Terminology>에 `다른 실행이 패키지 잠금을 소유하고 있어 구성을 읽지 않고 이 호출을 종료했습니다.`를 기록합니다.
+
+## 변경 알림 \{#change-notifications}
+
+**<Terminology title="검증된 업데이트가 성공한 뒤 보내는 알림" to="/docs/reference/terminology#change-notification">변경 알림 보내기</Terminology>**는 기본적으로 켜져 있습니다. <Terminology title="결과: 필드 업데이트, 저장, 다시 로드, 검증 완료" to="/docs/reference/terminology#success">성공</Terminology> 후에는 pfSense의 <Terminology title="pfSense에 구성된 원격 알림 서비스" to="/docs/reference/terminology#notification-channels">알림 채널</Terminology>로 메시지를 보내고 <Terminology title="pfSense 알림 목록에 표시되는 항목" to="/docs/reference/terminology#webgui-notice">WebGUI 알림</Terminology>을 추가합니다.
+
+메시지는 `인터페이스 lan에서 승인된 필드 1개를 2001:db8:abcd:7800::/56에서 2001:db8:abcd:8800::/56(으)로 업데이트했습니다.`와 같은 형태입니다. 그 밖의 결과는 <Terminology title="검증된 업데이트가 성공한 뒤 보내는 알림" to="/docs/reference/terminology#change-notification">변경 알림</Terminology>을 보내지 않습니다.
+
+전달에 실패해도 업데이트는 <Terminology title="결과: 필드 업데이트, 저장, 다시 로드, 검증 완료" to="/docs/reference/terminology#success">성공</Terminology>으로 간주됩니다. 상태 탭은 전달 상태를 표시하지 않으며, <Terminology title="패키지가 기록하는 pfSense 일반 로그" to="/docs/reference/terminology#system-log">시스템 로그</Terminology>에는 `구성은 성공했지만 변경 알림에 실패했습니다.`가 기록됩니다.
+
+## 경고 및 실패 알림 \{#warning-and-failure-notices}
+
+<Terminology title="결과: 접두사가 바뀌었지만 일치하는 승인된 필드 없음" to="/docs/reference/terminology#warning">경고</Terminology>와 <Terminology title="결과: 검사나 안전 단계가 실행을 중단함" to="/docs/reference/terminology#failure">실패</Terminology> 결과는 **<Terminology title="검증된 업데이트가 성공한 뒤 보내는 알림" to="/docs/reference/terminology#change-notification">변경 알림 보내기</Terminology>**가 해제되어 있어도 항상 로컬 <Terminology title="pfSense 알림 목록에 표시되는 항목" to="/docs/reference/terminology#webgui-notice">WebGUI 알림</Terminology>을 추가합니다. 이 알림은 <Terminology title="pfSense에 구성된 원격 알림 서비스" to="/docs/reference/terminology#notification-channels">알림 채널</Terminology>로 보내지 않으며, 원인을 해결하지 않으면 예약 실행 때마다 새 알림이 추가됩니다.
+
+## 일정 검증 \{#validate-the-schedule}
+
+1. 설정을 저장하고 `설정이 저장되었습니다.` 메시지를 확인합니다.
+2. 상태 탭에서 **지금 실행**을 선택하고, 현재 시각의 **타임스탬프(UTC)**와 함께 <Terminology title="결과: 접두사 그대로, 검색이나 쓰기 없음" to="/docs/reference/terminology#no-change">변경 없음</Terminology> 결과가 나오는지 확인합니다.
+3. **<Terminology title="쓰기 전에 저장한 구성 사본" to="/docs/reference/terminology#configuration-backup">구성 백업 생성됨</Terminology>**에는 아니요가, **변경된 필드**에는 `0`이 표시되는지 확인합니다.
+4. 다음 예약 시각이 지나면 상태 탭을 새로 고치고 타임스탬프가 바뀌었는지 확인합니다.
+5. 전달을 테스트하려면 **System → Advanced → Notifications**에 있는 pfSense 자체 테스트 버튼을 사용합니다.
+
+예약 확인과 <Terminology title="상태 탭에서 시작한 확인" to="/docs/reference/terminology#manual-run">수동 실행</Terminology>이 기록하는 필드는 [상태 및 작업](/docs/operate/status-and-actions)에서 이어서 확인합니다.

@@ -1,0 +1,120 @@
+---
+id: backups-and-recovery
+title: 備份與復原
+description: 在「備份」分頁或設定歷程中找到套件更新前的設定，使用 pfSense 將其還原，並處理儲存之後才失敗的執行。
+keywords:
+  - pfsense ipv6 prefix updater
+  - 設定備份
+  - 設定歷程
+  - 還原
+  - 復原
+tags:
+  - operations
+  - backup
+  - recovery
+  - config history
+sidebar_position: 3
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import backupList from './_assets_/backups-and-recovery-1.png';
+
+在 **備份** 分頁或 pfSense 的<Terminology title="pfSense 已儲存設定修訂版本的清單" to="/docs/reference/terminology#config-history">設定歷程</Terminology>中找到更新前的設定，並使用 pfSense 內建的工具將其還原。
+
+## 何時建立備份 \{#when-a-backup-is-created}
+
+套件只會在需要寫入的執行中建立<Terminology title="寫入前儲存的設定副本" to="/docs/reference/terminology#configuration-backup">設定備份</Terminology>，時間點就在變更任何欄位之前。「狀態」分頁上的 **<Terminology title="寫入前儲存的設定副本" to="/docs/reference/terminology#configuration-backup">已建立設定備份</Terminology>** 會顯示最近一次執行是否建立了備份。
+
+執行以下列結果結束時，不會建立備份：
+
+- <Terminology title="結果：已記錄基準，設定未變更" to="/docs/reference/terminology#initialized">已初始化</Terminology>或<Terminology title="結果：尚無基準時的試執行" to="/docs/reference/terminology#initialization-preview">初始化預覽</Terminology>。
+- <Terminology title="結果：前綴未變更，未掃描或寫入任何內容" to="/docs/reference/terminology#no-change">無變更</Terminology>。
+- <Terminology title="不備份也不寫入的預覽" to="/docs/reference/terminology#dry-run">試執行</Terminology>。
+- **已接受**，因為接受目前前綴只會變更套件自己的<Terminology title="保存基準與上次執行的套件檔案" to="/docs/reference/terminology#package-state">套件狀態</Terminology>。
+- <Terminology title="結果：前綴已變更，但沒有符合的已核准欄位" to="/docs/reference/terminology#warning">警告</Terminology>。
+- 在備份階段之前發生的<Terminology title="結果：檢查或安全階段中止了執行" to="/docs/reference/terminology#failure">失敗</Terminology>，例如設定、位址或重新載入能力方面的問題。
+
+## 「備份」分頁 \{#backups-tab}
+
+**Services → IPv6 Prefix Updater** 的 **備份** 分頁會依從新到舊的順序列出套件自己儲存的 `config.xml` 副本。即使 pfSense 已因輪替而將較舊的修訂版本移出<Terminology title="pfSense 已儲存設定修訂版本的清單" to="/docs/reference/terminology#config-history">設定歷程</Terminology>，這些副本仍然可用。
+
+<img src={backupList} alt="IPv6 Prefix Updater 的「備份」分頁，列出在前綴更新前與舊版遷移前建立的套件備份，以及從舊版更新器匯入的備份，每個備份都附有「下載」與「刪除」動作" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+- **前綴更新前**：就在執行寫入設定之前建立。**詳細資料** 會列出每個介面的舊前綴與新前綴。
+- **移轉 1.x 前**：在套件將[舊版更新器遷移](/docs/migrate-from-legacy)到自身設定之前建立。
+- **1.x 指令碼**：由<Terminology title="由 Cron 套件執行的原始 update.php 指令碼" to="/docs/reference/terminology#legacy-updater">舊版更新器</Terminology>建立的備份，匯入時保留其原始名稱與時間。
+
+套件備份只會保留最新的 10 個，而匯入的舊版備份會一直保留到您將其刪除為止。所有備份都儲存在 `/cf/conf/ipv6-prefix-updater/backups` 中，僅 root 可讀取，且在重新開機與移除套件後仍會保留。
+
+若要還原其中一個備份，請選取 **下載**，然後在 **Diagnostics → Backup & Restore → Restore Backup**（診斷 → 備份與還原 → 還原備份）中上傳該檔案。還原會取代整份設定，因此下文的警告同樣適用於這些檔案。
+
+## 修訂版本的標示方式 \{#how-the-revisions-are-labelled}
+
+每次更新都會在<Terminology title="pfSense 已儲存設定修訂版本的清單" to="/docs/reference/terminology#config-history">設定歷程</Terminology>中留下兩個修訂版本，只有較舊的那一個才能撤銷這次更新：
+
+- **更新前的設定**：<Terminology title="寫入前儲存的設定副本" to="/docs/reference/terminology#configuration-backup">設定備份</Terminology>就是這個修訂版本的副本。它保留的是更新前最後一次儲存的變更所附的描述。
+- **更新後的設定**：套件會將其變更儲存為新的修訂版本，描述為 `IPv6 前綴更新器為介面 <interface> 變更了 <count> 個已核准欄位`。
+
+:::warning
+
+附有套件描述的修訂版本保存的是更新後的設定。還原它並不能撤銷這次更新。
+
+:::
+
+## 找到正確的修訂版本 \{#find-the-right-revision}
+
+1. 開啟 **Diagnostics → Backup & Restore → Config History**（診斷 → 備份與還原 → 設定歷程）。
+2. 找到描述為 `IPv6 前綴更新器為介面 ... 變更了 ...` 的最新修訂版本。如果更新之後沒有再儲存過任何內容，它就是目前的設定。
+3. 選擇緊接在它之前儲存的修訂版本，也就是更新前的設定。
+4. 使用差異檢視比較這兩個修訂版本。除了修訂資訊之外，應該只有 **已變更欄位** 中計入的欄位不同。
+5. 檢查更新之後是否還儲存過其他變更，因為還原較舊的修訂版本也會將它們一併移除。
+
+## 還原修訂版本 \{#restore-the-revision}
+
+1. 對更新前的修訂版本執行 pfSense 的還原動作，並依照提示完成。
+2. 開啟 **Services → IPv6 Prefix Updater** 的 **設定** 分頁，檢查 **<Terminology title="由 pfSense 管理的 cron 項目執行的自動檢查" to="/docs/reference/terminology#scheduled-updates">啟用排程更新</Terminology>**，因為還原的修訂版本會帶回當時的套件設定。
+3. 在「狀態」分頁中選取 **<Terminology title="不備份也不寫入的預覽" to="/docs/reference/terminology#dry-run">試執行</Terminology>**，查看下一次執行將會做什麼。
+
+下一次執行會做什麼，取決於您要撤銷的是哪一種結果：
+
+- **撤銷<Terminology title="結果：檢查或安全階段中止了執行" to="/docs/reference/terminology#failure">失敗</Terminology>後**：<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>仍保存著舊前綴，因此下一次執行會再次規劃相同的更新。
+- **撤銷<Terminology title="結果：欄位已更新、儲存、重新載入並驗證" to="/docs/reference/terminology#success">成功</Terminology>後**：<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>已保存新前綴，因此之後的執行會回報<Terminology title="結果：前綴未變更，未掃描或寫入任何內容" to="/docs/reference/terminology#no-change">無變更</Terminology>，不會再次套用這次更新。還原後的位址會一直保留舊前綴，直到您手動變更。
+
+:::warning
+
+還原修訂版本會取代整份設定，包括該修訂版本之後儲存的所有變更。
+
+:::
+
+## 執行失敗後 \{#after-a-failed-run}
+
+先查看 **上次執行** 面板中的 **<Terminology title="寫入前儲存的設定副本" to="/docs/reference/terminology#configuration-backup">已建立設定備份</Terminology>** 與 **摘要**。<Terminology title="結果：檢查或安全階段中止了執行" to="/docs/reference/terminology#failure">失敗</Terminology>時 **已變更欄位** 一律顯示 `0`，即使欄位其實已經寫入。
+
+- **<Terminology title="寫入前儲存的設定副本" to="/docs/reference/terminology#configuration-backup">已建立設定備份</Terminology>顯示「否」**：執行在寫入之前就已停止，因此設定沒有改變。[疑難排解](/docs/operate/troubleshooting#run-failed)列出了可能的原因。
+- **摘要為 `執行失敗：pfSense 無法寫入規劃的設定。`**：pfSense 回報寫入失敗。套件在停止前已將原始值放回記憶體中。
+- **其他建立了備份的失敗**：新值已經儲存，且沒有回復任何變更。<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>仍保存著舊前綴，而已儲存的值已不再屬於它，因此之後的執行會回報<Terminology title="結果：前綴已變更，但沒有符合的已核准欄位" to="/docs/reference/terminology#warning">警告</Terminology>。
+
+對於最後一種情況，請依照已儲存的設定選擇相應的復原方式：
+
+- **重新套用更新**：排除失敗的檢查或重新載入問題，還原更新前的修訂版本，執行一次<Terminology title="不備份也不寫入的預覽" to="/docs/reference/terminology#dry-run">試執行</Terminology>，然後選取 **立即執行**。
+- **保留已儲存的新前綴值**：先自行核對已核准的位址與受影響的服務。然後開啟 **狀態 → 動作 → 基準復原**，選取 **接受目前前綴** 並確認動作。
+
+**接受目前前綴** 會將目前作用中的來源位址、前綴與前綴長度記錄為新的<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>。它不會掃描防火牆設定、建立備份、寫入設定或重新載入服務；結果為 **已接受**，下一次一般檢查應會回報<Terminology title="結果：前綴未變更，未掃描或寫入任何內容" to="/docs/reference/terminology#no-change">無變更</Terminology>。
+
+:::warning
+
+不要只是為了清除警告而接受目前前綴。只有在確認所有應使用新前綴的位址都已正確，且（在重新載入失敗的情況下）受影響的服務正以已儲存的設定運作之後，才應接受。
+
+:::
+
+如果 **上次執行** 完全沒有變化，表示執行在讀取<Terminology title="保存基準與上次執行的套件檔案" to="/docs/reference/terminology#package-state">套件狀態</Terminology>之前就已停止。原因可在<Terminology title="立即執行或試執行後顯示的唯讀結果" to="/docs/reference/terminology#command-output">命令輸出</Terminology>與<Terminology title="套件寫入的 pfSense 一般記錄" to="/docs/reference/terminology#system-log">系統記錄</Terminology>中找到。
+
+## 保留裝置外的備份 \{#keep-off-device-backups}
+
+<Terminology title="pfSense 已儲存設定修訂版本的清單" to="/docs/reference/terminology#config-history">設定歷程</Terminology>儲存在防火牆本身。建議在安裝或更新套件、或開啟<Terminology title="由 pfSense 管理的 cron 項目執行的自動檢查" to="/docs/reference/terminology#scheduled-updates">排程更新</Terminology>之前，另外從 **Diagnostics → Backup & Restore** 下載一份備份。
+
+## 保留證據 \{#preserve-evidence}
+
+還原之前，建議複製 **上次執行** 面板、<Terminology title="立即執行或試執行後顯示的唯讀結果" to="/docs/reference/terminology#command-output">命令輸出</Terminology>，以及<Terminology title="套件寫入的 pfSense 一般記錄" to="/docs/reference/terminology#system-log">系統記錄</Terminology>中以 `IPv6 Prefix Updater:` 開頭的行。綜合這些資訊，就能看出是哪個階段停止，以及設定是否已寫入。
+
+失敗訊息請參閱[疑難排解](/docs/operate/troubleshooting)；重新開啟排程更新之前，請先閱讀[自動化前的檢查](/docs/safety/testing-and-verification)。

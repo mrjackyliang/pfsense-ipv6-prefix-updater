@@ -1,0 +1,937 @@
+{
+  "bs": {
+    "home": [
+      "Izvorni pfSense paket",
+      "Sigurno uskladite dinamičke IPv6 prefikse.",
+      "Otkrijte promjene dodijeljenog prefiksa, ažurirajte samo odobrena pfSense polja, sačuvajte bitove hosta i provjerite svaku transakciju.",
+      "Instalacija i podešavanje",
+      "Pregled sigurnog rada",
+      "Iz bloga",
+      "Napomene o izdanjima, vodiči za podešavanje i članci o dinamičkim IPv6 prefiksima."
+    ],
+    "navbar": [
+      "Početna",
+      "Dokumentacija",
+      "Sigurnost i rad",
+      "Blog"
+    ],
+    "footer": [
+      "Vodiči",
+      "Resursi",
+      "Instalacija i podešavanje",
+      "Sigurnost i rad",
+      "Rješavanje problema",
+      "pfSense dokumentacija",
+      "Izvorni kod",
+      "Počnite čitati",
+      "Autorska prava © {years} Jacky Liang. Objavljeno pod MIT licencom.",
+      "Blog"
+    ],
+    "blog": [
+      "Blog",
+      "Napomene o izdanjima i vodiči za podešavanje",
+      "Blog",
+      "Napomene o izdanjima, vodiči za podešavanje i članci o tome kako adrese u pfSense-u održati ažurnim kada se IPv6 prefiks promijeni.",
+      "Najnovije objave"
+    ],
+    "intro": {
+      "title": "Instalacija i podešavanje",
+      "description": "Instalirajte Ažuriranje IPv6 prefiksa i uspostavite sigurno početno stanje u pfSense-u.",
+      "installationKeyword": "instalacija",
+      "body": "# Instalacija i podešavanje\n\nInstalirajte Ažuriranje IPv6 prefiksa da bi odobrene lokalne IPv6 reference pratile dinamički prefiks koji dodjeljuje ISP, uz potpuno očuvanje bitova hosta.\n\n## Prije početka\n\nSaznajte dužinu prefiksa od ISP-a i pfSense sučelje s aktivnom globalnom IPv6 adresom. Paket ne pogađa dužinu prefiksa. Početni izbor **/56** samo je česta zadana vrijednost; zamijenite ga vrijednošću iz ISP ili DHCPv6 postavki.\n\nAko WAN dobija samo delegirani prefiks, odaberite nizvodno sučelje koje prati WAN, na primjer LAN. Stranica Status prikazuje tačnu izvornu adresu i izračunati mrežni prefiks.\n\n:::caution\nPrvo testirajte paket na laboratorijskom vatrozidu i izvezite pfSense sigurnosnu kopiju konfiguracije.\n:::\n\n## Instalacija paketa\n\nPokrenite ovu naredbu u pfSense ljusci da biste instalirali najnovije izdanje direktno sa GitHuba.\n\n~~~shell\npkg add https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg\n~~~\n\nOtvorite **Usluge → Ažuriranje IPv6 prefiksa**. Ostavite zakazana ažuriranja isključena dok prvo ručno pokretanje ne zabilježi početno stanje.\n\n## Podešavanje i početno stanje\n\n1. Odaberite sučelje s delegiranim globalnim IPv6 prefiksom.\n2. Odaberite tačnu dužinu prefiksa koju je dao ISP.\n3. Omogućite samo potrebne opsege, zatim raspored i obavještenja.\n4. Sačuvajte i provjerite poruku o uspjehu.\n5. Na kartici **Status** pokrenite **Pokreni sada**.\n\nPrvo normalno pokretanje bilježi kanonsku izvornu adresu i maskirani prefiks bez izmjene konfiguracije. Nakon toga **Probno pokretanje** prikazuje prethodni i trenutni prefiks, broj polja, stanje sigurnosne kopije i usluge bez upisa konfiguracije.\n\n[Pročitajte Sigurnost i rad](./operations.mdx)\n"
+    },
+    "operations": {
+      "title": "Sigurnost i rad",
+      "description": "Razumijte izbor adrese, sigurnosne kopije, ažuriranja, testove i rješavanje problema.",
+      "body": "# Sigurnost i rad\n\nProvjerite svako pokretanje na stranici Status: izvornu adresu, izvedeni prefiks, sigurnosnu kopiju i ishod.\n\n## Izbor i izračun adrese\n\nPaket traži od pfSense-a primarnu aktivnu IPv6 adresu odabranog sučelja, prisiljava svježe očitanje i ne prihvata link-local rezervu. Odbacuje loopback, nedefinirane, multicast, link-local, unique-local, IPv4-mapirane i neispravne vrijednosti.\n\nPrefiks se izračunava binarnim maskiranjem za granice od **/48** do **/64**; tekstualno skraćivanje i poređenje stringova se ne koriste. Adrese iz **2001:db8::/32** u testovima su samo dokumentacijski primjeri. Laboratorijska adresa 2001:db8:abcd:78aa::1 namjerno je postavljena i na /56 daje 2001:db8:abcd:7800::/56; nije došla od ISP-a.\n\n## Sigurna transakcija\n\nKada se prefiks promijeni, paket provjerava okruženje i stanje, skenira samo omogućene pregledane putanje, priprema kompletan plan, potvrđuje stare vrijednosti i mogućnost ponovnog učitavanja, pa pravi izvornu pfSense sigurnosnu kopiju **prije prve izmjene**. Zatim jednom upisuje konfiguraciju, provjerava nova polja, ponovo učitava samo potrebne usluge, opet provjerava vrijednosti i tek tada pomjera uspješno stanje i šalje obavještenje.\n\nGreška sigurnosne kopije, upisa, provjere ili obaveznog ponovnog učitavanja ne pomjera uspješno stanje. Pokretanje bez promjene ne skenira konfiguraciju, ne pravi kopiju, ne učitava usluge i ne šalje obavještenje.\n\n## Ishodi i testovi\n\n**Inicijalizirano** znači sigurno početno stanje; **Bez promjene** znači isti mrežni prefiks; **Probno pokretanje** je samo pregled; **Upozorenje** znači da nijedno odobreno polje ne odgovara starom prefiksu; **Uspjeh** potvrđuje kopiju, upis i usluge; **Greška** znači da je sigurnosna faza zaustavila rad.\n\nRegresijski testovi pokrivaju binarno maskiranje, granice koje nisu cijeli bajt, očuvanje bitova hosta, odbačene adrese, svih šest opsega, prvo i probno pokretanje, redoslijed kopije prije izmjene, greške upisa i usluga, zaključavanje, atomsko stanje i svih 18 pfSense jezika. End-to-end provjere koriste odvojenu pfSense VM, nikada proizvodni vatrozid.\n\n## Rješavanje problema\n\nAko je izvorna adresa pogrešna, odaberite nizvodno praćeno sučelje koje stvarno ima globalnu adresu; nemojte pogađati dužinu prefiksa. Kod upozorenja s nula podudaranja provjerite stari prefiks i omogućene opsege. Za greške pregledajte **Status → Izlaz naredbe** i sistemske dnevnike te po potrebi vratite izvornu pfSense historiju konfiguracije.\n"
+    },
+    "sidebar": {
+      "Start Here": "Prvi koraci",
+      "Configure": "Podešavanje",
+      "Operate": "Upotreba",
+      "Safety": "Sigurnost",
+      "Reference": "Tehničke informacije",
+      "Contributing": "Doprinos"
+    }
+  },
+  "zh-CN": {
+    "home": [
+      "原生 pfSense 软件包",
+      "安全地保持动态 IPv6 前缀一致。",
+      "检测委派前缀变化，只更新已批准的 pfSense 字段，保留主机位，并验证每次事务。",
+      "安装和配置",
+      "查看安全机制",
+      "博客文章",
+      "版本说明、配置指南，以及有关动态 IPv6 前缀的文章。"
+    ],
+    "navbar": [
+      "首页",
+      "文档",
+      "安全与运行",
+      "博客"
+    ],
+    "footer": [
+      "指南",
+      "资源",
+      "安装和配置",
+      "安全与运行",
+      "故障排除",
+      "pfSense 文档",
+      "源代码",
+      "开始阅读",
+      "版权所有 © {years} Jacky Liang。采用 MIT 许可证发布。",
+      "博客"
+    ],
+    "blog": [
+      "博客",
+      "版本说明和配置指南",
+      "博客",
+      "版本说明、配置指南，以及在 IPv6 前缀变化时让 pfSense 地址保持最新的文章。",
+      "最新文章"
+    ],
+    "intro": {
+      "title": "安装和配置",
+      "description": "安装 IPv6 前缀更新器，并在 pfSense 上建立安全的前缀基线。",
+      "installationKeyword": "安装",
+      "body": "# 安装和配置\n\n安装 IPv6 前缀更新器，使已批准的本地 IPv6 引用跟随 ISP 动态委派的前缀，同时完整保留主机位。\n\n## 开始之前\n\n确认 ISP 委派的前缀长度，以及具有活动全局 IPv6 地址的 pfSense 接口。软件包不会猜测前缀长度。初始 **/56** 只是常见默认值；请替换为 ISP 或 DHCPv6 配置中的实际值。\n\n如果 WAN 只获得委派前缀而没有可用的全局地址，请选择跟踪 WAN 的下游接口，例如 LAN。状态页会显示软件包选择的确切源地址和网络前缀。\n\n:::caution\n请先在实验室防火墙上测试，并在安装前导出 pfSense 配置备份。\n:::\n\n## 安装软件包\n\n在 pfSense shell 中运行以下命令，直接从 GitHub 安装最新版本。\n\n~~~shell\npkg add https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg\n~~~\n\n打开 **服务 → IPv6 前缀更新器**。在首次手动检查建立基线之前，请保持计划更新为禁用状态。\n\n## 配置并建立基线\n\n1. 选择承载委派全局 IPv6 前缀的接口。\n2. 选择 ISP 提供的确切前缀长度。\n3. 仅启用需要的配置范围，然后选择计划和通知。\n4. 保存并确认成功提示。\n5. 在 **状态** 选项卡中选择 **立即运行**。\n\n第一次正常运行只记录规范源地址和掩码后的网络前缀，不修改配置。基线建立后，**试运行**会预览新旧前缀、字段数量、备份状态和相关服务，而不会写入防火墙配置。\n\n[阅读“安全与运行”](./operations.mdx)\n"
+    },
+    "operations": {
+      "title": "安全与运行",
+      "description": "了解地址选择、备份、更新、测试和故障排除。",
+      "body": "# 安全与运行\n\n请在状态页检查每次运行的源地址、派生前缀、备份结果和最终状态。\n\n## 地址选择与计算\n\n软件包要求 pfSense 重新读取所选接口的主要活动 IPv6 地址，并禁用链路本地回退。环回、未指定、多播、链路本地、唯一本地、IPv4 映射及格式错误的地址都会被拒绝。\n\n软件包对 **/48** 到 **/64** 的边界执行二进制掩码并保留剩余主机位，不使用文本缩写或字符串前缀匹配。测试中的 **2001:db8::/32** 地址仅供文档使用。实验室地址 2001:db8:abcd:78aa::1 是人工设置的，按 /56 掩码后为 2001:db8:abcd:7800::/56，并非来自 ISP。\n\n## 安全事务\n\n前缀变化时，软件包会验证环境和状态，仅扫描已启用且已审查的路径，生成完整计划，验证旧值及重载能力，并在首次修改前创建原生 pfSense 配置历史备份。之后只写入配置一次，验证新值，仅重载必要服务，再次验证，然后才推进成功状态并发送通知。\n\n如果备份、写入、验证或必要的服务重载失败，成功前缀状态不会推进。没有变化时不会扫描配置、创建备份、重载服务或发送通知。\n\n## 结果与测试\n\n**已初始化**表示记录了安全基线；**无变化**表示网络前缀相同；**试运行**仅为预览；**警告**表示没有已批准字段匹配旧前缀；**成功**表示备份、写入和服务均已验证；**失败**表示安全阶段阻止了运行。\n\n回归测试覆盖二进制掩码、非字节边界、主机位保留、无效地址、全部六个范围、首次运行和试运行、先备份后修改、写入与重载故障、锁、原子状态以及全部 18 种 pfSense 语言。端到端测试只在独立 pfSense 虚拟机中运行，绝不面向生产防火墙。\n\n## 故障排除\n\n如果源地址不正确，请选择真正拥有全局地址的下游跟踪接口，不要通过猜测前缀长度来补偿。若前缀变化后出现零匹配警告，请检查状态页的旧前缀和已启用范围。发生错误时，请查看 **状态 → 命令输出**和系统日志；必要时从原生 pfSense 配置历史恢复。\n"
+    },
+    "sidebar": {
+      "Start Here": "入门",
+      "Configure": "配置",
+      "Operate": "日常运维",
+      "Safety": "安全机制",
+      "Reference": "参考",
+      "Contributing": "参与贡献"
+    }
+  },
+  "zh-Hans-CN": {
+    "home": [
+      "原生 pfSense 软件包",
+      "安全地保持动态 IPv6 前缀一致。",
+      "检测委派前缀变化，只更新已批准的 pfSense 字段，保留主机位，并验证每次事务。",
+      "安装和配置",
+      "查看安全机制",
+      "博客文章",
+      "版本说明、配置指南，以及有关动态 IPv6 前缀的文章。"
+    ],
+    "navbar": [
+      "首页",
+      "文档",
+      "安全与运行",
+      "博客"
+    ],
+    "footer": [
+      "指南",
+      "资源",
+      "安装和配置",
+      "安全与运行",
+      "故障排除",
+      "pfSense 文档",
+      "源代码",
+      "开始阅读",
+      "版权所有 © {years} Jacky Liang。采用 MIT 许可证发布。",
+      "博客"
+    ],
+    "blog": [
+      "博客",
+      "版本说明和配置指南",
+      "博客",
+      "版本说明、配置指南，以及在 IPv6 前缀变化时让 pfSense 地址保持最新的文章。",
+      "最新文章"
+    ],
+    "intro": {
+      "title": "安装和配置",
+      "description": "安装 IPv6 前缀更新器，并在 pfSense 上建立安全的前缀基线。",
+      "installationKeyword": "安装",
+      "body": "# 安装和配置\n\n安装 IPv6 前缀更新器，使已批准的本地 IPv6 引用跟随 ISP 动态委派的前缀，同时完整保留主机位。\n\n## 开始之前\n\n确认 ISP 委派的前缀长度，以及具有活动全局 IPv6 地址的 pfSense 接口。软件包不会猜测前缀长度。初始 **/56** 只是常见默认值；请替换为 ISP 或 DHCPv6 配置中的实际值。\n\n如果 WAN 只获得委派前缀而没有可用的全局地址，请选择跟踪 WAN 的下游接口，例如 LAN。状态页会显示软件包选择的确切源地址和网络前缀。\n\n:::caution\n请先在实验室防火墙上测试，并在安装前导出 pfSense 配置备份。\n:::\n\n## 安装软件包\n\n在 pfSense shell 中运行以下命令，直接从 GitHub 安装最新版本。\n\n~~~shell\npkg add https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg\n~~~\n\n打开 **服务 → IPv6 前缀更新器**。在首次手动检查建立基线之前，请保持计划更新为禁用状态。\n\n## 配置并建立基线\n\n1. 选择承载委派全局 IPv6 前缀的接口。\n2. 选择 ISP 提供的确切前缀长度。\n3. 仅启用需要的配置范围，然后选择计划和通知。\n4. 保存并确认成功提示。\n5. 在 **状态** 选项卡中选择 **立即运行**。\n\n第一次正常运行只记录规范源地址和掩码后的网络前缀，不修改配置。基线建立后，**试运行**会预览新旧前缀、字段数量、备份状态和相关服务，而不会写入防火墙配置。\n\n[阅读“安全与运行”](./operations.mdx)\n"
+    },
+    "operations": {
+      "title": "安全与运行",
+      "description": "了解地址选择、备份、更新、测试和故障排除。",
+      "body": "# 安全与运行\n\n请在状态页检查每次运行的源地址、派生前缀、备份结果和最终状态。\n\n## 地址选择与计算\n\n软件包要求 pfSense 重新读取所选接口的主要活动 IPv6 地址，并禁用链路本地回退。环回、未指定、多播、链路本地、唯一本地、IPv4 映射及格式错误的地址都会被拒绝。\n\n软件包对 **/48** 到 **/64** 的边界执行二进制掩码并保留剩余主机位，不使用文本缩写或字符串前缀匹配。测试中的 **2001:db8::/32** 地址仅供文档使用。实验室地址 2001:db8:abcd:78aa::1 是人工设置的，按 /56 掩码后为 2001:db8:abcd:7800::/56，并非来自 ISP。\n\n## 安全事务\n\n前缀变化时，软件包会验证环境和状态，仅扫描已启用且已审查的路径，生成完整计划，验证旧值及重载能力，并在首次修改前创建原生 pfSense 配置历史备份。之后只写入配置一次，验证新值，仅重载必要服务，再次验证，然后才推进成功状态并发送通知。\n\n如果备份、写入、验证或必要的服务重载失败，成功前缀状态不会推进。没有变化时不会扫描配置、创建备份、重载服务或发送通知。\n\n## 结果与测试\n\n**已初始化**表示记录了安全基线；**无变化**表示网络前缀相同；**试运行**仅为预览；**警告**表示没有已批准字段匹配旧前缀；**成功**表示备份、写入和服务均已验证；**失败**表示安全阶段阻止了运行。\n\n回归测试覆盖二进制掩码、非字节边界、主机位保留、无效地址、全部六个范围、首次运行和试运行、先备份后修改、写入与重载故障、锁、原子状态以及全部 18 种 pfSense 语言。端到端测试只在独立 pfSense 虚拟机中运行，绝不面向生产防火墙。\n\n## 故障排除\n\n如果源地址不正确，请选择真正拥有全局地址的下游跟踪接口，不要通过猜测前缀长度来补偿。若前缀变化后出现零匹配警告，请检查状态页的旧前缀和已启用范围。发生错误时，请查看 **状态 → 命令输出**和系统日志；必要时从原生 pfSense 配置历史恢复。\n"
+    },
+    "sidebar": {
+      "Start Here": "入门",
+      "Configure": "配置",
+      "Operate": "日常运维",
+      "Safety": "安全机制",
+      "Reference": "参考",
+      "Contributing": "参与贡献"
+    }
+  },
+  "zh-Hans-HK": {
+    "home": [
+      "原生 pfSense 软件包",
+      "安全地保持动态 IPv6 前缀一致。",
+      "检测委派前缀变化，只更新已批准的 pfSense 字段，保留主机位，并验证每次事务。",
+      "安装和配置",
+      "查看安全机制",
+      "博客文章",
+      "版本说明、配置指南，以及有关动态 IPv6 前缀的文章。"
+    ],
+    "navbar": [
+      "首页",
+      "文档",
+      "安全与运行",
+      "博客"
+    ],
+    "footer": [
+      "指南",
+      "资源",
+      "安装和配置",
+      "安全与运行",
+      "故障排除",
+      "pfSense 文档",
+      "源代码",
+      "开始阅读",
+      "版权所有 © {years} Jacky Liang。采用 MIT 许可证发布。",
+      "博客"
+    ],
+    "blog": [
+      "博客",
+      "版本说明和配置指南",
+      "博客",
+      "版本说明、配置指南，以及在 IPv6 前缀变化时让 pfSense 地址保持最新的文章。",
+      "最新文章"
+    ],
+    "intro": {
+      "title": "安装和配置",
+      "description": "安装 IPv6 前缀更新器，并在 pfSense 上建立安全的前缀基线。",
+      "installationKeyword": "安装",
+      "body": "# 安装和配置\n\n安装 IPv6 前缀更新器，使已批准的本地 IPv6 引用跟随 ISP 动态委派的前缀，同时完整保留主机位。\n\n## 开始之前\n\n确认 ISP 委派的前缀长度，以及具有活动全局 IPv6 地址的 pfSense 接口。软件包不会猜测前缀长度。初始 **/56** 只是常见默认值；请替换为 ISP 或 DHCPv6 配置中的实际值。\n\n如果 WAN 只获得委派前缀而没有可用的全局地址，请选择跟踪 WAN 的下游接口，例如 LAN。状态页会显示软件包选择的确切源地址和网络前缀。\n\n:::caution\n请先在实验室防火墙上测试，并在安装前导出 pfSense 配置备份。\n:::\n\n## 安装软件包\n\n在 pfSense shell 中运行以下命令，直接从 GitHub 安装最新版本。\n\n~~~shell\npkg add https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg\n~~~\n\n打开 **服务 → IPv6 前缀更新器**。在首次手动检查建立基线之前，请保持计划更新为禁用状态。\n\n## 配置并建立基线\n\n1. 选择承载委派全局 IPv6 前缀的接口。\n2. 选择 ISP 提供的确切前缀长度。\n3. 仅启用需要的配置范围，然后选择计划和通知。\n4. 保存并确认成功提示。\n5. 在 **状态** 选项卡中选择 **立即运行**。\n\n第一次正常运行只记录规范源地址和掩码后的网络前缀，不修改配置。基线建立后，**试运行**会预览新旧前缀、字段数量、备份状态和相关服务，而不会写入防火墙配置。\n\n[阅读“安全与运行”](./operations.mdx)\n"
+    },
+    "operations": {
+      "title": "安全与运行",
+      "description": "了解地址选择、备份、更新、测试和故障排除。",
+      "body": "# 安全与运行\n\n请在状态页检查每次运行的源地址、派生前缀、备份结果和最终状态。\n\n## 地址选择与计算\n\n软件包要求 pfSense 重新读取所选接口的主要活动 IPv6 地址，并禁用链路本地回退。环回、未指定、多播、链路本地、唯一本地、IPv4 映射及格式错误的地址都会被拒绝。\n\n软件包对 **/48** 到 **/64** 的边界执行二进制掩码并保留剩余主机位，不使用文本缩写或字符串前缀匹配。测试中的 **2001:db8::/32** 地址仅供文档使用。实验室地址 2001:db8:abcd:78aa::1 是人工设置的，按 /56 掩码后为 2001:db8:abcd:7800::/56，并非来自 ISP。\n\n## 安全事务\n\n前缀变化时，软件包会验证环境和状态，仅扫描已启用且已审查的路径，生成完整计划，验证旧值及重载能力，并在首次修改前创建原生 pfSense 配置历史备份。之后只写入配置一次，验证新值，仅重载必要服务，再次验证，然后才推进成功状态并发送通知。\n\n如果备份、写入、验证或必要的服务重载失败，成功前缀状态不会推进。没有变化时不会扫描配置、创建备份、重载服务或发送通知。\n\n## 结果与测试\n\n**已初始化**表示记录了安全基线；**无变化**表示网络前缀相同；**试运行**仅为预览；**警告**表示没有已批准字段匹配旧前缀；**成功**表示备份、写入和服务均已验证；**失败**表示安全阶段阻止了运行。\n\n回归测试覆盖二进制掩码、非字节边界、主机位保留、无效地址、全部六个范围、首次运行和试运行、先备份后修改、写入与重载故障、锁、原子状态以及全部 18 种 pfSense 语言。端到端测试只在独立 pfSense 虚拟机中运行，绝不面向生产防火墙。\n\n## 故障排除\n\n如果源地址不正确，请选择真正拥有全局地址的下游跟踪接口，不要通过猜测前缀长度来补偿。若前缀变化后出现零匹配警告，请检查状态页的旧前缀和已启用范围。发生错误时，请查看 **状态 → 命令输出**和系统日志；必要时从原生 pfSense 配置历史恢复。\n"
+    },
+    "sidebar": {
+      "Start Here": "入门",
+      "Configure": "配置",
+      "Operate": "日常运维",
+      "Safety": "安全机制",
+      "Reference": "参考",
+      "Contributing": "参与贡献"
+    }
+  },
+  "zh-Hant-TW": {
+    "home": [
+      "原生 pfSense 套件",
+      "安全地維持動態 IPv6 前綴一致。",
+      "偵測委派前綴變更，只更新已核准的 pfSense 欄位，保留主機位元，並驗證每次交易。",
+      "安裝與設定",
+      "檢視安全機制",
+      "網誌文章",
+      "版本說明、設定指南，以及動態 IPv6 前綴的相關文章。"
+    ],
+    "navbar": [
+      "首頁",
+      "文件",
+      "安全與操作",
+      "網誌"
+    ],
+    "footer": [
+      "指南",
+      "資源",
+      "安裝與設定",
+      "安全與操作",
+      "疑難排解",
+      "pfSense 文件",
+      "原始碼",
+      "開始閱讀",
+      "版權所有 © {years} Jacky Liang。依 MIT 授權條款發布。",
+      "網誌"
+    ],
+    "blog": [
+      "網誌",
+      "版本說明與設定指南",
+      "網誌",
+      "版本說明、設定指南，以及在 IPv6 前綴變更時讓 pfSense 位址保持最新的文章。",
+      "最新文章"
+    ],
+    "intro": {
+      "title": "安裝與設定",
+      "description": "安裝 IPv6 前綴更新器，並在 pfSense 上建立安全的前綴基準。",
+      "installationKeyword": "安裝",
+      "body": "# 安裝與設定\n\n安裝 IPv6 前綴更新器，使已核准的本機 IPv6 參照跟隨 ISP 動態委派的前綴，同時完整保留主機位元。\n\n## 開始之前\n\n確認 ISP 委派的前綴長度，以及具有作用中全域 IPv6 位址的 pfSense 介面。套件不會猜測前綴長度。初始 **/56** 只是常見預設值；請改用 ISP 或 DHCPv6 設定中的實際值。\n\n如果 WAN 只取得委派前綴而沒有可用的全域位址，請選擇追蹤 WAN 的下游介面，例如 LAN。狀態頁會顯示套件選取的確切來源位址與網路前綴。\n\n:::caution\n請先在實驗室防火牆測試，並於安裝前匯出 pfSense 設定備份。\n:::\n\n## 安裝套件\n\n在 pfSense shell 中執行以下命令，直接從 GitHub 安裝最新版本。\n\n~~~shell\npkg add https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg\n~~~\n\n開啟 **服務 → IPv6 前綴更新器**。在第一次手動檢查建立基準前，請維持排程更新停用。\n\n## 設定並建立基準\n\n1. 選擇承載委派全域 IPv6 前綴的介面。\n2. 選擇 ISP 提供的確切前綴長度。\n3. 只啟用需要的設定範圍，再選擇排程與通知。\n4. 儲存並確認成功訊息。\n5. 在 **狀態** 分頁選擇 **立即執行**。\n\n第一次正常執行只記錄標準來源位址與遮罩後的網路前綴，不修改設定。建立基準後，**試執行**會預覽新舊前綴、欄位數量、備份狀態與相關服務，而不寫入防火牆設定。\n\n[閱讀「安全與操作」](./operations.mdx)\n"
+    },
+    "operations": {
+      "title": "安全與操作",
+      "description": "了解位址選取、備份、更新、測試與疑難排解。",
+      "body": "# 安全與操作\n\n請在狀態頁檢查每次執行的來源位址、推導前綴、備份結果與最終狀態。\n\n## 位址選取與計算\n\n套件要求 pfSense 重新讀取所選介面的主要作用中 IPv6 位址，並停用鏈路本機後備。迴路、未指定、多播、鏈路本機、唯一本機、IPv4 對映及格式錯誤的位址都會被拒絕。\n\n套件對 **/48** 到 **/64** 的邊界進行二進位遮罩並保留剩餘主機位元，不使用文字縮寫或字串前綴比對。測試中的 **2001:db8::/32** 位址僅供文件使用。實驗室位址 2001:db8:abcd:78aa::1 是刻意設定的，依 /56 遮罩後為 2001:db8:abcd:7800::/56，並非來自 ISP。\n\n## 安全交易\n\n前綴變更時，套件會驗證環境與狀態，只掃描已啟用且已審查的路徑，建立完整計畫，確認舊值與重新載入能力，並在第一次修改前建立原生 pfSense 設定歷程備份。之後只寫入設定一次、驗證新值、只重新載入必要服務、再次驗證，最後才推進成功狀態並傳送通知。\n\n若備份、寫入、驗證或必要的服務重新載入失敗，成功前綴狀態不會前進。沒有變更時不會掃描設定、建立備份、重新載入服務或傳送通知。\n\n## 結果與測試\n\n**已初始化**表示已記錄安全基準；**無變更**表示網路前綴相同；**試執行**僅為預覽；**警告**表示沒有已核准欄位符合舊前綴；**成功**表示備份、寫入與服務均已驗證；**失敗**表示安全階段阻止了執行。\n\n迴歸測試涵蓋二進位遮罩、非位元組邊界、主機位元保留、無效位址、全部六個範圍、第一次執行與試執行、先備份後修改、寫入與重新載入失敗、鎖定、原子狀態，以及全部 18 種 pfSense 語言。端對端測試只在獨立 pfSense 虛擬機進行，絕不指向正式防火牆。\n\n## 疑難排解\n\n若來源位址錯誤，請選擇真正擁有全域位址的下游追蹤介面，不要以猜測前綴長度補償。若前綴變更後出現零符合警告，請檢查狀態頁的舊前綴與已啟用範圍。發生錯誤時，請檢視 **狀態 → 命令輸出**與系統記錄；必要時從原生 pfSense 設定歷程還原。\n"
+    },
+    "sidebar": {
+      "Start Here": "入門",
+      "Configure": "設定",
+      "Operate": "日常維運",
+      "Safety": "安全機制",
+      "Reference": "參考",
+      "Contributing": "參與貢獻"
+    }
+  },
+  "nl-NL": {
+    "home": [
+      "Native pfSense-pakket",
+      "Houd dynamische IPv6-prefixen veilig op één lijn.",
+      "Detecteer wijzigingen in gedelegeerde prefixen, werk alleen goedgekeurde pfSense-velden bij, behoud hostbits en verifieer elke transactie.",
+      "Installeren en configureren",
+      "Veilig gedrag bekijken",
+      "Uit de blog",
+      "Releaseopmerkingen, installatiehandleidingen en artikelen over dynamische IPv6-prefixen."
+    ],
+    "navbar": [
+      "Start",
+      "Documentatie",
+      "Veiligheid en werking",
+      "Blog"
+    ],
+    "footer": [
+      "Handleidingen",
+      "Bronnen",
+      "Installeren en configureren",
+      "Veiligheid en werking",
+      "Problemen oplossen",
+      "pfSense-documentatie",
+      "Broncode",
+      "Begin met lezen",
+      "Copyright © {years} Jacky Liang. Uitgegeven onder de MIT-licentie.",
+      "Blog"
+    ],
+    "blog": [
+      "Blog",
+      "Releaseopmerkingen en installatiehandleidingen",
+      "Blog",
+      "Releaseopmerkingen, installatiehandleidingen en artikelen over het actueel houden van pfSense-adressen wanneer de IPv6-prefix verandert.",
+      "Recente berichten"
+    ],
+    "intro": {
+      "title": "Installeren en configureren",
+      "description": "Installeer IPv6-prefixupdater en leg een veilig prefixuitgangspunt vast op pfSense.",
+      "installationKeyword": "installatie",
+      "body": "# Installeren en configureren\n\nInstalleer IPv6-prefixupdater om goedgekeurde lokale IPv6-verwijzingen te laten meegaan met een dynamisch door de provider gedelegeerd prefix, met exact behoud van alle hostbits.\n\n## Voorbereiding\n\nBepaal de door de provider gedelegeerde prefixlengte en de pfSense-interface met het actieve globale IPv6-adres. Het pakket raadt de prefixlengte niet. De eerste keuze **/56** is alleen een gebruikelijke standaard; vervang deze door de waarde van uw provider of DHCPv6-configuratie.\n\nAls WAN alleen een gedelegeerde prefix ontvangt, kiest u een benedenstroomse interface die WAN volgt, bijvoorbeeld LAN. De Statuspagina toont altijd het exacte bronadres en de berekende netwerkprefix.\n\n:::caution\nTest eerst op een labfirewall en exporteer vóór installatie een pfSense-configuratieback-up.\n:::\n\n## Het pakket installeren\n\nVoer deze opdracht uit in een pfSense-shell om de nieuwste versie rechtstreeks vanaf GitHub te installeren.\n\n~~~shell\npkg add https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg\n~~~\n\nOpen **Services → IPv6-prefixupdater**. Laat geplande updates uitgeschakeld totdat de eerste handmatige controle een uitgangspunt heeft vastgelegd.\n\n## Configureren en initialiseren\n\n1. Kies de interface die de gedelegeerde globale IPv6-prefix bevat.\n2. Kies de exacte prefixlengte van de provider.\n3. Schakel alleen benodigde bereiken in en kies daarna schema en meldingen.\n4. Sla op en controleer de succesmelding.\n5. Kies op het tabblad **Status** voor **Nu uitvoeren**.\n\nDe eerste normale uitvoering registreert het canonieke bronadres en de gemaskeerde prefix zonder configuratie te wijzigen. Daarna toont **Testuitvoering** de oude en nieuwe prefix, het aantal velden, de back-upstatus en services zonder de firewallconfiguratie te schrijven.\n\n[Lees Veiligheid en werking](./operations.mdx)\n"
+    },
+    "operations": {
+      "title": "Veiligheid en werking",
+      "description": "Begrijp adreskeuze, back-ups, updates, tests en probleemoplossing.",
+      "body": "# Veiligheid en werking\n\nControleer iedere uitvoering op de Statuspagina: bronadres, afgeleide prefix, back-upresultaat en uitkomst.\n\n## Adreskeuze en berekening\n\nHet pakket vraagt pfSense om een verse meting van het primaire actieve IPv6-adres van de gekozen interface en schakelt link-local terugval uit. Loopback-, niet-gespecificeerde, multicast-, link-local-, unique-local-, IPv4-mapped en ongeldige waarden worden geweigerd.\n\nDe prefix wordt binair gemaskeerd voor grenzen van **/48** tot en met **/64** en de overige hostbits blijven exact behouden. Tekstafkortingen en tekenreeksmatching worden niet gebruikt. Adressen onder **2001:db8::/32** zijn documentatievoorbeelden. Het labadres 2001:db8:abcd:78aa::1 is bewust ingesteld en wordt bij /56 2001:db8:abcd:7800::/56; het kwam niet van een provider.\n\n## Veilige transactie\n\nBij een wijziging valideert het pakket omgeving en status, scant het alleen ingeschakelde beoordeelde paden, maakt het een volledig plan, controleert het oude waarden en herlaadmogelijkheden en maakt het een native pfSense-configuratieback-up **vóór de eerste wijziging**. Daarna schrijft het één keer, verifieert nieuwe waarden, herlaadt alleen vereiste services, verifieert opnieuw en werkt pas dan de successtatus en melding bij.\n\nEen fout bij back-up, schrijven, verificatie of verplichte herlaadactie verplaatst de successtatus niet. Een uitvoering zonder wijziging scant of schrijft niets, maakt geen back-up, herlaadt niets en meldt niet.\n\n## Uitkomsten en tests\n\n**Geïnitialiseerd** is een veilig uitgangspunt; **Geen wijziging** is dezelfde netwerkprefix; **Testuitvoering** is alleen een voorbeeld; **Waarschuwing** betekent nul goedgekeurde overeenkomsten; **Geslaagd** bevestigt back-up, schrijven en services; **Mislukt** betekent dat een veiligheidsstap stopte.\n\nRegressietests dekken binaire maskering, niet-byte-grenzen, behoud van hostbits, geweigerde adressen, alle zes bereiken, eerste en testuitvoeringen, back-up vóór mutatie, schrijf- en herlaadfouten, vergrendeling, atomaire status en alle 18 pfSense-talen. End-to-endtests gebruiken uitsluitend een aparte pfSense-VM.\n\n## Problemen oplossen\n\nKies bij een verkeerd bronadres de benedenstroomse gevolgde interface die werkelijk het globale adres heeft; compenseer niet met een gegokte prefixlengte. Controleer bij nul overeenkomsten de oude prefix en ingeschakelde bereiken. Bekijk bij fouten **Status → Opdrachtuitvoer** en de systeemlogboeken; herstel indien nodig vanuit de native pfSense-configuratiegeschiedenis.\n"
+    },
+    "sidebar": {
+      "Start Here": "Aan de slag",
+      "Configure": "Configuratie",
+      "Operate": "Beheer",
+      "Safety": "Veiligheid",
+      "Reference": "Naslag",
+      "Contributing": "Bijdragen"
+    }
+  },
+  "fr-FR": {
+    "home": [
+      "Paquet pfSense natif",
+      "Maintenez les préfixes IPv6 dynamiques alignés en toute sécurité.",
+      "Détectez les changements de préfixe délégué, mettez à jour uniquement les champs pfSense approuvés, conservez les bits d’hôte et vérifiez chaque transaction.",
+      "Installer et configurer",
+      "Examiner la sécurité",
+      "Sur le blog",
+      "Notes de version, guides de configuration et articles sur les préfixes IPv6 dynamiques."
+    ],
+    "navbar": [
+      "Accueil",
+      "Documentation",
+      "Sécurité et fonctionnement",
+      "Blog"
+    ],
+    "footer": [
+      "Guides",
+      "Ressources",
+      "Installer et configurer",
+      "Sécurité et fonctionnement",
+      "Dépannage",
+      "Documentation pfSense",
+      "Code source",
+      "Commencer la lecture",
+      "Copyright © {years} Jacky Liang. Publié sous licence MIT.",
+      "Blog"
+    ],
+    "blog": [
+      "Blog",
+      "Notes de version et guides de configuration",
+      "Blog",
+      "Notes de version, guides de configuration et articles pour garder les adresses pfSense à jour lorsque le préfixe IPv6 change.",
+      "Articles récents"
+    ],
+    "intro": {
+      "title": "Installer et configurer",
+      "description": "Installez l’outil de mise à jour du préfixe IPv6 et établissez une référence sûre sur pfSense.",
+      "installationKeyword": "installation",
+      "body": "# Installer et configurer\n\nInstallez l’outil de mise à jour du préfixe IPv6 pour aligner les références IPv6 locales approuvées sur un préfixe dynamique délégué par le FAI, tout en conservant exactement les bits d’hôte.\n\n## Avant de commencer\n\nIdentifiez la longueur déléguée par le FAI et l’interface pfSense qui possède l’adresse IPv6 globale active. Le paquet ne devine pas la longueur. La sélection initiale **/56** est seulement une valeur courante ; remplacez-la par celle de votre FAI ou de la configuration DHCPv6.\n\nSi le WAN reçoit uniquement un préfixe délégué, choisissez une interface en aval qui suit le WAN, par exemple le LAN. La page État affiche l’adresse source exacte et le préfixe réseau calculé.\n\n:::caution\nTestez d’abord sur un pare-feu de laboratoire et exportez une sauvegarde de configuration pfSense avant l’installation.\n:::\n\n## Installer le paquet\n\nExécutez cette commande dans un shell pfSense pour installer la dernière version directement depuis GitHub.\n\n~~~shell\npkg add https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg\n~~~\n\nOuvrez **Services → Outil de mise à jour du préfixe IPv6**. Laissez la planification désactivée jusqu’à ce qu’une première vérification manuelle établisse la référence.\n\n## Configurer et initialiser\n\n1. Sélectionnez l’interface portant le préfixe IPv6 global délégué.\n2. Sélectionnez la longueur exacte fournie par le FAI.\n3. Activez uniquement les étendues nécessaires, puis la planification et les notifications.\n4. Enregistrez et vérifiez le message de réussite.\n5. Dans l’onglet **État**, sélectionnez **Exécuter maintenant**.\n\nLa première exécution normale enregistre l’adresse source canonique et le préfixe masqué sans modifier la configuration. Ensuite, la **Simulation** affiche les préfixes précédent et actuel, le nombre de champs, l’état de la sauvegarde et les services sans écrire la configuration du pare-feu.\n\n[Lire Sécurité et fonctionnement](./operations.mdx)\n"
+    },
+    "operations": {
+      "title": "Sécurité et fonctionnement",
+      "description": "Comprenez le choix de l’adresse, les sauvegardes, les mises à jour, les tests et le dépannage.",
+      "body": "# Sécurité et fonctionnement\n\nVérifiez chaque exécution sur la page État : adresse source, préfixe calculé, sauvegarde et résultat.\n\n## Sélection et calcul de l’adresse\n\nLe paquet demande à pfSense une lecture fraîche de l’adresse IPv6 active principale de l’interface choisie et désactive le repli link-local. Les valeurs de bouclage, non spécifiées, multicast, link-local, unique-local, mappées IPv4 ou mal formées sont rejetées.\n\nLe préfixe est masqué en binaire pour les limites de **/48** à **/64**, et les autres bits d’hôte sont conservés. Les abréviations textuelles et la comparaison de chaînes ne sont jamais utilisées. Les adresses **2001:db8::/32** sont réservées aux exemples. L’adresse de laboratoire 2001:db8:abcd:78aa::1 a été ajoutée volontairement et devient 2001:db8:abcd:7800::/56 avec un masque /56 ; elle ne provient pas d’un FAI.\n\n## Transaction sûre\n\nLors d’un changement, le paquet valide l’environnement et l’état, analyse seulement les chemins activés et examinés, prépare un plan complet, vérifie les anciennes valeurs et les capacités de rechargement, puis crée une sauvegarde native de l’historique pfSense **avant la première modification**. Il écrit ensuite une seule fois, vérifie les nouvelles valeurs, recharge uniquement les services requis, vérifie encore, puis avance l’état réussi et notifie.\n\nUn échec de sauvegarde, écriture, vérification ou rechargement obligatoire n’avance pas l’état réussi. Une exécution sans changement n’analyse ni n’écrit la configuration, ne sauvegarde pas, ne recharge pas et ne notifie pas.\n\n## Résultats et tests\n\n**Initialisé** indique une référence sûre ; **Aucun changement** indique le même préfixe ; **Simulation** est un aperçu ; **Avertissement** indique zéro champ correspondant ; **Réussite** confirme sauvegarde, écriture et services ; **Échec** indique qu’une étape de sécurité a arrêté l’exécution.\n\nLes tests couvrent le masquage binaire, les limites non alignées sur un octet, les bits d’hôte, les adresses rejetées, les six étendues, l’initialisation et la simulation, la sauvegarde avant modification, les échecs d’écriture et de rechargement, le verrouillage, l’état atomique et les 18 langues pfSense. Les tests de bout en bout utilisent uniquement une VM pfSense isolée.\n\n## Dépannage\n\nSi l’adresse source est incorrecte, choisissez l’interface suivie en aval qui possède réellement l’adresse globale ; ne compensez pas avec une longueur supposée. Pour un avertissement sans correspondance, vérifiez l’ancien préfixe et les étendues activées. En cas d’erreur, consultez **État → Sortie de commande** et les journaux système, puis restaurez l’historique natif pfSense si nécessaire.\n"
+    },
+    "sidebar": {
+      "Start Here": "Pour commencer",
+      "Configure": "Configuration",
+      "Operate": "Exploitation",
+      "Safety": "Sécurité",
+      "Reference": "Référence",
+      "Contributing": "Contribuer"
+    }
+  },
+  "de-DE": {
+    "home": [
+      "Natives pfSense-Paket",
+      "Dynamische IPv6-Präfixe sicher abgleichen.",
+      "Delegierte Präfixänderungen erkennen, nur genehmigte pfSense-Felder aktualisieren, Hostbits bewahren und jede Transaktion prüfen.",
+      "Installieren und konfigurieren",
+      "Sicherheitsverhalten prüfen",
+      "Aus dem Blog",
+      "Release Notes, Einrichtungsanleitungen und Beiträge zu dynamischen IPv6-Präfixen."
+    ],
+    "navbar": [
+      "Start",
+      "Dokumentation",
+      "Sicherheit und Betrieb",
+      "Blog"
+    ],
+    "footer": [
+      "Anleitungen",
+      "Ressourcen",
+      "Installieren und konfigurieren",
+      "Sicherheit und Betrieb",
+      "Fehlerbehebung",
+      "pfSense-Dokumentation",
+      "Quellcode",
+      "Jetzt lesen",
+      "Copyright © {years} Jacky Liang. Veröffentlicht unter der MIT-Lizenz.",
+      "Blog"
+    ],
+    "blog": [
+      "Blog",
+      "Release Notes und Einrichtungsanleitungen",
+      "Blog",
+      "Release Notes, Einrichtungsanleitungen und Beiträge dazu, wie pfSense-Adressen aktuell bleiben, wenn sich das IPv6-Präfix ändert.",
+      "Neueste Beiträge"
+    ],
+    "intro": {
+      "title": "Installieren und konfigurieren",
+      "description": "Installieren Sie die IPv6-Präfixaktualisierung und legen Sie einen sicheren Ausgangszustand in pfSense fest.",
+      "installationKeyword": "Installation",
+      "body": "# Installieren und konfigurieren\n\nInstallieren Sie die IPv6-Präfixaktualisierung, damit genehmigte lokale IPv6-Referenzen einem dynamischen ISP-Präfix folgen und alle Hostbits exakt erhalten bleiben.\n\n## Vorbereitungen\n\nErmitteln Sie die vom Anbieter delegierte Präfixlänge und die pfSense-Schnittstelle mit der aktiven globalen IPv6-Adresse. Das Paket errät die Länge nicht. Die anfängliche Auswahl **/56** ist nur ein häufiger Standard; ersetzen Sie sie durch den Wert des Anbieters oder der DHCPv6-Konfiguration.\n\nErhält WAN nur ein delegiertes Präfix, wählen Sie eine nachgelagerte Schnittstelle, die WAN verfolgt, etwa LAN. Die Statusseite zeigt immer die genaue Quelladresse und das berechnete Netzwerkpräfix.\n\n:::caution\nTesten Sie zuerst auf einer Labor-Firewall und exportieren Sie vor der Installation eine pfSense-Konfigurationssicherung.\n:::\n\n## Paket installieren\n\nFühren Sie diesen Befehl in einer pfSense-Shell aus, um die neueste Version direkt von GitHub zu installieren.\n\n~~~shell\npkg add https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg\n~~~\n\nÖffnen Sie **Dienste → IPv6-Präfixaktualisierung**. Lassen Sie den Zeitplan deaktiviert, bis eine erste manuelle Prüfung den Ausgangszustand festlegt.\n\n## Konfigurieren und initialisieren\n\n1. Wählen Sie die Schnittstelle mit dem delegierten globalen IPv6-Präfix.\n2. Wählen Sie die genaue Präfixlänge des Anbieters.\n3. Aktivieren Sie nur benötigte Bereiche und wählen Sie Zeitplan und Benachrichtigungen.\n4. Speichern Sie und prüfen Sie die Erfolgsmeldung.\n5. Wählen Sie auf der Registerkarte **Status** die Option **Jetzt ausführen**.\n\nDer erste normale Lauf speichert die kanonische Quelladresse und das maskierte Präfix, ohne die Konfiguration zu ändern. Danach zeigt ein **Testlauf** altes und neues Präfix, Feldanzahl, Sicherungsstatus und Dienste, ohne die Firewallkonfiguration zu schreiben.\n\n[Sicherheit und Betrieb lesen](./operations.mdx)\n"
+    },
+    "operations": {
+      "title": "Sicherheit und Betrieb",
+      "description": "Verstehen Sie Adressauswahl, Sicherungen, Aktualisierungen, Tests und Fehlerbehebung.",
+      "body": "# Sicherheit und Betrieb\n\nPrüfen Sie jeden Lauf auf der Statusseite: Quelladresse, abgeleitetes Präfix, Sicherung und Ergebnis.\n\n## Adressauswahl und Berechnung\n\nDas Paket fordert von pfSense eine neue Abfrage der primären aktiven IPv6-Adresse der gewählten Schnittstelle an und deaktiviert den Link-Local-Rückgriff. Loopback-, nicht angegebene, Multicast-, Link-Local-, Unique-Local-, IPv4-abgebildete und fehlerhafte Werte werden abgelehnt.\n\nDas Präfix wird für Grenzen von **/48** bis **/64** binär maskiert; übrige Hostbits bleiben erhalten. Textabkürzungen und Zeichenkettenvergleiche werden nicht verwendet. Adressen in **2001:db8::/32** sind Dokumentationsbeispiele. Die Laboradresse 2001:db8:abcd:78aa::1 wurde absichtlich gesetzt und ergibt bei /56 den Wert 2001:db8:abcd:7800::/56; sie stammt nicht vom Anbieter.\n\n## Sichere Transaktion\n\nBei einer Änderung prüft das Paket Umgebung und Zustand, durchsucht nur aktivierte geprüfte Pfade, erstellt einen vollständigen Plan, verifiziert alte Werte und Lademöglichkeiten und erzeugt **vor der ersten Änderung** eine native pfSense-Konfigurationssicherung. Danach schreibt es genau einmal, prüft neue Werte, lädt nur erforderliche Dienste neu, prüft erneut und aktualisiert erst dann Erfolgszustand und Benachrichtigung.\n\nFehler bei Sicherung, Schreiben, Prüfung oder Pflicht-Neuladen verschieben den Erfolgszustand nicht. Ein unveränderter Lauf liest oder schreibt keine Konfiguration, sichert nicht, lädt nicht neu und benachrichtigt nicht.\n\n## Ergebnisse und Tests\n\n**Initialisiert** ist ein sicherer Ausgangszustand; **Keine Änderung** bedeutet dasselbe Netzwerkpräfix; **Testlauf** ist nur eine Vorschau; **Warnung** bedeutet keine genehmigte Übereinstimmung; **Erfolg** bestätigt Sicherung, Schreiben und Dienste; **Fehler** bedeutet, dass eine Sicherheitsstufe stoppte.\n\nRegressionstests decken Binärmasken, Nicht-Byte-Grenzen, Hostbits, abgelehnte Adressen, alle sechs Bereiche, Initialisierung und Testlauf, Sicherung vor Änderung, Schreib- und Ladefehler, Sperren, atomaren Zustand und alle 18 pfSense-Sprachen ab. End-to-End-Tests laufen nur auf einer getrennten pfSense-VM.\n\n## Fehlerbehebung\n\nIst die Quelladresse falsch, wählen Sie die nachgelagerte Track-Schnittstelle mit der tatsächlichen globalen Adresse; gleichen Sie dies nicht mit einer geratenen Länge aus. Prüfen Sie bei null Treffern altes Präfix und aktivierte Bereiche. Lesen Sie bei Fehlern **Status → Befehlsausgabe** und Systemprotokolle und stellen Sie bei Bedarf aus dem nativen pfSense-Verlauf wieder her.\n"
+    },
+    "sidebar": {
+      "Start Here": "Erste Schritte",
+      "Configure": "Konfiguration",
+      "Operate": "Betrieb",
+      "Safety": "Sicherheit",
+      "Reference": "Referenz",
+      "Contributing": "Mitwirken"
+    }
+  },
+  "nb-NO": {
+    "home": [
+      "Opprinnelig pfSense-pakke",
+      "Hold dynamiske IPv6-prefikser trygt samordnet.",
+      "Oppdag endringer i delegerte prefikser, oppdater bare godkjente pfSense-felt, bevar vertsbiter og verifiser hver transaksjon.",
+      "Installer og konfigurer",
+      "Se sikker virkemåte",
+      "Fra bloggen",
+      "Utgivelsesmerknader, oppsettsveiledninger og innlegg om dynamiske IPv6-prefikser."
+    ],
+    "navbar": [
+      "Hjem",
+      "Dokumentasjon",
+      "Sikkerhet og drift",
+      "Blogg"
+    ],
+    "footer": [
+      "Veiledninger",
+      "Ressurser",
+      "Installer og konfigurer",
+      "Sikkerhet og drift",
+      "Feilsøking",
+      "pfSense-dokumentasjon",
+      "Kildekode",
+      "Begynn å lese",
+      "Opphavsrett © {years} Jacky Liang. Utgitt under MIT-lisensen.",
+      "Blogg"
+    ],
+    "blog": [
+      "Blogg",
+      "Utgivelsesmerknader og oppsettsveiledninger",
+      "Blogg",
+      "Utgivelsesmerknader, oppsettsveiledninger og innlegg om å holde pfSense-adresser oppdatert når IPv6-prefikset endres.",
+      "Siste innlegg"
+    ],
+    "intro": {
+      "title": "Installer og konfigurer",
+      "description": "Installer IPv6-prefiksoppdatering og opprett et sikkert utgangspunkt på pfSense.",
+      "installationKeyword": "installasjon",
+      "body": "# Installer og konfigurer\n\nInstaller IPv6-prefiksoppdatering for å holde godkjente lokale IPv6-referanser samordnet med et dynamisk ISP-delegert prefiks, samtidig som alle vertsbiter bevares nøyaktig.\n\n## Før du begynner\n\nFinn prefikslengden som internettleverandøren har delegert, og pfSense-grensesnittet med den aktive globale IPv6-adressen. Pakken gjetter ikke lengden. Førstevalget **/56** er bare en vanlig standard; erstatt det med verdien fra leverandøren eller DHCPv6-konfigurasjonen.\n\nHvis WAN bare mottar et delegert prefiks, velger du et nedstrøms grensesnitt som følger WAN, for eksempel LAN. Statussiden viser den nøyaktige kildeadressen og det beregnede nettverksprefikset.\n\n:::caution\nTest først på en laboratoriebrannmur, og eksporter en pfSense-konfigurasjonssikkerhetskopi før installasjon.\n:::\n\n## Installer pakken\n\nKjør denne kommandoen i et pfSense-skall for å installere den nyeste utgaven direkte fra GitHub.\n\n~~~shell\npkg add https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg\n~~~\n\nÅpne **Tjenester → IPv6-prefiksoppdatering**. La planlagte oppdateringer være av til den første manuelle kontrollen har opprettet utgangspunktet.\n\n## Konfigurer og initialiser\n\n1. Velg grensesnittet med det delegerte globale IPv6-prefikset.\n2. Velg den nøyaktige prefikslengden fra leverandøren.\n3. Aktiver bare nødvendige områder, og velg deretter tidsplan og varsler.\n4. Lagre og kontroller bekreftelsen.\n5. Velg **Kjør nå** i fanen **Status**.\n\nDen første normale kjøringen registrerer den kanoniske kildeadressen og det maskerte prefikset uten å endre konfigurasjonen. Senere viser **Testkjøring** gammelt og nytt prefiks, feltantall, sikkerhetskopistatus og tjenester uten å skrive brannmurkonfigurasjonen.\n\n[Les Sikkerhet og drift](./operations.mdx)\n"
+    },
+    "operations": {
+      "title": "Sikkerhet og drift",
+      "description": "Forstå adressevalg, sikkerhetskopier, oppdateringer, tester og feilsøking.",
+      "body": "# Sikkerhet og drift\n\nKontroller hver kjøring på statussiden: kildeadresse, avledet prefiks, sikkerhetskopi og resultat.\n\n## Adressevalg og beregning\n\nPakken ber pfSense om en ny avlesning av den primære aktive IPv6-adressen på valgt grensesnitt og slår av link-local-reserve. Loopback, uspesifisert, multicast, link-local, unique-local, IPv4-mappede og ugyldige verdier avvises.\n\nPrefikset maskeres binært for grenser fra **/48** til **/64**, og resterende vertsbiter bevares. Tekstforkortelser og strengsammenligning brukes ikke. Adresser i **2001:db8::/32** er dokumentasjonseksempler. Labadressen 2001:db8:abcd:78aa::1 ble lagt inn med hensikt og blir 2001:db8:abcd:7800::/56 ved /56; den kom ikke fra en leverandør.\n\n## Sikker transaksjon\n\nVed endring validerer pakken miljø og tilstand, søker bare i aktiverte og gjennomgåtte baner, bygger en fullstendig plan, bekrefter gamle verdier og mulighet for omlasting, og lager en opprinnelig pfSense-konfigurasjonssikkerhetskopi **før første endring**. Deretter skrives én gang, nye verdier bekreftes, bare nødvendige tjenester lastes på nytt, verdiene bekreftes igjen, og først da oppdateres vellykket tilstand og varsel.\n\nFeil ved sikkerhetskopi, skriving, kontroll eller obligatorisk omlasting flytter ikke vellykket tilstand. En uendret kjøring leser eller skriver ingen konfigurasjon, sikkerhetskopierer ikke, laster ikke om og varsler ikke.\n\n## Resultater og tester\n\n**Initialisert** er et sikkert utgangspunkt; **Ingen endring** er samme prefiks; **Testkjøring** er bare forhåndsvisning; **Advarsel** betyr ingen godkjente treff; **Vellykket** bekrefter sikkerhetskopi, skriving og tjenester; **Feil** betyr at et sikkerhetstrinn stoppet.\n\nTestene dekker binær maskering, grenser utenfor hele byte, vertsbiter, avviste adresser, alle seks områder, initialisering og testkjøring, sikkerhetskopi før endring, skrive- og omlastingsfeil, låsing, atomisk tilstand og alle 18 pfSense-språk. End-to-end-tester bruker bare en isolert pfSense-VM.\n\n## Feilsøking\n\nHvis kildeadressen er feil, velger du det nedstrøms sporede grensesnittet som faktisk har den globale adressen; ikke kompenser med en gjettet lengde. Ved null treff kontrollerer du gammelt prefiks og aktiverte områder. Ved feil ser du **Status → Kommandoutdata** og systemlogger og gjenoppretter fra den opprinnelige pfSense-historikken ved behov.\n"
+    },
+    "sidebar": {
+      "Start Here": "Kom i gang",
+      "Configure": "Konfigurasjon",
+      "Operate": "Drift",
+      "Safety": "Sikkerhet",
+      "Reference": "Referanse",
+      "Contributing": "Bidra"
+    }
+  },
+  "pl-PL": {
+    "home": [
+      "Natywny pakiet pfSense",
+      "Bezpiecznie utrzymuj zgodność dynamicznych prefiksów IPv6.",
+      "Wykrywaj zmiany delegowanego prefiksu, aktualizuj tylko zatwierdzone pola pfSense, zachowuj bity hosta i weryfikuj każdą transakcję.",
+      "Instalacja i konfiguracja",
+      "Przejrzyj zasady bezpieczeństwa",
+      "Z bloga",
+      "Informacje o wydaniach, przewodniki konfiguracji i artykuły o dynamicznych prefiksach IPv6."
+    ],
+    "navbar": [
+      "Strona główna",
+      "Dokumentacja",
+      "Bezpieczeństwo i działanie",
+      "Blog"
+    ],
+    "footer": [
+      "Przewodniki",
+      "Zasoby",
+      "Instalacja i konfiguracja",
+      "Bezpieczeństwo i działanie",
+      "Rozwiązywanie problemów",
+      "Dokumentacja pfSense",
+      "Kod źródłowy",
+      "Zacznij czytać",
+      "Copyright © {years} Jacky Liang. Wydano na licencji MIT.",
+      "Blog"
+    ],
+    "blog": [
+      "Blog",
+      "Informacje o wydaniach i przewodniki konfiguracji",
+      "Blog",
+      "Informacje o wydaniach, przewodniki konfiguracji i artykuły o tym, jak utrzymać aktualne adresy pfSense, gdy zmienia się prefiks IPv6.",
+      "Najnowsze wpisy"
+    ],
+    "intro": {
+      "title": "Instalacja i konfiguracja",
+      "description": "Zainstaluj Aktualizator prefiksu IPv6 i ustanów bezpieczny punkt odniesienia w pfSense.",
+      "installationKeyword": "instalacja",
+      "body": "# Instalacja i konfiguracja\n\nZainstaluj Aktualizator prefiksu IPv6, aby zatwierdzone lokalne odwołania IPv6 podążały za dynamicznym prefiksem delegowanym przez dostawcę, przy dokładnym zachowaniu wszystkich bitów hosta.\n\n## Przed rozpoczęciem\n\nUstal długość prefiksu delegowaną przez dostawcę i interfejs pfSense z aktywnym globalnym adresem IPv6. Pakiet nie zgaduje długości. Początkowe **/56** jest tylko częstą wartością domyślną; zastąp je wartością z konfiguracji dostawcy lub DHCPv6.\n\nJeśli WAN otrzymuje tylko delegowany prefiks, wybierz podrzędny interfejs śledzący WAN, na przykład LAN. Strona Stan zawsze pokazuje dokładny adres źródłowy i obliczony prefiks sieci.\n\n:::caution\nNajpierw przetestuj pakiet na zaporze laboratoryjnej i wyeksportuj kopię konfiguracji pfSense przed instalacją.\n:::\n\n## Instalacja pakietu\n\nUruchom to polecenie w powłoce pfSense, aby zainstalować najnowsze wydanie bezpośrednio z GitHub.\n\n~~~shell\npkg add https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg\n~~~\n\nOtwórz **Usługi → Aktualizator prefiksu IPv6**. Pozostaw harmonogram wyłączony, dopóki pierwsze ręczne sprawdzenie nie ustali punktu odniesienia.\n\n## Konfiguracja i inicjalizacja\n\n1. Wybierz interfejs z delegowanym globalnym prefiksem IPv6.\n2. Wybierz dokładną długość podaną przez dostawcę.\n3. Włącz tylko potrzebne zakresy, a następnie harmonogram i powiadomienia.\n4. Zapisz i sprawdź komunikat powodzenia.\n5. Na karcie **Stan** wybierz **Uruchom teraz**.\n\nPierwsze normalne uruchomienie zapisuje kanoniczny adres źródłowy i zamaskowany prefiks bez zmiany konfiguracji. Później **Próba** pokazuje stary i nowy prefiks, liczbę pól, stan kopii i usługi bez zapisywania konfiguracji zapory.\n\n[Przeczytaj Bezpieczeństwo i działanie](./operations.mdx)\n"
+    },
+    "operations": {
+      "title": "Bezpieczeństwo i działanie",
+      "description": "Poznaj wybór adresu, kopie zapasowe, aktualizacje, testy i rozwiązywanie problemów.",
+      "body": "# Bezpieczeństwo i działanie\n\nSprawdzaj każde uruchomienie na stronie Stan: adres źródłowy, obliczony prefiks, kopię zapasową i wynik.\n\n## Wybór i obliczanie adresu\n\nPakiet żąda od pfSense świeżego odczytu podstawowego aktywnego adresu IPv6 wybranego interfejsu i wyłącza użycie zastępczego adresu link-local. Odrzuca adresy pętli zwrotnej, nieokreślone, multicast, link-local, unique-local, mapowane IPv4 i błędne.\n\nPrefiks jest maskowany binarnie dla granic od **/48** do **/64**, a pozostałe bity hosta są zachowane. Skróty tekstowe i porównywanie ciągów nie są używane. Adresy **2001:db8::/32** są przykładami dokumentacyjnymi. Adres laboratoryjny 2001:db8:abcd:78aa::1 ustawiono celowo; przy /56 daje 2001:db8:abcd:7800::/56 i nie pochodzi od dostawcy.\n\n## Bezpieczna transakcja\n\nPo zmianie pakiet weryfikuje środowisko i stan, skanuje tylko włączone i sprawdzone ścieżki, buduje kompletny plan, sprawdza stare wartości i możliwość przeładowania oraz tworzy natywną kopię historii konfiguracji pfSense **przed pierwszą zmianą**. Następnie zapisuje raz, sprawdza nowe wartości, przeładowuje tylko wymagane usługi, ponownie sprawdza i dopiero wtedy aktualizuje stan powodzenia i powiadomienie.\n\nBłąd kopii, zapisu, weryfikacji lub wymaganego przeładowania nie przesuwa stanu powodzenia. Uruchomienie bez zmian nie skanuje ani nie zapisuje konfiguracji, nie tworzy kopii, nie przeładowuje i nie powiadamia.\n\n## Wyniki i testy\n\n**Zainicjowano** oznacza bezpieczny punkt odniesienia; **Brak zmian** ten sam prefiks; **Próba** tylko podgląd; **Ostrzeżenie** brak zatwierdzonych dopasowań; **Sukces** potwierdza kopię, zapis i usługi; **Błąd** oznacza zatrzymanie przez etap bezpieczeństwa.\n\nTesty obejmują maskowanie binarne, granice niebajtowe, bity hosta, odrzucane adresy, wszystkie sześć zakresów, inicjalizację i próbę, kopię przed zmianą, błędy zapisu i przeładowania, blokadę, stan atomowy oraz wszystkie 18 języków pfSense. Testy kompleksowe działają tylko na izolowanej maszynie wirtualnej pfSense.\n\n## Rozwiązywanie problemów\n\nJeśli adres źródłowy jest błędny, wybierz podrzędny śledzony interfejs, który naprawdę ma adres globalny; nie kompensuj zgadywaną długością. Przy zerowej liczbie dopasowań sprawdź stary prefiks i włączone zakresy. W razie błędu przejrzyj **Stan → Wynik polecenia** i dzienniki systemowe, a w razie potrzeby przywróć natywną historię pfSense.\n"
+    },
+    "sidebar": {
+      "Start Here": "Pierwsze kroki",
+      "Configure": "Konfiguracja",
+      "Operate": "Obsługa",
+      "Safety": "Bezpieczeństwo",
+      "Reference": "Informacje techniczne",
+      "Contributing": "Współtworzenie"
+    }
+  },
+  "it-IT": {
+    "home": [
+      "Pacchetto pfSense nativo",
+      "Mantieni allineati in sicurezza i prefissi IPv6 dinamici.",
+      "Rileva le modifiche del prefisso delegato, aggiorna solo i campi pfSense approvati, conserva i bit host e verifica ogni transazione.",
+      "Installa e configura",
+      "Esamina la sicurezza",
+      "Dal blog",
+      "Note di rilascio, guide alla configurazione e articoli sui prefissi IPv6 dinamici."
+    ],
+    "navbar": [
+      "Home",
+      "Documentazione",
+      "Sicurezza e funzionamento",
+      "Blog"
+    ],
+    "footer": [
+      "Guide",
+      "Risorse",
+      "Installa e configura",
+      "Sicurezza e funzionamento",
+      "Risoluzione dei problemi",
+      "Documentazione pfSense",
+      "Codice sorgente",
+      "Inizia a leggere",
+      "Copyright © {years} Jacky Liang. Rilasciato con licenza MIT.",
+      "Blog"
+    ],
+    "blog": [
+      "Blog",
+      "Note di rilascio e guide alla configurazione",
+      "Blog",
+      "Note di rilascio, guide alla configurazione e articoli su come mantenere aggiornati gli indirizzi pfSense quando cambia il prefisso IPv6.",
+      "Articoli recenti"
+    ],
+    "intro": {
+      "title": "Installa e configura",
+      "description": "Installa Aggiornamento prefisso IPv6 e stabilisci un riferimento sicuro su pfSense.",
+      "installationKeyword": "installazione",
+      "body": "# Installa e configura\n\nInstalla Aggiornamento prefisso IPv6 per mantenere i riferimenti IPv6 locali approvati allineati a un prefisso dinamico delegato dall’ISP, conservando esattamente tutti i bit host.\n\n## Prima di iniziare\n\nIndividua la lunghezza delegata dall’ISP e l’interfaccia pfSense con l’indirizzo IPv6 globale attivo. Il pacchetto non indovina la lunghezza. La selezione iniziale **/56** è solo un valore predefinito comune; sostituiscila con il valore dell’ISP o della configurazione DHCPv6.\n\nSe la WAN riceve solo un prefisso delegato, scegli un’interfaccia a valle che traccia la WAN, per esempio la LAN. La pagina Stato mostra l’indirizzo sorgente esatto e il prefisso di rete calcolato.\n\n:::caution\nEsegui prima il test su un firewall di laboratorio ed esporta un backup della configurazione pfSense prima dell’installazione.\n:::\n\n## Installa il pacchetto\n\nEsegui questo comando in una shell pfSense per installare l’ultima versione direttamente da GitHub.\n\n~~~shell\npkg add https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg\n~~~\n\nApri **Servizi → Aggiornamento prefisso IPv6**. Lascia disabilitata la pianificazione finché il primo controllo manuale non stabilisce il riferimento.\n\n## Configura e inizializza\n\n1. Seleziona l’interfaccia con il prefisso IPv6 globale delegato.\n2. Seleziona la lunghezza esatta fornita dall’ISP.\n3. Abilita solo gli ambiti necessari, poi pianificazione e notifiche.\n4. Salva e verifica il messaggio di conferma.\n5. Nella scheda **Stato**, seleziona **Esegui ora**.\n\nLa prima esecuzione normale registra l’indirizzo sorgente canonico e il prefisso mascherato senza modificare la configurazione. In seguito, la **Simulazione** mostra prefissi, numero di campi, stato del backup e servizi senza scrivere la configurazione del firewall.\n\n[Leggi Sicurezza e funzionamento](./operations.mdx)\n"
+    },
+    "operations": {
+      "title": "Sicurezza e funzionamento",
+      "description": "Comprendi selezione dell’indirizzo, backup, aggiornamenti, test e risoluzione dei problemi.",
+      "body": "# Sicurezza e funzionamento\n\nControlla ogni esecuzione nella pagina Stato: indirizzo sorgente, prefisso calcolato, backup e risultato.\n\n## Selezione e calcolo dell’indirizzo\n\nIl pacchetto richiede a pfSense una lettura aggiornata dell’indirizzo IPv6 attivo principale dell’interfaccia scelta e disabilita il ripiego link-local. Rifiuta valori loopback, non specificati, multicast, link-local, unique-local, mappati IPv4 e non validi.\n\nIl prefisso viene mascherato in binario tra **/48** e **/64**, conservando gli altri bit host. Non usa abbreviazioni testuali o confronti di stringhe. Gli indirizzi **2001:db8::/32** sono esempi di documentazione. L’indirizzo di laboratorio 2001:db8:abcd:78aa::1 è stato inserito appositamente e con /56 diventa 2001:db8:abcd:7800::/56; non proviene da un ISP.\n\n## Transazione sicura\n\nQuando il prefisso cambia, il pacchetto valida ambiente e stato, esamina solo percorsi abilitati e revisionati, prepara un piano completo, verifica vecchi valori e capacità di ricarica e crea un backup nativo della configurazione pfSense **prima della prima modifica**. Poi scrive una sola volta, verifica i nuovi valori, ricarica solo i servizi necessari, verifica ancora e soltanto allora aggiorna lo stato riuscito e notifica.\n\nUn errore di backup, scrittura, verifica o ricarica obbligatoria non fa avanzare lo stato riuscito. Un’esecuzione senza modifiche non esamina o scrive la configurazione, non crea backup, non ricarica e non notifica.\n\n## Risultati e test\n\n**Inizializzato** indica un riferimento sicuro; **Nessuna modifica** indica lo stesso prefisso; **Simulazione** è solo un’anteprima; **Avviso** indica zero campi corrispondenti; **Riuscito** conferma backup, scrittura e servizi; **Errore** indica l’arresto di una fase di sicurezza.\n\nI test coprono mascheramento binario, limiti non allineati ai byte, bit host, indirizzi rifiutati, tutti i sei ambiti, inizializzazione e simulazione, backup prima della modifica, errori di scrittura e ricarica, blocco, stato atomico e tutte le 18 lingue pfSense. I test end-to-end usano solo una VM pfSense isolata.\n\n## Risoluzione dei problemi\n\nSe l’indirizzo sorgente è errato, scegli l’interfaccia tracciata a valle che possiede davvero l’indirizzo globale; non compensare con una lunghezza ipotizzata. Per zero corrispondenze verifica vecchio prefisso e ambiti abilitati. In caso di errore consulta **Stato → Output del comando** e i registri di sistema, quindi ripristina dalla cronologia nativa pfSense se necessario.\n"
+    },
+    "sidebar": {
+      "Start Here": "Per iniziare",
+      "Configure": "Configurazione",
+      "Operate": "Gestione",
+      "Safety": "Sicurezza",
+      "Reference": "Riferimento",
+      "Contributing": "Contribuire"
+    }
+  },
+  "ko-KR": {
+    "home": [
+      "pfSense 기본 패키지",
+      "동적 IPv6 접두사를 안전하게 일치시키세요.",
+      "위임된 접두사 변경을 감지하고 승인된 pfSense 필드만 업데이트하며 호스트 비트를 보존하고 모든 트랜잭션을 검증합니다.",
+      "설치 및 구성",
+      "안전 동작 검토",
+      "블로그 소식",
+      "릴리스 노트, 구성 가이드, 동적 IPv6 접두사에 관한 글을 소개합니다."
+    ],
+    "navbar": [
+      "홈",
+      "문서",
+      "안전 및 운영",
+      "블로그"
+    ],
+    "footer": [
+      "가이드",
+      "리소스",
+      "설치 및 구성",
+      "안전 및 운영",
+      "문제 해결",
+      "pfSense 문서",
+      "소스 코드",
+      "읽기 시작",
+      "저작권 © {years} Jacky Liang. MIT 라이선스로 배포됩니다.",
+      "블로그"
+    ],
+    "blog": [
+      "블로그",
+      "릴리스 노트 및 구성 가이드",
+      "블로그",
+      "릴리스 노트, 구성 가이드, 그리고 IPv6 접두사가 바뀔 때 pfSense 주소를 최신 상태로 유지하는 방법에 관한 글을 소개합니다.",
+      "최근 게시물"
+    ],
+    "intro": {
+      "title": "설치 및 구성",
+      "description": "IPv6 접두사 업데이터를 설치하고 pfSense에서 안전한 접두사 기준을 설정합니다.",
+      "installationKeyword": "설치",
+      "body": "# 설치 및 구성\n\nIPv6 접두사 업데이터를 설치하면 승인된 로컬 IPv6 참조가 ISP의 동적 위임 접두사를 따르면서 모든 호스트 비트가 정확히 보존됩니다.\n\n## 시작하기 전\n\nISP가 위임한 접두사 길이와 활성 전역 IPv6 주소가 있는 pfSense 인터페이스를 확인하십시오. 패키지는 길이를 추측하지 않습니다. 초기 **/56** 선택은 흔한 기본값일 뿐이므로 ISP 또는 DHCPv6 구성의 실제 값으로 바꾸십시오.\n\nWAN이 사용 가능한 전역 주소 없이 위임 접두사만 받는 경우 LAN과 같이 WAN을 추적하는 하위 인터페이스를 선택하십시오. 상태 페이지에는 정확한 원본 주소와 계산된 네트워크 접두사가 표시됩니다.\n\n:::caution\n먼저 실험실 방화벽에서 테스트하고 설치 전에 pfSense 구성 백업을 내보내십시오.\n:::\n\n## 패키지 설치\n\npfSense shell에서 이 명령을 실행하여 GitHub에서 최신 릴리스를 직접 설치하십시오.\n\n~~~shell\npkg add https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg\n~~~\n\n**서비스 → IPv6 접두사 업데이터**를 여십시오. 첫 수동 확인이 기준을 설정할 때까지 예약 업데이트를 비활성화하십시오.\n\n## 구성 및 기준 설정\n\n1. 위임된 전역 IPv6 접두사가 있는 인터페이스를 선택합니다.\n2. ISP가 제공한 정확한 접두사 길이를 선택합니다.\n3. 필요한 범위만 사용하고 일정과 알림을 선택합니다.\n4. 저장한 뒤 성공 메시지를 확인합니다.\n5. **상태** 탭에서 **지금 실행**을 선택합니다.\n\n첫 일반 실행은 구성을 변경하지 않고 정규화된 원본 주소와 마스킹된 접두사를 기록합니다. 그 후 **시험 실행**은 방화벽 구성을 쓰지 않고 이전·현재 접두사, 필드 수, 백업 상태와 서비스를 보여 줍니다.\n\n[안전 및 운영 읽기](./operations.mdx)\n"
+    },
+    "operations": {
+      "title": "안전 및 운영",
+      "description": "주소 선택, 백업, 업데이트, 테스트 및 문제 해결을 이해합니다.",
+      "body": "# 안전 및 운영\n\n상태 페이지에서 각 실행의 원본 주소, 계산된 접두사, 백업 결과와 최종 상태를 확인하십시오.\n\n## 주소 선택과 계산\n\n패키지는 pfSense에 선택한 인터페이스의 기본 활성 IPv6 주소를 새로 조회하도록 요청하고 링크 로컬 대체를 비활성화합니다. 루프백, 미지정, 멀티캐스트, 링크 로컬, 고유 로컬, IPv4 매핑 및 잘못된 값은 거부됩니다.\n\n접두사는 **/48**부터 **/64**까지 이진 마스킹되며 나머지 호스트 비트가 보존됩니다. 텍스트 축약이나 문자열 비교는 사용하지 않습니다. **2001:db8::/32** 주소는 문서 예제입니다. 실험실 주소 2001:db8:abcd:78aa::1은 의도적으로 설정되었고 /56에서 2001:db8:abcd:7800::/56이 되며 ISP에서 온 주소가 아닙니다.\n\n## 안전한 트랜잭션\n\n접두사가 바뀌면 패키지는 환경과 상태를 검증하고, 활성화되어 검토된 경로만 검색하고, 전체 계획을 만들고, 이전 값과 재로드 기능을 확인한 다음 **첫 변경 전에** pfSense 기본 구성 기록 백업을 만듭니다. 이후 한 번만 쓰고 새 값을 검증하고 필요한 서비스만 재로드한 뒤 다시 검증한 다음 성공 상태와 알림을 진행합니다.\n\n백업, 쓰기, 검증 또는 필수 재로드가 실패하면 성공 상태가 진행되지 않습니다. 변경이 없는 실행은 구성을 검색하거나 쓰지 않고 백업, 재로드 또는 알림을 수행하지 않습니다.\n\n## 결과와 테스트\n\n**초기화됨**은 안전한 기준, **변경 없음**은 같은 접두사, **시험 실행**은 미리 보기, **경고**는 일치하는 승인 필드가 없음, **성공**은 백업·쓰기·서비스 검증 완료, **실패**는 안전 단계 중단을 뜻합니다.\n\n회귀 테스트는 이진 마스킹, 바이트 이외 경계, 호스트 비트 보존, 거부 주소, 여섯 범위, 초기화와 시험 실행, 변경 전 백업, 쓰기와 재로드 실패, 잠금, 원자적 상태 및 pfSense의 18개 언어를 다룹니다. 종단 간 테스트는 격리된 pfSense VM에서만 실행합니다.\n\n## 문제 해결\n\n원본 주소가 잘못되면 실제 전역 주소가 있는 하위 추적 인터페이스를 선택하고 추측한 접두사 길이로 보정하지 마십시오. 일치 항목이 0인 경고에서는 이전 접두사와 활성 범위를 확인하십시오. 오류가 나면 **상태 → 명령 출력**과 시스템 로그를 보고 필요하면 pfSense 기본 구성 기록에서 복원하십시오.\n"
+    },
+    "sidebar": {
+      "Start Here": "시작하기",
+      "Configure": "구성",
+      "Operate": "운영",
+      "Safety": "안전",
+      "Reference": "참조",
+      "Contributing": "기여하기"
+    }
+  },
+  "pt-PT": {
+    "home": [
+      "Pacote pfSense nativo",
+      "Mantenha os prefixos IPv6 dinâmicos alinhados em segurança.",
+      "Detete alterações do prefixo delegado, atualize apenas campos pfSense aprovados, preserve os bits de anfitrião e verifique cada transação.",
+      "Instalar e configurar",
+      "Rever o funcionamento seguro",
+      "Do blogue",
+      "Notas de versão, guias de configuração e artigos sobre prefixos IPv6 dinâmicos."
+    ],
+    "navbar": [
+      "Início",
+      "Documentação",
+      "Segurança e funcionamento",
+      "Blogue"
+    ],
+    "footer": [
+      "Guias",
+      "Recursos",
+      "Instalar e configurar",
+      "Segurança e funcionamento",
+      "Resolução de problemas",
+      "Documentação pfSense",
+      "Código-fonte",
+      "Começar a ler",
+      "Copyright © {years} Jacky Liang. Publicado sob a licença MIT.",
+      "Blogue"
+    ],
+    "blog": [
+      "Blogue",
+      "Notas de versão e guias de configuração",
+      "Blogue",
+      "Notas de versão, guias de configuração e artigos sobre como manter atualizados os endereços do pfSense quando o prefixo IPv6 muda.",
+      "Publicações recentes"
+    ],
+    "intro": {
+      "title": "Instalar e configurar",
+      "description": "Instale o Atualizador de prefixo IPv6 e estabeleça uma referência segura no pfSense.",
+      "installationKeyword": "instalação",
+      "body": "# Instalar e configurar\n\nInstale o Atualizador de prefixo IPv6 para manter as referências IPv6 locais aprovadas alinhadas com um prefixo dinâmico delegado pelo ISP, preservando exatamente todos os bits de anfitrião.\n\n## Antes de começar\n\nIdentifique o comprimento delegado pelo ISP e a interface pfSense com o endereço IPv6 global ativo. O pacote não adivinha o comprimento. A seleção inicial **/56** é apenas um valor predefinido comum; substitua-a pelo valor do ISP ou da configuração DHCPv6.\n\nSe a WAN receber apenas um prefixo delegado, escolha uma interface a jusante que rastreie a WAN, por exemplo a LAN. A página Estado mostra o endereço de origem exato e o prefixo de rede calculado.\n\n:::caution\nTeste primeiro numa firewall de laboratório e exporte uma cópia de segurança da configuração pfSense antes da instalação.\n:::\n\n## Instalar o pacote\n\nExecute este comando numa shell pfSense para instalar a versão mais recente diretamente do GitHub.\n\n~~~shell\npkg add https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg\n~~~\n\nAbra **Serviços → Atualizador de prefixo IPv6**. Mantenha o agendamento desativado até uma primeira verificação manual estabelecer a referência.\n\n## Configurar e inicializar\n\n1. Selecione a interface com o prefixo IPv6 global delegado.\n2. Selecione o comprimento exato fornecido pelo ISP.\n3. Ative apenas os âmbitos necessários e depois a agenda e as notificações.\n4. Guarde e confirme a mensagem de sucesso.\n5. No separador **Estado**, selecione **Executar agora**.\n\nA primeira execução normal regista o endereço de origem canónico e o prefixo mascarado sem alterar a configuração. Depois, a **Simulação** mostra os prefixos anterior e atual, a contagem de campos, o estado da cópia e os serviços sem escrever a configuração da firewall.\n\n[Leia Segurança e funcionamento](./operations.mdx)\n"
+    },
+    "operations": {
+      "title": "Segurança e funcionamento",
+      "description": "Compreenda a seleção do endereço, cópias de segurança, atualizações, testes e resolução de problemas.",
+      "body": "# Segurança e funcionamento\n\nVerifique cada execução na página Estado: endereço de origem, prefixo calculado, cópia de segurança e resultado.\n\n## Seleção e cálculo do endereço\n\nO pacote pede ao pfSense uma leitura atualizada do endereço IPv6 ativo principal da interface escolhida e desativa a alternativa link-local. Valores loopback, não especificados, multicast, link-local, unique-local, mapeados de IPv4 e inválidos são rejeitados.\n\nO prefixo é mascarado em binário para limites de **/48** a **/64**, preservando os restantes bits de anfitrião. Não são usadas abreviações textuais nem comparação de cadeias. Os endereços **2001:db8::/32** são exemplos de documentação. O endereço de laboratório 2001:db8:abcd:78aa::1 foi inserido de propósito e com /56 torna-se 2001:db8:abcd:7800::/56; não veio de um ISP.\n\n## Transação segura\n\nQuando o prefixo muda, o pacote valida o ambiente e o estado, analisa apenas caminhos ativados e revistos, cria um plano completo, confirma valores antigos e capacidade de recarregamento e cria uma cópia nativa do histórico de configuração pfSense **antes da primeira alteração**. Depois escreve uma vez, verifica os novos valores, recarrega apenas os serviços necessários, verifica novamente e só então avança o estado de sucesso e notifica.\n\nUma falha de cópia, escrita, verificação ou recarregamento obrigatório não avança o estado de sucesso. Uma execução sem alteração não analisa nem escreve a configuração, não cria cópia, não recarrega e não notifica.\n\n## Resultados e testes\n\n**Inicializado** é uma referência segura; **Sem alteração** é o mesmo prefixo; **Simulação** é apenas uma pré-visualização; **Aviso** significa zero campos aprovados correspondentes; **Sucesso** confirma cópia, escrita e serviços; **Falha** significa que uma etapa de segurança parou.\n\nOs testes cobrem mascaramento binário, limites não alinhados a bytes, bits de anfitrião, endereços rejeitados, os seis âmbitos, inicialização e simulação, cópia antes da alteração, falhas de escrita e recarregamento, bloqueio, estado atómico e os 18 idiomas do pfSense. Os testes integrais usam apenas uma VM pfSense isolada.\n\n## Resolução de problemas\n\nSe o endereço de origem estiver errado, escolha a interface rastreada a jusante que realmente possui o endereço global; não compense com um comprimento adivinhado. Para zero correspondências, confirme o prefixo antigo e os âmbitos ativos. Em caso de erro consulte **Estado → Saída do comando** e os registos do sistema e restaure a partir do histórico nativo do pfSense se necessário.\n"
+    },
+    "sidebar": {
+      "Start Here": "Primeiros passos",
+      "Configure": "Configuração",
+      "Operate": "Operação",
+      "Safety": "Segurança",
+      "Reference": "Referência",
+      "Contributing": "Contribuir"
+    }
+  },
+  "pt-BR": {
+    "home": [
+      "Pacote pfSense nativo",
+      "Mantenha os prefixos IPv6 dinâmicos alinhados com segurança.",
+      "Detecte alterações do prefixo delegado, atualize apenas campos pfSense aprovados, preserve os bits de host e verifique cada transação.",
+      "Instalar e configurar",
+      "Revisar o funcionamento seguro",
+      "Do blog",
+      "Notas de versão, guias de configuração e artigos sobre prefixos IPv6 dinâmicos."
+    ],
+    "navbar": [
+      "Início",
+      "Documentação",
+      "Segurança e funcionamento",
+      "Blog"
+    ],
+    "footer": [
+      "Guias",
+      "Recursos",
+      "Instalar e configurar",
+      "Segurança e funcionamento",
+      "Solução de problemas",
+      "Documentação do pfSense",
+      "Código-fonte",
+      "Começar a ler",
+      "Copyright © {years} Jacky Liang. Publicado sob a licença MIT.",
+      "Blog"
+    ],
+    "blog": [
+      "Blog",
+      "Notas de versão e guias de configuração",
+      "Blog",
+      "Notas de versão, guias de configuração e artigos sobre como manter os endereços do pfSense atualizados quando o prefixo IPv6 muda.",
+      "Publicações recentes"
+    ],
+    "intro": {
+      "title": "Instalar e configurar",
+      "description": "Instale o Atualizador de prefixo IPv6 e estabeleça uma referência segura no pfSense.",
+      "installationKeyword": "instalação",
+      "body": "# Instalar e configurar\n\nInstale o Atualizador de prefixo IPv6 para manter as referências IPv6 locais aprovadas alinhadas com um prefixo dinâmico delegado pelo ISP, preservando exatamente todos os bits de anfitrião.\n\n## Antes de começar\n\nIdentifique o comprimento delegado pelo ISP e a interface pfSense com o endereço IPv6 global ativo. O pacote não adivinha o comprimento. A seleção inicial **/56** é apenas um valor predefinido comum; substitua-a pelo valor do ISP ou da configuração DHCPv6.\n\nSe a WAN receber apenas um prefixo delegado, escolha uma interface a jusante que rastreie a WAN, por exemplo a LAN. A página Estado mostra o endereço de origem exato e o prefixo de rede calculado.\n\n:::caution\nTeste primeiro numa firewall de laboratório e exporte uma cópia de segurança da configuração pfSense antes da instalação.\n:::\n\n## Instalar o pacote\n\nExecute este comando numa shell pfSense para instalar a versão mais recente diretamente do GitHub.\n\n~~~shell\npkg add https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg\n~~~\n\nAbra **Serviços → Atualizador de prefixo IPv6**. Mantenha o agendamento desativado até uma primeira verificação manual estabelecer a referência.\n\n## Configurar e inicializar\n\n1. Selecione a interface com o prefixo IPv6 global delegado.\n2. Selecione o comprimento exato fornecido pelo ISP.\n3. Ative apenas os âmbitos necessários e depois a agenda e as notificações.\n4. Guarde e confirme a mensagem de sucesso.\n5. No separador **Estado**, selecione **Executar agora**.\n\nA primeira execução normal regista o endereço de origem canónico e o prefixo mascarado sem alterar a configuração. Depois, a **Simulação** mostra os prefixos anterior e atual, a contagem de campos, o estado da cópia e os serviços sem escrever a configuração da firewall.\n\n[Leia Segurança e funcionamento](./operations.mdx)\n"
+    },
+    "operations": {
+      "title": "Segurança e funcionamento",
+      "description": "Entenda a seleção do endereço, backups, atualizações, testes e solução de problemas.",
+      "body": "# Segurança e funcionamento\n\nVerifique cada execução na página Estado: endereço de origem, prefixo calculado, cópia de segurança e resultado.\n\n## Seleção e cálculo do endereço\n\nO pacote pede ao pfSense uma leitura atualizada do endereço IPv6 ativo principal da interface escolhida e desativa a alternativa link-local. Valores loopback, não especificados, multicast, link-local, unique-local, mapeados de IPv4 e inválidos são rejeitados.\n\nO prefixo é mascarado em binário para limites de **/48** a **/64**, preservando os restantes bits de anfitrião. Não são usadas abreviações textuais nem comparação de cadeias. Os endereços **2001:db8::/32** são exemplos de documentação. O endereço de laboratório 2001:db8:abcd:78aa::1 foi inserido de propósito e com /56 torna-se 2001:db8:abcd:7800::/56; não veio de um ISP.\n\n## Transação segura\n\nQuando o prefixo muda, o pacote valida o ambiente e o estado, analisa apenas caminhos ativados e revistos, cria um plano completo, confirma valores antigos e capacidade de recarregamento e cria uma cópia nativa do histórico de configuração pfSense **antes da primeira alteração**. Depois escreve uma vez, verifica os novos valores, recarrega apenas os serviços necessários, verifica novamente e só então avança o estado de sucesso e notifica.\n\nUma falha de cópia, escrita, verificação ou recarregamento obrigatório não avança o estado de sucesso. Uma execução sem alteração não analisa nem escreve a configuração, não cria cópia, não recarrega e não notifica.\n\n## Resultados e testes\n\n**Inicializado** é uma referência segura; **Sem alteração** é o mesmo prefixo; **Simulação** é apenas uma pré-visualização; **Aviso** significa zero campos aprovados correspondentes; **Sucesso** confirma cópia, escrita e serviços; **Falha** significa que uma etapa de segurança parou.\n\nOs testes cobrem mascaramento binário, limites não alinhados a bytes, bits de anfitrião, endereços rejeitados, os seis âmbitos, inicialização e simulação, cópia antes da alteração, falhas de escrita e recarregamento, bloqueio, estado atómico e os 18 idiomas do pfSense. Os testes integrais usam apenas uma VM pfSense isolada.\n\n## Resolução de problemas\n\nSe o endereço de origem estiver errado, escolha a interface rastreada a jusante que realmente possui o endereço global; não compense com um comprimento adivinhado. Para zero correspondências, confirme o prefixo antigo e os âmbitos ativos. Em caso de erro consulte **Estado → Saída do comando** e os registos do sistema e restaure a partir do histórico nativo do pfSense se necessário.\n"
+    },
+    "sidebar": {
+      "Start Here": "Primeiros passos",
+      "Configure": "Configuração",
+      "Operate": "Operação",
+      "Safety": "Segurança",
+      "Reference": "Referência",
+      "Contributing": "Como contribuir"
+    }
+  },
+  "ru-RU": {
+    "home": [
+      "Нативный пакет pfSense",
+      "Безопасно поддерживайте соответствие динамических префиксов IPv6.",
+      "Обнаруживайте изменения делегированного префикса, обновляйте только разрешённые поля pfSense, сохраняйте биты узла и проверяйте каждую транзакцию.",
+      "Установка и настройка",
+      "Проверить безопасность",
+      "Из блога",
+      "Примечания к выпускам, руководства по настройке и статьи о динамических префиксах IPv6."
+    ],
+    "navbar": [
+      "Главная",
+      "Документация",
+      "Безопасность и работа",
+      "Блог"
+    ],
+    "footer": [
+      "Руководства",
+      "Ресурсы",
+      "Установка и настройка",
+      "Безопасность и работа",
+      "Устранение неполадок",
+      "Документация pfSense",
+      "Исходный код",
+      "Начать чтение",
+      "Copyright © {years} Jacky Liang. Выпущено по лицензии MIT.",
+      "Блог"
+    ],
+    "blog": [
+      "Блог",
+      "Примечания к выпускам и руководства по настройке",
+      "Блог",
+      "Примечания к выпускам, руководства по настройке и статьи о том, как поддерживать адреса pfSense в актуальном состоянии при смене префикса IPv6.",
+      "Последние записи"
+    ],
+    "intro": {
+      "title": "Установка и настройка",
+      "description": "Установите Обновление префикса IPv6 и создайте безопасное исходное состояние в pfSense.",
+      "installationKeyword": "установка",
+      "body": "# Установка и настройка\n\nУстановите Обновление префикса IPv6, чтобы разрешённые локальные ссылки IPv6 следовали динамическому префиксу провайдера с точным сохранением всех битов узла.\n\n## Перед началом\n\nУзнайте длину префикса у провайдера и интерфейс pfSense с активным глобальным адресом IPv6. Пакет не угадывает длину. Начальное значение **/56** — только распространённое значение по умолчанию; замените его значением провайдера или конфигурации DHCPv6.\n\nЕсли WAN получает только делегированный префикс, выберите нижестоящий интерфейс, отслеживающий WAN, например LAN. Страница «Состояние» показывает точный исходный адрес и вычисленный сетевой префикс.\n\n:::caution\nСначала протестируйте пакет на лабораторном межсетевом экране и экспортируйте резервную копию конфигурации pfSense.\n:::\n\n## Установка пакета\n\nВыполните эту команду в shell pfSense, чтобы установить последнюю версию напрямую с GitHub.\n\n~~~shell\npkg add https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg\n~~~\n\nОткройте **Службы → Обновление префикса IPv6**. Оставьте расписание выключенным до первой ручной проверки и записи исходного состояния.\n\n## Настройка и инициализация\n\n1. Выберите интерфейс с делегированным глобальным префиксом IPv6.\n2. Выберите точную длину, предоставленную провайдером.\n3. Включите только необходимые области, затем расписание и уведомления.\n4. Сохраните и проверьте сообщение об успехе.\n5. На вкладке **Состояние** выберите **Запустить сейчас**.\n\nПервый обычный запуск записывает канонический исходный адрес и маскированный префикс без изменения конфигурации. Затем **Пробный запуск** показывает старый и новый префиксы, число полей, состояние копии и службы без записи конфигурации межсетевого экрана.\n\n[Прочитать «Безопасность и работа»](./operations.mdx)\n"
+    },
+    "operations": {
+      "title": "Безопасность и работа",
+      "description": "Узнайте о выборе адреса, резервных копиях, обновлениях, тестах и устранении неполадок.",
+      "body": "# Безопасность и работа\n\nПроверяйте каждый запуск на странице «Состояние»: исходный адрес, вычисленный префикс, резервную копию и результат.\n\n## Выбор и вычисление адреса\n\nПакет запрашивает у pfSense свежий основной активный адрес IPv6 выбранного интерфейса и отключает резервный link-local. Адреса loopback, unspecified, multicast, link-local, unique-local, IPv4-mapped и неверные значения отклоняются.\n\nПрефикс маскируется в двоичном виде для границ от **/48** до **/64**, остальные биты узла сохраняются. Текстовые сокращения и сравнение строк не используются. Адреса **2001:db8::/32** предназначены для документации. Лабораторный адрес 2001:db8:abcd:78aa::1 задан намеренно и при /56 превращается в 2001:db8:abcd:7800::/56; он не получен от провайдера.\n\n## Безопасная транзакция\n\nПри изменении пакет проверяет среду и состояние, сканирует только включённые проверенные пути, строит полный план, проверяет старые значения и возможность перезагрузки и создаёт нативную резервную копию истории pfSense **до первого изменения**. Затем он записывает один раз, проверяет новые значения, перезагружает только нужные службы, снова проверяет и только после этого обновляет успешное состояние и уведомляет.\n\nОшибка резервного копирования, записи, проверки или обязательной перезагрузки не продвигает успешное состояние. Запуск без изменений не сканирует и не записывает конфигурацию, не создаёт копию, не перезагружает и не уведомляет.\n\n## Результаты и тесты\n\n**Инициализировано** означает безопасное исходное состояние; **Без изменений** — тот же префикс; **Пробный запуск** — только просмотр; **Предупреждение** — нет разрешённых совпадений; **Успешно** подтверждает копию, запись и службы; **Ошибка** означает остановку на этапе безопасности.\n\nТесты охватывают двоичное маскирование, невыравненные границы, биты узла, отклоняемые адреса, все шесть областей, инициализацию и пробный запуск, копию до изменения, ошибки записи и перезагрузки, блокировку, атомарное состояние и все 18 языков pfSense. Сквозные тесты используют только изолированную VM pfSense.\n\n## Устранение неполадок\n\nЕсли исходный адрес неверен, выберите нижестоящий отслеживаемый интерфейс с реальным глобальным адресом; не компенсируйте это угаданной длиной. При нуле совпадений проверьте старый префикс и включённые области. При ошибках просмотрите **Состояние → Вывод команды** и системные журналы и при необходимости восстановите нативную историю pfSense.\n"
+    },
+    "sidebar": {
+      "Start Here": "Начало работы",
+      "Configure": "Настройка",
+      "Operate": "Эксплуатация",
+      "Safety": "Безопасность",
+      "Reference": "Справочник",
+      "Contributing": "Участие в разработке"
+    }
+  },
+  "es-ES": {
+    "home": [
+      "Paquete pfSense nativo",
+      "Mantenga alineados de forma segura los prefijos IPv6 dinámicos.",
+      "Detecte cambios del prefijo delegado, actualice solo campos pfSense aprobados, conserve los bits de host y verifique cada transacción.",
+      "Instalar y configurar",
+      "Revisar la seguridad",
+      "Del blog",
+      "Notas de la versión, guías de configuración y artículos sobre prefijos IPv6 dinámicos."
+    ],
+    "navbar": [
+      "Inicio",
+      "Documentación",
+      "Seguridad y funcionamiento",
+      "Blog"
+    ],
+    "footer": [
+      "Guías",
+      "Recursos",
+      "Instalar y configurar",
+      "Seguridad y funcionamiento",
+      "Solución de problemas",
+      "Documentación de pfSense",
+      "Código fuente",
+      "Empezar a leer",
+      "Copyright © {years} Jacky Liang. Publicado bajo la licencia MIT.",
+      "Blog"
+    ],
+    "blog": [
+      "Blog",
+      "Notas de la versión y guías de configuración",
+      "Blog",
+      "Notas de la versión, guías de configuración y artículos sobre cómo mantener al día las direcciones de pfSense cuando cambia el prefijo IPv6.",
+      "Entradas recientes"
+    ],
+    "intro": {
+      "title": "Instalar y configurar",
+      "description": "Instale el Actualizador de prefijo IPv6 y establezca una referencia segura en pfSense.",
+      "installationKeyword": "instalación",
+      "body": "# Instalar y configurar\n\nInstale el Actualizador de prefijo IPv6 para mantener las referencias IPv6 locales aprobadas alineadas con un prefijo dinámico delegado por el ISP, conservando exactamente todos los bits de host.\n\n## Antes de empezar\n\nIdentifique la longitud delegada por el ISP y la interfaz pfSense que tiene la dirección IPv6 global activa. El paquete no adivina la longitud. La selección inicial **/56** es solo un valor predeterminado frecuente; sustitúyala por el valor del ISP o de la configuración DHCPv6.\n\nSi la WAN recibe únicamente un prefijo delegado, elija una interfaz descendente que rastree la WAN, por ejemplo la LAN. La página Estado muestra la dirección de origen exacta y el prefijo de red calculado.\n\n:::caution\nPruebe primero el paquete en un cortafuegos de laboratorio y exporte una copia de la configuración de pfSense antes de instalarlo.\n:::\n\n## Instalar el paquete\n\nEjecute este comando en una shell de pfSense para instalar la última versión directamente desde GitHub.\n\n~~~shell\npkg add https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg\n~~~\n\nAbra **Servicios → Actualizador de prefijo IPv6**. Mantenga desactivada la programación hasta que una primera comprobación manual establezca la referencia.\n\n## Configurar e inicializar\n\n1. Seleccione la interfaz con el prefijo IPv6 global delegado.\n2. Seleccione la longitud exacta proporcionada por el ISP.\n3. Active solo los ámbitos necesarios y después la programación y las notificaciones.\n4. Guarde y confirme el mensaje de éxito.\n5. En la pestaña **Estado**, seleccione **Ejecutar ahora**.\n\nLa primera ejecución normal registra la dirección de origen canónica y el prefijo enmascarado sin modificar la configuración. Después, la **Simulación** muestra los prefijos anterior y actual, el número de campos, el estado de la copia y los servicios sin escribir la configuración del cortafuegos.\n\n[Leer Seguridad y funcionamiento](./operations.mdx)\n"
+    },
+    "operations": {
+      "title": "Seguridad y funcionamiento",
+      "description": "Comprenda la selección de dirección, las copias de seguridad, actualizaciones, pruebas y solución de problemas.",
+      "body": "# Seguridad y funcionamiento\n\nCompruebe cada ejecución en la página Estado: dirección de origen, prefijo calculado, copia de seguridad y resultado.\n\n## Selección y cálculo de la dirección\n\nEl paquete solicita a pfSense una lectura nueva de la dirección IPv6 activa principal de la interfaz elegida y desactiva la alternativa link-local. Rechaza valores loopback, no especificados, multicast, link-local, unique-local, mapeados de IPv4 y no válidos.\n\nEl prefijo se enmascara en binario para límites de **/48** a **/64**, conservando los demás bits de host. No se usan abreviaturas textuales ni comparación de cadenas. Las direcciones **2001:db8::/32** son ejemplos de documentación. La dirección de laboratorio 2001:db8:abcd:78aa::1 se configuró deliberadamente y con /56 se convierte en 2001:db8:abcd:7800::/56; no procede de un ISP.\n\n## Transacción segura\n\nCuando cambia el prefijo, el paquete valida el entorno y el estado, examina solo rutas activadas y revisadas, crea un plan completo, comprueba valores anteriores y capacidades de recarga y crea una copia nativa del historial de configuración de pfSense **antes de la primera modificación**. Después escribe una vez, verifica los nuevos valores, recarga solo los servicios necesarios, vuelve a verificar y solo entonces avanza el estado correcto y notifica.\n\nUn fallo de copia, escritura, verificación o recarga obligatoria no avanza el estado correcto. Una ejecución sin cambios no examina ni escribe la configuración, no crea copia, no recarga y no notifica.\n\n## Resultados y pruebas\n\n**Inicializado** indica una referencia segura; **Sin cambios** el mismo prefijo; **Simulación** solo una vista previa; **Advertencia** ningún campo aprobado coincidente; **Correcto** confirma copia, escritura y servicios; **Fallo** indica que una etapa de seguridad detuvo la ejecución.\n\nLas pruebas cubren enmascaramiento binario, límites no alineados por bytes, bits de host, direcciones rechazadas, los seis ámbitos, inicialización y simulación, copia antes de modificar, fallos de escritura y recarga, bloqueo, estado atómico y los 18 idiomas de pfSense. Las pruebas integrales utilizan solo una VM pfSense aislada.\n\n## Solución de problemas\n\nSi la dirección de origen es incorrecta, elija la interfaz rastreada descendente que realmente posee la dirección global; no lo compense con una longitud supuesta. Para cero coincidencias, compruebe el prefijo anterior y los ámbitos activos. En caso de error revise **Estado → Salida del comando** y los registros del sistema y restaure el historial nativo de pfSense si es necesario.\n"
+    },
+    "sidebar": {
+      "Start Here": "Primeros pasos",
+      "Configure": "Configuración",
+      "Operate": "Uso diario",
+      "Safety": "Seguridad",
+      "Reference": "Referencia",
+      "Contributing": "Contribuir"
+    }
+  },
+  "es-AR": {
+    "home": [
+      "Paquete pfSense nativo",
+      "Mantené alineados de forma segura los prefijos IPv6 dinámicos.",
+      "Detectá cambios del prefijo delegado, actualizá solo campos pfSense aprobados, conservá los bits de host y verificá cada transacción.",
+      "Instalar y configurar",
+      "Revisar la seguridad",
+      "Del blog",
+      "Notas de versión, guías de configuración y artículos sobre prefijos IPv6 dinámicos."
+    ],
+    "navbar": [
+      "Inicio",
+      "Documentación",
+      "Seguridad y funcionamiento",
+      "Blog"
+    ],
+    "footer": [
+      "Guías",
+      "Recursos",
+      "Instalar y configurar",
+      "Seguridad y funcionamiento",
+      "Solución de problemas",
+      "Documentación de pfSense",
+      "Código fuente",
+      "Empezar a leer",
+      "Copyright © {years} Jacky Liang. Publicado bajo la licencia MIT.",
+      "Blog"
+    ],
+    "blog": [
+      "Blog",
+      "Notas de versión y guías de configuración",
+      "Blog",
+      "Notas de versión, guías de configuración y artículos sobre cómo mantener actualizadas las direcciones de pfSense cuando cambia el prefijo IPv6.",
+      "Publicaciones recientes"
+    ],
+    "intro": {
+      "title": "Instalar y configurar",
+      "description": "Instale el Actualizador de prefijo IPv6 y establezca una referencia segura en pfSense.",
+      "installationKeyword": "instalación",
+      "body": "# Instalar y configurar\n\nInstale el Actualizador de prefijo IPv6 para mantener las referencias IPv6 locales aprobadas alineadas con un prefijo dinámico delegado por el ISP, conservando exactamente todos los bits de host.\n\n## Antes de empezar\n\nIdentifique la longitud delegada por el ISP y la interfaz pfSense que tiene la dirección IPv6 global activa. El paquete no adivina la longitud. La selección inicial **/56** es solo un valor predeterminado frecuente; sustitúyala por el valor del ISP o de la configuración DHCPv6.\n\nSi la WAN recibe únicamente un prefijo delegado, elija una interfaz descendente que rastree la WAN, por ejemplo la LAN. La página Estado muestra la dirección de origen exacta y el prefijo de red calculado.\n\n:::caution\nPruebe primero el paquete en un cortafuegos de laboratorio y exporte una copia de la configuración de pfSense antes de instalarlo.\n:::\n\n## Instalar el paquete\n\nEjecute este comando en una shell de pfSense para instalar la última versión directamente desde GitHub.\n\n~~~shell\npkg add https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg\n~~~\n\nAbra **Servicios → Actualizador de prefijo IPv6**. Mantenga desactivada la programación hasta que una primera comprobación manual establezca la referencia.\n\n## Configurar e inicializar\n\n1. Seleccione la interfaz con el prefijo IPv6 global delegado.\n2. Seleccione la longitud exacta proporcionada por el ISP.\n3. Active solo los ámbitos necesarios y después la programación y las notificaciones.\n4. Guarde y confirme el mensaje de éxito.\n5. En la pestaña **Estado**, seleccione **Ejecutar ahora**.\n\nLa primera ejecución normal registra la dirección de origen canónica y el prefijo enmascarado sin modificar la configuración. Después, la **Simulación** muestra los prefijos anterior y actual, el número de campos, el estado de la copia y los servicios sin escribir la configuración del cortafuegos.\n\n[Leer Seguridad y funcionamiento](./operations.mdx)\n"
+    },
+    "operations": {
+      "title": "Seguridad y funcionamiento",
+      "description": "Comprenda la selección de dirección, las copias de seguridad, actualizaciones, pruebas y solución de problemas.",
+      "body": "# Seguridad y funcionamiento\n\nCompruebe cada ejecución en la página Estado: dirección de origen, prefijo calculado, copia de seguridad y resultado.\n\n## Selección y cálculo de la dirección\n\nEl paquete solicita a pfSense una lectura nueva de la dirección IPv6 activa principal de la interfaz elegida y desactiva la alternativa link-local. Rechaza valores loopback, no especificados, multicast, link-local, unique-local, mapeados de IPv4 y no válidos.\n\nEl prefijo se enmascara en binario para límites de **/48** a **/64**, conservando los demás bits de host. No se usan abreviaturas textuales ni comparación de cadenas. Las direcciones **2001:db8::/32** son ejemplos de documentación. La dirección de laboratorio 2001:db8:abcd:78aa::1 se configuró deliberadamente y con /56 se convierte en 2001:db8:abcd:7800::/56; no procede de un ISP.\n\n## Transacción segura\n\nCuando cambia el prefijo, el paquete valida el entorno y el estado, examina solo rutas activadas y revisadas, crea un plan completo, comprueba valores anteriores y capacidades de recarga y crea una copia nativa del historial de configuración de pfSense **antes de la primera modificación**. Después escribe una vez, verifica los nuevos valores, recarga solo los servicios necesarios, vuelve a verificar y solo entonces avanza el estado correcto y notifica.\n\nUn fallo de copia, escritura, verificación o recarga obligatoria no avanza el estado correcto. Una ejecución sin cambios no examina ni escribe la configuración, no crea copia, no recarga y no notifica.\n\n## Resultados y pruebas\n\n**Inicializado** indica una referencia segura; **Sin cambios** el mismo prefijo; **Simulación** solo una vista previa; **Advertencia** ningún campo aprobado coincidente; **Correcto** confirma copia, escritura y servicios; **Fallo** indica que una etapa de seguridad detuvo la ejecución.\n\nLas pruebas cubren enmascaramiento binario, límites no alineados por bytes, bits de host, direcciones rechazadas, los seis ámbitos, inicialización y simulación, copia antes de modificar, fallos de escritura y recarga, bloqueo, estado atómico y los 18 idiomas de pfSense. Las pruebas integrales utilizan solo una VM pfSense aislada.\n\n## Solución de problemas\n\nSi la dirección de origen es incorrecta, elija la interfaz rastreada descendente que realmente posee la dirección global; no lo compense con una longitud supuesta. Para cero coincidencias, compruebe el prefijo anterior y los ámbitos activos. En caso de error revise **Estado → Salida del comando** y los registros del sistema y restaure el historial nativo de pfSense si es necesario.\n"
+    },
+    "sidebar": {
+      "Start Here": "Primeros pasos",
+      "Configure": "Configuración",
+      "Operate": "Operación",
+      "Safety": "Seguridad",
+      "Reference": "Referencia",
+      "Contributing": "Colaborar"
+    }
+  }
+}

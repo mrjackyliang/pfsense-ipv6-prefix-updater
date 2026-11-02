@@ -1,0 +1,20 @@
+{
+  "sidebar.docs.category.Start Here": {
+    "message": "Prvi koraci"
+  },
+  "sidebar.docs.category.Configure": {
+    "message": "Podešavanje"
+  },
+  "sidebar.docs.category.Operate": {
+    "message": "Upotreba"
+  },
+  "sidebar.docs.category.Safety": {
+    "message": "Sigurnost"
+  },
+  "sidebar.docs.category.Reference": {
+    "message": "Tehničke informacije"
+  },
+  "sidebar.docs.category.Contributing": {
+    "message": "Doprinos"
+  }
+}

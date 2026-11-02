@@ -1,0 +1,20 @@
+{
+  "sidebar.docs.category.Start Here": {
+    "message": "Aan de slag"
+  },
+  "sidebar.docs.category.Configure": {
+    "message": "Configuratie"
+  },
+  "sidebar.docs.category.Operate": {
+    "message": "Beheer"
+  },
+  "sidebar.docs.category.Safety": {
+    "message": "Veiligheid"
+  },
+  "sidebar.docs.category.Reference": {
+    "message": "Naslag"
+  },
+  "sidebar.docs.category.Contributing": {
+    "message": "Bijdragen"
+  }
+}

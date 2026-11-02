@@ -1,0 +1,11 @@
+{
+  "title": {
+    "message": "博客"
+  },
+  "description": {
+    "message": "版本说明、配置指南，以及在 IPv6 前缀变化时让 pfSense 地址保持最新的文章。"
+  },
+  "sidebar.title": {
+    "message": "最新文章"
+  }
+}

@@ -1,0 +1,89 @@
+---
+id: installation
+title: Instalacija paketa
+description: Instalirajte pfSense IPv6 Prefix Updater iz izdanja na GitHubu pomoću pkg, provjerite preuzetu datoteku prema njenoj SHA-256 datoteci i potvrdite nove stranice u WebGUI-ju.
+keywords:
+  - pfsense ipv6 prefix updater
+  - instalacija
+  - pkg add
+  - github izdanje
+  - sha256 kontrolni zbir
+tags:
+  - setup
+  - installation
+  - pfsense
+sidebar_position: 2
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Instalirajte paket iz izdanja na GitHubu pomoću pfSense alata `pkg`, a zatim potvrdite da se njegove stranice pojavljuju u WebGUI-ju.
+
+## Zahtjevi \{#requirements}
+
+- **Administratorska ljuska** — SSH ili konzolni pristup pfSense ljusci. Pojedinačne naredbe može pokretati i **Diagnostics → Command Prompt** u WebGUI-ju.
+- **HTTPS pristup GitHubu** — vatrozid preuzima paket s GitHub Releases.
+- **Paket izgrađen za odgovarajući FreeBSD** — paket mora biti izgrađen za verziju FreeBSD-a na kojoj radi vaše izdanje pfSense-a.
+- **Aktuelna sigurnosna kopija** — prije instalacije preuzmite kopiju konfiguracije iz **Diagnostics → Backup & Restore**.
+- **<Terminology title="originalna skripta update.php koju pokreće Cron paket" to="/docs/reference/terminology#legacy-updater">Stari program za ažuriranje</Terminology> može ostati** — ako skripta verzije 1.x još radi iz Cron paketa, ostavite je na mjestu. Korak instalacije premješta je u paket, kako objašnjava uputstvo [Prelazak sa skripte](/docs/migrate-from-legacy).
+
+:::warning
+
+pfSense IPv6 Prefix Updater je <Terminology title="paket instaliran s GitHuba, ne iz Netgate repozitorija" to="/docs/reference/terminology#unofficial-package">nezvanični paket</Terminology>. Instaliranje `.pkg` datoteke s GitHuba zaobilazi Netgateov pregled i podršku za pakete, pa se preporučuje da ga prvo isprobate na vatrozidu sa sigurnosnom kopijom ili na probnom vatrozidu.
+
+:::
+
+## Provjera izdanja \{#check-the-release}
+
+Izdanja paketa navedena su na [stranici GitHub Releases](https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases). Svako izdanje paketa sadrži ove datoteke:
+
+| Datoteka                                      | Opis                                                             |
+|-----------------------------------------------|------------------------------------------------------------------|
+| `pfSense-pkg-Ipv6PrefixUpdater.pkg`           | Paket pod stalnim nazivom koji koriste naredbe na ovoj stranici. |
+| `pfSense-pkg-Ipv6PrefixUpdater-<version>.pkg` | Isti paket s verzijom u nazivu datoteke.                         |
+| Datoteke `.sha256`                            | Jedan SHA-256 kontrolni zbir za svaku datoteku paketa.           |
+
+:::info
+
+Izdanja verzije 1.x sadrže samo <Terminology title="originalna skripta update.php koju pokreće Cron paket" to="/docs/reference/terminology#legacy-updater">stari program za ažuriranje</Terminology>. Ako najnovije izdanje nema `.pkg` datoteku, naredbe na ovoj stranici završavaju greškom not found (404).
+
+:::
+
+## Instalacija paketa \{#install-the-package}
+
+Pokrenite ovu naredbu u pfSense ljusci:
+
+```shell
+pkg add https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
+```
+
+`pkg` preuzima paket iz najnovijeg izdanja i izvršava njegov korak instalacije, koji u pfSense-u registruje **Services → IPv6 Prefix Updater**.
+
+## Prvo provjerite preuzetu datoteku \{#verify-the-download-first}
+
+Da biste prije instalacije provjerili datoteku prema njenom kontrolnom zbiru, preuzmite obje datoteke u `/tmp` i ispišite obje vrijednosti:
+
+```shell
+cd /tmp
+fetch https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
+fetch https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg.sha256
+sha256 -q pfSense-pkg-Ipv6PrefixUpdater.pkg
+cat pfSense-pkg-Ipv6PrefixUpdater.pkg.sha256
+```
+
+Posljednje dvije naredbe ispisuju istu vrijednost kada je preuzimanje ispravno. Zatim provjerenu datoteku možete instalirati naredbom `pkg add /tmp/pfSense-pkg-Ipv6PrefixUpdater.pkg`.
+
+## Potvrda u WebGUI-ju \{#confirm-in-the-webgui}
+
+1. Prijavite se u pfSense WebGUI.
+2. Otvorite **Services → IPv6 Prefix Updater** i potvrdite da se pojavljuju kartice **Postavke**, **Status**, **Polja**, **Sigurnosne kopije** i **Čišćenje**.
+3. Na kartici Status potvrdite da **Trenutno stanje** prikazuje `Još nema sačuvanih nadziranih sučelja. Dodajte ih na kartici Postavke.` Nakon premještanja starog programa za ažuriranje umjesto toga prikazuje premještena sučelja.
+4. Ostavite **<Terminology title="automatske provjere iz cron unosa kojim upravlja pfSense" to="/docs/reference/terminology#scheduled-updates">Omogući zakazana ažuriranja</Terminology>** neoznačeno, kao što je po zadanim postavkama, dok ne [uspostavite početno stanje](/docs/first-run). Nakon premještanja starog programa za ažuriranje ova opcija je već uključena, u skladu sa starim Cron rasporedom.
+
+## Ako instalacija ne uspije \{#if-installation-fails}
+
+- **Not found (404)**: najnovije izdanje nema datoteku paketa. Odjeljak [Provjera izdanja](/docs/installation#check-the-release) objašnjava koja je izdanja sadrže.
+- **Neusklađenost ABI-ja ili verzije OS-a**: paket je izgrađen za drugu verziju FreeBSD-a od one na kojoj radi vaše izdanje pfSense-a. Preporučuje se korištenje odgovarajućeg paketa umjesto prisilne instalacije.
+- **Greške DNS-a, TLS-a ili certifikata**: pfSense mora razriješiti `github.com`, doći do njega preko HTTPS-a i imati tačno vrijeme za provjeru certifikata.
+
+Nastavite s uputstvom [Uspostavljanje početnog stanja](/docs/first-run) kada se paket pojavi u WebGUI-ju.

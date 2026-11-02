@@ -1,0 +1,173 @@
+{
+  "home.meta.description": {
+    "message": "Wykrywaj zmiany delegowanego prefiksu, aktualizuj tylko zatwierdzone pola pfSense, zachowuj bity hosta i weryfikuj każdą transakcję."
+  },
+  "home.meta.title": {
+    "message": "Aktualizator prefiksu IPv6 - Bezpiecznie utrzymuj zgodność dynamicznych prefiksów IPv6."
+  },
+  "home.hero.eyebrow": {
+    "message": "Natywny pakiet pfSense"
+  },
+  "home.hero.heading": {
+    "message": "Bezpiecznie utrzymuj zgodność dynamicznych prefiksów IPv6."
+  },
+  "home.hero.tagline": {
+    "message": "Wykrywaj zmiany delegowanego prefiksu, aktualizuj tylko zatwierdzone pola pfSense, zachowuj bity hosta i weryfikuj każdą transakcję."
+  },
+  "home.hero.primaryAction": {
+    "message": "Instalacja i konfiguracja"
+  },
+  "home.hero.secondaryAction": {
+    "message": "Przejrzyj zasady bezpieczeństwa"
+  },
+  "home.preview.ariaLabel": {
+    "message": "Długość delegowanego prefiksu: /56"
+  },
+  "home.preview.dryRun": {
+    "message": "Próba"
+  },
+  "home.preview.detected": {
+    "message": "Zaobserwowany adres źródłowy"
+  },
+  "home.preview.previous": {
+    "message": "Poprzedni prefiks"
+  },
+  "home.preview.current": {
+    "message": "Bieżący prefiks"
+  },
+  "home.preview.prefixChanged": {
+    "message": "Zaobserwowany prefiks"
+  },
+  "home.preview.hostPreserved": {
+    "message": "Długość delegowanego prefiksu"
+  },
+  "home.preview.result": {
+    "message": "Próba wykryła 2 zatwierdzonych zmian pól dla 2001:db8:abcd:8800::/56; konfiguracja nie została zmodyfikowana."
+  },
+  "home.workflow.eyebrow": {
+    "message": "Bezpieczeństwo i działanie"
+  },
+  "home.workflow.heading": {
+    "message": "Bezpieczna transakcja"
+  },
+  "home.workflow.detect": {
+    "message": "Zaobserwowany adres źródłowy"
+  },
+  "home.workflow.plan": {
+    "message": "Zmienione pola"
+  },
+  "home.workflow.backup": {
+    "message": "Utworzono kopię zapasową konfiguracji"
+  },
+  "home.workflow.write": {
+    "message": "Bieżący prefiks"
+  },
+  "home.workflow.verify": {
+    "message": "Sukces"
+  },
+  "home.workflow.notify": {
+    "message": "Powiadomienia"
+  },
+  "home.features.interface.title": {
+    "message": "Monitorowane interfejsy"
+  },
+  "home.features.interface.description": {
+    "message": "Dodaj jeden wiersz dla każdego interfejsu, którego podstawowy aktywny globalny adres IPv6 zawiera delegowany prefiks. W przypadku DHCPv6 tylko z prefiksem na WAN wybierz śledzony interfejs za nim. Bity hosta po długości prefiksu są zachowywane dokładnie, a adres wybrany przez pfSense dla każdego interfejsu jest widoczny na karcie Stan."
+  },
+  "home.features.prefix.title": {
+    "message": "Długość delegowanego prefiksu"
+  },
+  "home.features.prefix.description": {
+    "message": "Wprowadź granicę prefiksu delegowanego przez dostawcę Internetu. Bity hosta po tej granicy są zachowywane dokładnie."
+  },
+  "home.features.scopes.title": {
+    "message": "Pola"
+  },
+  "home.features.scopes.description": {
+    "message": "Na karcie Pola wybierz, które pola konfiguracji zmieniają się wraz z prefiksem."
+  },
+  "home.features.dryRun.title": {
+    "message": "Próba"
+  },
+  "home.features.dryRun.description": {
+    "message": "Uruchom teraz może zaktualizować zatwierdzone pola po wykryciu zmiany. Próba zapisuje tylko podgląd i nigdy nie zapisuje konfiguracji zapory."
+  },
+  "home.features.backup.title": {
+    "message": "Utworzono kopię zapasową konfiguracji"
+  },
+  "home.features.backup.description": {
+    "message": "Utworzono kopię zapasową konfiguracji: Tak."
+  },
+  "home.features.notify.title": {
+    "message": "Powiadomienia"
+  },
+  "home.features.notify.description": {
+    "message": "Używaj skonfigurowanych kanałów powiadomień pfSense po zweryfikowanej udanej aktualizacji prefiksu. Sprawdzenia bez zmian nigdy nie wysyłają powiadomień."
+  },
+  "home.stats.heading": {
+    "message": "Bezpieczeństwo i działanie"
+  },
+  "home.stats.boundaries": {
+    "message": "Długość delegowanego prefiksu"
+  },
+  "home.stats.backups": {
+    "message": "Utworzono kopię zapasową konfiguracji"
+  },
+  "home.stats.writes": {
+    "message": "Zmienione pola"
+  },
+  "home.stats.noChange": {
+    "message": "Aktywny prefiks IPv6 nie uległ zmianie; żaden zatwierdzony cel konfiguracji nie został odczytany ani zapisany."
+  },
+  "home.routes.eyebrow": {
+    "message": "Przewodniki"
+  },
+  "home.routes.heading": {
+    "message": "Instalacja i konfiguracja"
+  },
+  "home.routes.install.title": {
+    "message": "Instalacja pakietu"
+  },
+  "home.routes.install.description": {
+    "message": "Uruchom to polecenie w powłoce pfSense, aby zainstalować najnowsze wydanie bezpośrednio z GitHub."
+  },
+  "home.routes.open": {
+    "message": "Zacznij czytać"
+  },
+  "home.routes.configure.title": {
+    "message": "Monitorowane interfejsy / Długość delegowanego prefiksu"
+  },
+  "home.routes.configure.description": {
+    "message": "Dodaj jeden wiersz dla każdego interfejsu, którego podstawowy aktywny globalny adres IPv6 zawiera delegowany prefiks. W przypadku DHCPv6 tylko z prefiksem na WAN wybierz śledzony interfejs za nim. Bity hosta po długości prefiksu są zachowywane dokładnie, a adres wybrany przez pfSense dla każdego interfejsu jest widoczny na karcie Stan."
+  },
+  "home.routes.status.title": {
+    "message": "Stan / Wynik polecenia"
+  },
+  "home.routes.status.description": {
+    "message": "Uruchom teraz może zaktualizować zatwierdzone pola po wykryciu zmiany. Próba zapisuje tylko podgląd i nigdy nie zapisuje konfiguracji zapory."
+  },
+  "home.routes.troubleshoot.title": {
+    "message": "Rozwiązywanie problemów"
+  },
+  "home.routes.troubleshoot.description": {
+    "message": "Jeśli adres źródłowy jest błędny, wybierz podrzędny śledzony interfejs, który naprawdę ma adres globalny; nie kompensuj zgadywaną długością."
+  },
+  "home.spotlight.heading": {
+    "message": "Wynik polecenia"
+  },
+  "home.spotlight.description": {
+    "message": "Sprawdzaj każde uruchomienie na stronie Stan: adres źródłowy, obliczony prefiks, kopię zapasową i wynik."
+  },
+  "home.spotlight.statusAction": {
+    "message": "Stan / Wynik polecenia"
+  },
+  "home.spotlight.testsAction": {
+    "message": "Wyniki i testy"
+  },
+  "home.blogPreview.heading": {
+    "message": "Z bloga"
+  },
+  "home.blogPreview.description": {
+    "message": "Informacje o wydaniach, przewodniki konfiguracji i artykuły o dynamicznych prefiksach IPv6."
+  }
+}

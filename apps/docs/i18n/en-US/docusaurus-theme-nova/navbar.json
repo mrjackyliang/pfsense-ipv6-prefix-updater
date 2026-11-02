@@ -1,0 +1,22 @@
+{
+  "item.label.Home": {
+    "message": "Home",
+    "description": "Navbar item with label \"Home\""
+  },
+  "item.label.Guides": {
+    "message": "Guides",
+    "description": "Navbar item with label \"Guides\""
+  },
+  "item.label.Safety": {
+    "message": "Safety",
+    "description": "Navbar item with label \"Safety\""
+  },
+  "item.label.Troubleshooting": {
+    "message": "Troubleshooting",
+    "description": "Navbar item with label \"Troubleshooting\""
+  },
+  "item.label.Blog": {
+    "message": "Blog",
+    "description": "Navbar item with label \"Blog\""
+  }
+}

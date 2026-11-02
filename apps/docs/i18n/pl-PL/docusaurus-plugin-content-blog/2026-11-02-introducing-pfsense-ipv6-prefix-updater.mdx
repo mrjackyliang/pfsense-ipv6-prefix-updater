@@ -1,0 +1,60 @@
+---
+title: "Oto pfSense IPv6 Prefix Updater: bezpieczniejszy następca"
+description: pfSense IPv6 Prefix Updater, następca skryptu update.php, podąża za nowym prefiksem IPv6, zachowuje każdą część hosta i robi kopię zapasową przed każdą zmianą.
+slug: introducing-pfsense-ipv6-prefix-updater
+authors:
+  - mrjackyliang
+keywords:
+  - pfsense ipv6 prefix updater
+  - pakiet pfsense
+  - dynamiczny prefiks ipv6
+  - delegowanie prefiksu ipv6
+  - starszy aktualizator
+tags:
+  - release
+  - ipv6
+  - pfsense
+---
+
+Wielu dostawców internetu deleguje prefiks IPv6, który może się zmienić bez uprzedzenia. Gdy tak się stanie, adresy ze starego prefiksu w aliasach, interfejsach i ustawieniach VPN w pfSense jednocześnie stają się nieaktualne, a usługi mogą przestać działać w sposób trudny do zdiagnozowania.
+
+pfSense IPv6 Prefix Updater to moja odpowiedź: natywny pakiet pfSense, który podąża za nowym prefiksem i aktualizuje adresy w zatwierdzonych obszarach ustawień.
+
+{/* truncate */}
+
+## Dlaczego go stworzyłem \{#why-i-built-it}
+
+Ten projekt powstał jako `update.php`, skrypt instalowany w `/root` i uruchamiany przez wpis pakietu Cron. Udowodnił, że pfSense potrafi wykryć nowy prefiks, utworzyć kopię zapasową konfiguracji i przepisać stare adresy.
+
+Instalacja i aktualizacje były jednak zawodne, a skrypt zastępował tekst starego prefiksu w dowolnym miejscu konfiguracji. Chciałem, aby jego następca zmieniał tylko te pola, które rozumie, i pokazywał, co zrobił, bez ręcznej instalacji i bez ręcznie tworzonego wpisu Cron.
+
+## Co robi pakiet \{#what-it-does}
+
+Pakiet obserwuje wybrane interfejsy. Gdy któryś prefiks się zmieni, pakiet:
+
+- **Zachowuje część hosta** — zmieniają się tylko bity prefiksu, więc każde urządzenie zachowuje ten sam sufiks adresu.
+- **Zmienia tylko zatwierdzone pola** — jedenaście grup pfSense, takich jak Aliasy, Reguły zapory, Serwer DHCPv6 i WireGuard, jest początkowo włączonych, a karta Pola pozwala wyłączyć grupę lub odznaczyć pojedyncze pole.
+- **Tworzy kopię zapasową przed zapisem** — kopia zapasowa konfiguracji trafia do Config History, a następnie pakiet zapisuje wszystkie zmiany jednym zapisem.
+- **Weryfikuje wynik** — sprawdza zapisane wartości, ponownie ładuje tylko usługi, których dotyczą zmiany, i jeszcze raz sprawdza wartości.
+
+Zdalne sieci VPN i peery zmieniają się tylko wtedy, gdy zaznaczysz je w grupie [Inne ustawienia](/docs/configure/configuration-scopes#other-settings), a po każdej udanej aktualizacji możesz otrzymać opcjonalne powiadomienie o zmianie.
+
+## Jak go skonfigurować \{#how-you-set-it-up}
+
+Na karcie Ustawienia w **Services → IPv6 Prefix Updater** dodaj w polu Monitorowane interfejsy wiersz z długością delegowanego prefiksu używaną przez dostawcę internetu dla każdego obserwowanego interfejsu i zapisz.
+
+Następnie na karcie Stan wybierz **Uruchom teraz**. Pierwsze uruchomienie jedynie zapisuje wartość bazową, więc możesz sprawdzić adres i prefiks oraz przejrzeć kartę Pola, zanim włączysz zaplanowane aktualizacje, które domyślnie co godzinę uruchamia wpis cron zarządzany przez pfSense.
+
+Sprawdzenie, które wykryje ten sam prefiks, niczego nie zapisuje, a **Próba** wykonuje sprawdzenie bez kopii zapasowej i bez zapisu.
+
+:::info
+
+Ten nieoficjalny pakiet instalujesz za pomocą `pkg` z wydania w serwisie GitHub, a Netgate go nie weryfikuje ani nie wspiera. Wydania w wersji 1.x zawierają tylko skrypt, więc jeśli najnowsze wydanie nie ma pliku `.pkg`, `pkg add` kończy się błędem not found (404).
+
+:::
+
+## Przejście ze skryptu na pakiet \{#moving-from-the-script}
+
+Jeśli `update.php` nadal działa z pakietu Cron, pozostaw go na miejscu i zainstaluj pakiet. Pakiet przeniesie wpisy Cron, zapisane prefiksy i kopie zapasowe skryptu, a następnie usunie stare pliki, co wyjaśnia przewodnik [Migracja ze skryptu](/docs/migrate-from-legacy).
+
+Dopiero poznajesz projekt? Zacznij od strony [Instalacja pakietu](/docs/installation).

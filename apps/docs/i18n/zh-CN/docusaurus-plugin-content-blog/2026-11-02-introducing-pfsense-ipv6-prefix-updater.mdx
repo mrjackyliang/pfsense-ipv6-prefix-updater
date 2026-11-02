@@ -1,0 +1,60 @@
+---
+title: "介绍 pfSense IPv6 Prefix Updater：更安全的继任者"
+description: pfSense IPv6 Prefix Updater 作为 update.php 脚本的继任者，会跟随新的 IPv6 前缀，保留每个地址的主机部分，并在每次更改前先创建备份。
+slug: introducing-pfsense-ipv6-prefix-updater
+authors:
+  - mrjackyliang
+keywords:
+  - pfsense ipv6 prefix updater
+  - pfSense 软件包
+  - 动态 IPv6 前缀
+  - IPv6 前缀委派
+  - 旧版更新器
+tags:
+  - release
+  - ipv6
+  - pfsense
+---
+
+许多 ISP 委派的 IPv6 前缀可能会在不事先通知的情况下发生变化。一旦前缀改变，pfSense 别名、接口和 VPN 设置中属于旧前缀的地址就会一起过时，服务也可能出现难以排查的故障。
+
+pfSense IPv6 Prefix Updater 就是我给出的答案：一个原生 pfSense 软件包，它会跟随新前缀，并更新你所批准的设置区域中的地址。
+
+{/* truncate */}
+
+## 我为什么开发它 \{#why-i-built-it}
+
+这个项目最初是 `update.php`，一个安装在 `/root` 中、由 Cron 软件包条目运行的脚本。它证明了 pfSense 能够检测新前缀、备份配置并改写旧地址。
+
+但安装和升级都容易出错，而且该脚本会替换配置中任何位置出现的旧前缀文本。我想要的是这样一个继任者：只更改它能理解的字段，并显示它做了什么，而且无需手动安装，也无需手动创建 Cron 条目。
+
+## 功能简介 \{#what-it-does}
+
+软件包会监视你选择的接口。前缀变化时，它会：
+
+- **保留主机部分** — 只有前缀位会改变，因此每台设备的地址后缀保持不变。
+- **只更改已批准字段** — 别名、防火墙规则、DHCPv6 服务器和 WireGuard 等十一个 pfSense 组默认开启，你可以在“字段”选项卡中关闭某个组，或取消勾选单个字段。
+- **写入前先备份** — 先将配置备份存入配置历史，再通过一次写入保存所有更改。
+- **验证结果** — 检查已保存的值，只重新加载受影响的服务，然后再次检查这些值。
+
+远程 VPN 网络和对等端只有在你于[其他设置](/docs/configure/configuration-scopes#other-settings)中勾选后才会更改；每次成功更新后，软件包还会发送可选的变化通知。
+
+## 如何设置 \{#how-you-set-it-up}
+
+在 **Services → IPv6 Prefix Updater** 下的“设置”选项卡中，为每个要监视的接口添加一行监控接口，并填写与 ISP 委派大小一致的委派前缀长度，然后保存。
+
+接着在“状态”选项卡中选择 **立即运行**。首次运行只记录基线，因此可以先核对地址和前缀并检查“字段”选项卡，再开启计划更新；计划更新默认每小时由 pfSense 管理的 cron 条目运行一次。
+
+如果检查发现前缀相同，就不会写入任何内容；**试运行** 则会运行检查，但不备份也不写入。
+
+:::info
+
+这个非官方软件包通过 `pkg` 从 GitHub 发布版本安装，Netgate 不会审核或支持它。1.x 版本只包含脚本，因此如果最新发布版本中没有 `.pkg` 文件，`pkg add` 会因找不到文件（404）而失败。
+
+:::
+
+## 从脚本迁移过来 \{#moving-from-the-script}
+
+如果 `update.php` 仍在通过 Cron 软件包运行，请保留它并直接安装软件包。软件包会迁移该脚本的 Cron 条目、已保存的前缀和备份，并删除旧文件，详见[从脚本迁移](/docs/migrate-from-legacy)。
+
+初次接触这个项目？请从[安装软件包](/docs/installation)开始。

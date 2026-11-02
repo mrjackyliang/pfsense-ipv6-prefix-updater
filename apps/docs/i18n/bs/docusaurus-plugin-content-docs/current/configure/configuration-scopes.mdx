@@ -1,0 +1,153 @@
+---
+id: configuration-scopes
+title: Polja
+description: Na kartici Polja odaberite koja se polja konfiguracije mijenjaju s dodijeljenim prefiksom, postavite izuzetke, pregledajte postavke drugih paketa i po želji uključite svaku ostalu vrijednost.
+keywords:
+  - pfsense ipv6 prefix updater
+  - kartica polja
+  - grupe polja
+  - pravila vatrozida
+  - dhcpv6
+  - postavke paketa
+tags:
+  - configuration
+  - fields
+  - safety
+sidebar_position: 2
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import fieldsTab from './_assets_/configuration-scopes-1.png';
+import fieldException from './_assets_/configuration-scopes-2.png';
+import otherSettings from './_assets_/configuration-scopes-3.png';
+
+Odaberite koja se polja konfiguracije mijenjaju kada se prefiks promijeni.
+
+## Kartica Polja \{#the-fields-tab}
+
+Kartica **Polja** u **Services → IPv6 Prefix Updater** navodi sve adrese unutar prefiksa svakog <Terminology title="početni prefiks zabilježen bez promjene konfiguracije" to="/docs/reference/terminology#baseline">početnog stanja</Terminology>, grupisane po vrsti. Red **Početna stanja** navodi prefikse s kojima se adrese porede. Dok prva provjera ne zabilježi početno stanje, kartica prikazuje samo prekidače grupa.
+
+<img src={fieldsTab} alt="Kartica Polja paketa IPv6 Prefix Updater s dugmadima Automatski odaberi i Očisti sve, poljem za pretragu, filterom i grupom Statička sučelja koja navodi adrese sučelja LAN i LAB s istaknutim dijelom prefiksa" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+Svaki red prikazuje:
+
+- **Potvrdni okvir**: označen je kada će sljedeća <Terminology title="razlika u odnosu na posljednji uspješni prefiks ili dužinu" to="/docs/reference/terminology#prefix-transition">promjena prefiksa</Terminology> ažurirati polje.
+- **Polje**: unos, na primjer opis pravila ili naziv aliasa, zatim naziv polja i njegovu putanju konfiguracije.
+- **Trenutna vrijednost**: vrijednost u kojoj je istaknut dio prefiksa svake adrese. Mijenja se samo istaknuti dio, a <Terminology title="bitovi adrese nakon dodijeljenog prefiksa" to="/docs/reference/terminology#host-portion">dio hosta</Terminology> ostaje.
+
+## Prekidači grupa i izuzeci \{#group-switches-and-exceptions}
+
+Svaka <Terminology title="grupa polja s jednim prekidačem na kartici Polja" to="/docs/reference/terminology#field-group">grupa polja</Terminology> ima prekidač u svom zaglavlju:
+
+- **Uključeno**: svako polje te vrste mijenja se s prefiksom, uključujući kasnije dodana polja, osim onih s kojih uklonite kvačicu.
+- **Isključeno**: mijenjaju se samo polja koja označite.
+
+Kada stanje kvačice polja odstupa od prekidača njegove grupe, to je <Terminology title="pojedinačno polje označeno ili neoznačeno suprotno prekidaču svoje grupe" to="/docs/reference/terminology#field-exception">izuzetak polja</Terminology>. Dok grupa ima izuzetke, njeno zaglavlje prikazuje crticu, a **Odabrano N od M** broji označena polja. Klik na zaglavlje uključuje ili isključuje grupu i sve kvačice u njoj usklađuje s novim stanjem. Odaberite **Sačuvaj** da biste zadržali promjene.
+
+<img src={fieldException} alt="Kartica Polja s uključenom grupom Pravila vatrozida, jednim neoznačenim pravilom zbog kojeg zaglavlje prikazuje crticu i Odabrano 2 od 3 te pravilom bez tracker ID-a koje prati prekidač grupe" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+Izbor prati unos, a ne njegovu poziciju u listi, pa ga premještanje ili brisanje drugih unosa ne prebacuje na drugi unos. Paket prepoznaje svaki unos ovako:
+
+- **Pravila vatrozida**: tracker ID pravila.
+- **Aliasi**: naziv aliasa.
+- **Statička DHCPv6 mapiranja**: DUID, jer pfSense DHCPv6 mapiranja prepoznaje po DUID-u umjesto po MAC adresi.
+- **Prosljeđivanja portova i odlazni NAT**: vrijeme kada je pravilo napravljeno.
+- **1:1 NAT i NPt unosi te DHCPv6 poolovi**: opis.
+- **DNS nadjačavanja hostova**: host, domena i to da li unos sadrži IPv4 adresu, IPv6 adresu ili obje.
+- **Postavke drugih paketa**: polje koje jedinstveno imenuje svaki unos liste, na primjer njegov naziv ili opis.
+- **Ostale postavke**: polje koje jedinstveno imenuje svaki unos liste i ne sadrži adresu, na primjer naziv mrežnog prolaza. Jedan izbor obuhvata sve unose obične liste, na primjer DNS servere u **System → General Setup**.
+- **Ostali unosi**: njihovo sučelje, naziv ili pfSense ID. Jedan izbor obuhvata sve DNS servere, NTP servere ili RA podmreže jednog sučelja.
+
+Red čiji unos nema takav identifikator ili ga dijeli s drugim unosom nema potvrdni okvir i prikazuje `Nema stabilnog identifikatora, pa ovo polje prati prekidač grupe.` Izbori se čuvaju odvojeno od postavki, pa ih čuvanje kartice Postavke ne briše.
+
+## pfSense grupe \{#pfsense-groups}
+
+Jedanaest grupa obuhvata vlastite postavke sistema pfSense. Nakon nove instalacije i nakon premještanja <Terminology title="originalna skripta update.php koju pokreće Cron paket" to="/docs/reference/terminology#legacy-updater">starog programa za ažuriranje</Terminology> sve su uključene.
+
+| Grupa                                                                                                                                             | Šta obuhvata                                                                                                                                                                                                                                                                                                                                                                                              |
+|---------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Statička sučelja                                                                                                                                  | Adrese sučelja postavljenih na Static IPv6. DHCPv6, SLAAC, <Terminology title="sučelje adresirano iz dodijeljenog prefiksa drugog sučelja" to="/docs/reference/terminology#tracked-interface">Track Interface</Terminology> i ostali načini rada se preskaču.                                                                                                                                             |
+| <Terminology title="dodatna adresa sučelja, npr. CARP ili IP Alias" to="/docs/reference/terminology#virtual-ip">Virtualne IP adrese</Terminology> | CARP i IP Alias <Terminology title="dodatna adresa sučelja, npr. CARP ili IP Alias" to="/docs/reference/terminology#virtual-ip">virtualne IP adrese</Terminology>. Tipovi Proxy ARP i Other nalaze se u grupi Ostale postavke, a CIDR maska ostaje kakva jeste.                                                                                                                                           |
+| Aliasi                                                                                                                                            | Adrese i mreže u aliasima tipa Host i Network. Port, URL, URL table i ostali tipovi aliasa nalaze se u grupi Ostale postavke.                                                                                                                                                                                                                                                                             |
+| Pravila vatrozida                                                                                                                                 | Izvorne i odredišne adrese upisane u pravila vatrozida, uključujući plutajuća pravila. Aliasi, mreže sučelja kao što je **LAN subnets** i **any** se preskaču.                                                                                                                                                                                                                                            |
+| NAT i NPt                                                                                                                                         | Upisane adrese u prosljeđivanjima portova, odlaznom NAT-u i 1:1 NAT-u te prefiksi NPt unosa. NPt unosi koji prate sučelje se preskaču.                                                                                                                                                                                                                                                                    |
+| DHCPv6 server                                                                                                                                     | Rasponi adresa, delegiranja prefiksa i dodatnih poolova, adrese statičkih mapiranja te DNS i NTP serveri koji se dodjeljuju klijentima.                                                                                                                                                                                                                                                                   |
+| Oglašavanje rutera                                                                                                                                | DNS serveri i RA podmreže koje oglašava svako sučelje.                                                                                                                                                                                                                                                                                                                                                    |
+| DNS nadjačavanja hostova                                                                                                                          | Adrese nadjačavanja hostova u DNS Resolveru i DNS Forwarderu, uključujući svaku adresu u listi razdvojenoj zarezima. Nadjačavanja domena nalaze se u grupi Ostale postavke.                                                                                                                                                                                                                               |
+| IPsec                                                                                                                                             | Local Network i NAT/BINAT prevođenje unosa <Terminology title="IPsec unos koji opisuje lokalne i udaljene mreže" to="/docs/reference/terminology#ipsec-phase-2">faze 2</Terminology> tipa Tunnel IPv6 i Routed (VTI), kada je njihov tip Address ili Network. Udaljene mreže nalaze se u grupi Ostale postavke.                                                                                           |
+| OpenVPN                                                                                                                                           | IPv6 mreže tunela i lokalne mreže na serverima, IPv6 mreže tunela na klijentima te IPv6 mreže tunela i lokalne mreže u <Terminology title="OpenVPN postavke za jednog klijenta na serveru" to="/docs/reference/terminology#client-specific-override">klijentskim nadjačavanjima</Terminology>. Udaljene mreže nalaze se u grupi Ostale postavke, a serverske mreže tunela koje prate sučelje se preskaču. |
+| WireGuard                                                                                                                                         | <Terminology title="adresa dodijeljena pfSense WireGuard tunelu" to="/docs/reference/terminology#wireguard-tunnel-address">Adrese tunela</Terminology> na pfSense WireGuard tunelima. Peerovi, dozvoljene IP adrese i krajnje tačke nalaze se u grupi Ostale postavke.                                                                                                                                    |
+
+Isključivanje grupa koje vatrozid ne koristi čuva <Terminology title="potpuna lista promjena polja, sastavljena prije upisa" to="/docs/reference/terminology#change-plan">plan promjena</Terminology> od neočekivanih vrijednosti.
+
+## Dugmad, pretraga i filteri \{#buttons-search-and-filters}
+
+- **Automatski odaberi**: uključuje sve pfSense grupe i označava sva polja u njima. Grupa Ostale postavke i postavke drugih paketa ostaju kakve jesu.
+- **Očisti sve**: isključuje sve grupe i uklanja sve kvačice.
+- **Pretraži polja**: prikazuje samo redove čija grupa, unos, naziv polja, vrijednost ili putanja sadrži upisani tekst.
+- **Filter**: prikazuje sve redove, samo odabrane redove ili samo redove drugih paketa.
+
+**Automatski odaberi** i **Očisti sve** mijenjaju samo stranicu dok ne odaberete **Sačuvaj**. Kada se sačuva odabir u kojem ništa nije odabrano, kartica prikazuje upozorenje, a pokretanja se zaustavljaju porukom `Nijedno polje konfiguracije nije odabrano. Odaberite polja na kartici Polja.` dok ponovo ne odaberete polja.
+
+Kada kartica navodi više od 40 polja, grupe su na početku sklopljene. Odaberite naziv grupe da biste je otvorili.
+
+## Postavke drugih paketa \{#other-packages-settings}
+
+Postavke koje drugi paketi čuvaju pod `installedpackages` dobijaju vlastitu grupu, nazvanu po instaliranom paketu kojem pripadaju ili po svom odjeljku kada im nijedan paket ne pripada. Paket ne može znati šta ta polja znače, pa su na početku neoznačena, a **Automatski odaberi** ih nikada ne odabire. Označite polje tek nakon što provjerite šta ono radi u tom paketu.
+
+Kada pokretanje promijeni neko od tih polja, ponovo primjenjuje postavke tog paketa, kao što to radi dugme **Save** samog paketa. **Posljednje pokretanje** na kartici Status navodi svaki rezultat pod **Paketi**:
+
+- `Postavke paketa <package> ponovo su primijenjene.`
+- `Nijedan instalirani paket ne posjeduje postavke <section>. Ručno ponovo pokrenite uslugu koja ih koristi.` Vrijednosti su svejedno sačuvane. To se dešava i kada paket neke od svojih postavki čuva pod odjeljkom drugačijeg naziva.
+- `Postavke paketa <package> nije moguće ponovo primijeniti: <reason>` Nove vrijednosti ostaju sačuvane i ništa se ne vraća.
+
+Oba problema dodaju i <Terminology title="obavijest na listi obavijesti u pfSense-u" to="/docs/reference/terminology#webgui-notice">WebGUI obavijest</Terminology>.
+
+## Polja koja više ne postoje \{#fields-that-no-longer-exist}
+
+Kada se izbriše unos iza označenog polja, polje se pojavljuje pod **Polja koja nedostaju** na vrhu kartice. Pokretanja ga preskaču i navode pod **Preskočena polja** na kartici Status. **Zaboravi polja koja nedostaju** uklanja te kvačice.
+
+## Ostale postavke \{#other-settings}
+
+Grupa **Ostale postavke** navodi svaku drugu adresu unutar prefiksa početnog stanja. Na početku je isključena, pa se vrijednost u njoj mijenja samo kada je označite ili kada uključite grupu, što obuhvata i kasnije dodane vrijednosti. Svaki red navodi svoju vrstu:
+
+- Udaljena strana bilo kojeg VPN-a: udaljene IPsec mreže i udaljeni mrežni prolazi te udaljene OpenVPN mreže i adrese servera.
+- WireGuard peerovi, uključujući njihove dozvoljene IP adrese i krajnje tačke.
+- Mrežni prolazi i statičke rute.
+- Certifikati, privatni ključevi, lozinke i unaprijed dijeljeni ključevi, čije se vrijednosti prikazuju kao `Vrijednost je skrivena`.
+- Vrijednosti sačuvane u Base64, na primjer prilagođene opcije DNS Resolvera. One se dekodiraju, prepisuju i ponovo kodiraju.
+- Opisi.
+- Svaka druga postavka, koja umjesto toga prikazuje naziv svoje postavke, na primjer nadjačavanja domena u DNS Resolveru i DNS serveri u **System → General Setup**.
+
+<img src={otherSettings} alt="Grupa Ostale postavke na kartici Polja koja navodi statičku rutu, opis aliasa, prilagođene opcije DNS Resolvera kodirane u Base64, nadjačavanje domene i mrežni prolaz, svaki sa svojom vrstom" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+Kada pokretanje promijeni neku od ovih vrijednosti, ponovo učitava ono što pfSense ponovo učitava kada sačuvate tu postavku:
+
+- **Mrežni prolazi i statičke rute**: usmjeravanje, zatim filter vatrozida.
+- **DNS serveri u System → General Setup**: DNS postavke sistema, zatim DNS Resolver ili DNS Forwarder.
+- **Vrijednosti za DNS Resolver, DNS Forwarder, IPsec, OpenVPN i WireGuard**: ta usluga.
+- **Vrijednosti drugog paketa**: postavke tog paketa, kako je opisano u odjeljku [Postavke drugih paketa](#other-packages-settings).
+- **Opisi, certifikati i vrijednosti bez poznate usluge**: ništa. Nova vrijednost se samo sačuva.
+
+Preporučuje se da ova polja označite dok je početno stanje još na starom prefiksu, jer nakon promjene kartica poredi adrese s novim prefiksom. Udaljeni VPN peerovi zadržavaju vlastitu konfiguraciju, pa peer koji pokazuje na promijenjenu adresu treba ažurirati na njegovoj strani.
+
+## Kako se vrijednosti podudaraju \{#how-values-are-matched}
+
+- Adresa se mijenja samo kada pripada <Terminology title="prefiks s kojim se poredi sljedeća provjera" to="/docs/reference/terminology#last-successful-prefix">posljednjem uspješnom prefiksu</Terminology>, pri dužini sačuvanoj u <Terminology title="početni prefiks zabilježen bez promjene konfiguracije" to="/docs/reference/terminology#baseline">početnom stanju</Terminology>. Adrese iz drugih mreža, IPv4 adrese, nazivi hostova i nazivi aliasa ostaju kakvi jesu, a kartica ih ne navodi.
+- U listama, kao što su unosi aliasa, OpenVPN lokalne mreže i nadjačavanja hostova u DNS Resolveru, svaka stavka se provjerava zasebno, a razdjelnici ostaju kako su zapisani.
+- U postavkama drugih paketa i u grupi Ostale postavke svaka adresa u tekstu provjerava se zasebno, a ostatak teksta ostaje kako je zapisan.
+- CIDR sufiks kao što je `/64` ostaje kako je zapisan, a <Terminology title="bitovi adrese nakon dodijeljenog prefiksa" to="/docs/reference/terminology#host-portion">dio hosta</Terminology> svake adrese se zadržava.
+- Na <Terminology title="sučelje adresirano iz dodijeljenog prefiksa drugog sučelja" to="/docs/reference/terminology#tracked-interface">sučelju tipa Track Interface</Terminology> DHCPv6 rasponi i statička mapiranja sadrže sufikse hosta kao što je `::1000`, koji ostaju kakvi jesu.
+- Prepisane adrese čuvaju se u <Terminology title="najkraći standardni zapis adrese malim slovima" to="/docs/reference/terminology#canonical-form">kanonskom obliku</Terminology>, pa se njihov zapis može razlikovati od upisanog.
+
+## Pregled promjena \{#previewing-changes}
+
+<Terminology title="pregled bez sigurnosne kopije i bez upisa" to="/docs/reference/terminology#dry-run">Probno pokretanje</Terminology> čita odabrana polja tek nakon <Terminology title="razlika u odnosu na posljednji uspješni prefiks ili dužinu" to="/docs/reference/terminology#prefix-transition">promjene prefiksa</Terminology>. Dok je prefiks nepromijenjen, prijavljuje ishod <Terminology title="ishod: prefiks nepromijenjen, ništa nije skenirano ni upisano" to="/docs/reference/terminology#no-change">Bez promjene</Terminology>, pa se novi odabir pregleda na kartici Polja. Nakon promjene prefiksa, njegov <Terminology title="rezultati samo za čitanje nakon Pokreni sada ili Probnog pokretanja" to="/docs/reference/terminology#command-output">Izlaz naredbe</Terminology> pod `Promjene polja` navodi svaku adresu koju bi zamijenilo.
+
+<Terminology title="pregled bez sigurnosne kopije i bez upisa" to="/docs/reference/terminology#dry-run">Probno pokretanje</Terminology> također preskače provjeru da li pfSense može ponovo učitati pogođene usluge. Zato se nedostatak WireGuard paketa pokazuje tek pri stvarnom pokretanju.
+
+## WireGuard paket \{#wireguard-package}
+
+Ažuriranje <Terminology title="adresa dodijeljena pfSense WireGuard tunelu" to="/docs/reference/terminology#wireguard-tunnel-address">adresa WireGuard tunela</Terminology> zahtijeva WireGuard paket. Ako se te adrese moraju promijeniti, a paket nije instaliran, stvarno pokretanje zaustavlja se prije sigurnosne kopije porukom `Potrebna pfSense zavisnost „/usr/local/pkg/wireguard/includes/wg.inc” nije dostupna.`
+
+Stranica [Odobrena polja](/docs/reference/approved-fields) navodi tačne putanje konfiguracije iza svake grupe i identitet pod kojim se čuva svaki izbor.

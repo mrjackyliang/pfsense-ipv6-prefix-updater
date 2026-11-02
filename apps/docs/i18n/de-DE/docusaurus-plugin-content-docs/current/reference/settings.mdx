@@ -1,0 +1,52 @@
+---
+id: settings
+title: Einstellungsreferenz
+description: Schlagen Sie jedes Feld der Registerkarte Einstellungen von IPv6 Prefix Updater mit seinem Standardwert, den zulässigen Werten und der möglichen Validierungsmeldung nach.
+keywords:
+  - pfsense ipv6 prefix updater
+  - einstellungen
+  - standardwerte
+  - validierung
+  - webgui
+tags:
+  - reference
+  - settings
+  - webgui
+sidebar_position: 2
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Schlagen Sie jedes Feld der Registerkarte Einstellungen mit seinem Standardwert und den zulässigen Werten nach.
+
+## Präfixüberwachung \{#prefix-monitoring}
+
+Die Registerkarte **Einstellungen** unter **Services → IPv6 Prefix Updater** beginnt mit diesen Feldern, und das Speichern des Formulars zeigt `Einstellungen gespeichert.`
+
+| Feld                                                                                                                                                                                              | Beschreibung                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| <Terminology title="automatische Prüfungen über einen von pfSense verwalteten Cron-Eintrag" to="/docs/reference/terminology#scheduled-updates">Geplante Aktualisierungen aktivieren</Terminology> | Führt Prüfungen nach dem gewählten **Zeitplan** aus. Standardmäßig deaktiviert, und das Speichern fügt den Cron-Eintrag hinzu oder entfernt ihn.                                                                                                                                                                                                                                                                                                                                |
+| <Terminology title="Schnittstelle, deren Adresse das aktuelle Präfix verrät" to="/docs/reference/terminology#monitored-interface">Überwachte Schnittstellen</Terminology>                         | Erforderlich. Eine Zeile pro Schnittstelle, deren <Terminology title="öffentliche IPv6-Adresse innerhalb von 2000::/3" to="/docs/reference/terminology#global-unicast-address">globale Adresse</Terminology> ein <Terminology title="IPv6-Netz, das Ihr Internetanbieter zur Firewall routet" to="/docs/reference/terminology#delegated-prefix">delegiertes Präfix</Terminology> trägt. **Hinzufügen** fügt eine Zeile hinzu, und jede Schnittstelle darf nur einmal vorkommen. |
+| <Terminology title="Einstellung für die Präfixgröße des Anbieters, /48 bis /64" to="/docs/reference/terminology#delegated-prefix-length">Länge des delegierten Präfixes</Terminology>             | In jeder Zeile erforderlich. `/48` bis `/64`, standardmäßig ist `/56` gewählt.                                                                                                                                                                                                                                                                                                                                                                                                  |
+| Zeitplan                                                                                                                                                                                          | Alle 15 Minuten, Stündlich, Alle 6 Stunden oder Täglich um Mitternacht. Standardmäßig Stündlich.                                                                                                                                                                                                                                                                                                                                                                                |
+
+## Feldauswahl \{#field-selection}
+
+Unter **Zeitplan** zeigt die Registerkarte Einstellungen `Wählen Sie auf der Registerkarte Felder, welche Konfigurationsfelder sich mit dem Präfix ändern.` Die <Terminology title="Gruppe von Feldern mit einem Schalter auf der Registerkarte Felder" to="/docs/reference/terminology#field-group">Feldgruppen</Terminology> und einzelnen Felder werden auf der Registerkarte **Felder** ausgewählt und getrennt von diesen Einstellungen gespeichert, daher ändert das Speichern der Registerkarte Einstellungen sie nie. [Felder](/docs/configure/configuration-scopes) beschreibt jede Gruppe und ihren Standardwert.
+
+## Benachrichtigungen \{#notifications}
+
+| Feld                                                                                                                                                                                     | Beschreibung                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| <Terminology title="Meldung nach einer verifizierten erfolgreichen Aktualisierung" to="/docs/reference/terminology#change-notification">Änderungsbenachrichtigungen senden</Terminology> | Standardmäßig aktiviert. Sendet nach jedem <Terminology title="Ergebnis: Felder aktualisiert, gespeichert, neu geladen und verifiziert" to="/docs/reference/terminology#success">Erfolg</Terminology> eine <Terminology title="Meldung nach einer verifizierten erfolgreichen Aktualisierung" to="/docs/reference/terminology#change-notification">Änderungsbenachrichtigung</Terminology>, während Hinweise zu <Terminology title="Ergebnis: Präfix geändert, aber kein genehmigtes Feld passte" to="/docs/reference/terminology#warning">Warnung</Terminology> und <Terminology title="Ergebnis: eine Prüf- oder Sicherheitsstufe hat den Lauf gestoppt" to="/docs/reference/terminology#failure">Fehler</Terminology> in jedem Fall erscheinen. |
+
+## Validierungsmeldungen \{#validation-messages}
+
+| Meldung                                                                                                      | Ursache                                                                                                |
+|--------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------|
+| `Wählen Sie eine konfigurierte pfSense-Schnittstelle zur Überwachung aus.`                                   | Es gibt keine Zeile, oder die Schnittstelle einer Zeile ist keine konfigurierte pfSense-Schnittstelle. |
+| `Jede Schnittstelle darf nur einmal aufgeführt werden. Entfernen Sie die zusätzliche Zeile für <interface>.` | Zwei Zeilen unter **Überwachte Schnittstellen** nennen dieselbe Schnittstelle.                         |
+| `Die Länge des delegierten Präfixes muss zwischen 48 und 64 liegen.`                                         | Die Länge liegt außerhalb der zulässigen Spanne.                                                       |
+| `Wählen Sie einen unterstützten Paketzeitplan.`                                                              | Der Zeitplan ist keine der vier Optionen.                                                              |
+
+Jeder Lauf prüft die gespeicherten Einstellungen erneut, weil sie sich nach dem Speichern des Formulars geändert haben könnten. [Fehlerbehebung](/docs/operate/troubleshooting#run-failed) listet die Meldungen auf, die ein Lauf melden kann.

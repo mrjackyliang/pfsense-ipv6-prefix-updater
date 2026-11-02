@@ -1,0 +1,17 @@
+{
+  "item.label.Home": {
+    "message": "홈"
+  },
+  "item.label.Guides": {
+    "message": "문서"
+  },
+  "item.label.Safety": {
+    "message": "안전 및 운영"
+  },
+  "item.label.Troubleshooting": {
+    "message": "문제 해결"
+  },
+  "item.label.Blog": {
+    "message": "블로그"
+  }
+}

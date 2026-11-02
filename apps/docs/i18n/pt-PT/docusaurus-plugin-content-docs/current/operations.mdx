@@ -1,0 +1,66 @@
+---
+id: operations
+title: Modelo de segurança
+description: Conheça as verificações, a cópia de segurança e a gravação única antes de cada alteração, as execuções que nunca gravam e o que ainda afeta o tráfego.
+keywords:
+  - pfsense ipv6 prefix updater
+  - modelo de segurança
+  - cópia de segurança da configuração
+  - verificação
+  - recarregamento de serviços
+tags:
+  - safety
+  - backup
+  - verification
+sidebar_position: 6
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Conheça as proteções que o pacote aplica antes de alterar a configuração e o que ainda pode afetar o tráfego.
+
+## O que acontece numa mudança de prefixo \{#what-happens-on-a-prefix-change}
+
+Quando o pacote encontra uma <Terminology title="mudança face ao último prefixo ou comprimento bem-sucedido" to="/docs/reference/terminology#prefix-transition">transição de prefixo</Terminology>, trabalha por esta ordem:
+
+1. Lê o <Terminology title="endereço IPv6 público dentro de 2000::/3" to="/docs/reference/terminology#global-unicast-address">endereço global</Terminology> de cada <Terminology title="interface cujo endereço revela o prefixo atual" to="/docs/reference/terminology#monitored-interface">Interface monitorizada</Terminology> e calcula o respetivo prefixo.
+2. Compara o prefixo com o <Terminology title="prefixo com que a próxima verificação compara" to="/docs/reference/terminology#last-successful-prefix">último prefixo bem-sucedido</Terminology>.
+3. Encontra os <Terminology title="campo de configuração exato que o pacote pode reescrever" to="/docs/reference/terminology#approved-field">campos aprovados</Terminology> que ainda usam o prefixo antigo e cria o <Terminology title="lista completa das alterações, criada antes de gravar" to="/docs/reference/terminology#change-plan">plano de alterações</Terminology> completo.
+4. Confirma que o pfSense consegue recarregar todos os serviços afetados e que nenhum campo planeado mudou desde que foi lido.
+5. Guarda uma <Terminology title="cópia da configuração guardada antes de uma gravação" to="/docs/reference/terminology#configuration-backup">cópia de segurança da configuração</Terminology>.
+6. Aplica todas as alterações e guarda a configuração uma única vez.
+7. Verifica os valores guardados, recarrega apenas os serviços afetados e volta a verificar os valores.
+8. Passa a <Terminology title="prefixo inicial registado sem alterar a configuração" to="/docs/reference/terminology#baseline">referência</Terminology> para o novo prefixo, regista o resultado e envia uma <Terminology title="alerta enviado após uma atualização verificada com sucesso" to="/docs/reference/terminology#change-notification">notificação de alteração</Terminology>, se estiver ativada.
+
+Se algum passo anterior à cópia de segurança falhar, a configuração fica como estava.
+
+## O que nunca causa uma gravação \{#what-never-causes-a-write}
+
+O pacote não altera a configuração com estes resultados:
+
+- <Terminology title="resultado: referência registada, configuração inalterada" to="/docs/reference/terminology#initialized">Inicializado</Terminology> e <Terminology title="resultado: simulação feita antes de existir uma referência" to="/docs/reference/terminology#initialization-preview">Pré-visualização da inicialização</Terminology>.
+- <Terminology title="resultado: prefixo inalterado, nada analisado nem gravado" to="/docs/reference/terminology#no-change">Sem alteração</Terminology>.
+- <Terminology title="pré-visualização que nunca cria cópias de segurança nem grava" to="/docs/reference/terminology#dry-run">Simulação</Terminology>.
+- <Terminology title="resultado: o prefixo mudou, mas nenhum campo aprovado correspondeu" to="/docs/reference/terminology#warning">Aviso</Terminology>.
+- Uma <Terminology title="resultado: verificação ou etapa de segurança parou a execução" to="/docs/reference/terminology#failure">Falha</Terminology> que para antes da cópia de segurança.
+
+## O que ainda pode afetar o tráfego \{#what-can-still-affect-traffic}
+
+- **<Terminology title="ação do pfSense que aplica definições alteradas" to="/docs/reference/terminology#service-reload">Recarregamentos de serviços</Terminology>**: as alterações a interfaces estáticas ou a <Terminology title="endereço adicional de interface, como CARP ou IP Alias" to="/docs/reference/terminology#virtual-ip">IPs virtuais</Terminology> recarregam todas as interfaces e depois o filtro da firewall. As alterações a gateways e rotas estáticas recarregam o encaminhamento e o filtro, as alterações ao OpenVPN recarregam todas as instâncias OpenVPN, e as alterações de DHCPv6, de anúncios de router e de DNS reiniciam esses serviços.
+- **Falhas após a gravação**: se uma verificação ou um <Terminology title="ação do pfSense que aplica definições alteradas" to="/docs/reference/terminology#service-reload">recarregamento de serviço</Terminology> falhar depois da gravação, os novos valores ficam guardados e nada é revertido. A <Terminology title="prefixo inicial registado sem alterar a configuração" to="/docs/reference/terminology#baseline">referência</Terminology> fica no prefixo antigo, como explica [Resultados da execução](/docs/operate/run-outcomes#failures-after-the-save).
+- **Valores que ficam à sua espera**: os gateways, as rotas estáticas, as substituições de domínio DNS e os outros valores em [Outras definições](/docs/configure/configuration-scopes#other-settings) mantêm o prefixo antigo até os marcar, tal como os campos de um grupo desativado.
+
+## Caminho de recuperação \{#recovery-path}
+
+Cada gravação tem uma <Terminology title="cópia da configuração guardada antes de uma gravação" to="/docs/reference/terminology#configuration-backup">cópia de segurança da configuração</Terminology> anterior no <Terminology title="lista do pfSense com as revisões guardadas da configuração" to="/docs/reference/terminology#config-history">Config History</Terminology>. A revisão com o nome do pacote contém a configuração atualizada, pelo que [Cópias de segurança e recuperação](/docs/operate/backups-and-recovery) indica que revisão restaurar.
+
+Recomenda-se manter também as cópias de segurança habituais do pfSense fora do equipamento.
+
+## O que pode verificar \{#what-you-can-verify}
+
+O separador Estado mostra o <Terminology title="endereço global indicado pelo pfSense para a interface monitorizada" to="/docs/reference/terminology#source-address">endereço de origem</Terminology>, o <Terminology title="endereço de origem com máscara no comprimento do prefixo" to="/docs/reference/terminology#observed-prefix">prefixo observado</Terminology>, o resultado, o número de campos alterados, o estado da cópia de segurança, os <Terminology title="ação do pfSense que aplica definições alteradas" to="/docs/reference/terminology#service-reload">serviços recarregados</Terminology>, a hora e o resumo da execução mais recente. A <Terminology title="resultados só de leitura após Executar agora ou Simulação" to="/docs/reference/terminology#command-output">Saída do comando</Terminology> mostra os mesmos detalhes logo após uma <Terminology title="verificação iniciada no separador Estado" to="/docs/reference/terminology#manual-run">execução manual</Terminology>.
+
+## Saber mais \{#learn-more}
+
+- **[Como funcionam as atualizações](/docs/safety/how-updates-work)**: cada etapa de uma execução e onde pode parar.
+- **[Verificar antes de automatizar](/docs/safety/testing-and-verification)**: uma lista de verificação a seguir na sua firewall antes de ativar o agendamento.

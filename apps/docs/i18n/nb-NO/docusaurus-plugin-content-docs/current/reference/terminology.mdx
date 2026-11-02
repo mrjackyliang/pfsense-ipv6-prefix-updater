@@ -1,0 +1,203 @@
+---
+id: terminology
+title: Terminologi
+description: Slå opp begrepene for adresser, prefikser, innstillinger, kjøreresultater og pfSense som brukes i fanene Innstillinger, Status og Felt og i hele dokumentasjonen.
+keywords:
+  - pfsense ipv6 prefix updater
+  - terminologi
+  - ordliste
+  - delegert prefiks
+  - grunnlinje
+  - kjøreresultater
+tags:
+  - reference
+  - terminology
+  - glossary
+sidebar_position: 1
+---
+
+Slå opp begrepene som fanene Innstillinger, Status og Felt og disse veiledningene bruker om adresser, prefikser, kjøringer og funksjoner i pfSense.
+
+## Delegert prefiks \{#delegated-prefix}
+
+IPv6-nettverket som internettleverandøren ruter til brannmuren, vanligvis gjennom DHCPv6-prefiksdelegering. Pakken følger dette prefikset, men ber aldri om, fornyer eller endrer det.
+
+## Prefikslengde \{#prefix-length}
+
+Antall innledende biter som identifiserer et nettverk, skrevet som en skråstrek og et tall, for eksempel `/56`. Et CIDR-suffiks på en konfigurert verdi, for eksempel `/64`, forblir slik det er skrevet når pakken skriver om adressen.
+
+## Lengde på delegert prefiks \{#delegated-prefix-length}
+
+Innstillingen **Lengde på delegert prefiks**, som angir størrelsen på prefikset internettleverandøren delegerer, fra `/48` til `/64`. Den starter på `/56`, pakken oppdager den aldri selv, og en endring etter at grunnlinjen finnes, regnes som en prefiksovergang.
+
+## Global unicast-adresse \{#global-unicast-address}
+
+En IPv6-adresse innenfor `2000::/3`, den eneste typen adresse pakken leser som kilde eller skriver om. Link-local-adresser, unike lokale adresser (`fc00::/7`), multicast-, loopback-, uspesifiserte og IPv4-tilordnede adresser avvises som kilde og blir stående uendret i konfigurasjonen.
+
+## Link-local-adresse \{#link-local-address}
+
+En adresse som bare fungerer på én nettverkslenke og starter med `fe80`. Pakken faller aldri tilbake til en slik adresse, så et grensesnitt uten global adresse får kjøringen til å mislykkes.
+
+## Vertsdel \{#host-portion}
+
+Alle adressebitene etter lengden på det delegerte prefikset, også kalt vertsbitene. Pakken kopierer disse bitene uendret inn i den nye adressen, også når grensen faller inne i et heksadesimalt siffer.
+
+## Kanonisk form \{#canonical-form}
+
+Den korteste standardskrivemåten for en IPv6-adresse med små bokstaver, for eksempel `2001:db8::1` for `2001:0DB8:0:0::1`. Pakken sammenligner adresser i denne formen og skriver omskrevne verdier på denne måten, så en verdi kan se annerledes ut og likevel bety den samme adressen.
+
+## Sporet grensesnitt \{#tracked-interface}
+
+Et pfSense-grensesnitt der IPv6-adressen kommer fra et annet grensesnitts delegerte prefiks gjennom konfigurasjonstypen **Track Interface**. Det er ofte riktig valg for Overvåket grensesnitt når WAN ikke har noen global adresse, og pakken skriver aldri om adressen fordi pfSense genererer den.
+
+## Overvåket grensesnitt \{#monitored-interface}
+
+Én rad i innstillingen **Overvåkede grensesnitt**, som angir et grensesnitt der den globale adressen avslører et gjeldende prefiks. Status viser beskrivelsen av grensesnittet etterfulgt av det interne navnet pfSense bruker, for eksempel `LAN (lan)`.
+
+Hvis du legger til et grensesnitt, registrerer neste kjøring en ny grunnlinje for det i stedet for å sammenligne prefikser.
+
+## Kildeadresse \{#source-address}
+
+Den primære globale adressen pfSense rapporterer for det overvåkede grensesnittet, lest på nytt ved hver kjøring. Status viser den i kanonisk form som **Observert kildeadresse** og **Siste vellykkede kildeadresse**.
+
+## Observert prefiks \{#observed-prefix}
+
+Nettverket som beregnes fra kildeadressen og lengden på det delegerte prefikset, vist i Status med lengden. Hver kjøring sammenligner det med det siste vellykkede prefikset.
+
+## Grunnlinje \{#baseline}
+
+Prefikset og kildeadressen som pakken registrerer som sitt utgangspunkt, uten å endre konfigurasjonen. En grunnlinje registreres ved den første kjøringen for hvert overvåket grensesnitt, når pakketilstanden mangler, når en administrator uttrykkelig godtar det aktive prefikset, og fra det lagrede prefikset til det eldre oppdateringsskriptet under en migrering.
+
+## Siste vellykkede prefiks \{#last-successful-prefix}
+
+Det lagrede prefikset og lengden som neste kontroll sammenligner med. Bare resultatene Initialisert, Godtatt og Vellykket endrer det, og alle andre resultater lar det være som det var.
+
+## Prefiksovergang \{#prefix-transition}
+
+En forskjell mellom det siste vellykkede prefikset og det observerte prefikset, inkludert det samme nettverket med en annen prefikslengde. Bare en overgang får pakken til å gjennomsøke konfigurasjonen, planlegge endringer og skrive.
+
+## Feltgruppe \{#field-group}
+
+En gruppe av felt med én bryter i fanen Felt. De elleve pfSense-gruppene er Statiske grensesnitt, Virtuelle IP-adresser, Aliaser, Brannmurregler, NAT og NPt, DHCPv6-server, Ruterannonseringer, DNS-vertsoverstyringer, IPsec, OpenVPN og WireGuard, og de starter slått på. Innstillingene til hver av de andre pakkene får en egen gruppe, som starter slått av, og alle andre verdier hører til gruppen Andre innstillinger, som også starter slått av. En gruppe som er på, dekker hvert felt av sin type, også felt som legges til senere.
+
+## Godkjent felt \{#approved-field}
+
+Et bestemt konfigurasjonsfelt som pakken har lov til å skrive om: et felt i en gruppe som er på, der haken ikke er fjernet, eller et avkrysset felt i en gruppe som er av. Verdier utenfor godkjente felt endres aldri.
+
+## Feltunntak \{#field-exception}
+
+Et enkeltfelt der avkrysningen i fanen Felt avviker fra gruppebryteren: et felt uten hake i en gruppe som er på, eller et avkrysset felt i en gruppe som er av. Hvert unntak angir oppføringen sin, for eksempel sporings-ID-en til en brannmurregel, i stedet for en posisjon i en liste.
+
+## Endringsplan \{#change-plan}
+
+Den fullstendige listen over godkjente felt som skal endres, med hver gamle verdi, nye verdi og tjeneste som skal lastes inn på nytt. Pakken bygger hele planen før den endrer noe.
+
+## Planlagte oppdateringer \{#scheduled-updates}
+
+Automatiske kontroller som styres av **Aktiver planlagte oppdateringer**, som er av som standard, og **Tidsplan**, som har Hver time som standard. Når du lagrer innstillingene, legges det til eller fjernes en cron-oppføring som pfSense styrer, så Cron-pakken trengs ikke.
+
+## Manuell kjøring \{#manual-run}
+
+En kontroll som startes med **Kjør nå** eller **Testkjøring** i fanen Status. Den kjører også mens planlagte oppdateringer er slått av.
+
+## Testkjøring \{#dry-run}
+
+En forhåndsvisning som startes med **Testkjøring**, og som aldri oppretter en sikkerhetskopi eller skriver konfigurasjonen. Når den finner en prefiksovergang med felt som skal endres, er resultatet **Testkjøring**, og den viser antall planlagte felt.
+
+Med et uendret prefiks rapporterer en testkjøring Ingen endring uten å gjennomsøke konfigurasjonen.
+
+## Kommandoutdata \{#command-output}
+
+Den skrivebeskyttede boksen **Nyeste kjøring** under **Kommandoutdata**, som vises etter Kjør nå, Testkjøring eller Godta gjeldende prefiks. Den viser kjøringens linjer fra `Status` til `Sammendrag`, etterfulgt av `Feltendringer` etter en testkjøring eller resultatet Vellykket, eller én enkelt linje når handlingen mislykkes eller en annen kjøring holder låsen.
+
+## Kjørelås \{#run-lock}
+
+Låsen som sørger for at bare én kontroll kjører om gangen. En ny kontroll som starter i mellomtiden, avslutter uten å lese konfigurasjonen, og låsen frigis så snart den pågående kontrollen avsluttes.
+
+## Pakketilstand \{#package-state}
+
+Filen `/cf/conf/ipv6-prefix-updater/state.json`, der pakken lagrer hver grunnlinje og den nyeste kjøringen utenfor pfSense-konfigurasjonen. Bare root kan lese den, og den overlever omstarter, RAM-disker og fjerning av pakken, slik at en reinstallasjon beholder hver grunnlinje.
+
+## Initialisert \{#initialized}
+
+Resultatet av en kjøring som registrerer en ny grunnlinje. Den oppretter ingen sikkerhetskopi, endrer ikke konfigurasjonen og sender ikke noe varsel.
+
+## Forhåndsvisning av initialisering \{#initialization-preview}
+
+Resultatet av en testkjøring som gjøres mens det ikke finnes noen grunnlinje. Den viser grunnlinjen en normal kjøring ville ha registrert, uten å registrere den.
+
+## Ingen endring \{#no-change}
+
+Resultatet når det observerte prefikset og lengden samsvarer med det siste vellykkede prefikset, også kalt en kjøring uten endring. Kjøringen gjennomsøker ikke konfigurasjonen, oppretter ingen sikkerhetskopi, laster ingen tjenester inn på nytt og sender ikke noe varsel.
+
+## Advarsel \{#warning}
+
+Resultatet når en prefiksovergang blir funnet, men ingen godkjente felt hører til det gamle prefikset. Ingenting skrives, grunnlinjen blir værende der den var, og hver Advarsel legger til et WebGUI-varsel.
+
+## Godtatt \{#accepted}
+
+Resultatet etter at en administrator velger **Godta gjeldende prefiks** og bekrefter at de lagrede adressene allerede bruker det aktive prefikset. Pakken flytter grunnlinjen uten å gjennomsøke godkjente felt, opprette en sikkerhetskopi, skrive konfigurasjon eller laste tjenester inn på nytt.
+
+## Vellykket \{#success}
+
+Resultatet når sikkerhetskopien, den ene skrivingen av konfigurasjonen, de nye innlastingene av tjenester og verdikontrollene er fullført. Grunnlinjen flyttes til det nye prefikset, og et endringsvarsel sendes hvis det er slått på.
+
+## Feil \{#failure}
+
+Resultatet når en kontroll eller et sikkerhetstrinn stopper kjøringen. Hvis stoppet kommer etter at konfigurasjonen er lagret, forblir de nye verdiene lagret, og grunnlinjen blir værende på det gamle prefikset.
+
+## Deaktivert \{#disabled}
+
+Resultatet av en planlagt kontroll som kjører mens **Aktiver planlagte oppdateringer** er slått av. Den stopper før den leser noe grensesnitt eller pakketilstanden, og den vises bare i utdataene fra selve kommandoen.
+
+## Endringsvarsel \{#change-notification}
+
+Meldingen som sendes etter resultatet Vellykket når **Send endringsvarsler** er avmerket, noe den er som standard. Den går til varslingskanalene som er konfigurert i pfSense, og vises også som et WebGUI-varsel.
+
+## Varslingskanaler \{#notification-channels}
+
+De eksterne varslingstjenestene som er satt opp under **System → Advanced → Notifications**, for eksempel e-post. Endringsvarsler bruker disse kanalene, mens varsler ved Advarsel og Feil forblir lokale.
+
+## WebGUI-varsel \{#webgui-notice}
+
+Et varsel i varsellisten i pfSense WebGUI som lenker til fanen Status for pakken, eller til fanen Opprydding etter flyttingen fra det eldre oppdateringsskriptet. Resultatene Advarsel og Feil legger alltid til et slikt varsel, også når **Send endringsvarsler** er umerket.
+
+## Systemlogg \{#system-log}
+
+Den generelle pfSense-loggen under **Status → System Logs → System → General**. Hver linje pakken skriver, starter med `IPv6 Prefix Updater:`.
+
+## Konfigurasjonssikkerhetskopi \{#configuration-backup}
+
+En kopi av konfigurasjonen slik den var før en skriving, laget med sikkerhetskopieringsfunksjonen i pfSense og også lagret i fanen **Sikkerhetskopier**. Pakken lager én ved hver kjøring som skriver, før noe felt endres, og ingen ved kjøringer som ikke skriver.
+
+## Config History (konfigurasjonshistorikk) \{#config-history}
+
+Listen over lagrede konfigurasjonsrevisjoner under **Diagnostics → Backup & Restore → Config History**. Revisjonen med beskrivelsen `IPv6-prefiksoppdateringen endret ...` inneholder den oppdaterte konfigurasjonen, så revisjonen som ble lagret før den, er den du skal gjenopprette.
+
+## Ny innlasting av tjeneste \{#service-reload}
+
+Handlingen i pfSense som tar i bruk endrede innstillinger i en tjeneste som kjører. Pakken laster bare inn tjenestene med endrede felt på nytt og viser dem under **Tjenester lastet inn på nytt**.
+
+## Virtuell IP \{#virtual-ip}
+
+En ekstra adresse som er tildelt et grensesnitt under **Firewall → Virtual IPs**. Gruppen Virtuelle IP-adresser oppdaterer bare oppføringer av typen CARP og IP Alias.
+
+## IPsec fase 2 \{#ipsec-phase-2}
+
+En IPsec-oppføring som definerer de lokale og eksterne nettverkene i en tunnel. IPsec-gruppen dekker den lokale siden av oppføringer i modusene Tunnel IPv6 og Routed (VTI), og den eksterne siden hører til gruppen Andre innstillinger.
+
+## Klientspesifikk overstyring \{#client-specific-override}
+
+En OpenVPN-oppføring under **VPN → OpenVPN → Client Specific Overrides** som angir alternativer for én klient. Pakken kan oppdatere IPv6-tunnelnettverket og de lokale IPv6-nettverkene i oppføringen.
+
+## WireGuard-tunneladresse \{#wireguard-tunnel-address}
+
+En grensesnittadresse som er tildelt en WireGuard-tunnel i pfSense. For å oppdatere den trengs WireGuard-pakken, og tillatte IP-er og endepunkter for noder hører til gruppen Andre innstillinger.
+
+## Eldre oppdateringsskript \{#legacy-updater}
+
+Versjon 1.x av dette prosjektet, et `update.php`-skript som ble installert i `/root` og kjørt av en oppføring i Cron-pakken. Det erstattet den gamle prefiksteksten hvor som helst i konfigurasjonen.
+
+## Uoffisiell pakke \{#unofficial-package}
+
+En pakke som installeres med `pkg add` fra GitHub i stedet for fra pakkebrønnen til Netgate. Netgate verken gjennomgår eller støtter den, og du installerer oppdateringene selv.

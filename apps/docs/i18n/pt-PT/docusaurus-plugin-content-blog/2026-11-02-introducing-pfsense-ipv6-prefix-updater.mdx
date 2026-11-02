@@ -1,0 +1,60 @@
+---
+title: "Conheça o pfSense IPv6 Prefix Updater: sucessor mais seguro"
+description: O pfSense IPv6 Prefix Updater, sucessor do script update.php, segue o novo prefixo IPv6, mantém a parte de anfitrião e faz cópia de segurança antes de alterar.
+slug: introducing-pfsense-ipv6-prefix-updater
+authors:
+  - mrjackyliang
+keywords:
+  - pfsense ipv6 prefix updater
+  - pacote pfsense
+  - prefixo ipv6 dinâmico
+  - delegação de prefixo ipv6
+  - atualizador legado
+tags:
+  - release
+  - ipv6
+  - pfsense
+---
+
+Muitos ISP delegam um prefixo IPv6 que pode mudar sem aviso prévio. Quando isso acontece, os endereços do prefixo antigo nos aliases, nas interfaces e nas definições de VPN do pfSense ficam todos desatualizados ao mesmo tempo, e os serviços podem falhar de formas difíceis de diagnosticar.
+
+O pfSense IPv6 Prefix Updater é a minha resposta: um pacote pfSense nativo que acompanha o novo prefixo e atualiza os endereços nas áreas de definições que aprovar.
+
+{/* truncate */}
+
+## Porque o criei \{#why-i-built-it}
+
+Este projeto começou como `update.php`, um script instalado em `/root` e executado por uma entrada do pacote Cron. Provou que o pfSense conseguia detetar um novo prefixo, criar uma cópia de segurança da configuração e reescrever os endereços antigos.
+
+Mas as instalações e as atualizações de versão eram frágeis, e o script substituía o texto do prefixo antigo em qualquer ponto da configuração. Eu queria um sucessor que alterasse apenas os campos que entende e que mostrasse o que fez, sem a instalação manual nem a entrada do pacote Cron criada à mão.
+
+## O que faz \{#what-it-does}
+
+O pacote monitoriza as interfaces que escolher. Quando um prefixo muda, o pacote:
+
+- **Mantém a parte de anfitrião** — Só mudam os bits do prefixo, pelo que cada dispositivo conserva o mesmo sufixo de endereço.
+- **Altera apenas campos aprovados** — Onze grupos do pfSense, como Aliases, Regras da firewall, Servidor DHCPv6 e WireGuard, começam ativados, e o separador Campos permite desativar um grupo ou desmarcar um campo individual.
+- **Cria uma cópia de segurança antes de gravar** — Uma cópia de segurança da configuração vai para o Config History e, depois, todas as alterações são guardadas numa única gravação.
+- **Verifica o resultado** — Confirma os valores guardados, recarrega apenas os serviços afetados e volta a verificar os valores.
+
+As redes VPN remotas e os pares só mudam quando os marcar em [Outras definições](/docs/configure/configuration-scopes#other-settings), e uma notificação de alteração opcional é enviada após cada atualização bem-sucedida.
+
+## Como configurar \{#how-you-set-it-up}
+
+No separador Definições, em **Services → IPv6 Prefix Updater**, adicione uma linha em Interfaces monitorizadas com o Comprimento do prefixo delegado do seu ISP por cada interface a monitorizar e guarde.
+
+Depois, selecione **Executar agora** no separador Estado. A primeira execução apenas regista uma referência, pelo que pode verificar o endereço e o prefixo e rever o separador Campos antes de ativar as atualizações agendadas, que, por predefinição, são executadas de hora a hora por uma entrada cron gerida pelo pfSense.
+
+Uma verificação que encontra o mesmo prefixo não grava nada, e a **Simulação** executa uma verificação sem cópia de segurança nem gravação.
+
+:::info
+
+Este pacote não oficial é instalado a partir de uma versão publicada no GitHub com o `pkg`, e a Netgate não o revê nem lhe presta suporte. As versões 1.x contêm apenas o script, pelo que, se a versão mais recente não tiver um ficheiro `.pkg`, o `pkg add` falha com um erro de não encontrado (404).
+
+:::
+
+## Transição a partir do script \{#moving-from-the-script}
+
+Se o `update.php` ainda for executado pelo pacote Cron, deixe-o onde está e instale o pacote. Este move as entradas do Cron, os prefixos guardados e as cópias de segurança do script para o pacote e elimina os ficheiros antigos, como explica [Migrar a partir do script](/docs/migrate-from-legacy).
+
+Ainda não conhece o projeto? Comece por [Instalar o pacote](/docs/installation).

@@ -1,0 +1,14 @@
+{
+  "item.label.Home": {
+    "message": "Početna"
+  },
+  "item.label.Guides": {
+    "message": "Dokumentacija"
+  },
+  "item.label.Safety": {
+    "message": "Sigurnost i rad"
+  },
+  "item.label.Troubleshooting": {
+    "message": "Rješavanje problema"
+  }
+}

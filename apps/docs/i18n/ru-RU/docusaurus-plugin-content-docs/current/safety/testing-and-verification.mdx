@@ -1,0 +1,63 @@
+---
+id: testing-and-verification
+title: Проверка перед автоматизацией
+description: Помогает проверить интерфейс, префикс, путь восстановления и уведомления на вашем межсетевом экране, прежде чем пакет начнёт работать по расписанию без присмотра.
+keywords:
+  - pfsense ipv6 prefix updater
+  - контрольный список
+  - пробный запуск
+  - config history
+  - обновления по расписанию
+tags:
+  - safety
+  - checklist
+  - scheduled updates
+sidebar_position: 2
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Проверьте интерфейс, префикс, путь восстановления и уведомления на своём межсетевом экране, прежде чем позволить пакету работать по расписанию.
+
+## 1. Проверка источника \{#1-confirm-the-source}
+
+Сохраните настройки со снятым флажком **<Terminology title="автоматические проверки через запись cron под управлением pfSense" to="/docs/reference/terminology#scheduled-updates">Включить обновления по расписанию</Terminology>** и один раз выберите **Запустить сейчас**. Затем проверьте вкладку «Состояние»:
+
+- **<Terminology title="интерфейс, по адресу которого определяется текущий префикс" to="/docs/reference/terminology#monitored-interface">Контролируемый интерфейс</Terminology>** — это нужный WAN или <Terminology title="интерфейс с адресом из делегированного префикса другого интерфейса" to="/docs/reference/terminology#tracked-interface">интерфейс в режиме Track Interface</Terminology>.
+- **<Terminology title="глобальный адрес контролируемого интерфейса по данным pfSense" to="/docs/reference/terminology#source-address">Последний успешный исходный адрес</Terminology>** совпадает с адресом в **Status → Interfaces**.
+- **<Terminology title="префикс, с которым сравнивает следующая проверка" to="/docs/reference/terminology#last-successful-prefix">Последний успешный префикс</Terminology>** совпадает с префиксом, который делегирует ваш провайдер.
+- **Результат** в разделе **Последний запуск** — «<Terminology title="результат: базовое значение записано, конфигурация не изменена" to="/docs/reference/terminology#initialized">Инициализировано</Terminology>», а **Изменённые поля** — `0`.
+
+Если какое-либо значение неожиданно, рекомендуется исправить его, прежде чем продолжать. Что происходит при изменении интерфейса или длины после появления <Terminology title="начальный префикс, записанный без изменения конфигурации" to="/docs/reference/terminology#baseline">базового значения</Terminology>, объясняется в разделе [Интерфейс и префикс](/docs/configure/interface-and-prefix#changing-the-interfaces).
+
+## 2. Запуск предварительного просмотра \{#2-run-a-preview}
+
+Выберите **<Terminology title="предварительный просмотр без резервной копии и записи" to="/docs/reference/terminology#dry-run">Пробный запуск</Terminology>**. Если префикс не изменился, он сообщает «<Terminology title="результат: префикс прежний, ничего не просмотрено и не записано" to="/docs/reference/terminology#no-change">Без изменений</Terminology>», а поле **<Terminology title="копия конфигурации, сохранённая перед записью" to="/docs/reference/terminology#configuration-backup">Создана резервная копия конфигурации</Terminology>** показывает «Нет».
+
+<Terminology title="предварительный просмотр без резервной копии и записи" to="/docs/reference/terminology#dry-run">Пробный запуск</Terminology> не может имитировать изменение префикса, поэтому запланированные поля он показывает только после реальной <Terminology title="отличие от последнего успешного префикса или длины" to="/docs/reference/terminology#prefix-transition">смены префикса</Terminology>.
+
+## 3. Проверка восстановления \{#3-check-recovery}
+
+Откройте **Diagnostics → Backup & Restore → Config History** и убедитесь, что pfSense хранит историю конфигурации. Запуск с записью сохраняет там <Terminology title="копия конфигурации, сохранённая перед записью" to="/docs/reference/terminology#configuration-backup">резервную копию конфигурации</Terminology> перед первым изменением.
+
+Рекомендуется уже сейчас прочитать раздел [Поиск нужной ревизии](/docs/operate/backups-and-recovery#find-the-right-revision), потому что ревизия, названная по пакету, содержит обновлённую конфигурацию. Стоит также загрузить резервную копию вне устройства, потому что <Terminology title="список сохранённых ревизий конфигурации pfSense" to="/docs/reference/terminology#config-history">Config History</Terminology> хранится на межсетевом экране.
+
+## 4. Проверка уведомлений \{#4-test-notifications}
+
+Если флажок **<Terminology title="оповещение после проверенного успешного обновления" to="/docs/reference/terminology#change-notification">Отправлять уведомления об изменениях</Terminology>** установлен, рекомендуется отправить тестовое сообщение собственными кнопками pfSense в **System → Advanced → Notifications**. Пакет использует уже настроенные там <Terminology title="внешние службы оповещений, настроенные в pfSense" to="/docs/reference/terminology#notification-channels">каналы уведомлений</Terminology>.
+
+Уведомления о результатах «<Terminology title="результат: префикс сменился, но подходящих разрешённых полей нет" to="/docs/reference/terminology#warning">Предупреждение</Terminology>» и «<Terminology title="результат: проверка или этап безопасности остановили запуск" to="/docs/reference/terminology#failure">Ошибка</Terminology>» остаются в WebGUI и не используют эти каналы.
+
+## 5. Включение расписания \{#5-turn-on-the-schedule}
+
+Установите флажок **<Terminology title="автоматические проверки через запись cron под управлением pfSense" to="/docs/reference/terminology#scheduled-updates">Включить обновления по расписанию</Terminology>**, когда шаги выше покажут ожидаемые адрес и префикс. По умолчанию в поле **Расписание** выбрано **Ежечасно**.
+
+После первого запланированного времени рекомендуется проверить **Время (UTC)** и **Результат** в разделе **Последний запуск**.
+
+## Что требует реальной смены префикса \{#what-needs-a-real-prefix-change}
+
+<Terminology title="полный список изменений полей, составленный до записи" to="/docs/reference/terminology#change-plan">План изменений</Terminology>, <Terminology title="копия конфигурации, сохранённая перед записью" to="/docs/reference/terminology#configuration-backup">резервная копия конфигурации</Terminology>, <Terminology title="действие pfSense, применяющее изменённые настройки" to="/docs/reference/terminology#service-reload">перезагрузка служб</Terminology> и <Terminology title="оповещение после проверенного успешного обновления" to="/docs/reference/terminology#change-notification">уведомление об изменении</Terminology> появляются только после реальной <Terminology title="отличие от последнего успешного префикса или длины" to="/docs/reference/terminology#prefix-transition">смены префикса</Terminology>. Безопаснее всего наблюдать полный запуск на тестовом межсетевом экране, префикс которого может меняться.
+
+На своём межсетевом экране рекомендуется проверить первое реальное изменение на вкладке «Состояние», начиная с полей **Изменённые поля**, **<Terminology title="действие pfSense, применяющее изменённые настройки" to="/docs/reference/terminology#service-reload">Перезагруженные службы</Terminology>** и **Сводка**.
+
+Все поля, которые отображаются после запуска, описаны в разделе [Состояние и действия](/docs/operate/status-and-actions).

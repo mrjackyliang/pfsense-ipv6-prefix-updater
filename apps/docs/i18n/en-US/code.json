@@ -1,0 +1,230 @@
+{
+  "home.meta.description": {
+    "message": "Keep local IPv6 addresses in pfSense working when your ISP changes the delegated prefix.",
+    "description": "Homepage metadata description."
+  },
+  "home.meta.title": {
+    "message": "pfSense IPv6 Prefix Updater - Safe Dynamic Prefix Updates",
+    "description": "Homepage browser title."
+  },
+  "home.hero.eyebrow": {
+    "message": "Native pfSense package",
+    "description": "Short label above the homepage headline."
+  },
+  "home.hero.heading": {
+    "message": "Keep dynamic IPv6 prefixes aligned safely.",
+    "description": "Homepage headline about safe dynamic IPv6 prefix updates."
+  },
+  "home.hero.tagline": {
+    "message": "Keep local IPv6 addresses in pfSense working when your ISP changes the delegated prefix.",
+    "description": "Homepage summary of package behavior."
+  },
+  "home.hero.primaryAction": {
+    "message": "Install on pfSense",
+    "description": "Primary homepage call to action."
+  },
+  "home.hero.secondaryAction": {
+    "message": "Review safety behavior",
+    "description": "Secondary homepage call to action."
+  },
+  "home.preview.ariaLabel": {
+    "message": "Example /56 prefix transition that preserves host bits",
+    "description": "Accessible label for the homepage prefix transition preview."
+  },
+  "home.preview.dryRun": {
+    "message": "Dry run",
+    "description": "Dry-run badge in the prefix transition preview."
+  },
+  "home.preview.detected": {
+    "message": "Detected source",
+    "description": "Detected source-address label."
+  },
+  "home.preview.previous": {
+    "message": "Previous address",
+    "description": "Previous IPv6 address label."
+  },
+  "home.preview.current": {
+    "message": "Planned address",
+    "description": "Current IPv6 address label."
+  },
+  "home.preview.prefixChanged": {
+    "message": "Prefix changed",
+    "description": "Changed-prefix legend label."
+  },
+  "home.preview.hostPreserved": {
+    "message": "Host bits preserved",
+    "description": "Preserved-host-bits legend label."
+  },
+  "home.preview.result": {
+    "message": "2 approved fields planned · configuration unchanged",
+    "description": "Result shown below the prefix transition preview."
+  },
+  "home.workflow.eyebrow": {
+    "message": "What pfSense does",
+    "description": "Short label above the update workflow."
+  },
+  "home.workflow.heading": {
+    "message": "Follow every prefix change from detection to completion.",
+    "description": "Heading for the update workflow."
+  },
+  "home.workflow.detect": {
+    "message": "Detect new prefix",
+    "description": "Detect stage of the update workflow."
+  },
+  "home.workflow.plan": {
+    "message": "Find local addresses",
+    "description": "Plan stage of the update workflow."
+  },
+  "home.workflow.backup": {
+    "message": "Save a backup",
+    "description": "Backup stage of the update workflow."
+  },
+  "home.workflow.write": {
+    "message": "Update addresses",
+    "description": "Write stage of the update workflow."
+  },
+  "home.workflow.verify": {
+    "message": "Refresh services",
+    "description": "Verify stage of the update workflow."
+  },
+  "home.workflow.notify": {
+    "message": "Report the result",
+    "description": "Notification stage of the update workflow."
+  },
+  "home.features.interface.title": {
+    "message": "Choose the Monitored Interfaces",
+    "description": "Feature title for monitored-interface selection."
+  },
+  "home.features.interface.description": {
+    "message": "Add a row for each pfSense interface whose public IPv6 address comes from an ISP delegation. Status shows the exact address in use for each one.",
+    "description": "Feature summary for monitored-interface selection."
+  },
+  "home.features.prefix.title": {
+    "message": "Enter the ISP Prefix Length",
+    "description": "Feature title for delegated-prefix length."
+  },
+  "home.features.prefix.description": {
+    "message": "Enter the /48 through /64 prefix length supplied by the ISP. The device-specific portion of each address remains unchanged.",
+    "description": "Feature summary for delegated-prefix calculation."
+  },
+  "home.features.scopes.title": {
+    "message": "Choose What Can Change",
+    "description": "Feature title for field selection."
+  },
+  "home.features.scopes.description": {
+    "message": "Review the fields that follow the prefix on the Fields tab. pfSense groups start on, while settings from other packages, remote networks, peers, and secrets wait until you tick them.",
+    "description": "Feature summary for field selection."
+  },
+  "home.features.dryRun.title": {
+    "message": "Preview Without Changes",
+    "description": "Feature title for dry-run behavior."
+  },
+  "home.features.dryRun.description": {
+    "message": "Dry Run shows the source address, old and new prefixes, affected-field count, and services without changing the firewall.",
+    "description": "Feature summary for dry-run behavior."
+  },
+  "home.features.backup.title": {
+    "message": "Back Up Before Changes",
+    "description": "Feature title for backup ordering."
+  },
+  "home.features.backup.description": {
+    "message": "A real change creates one native pfSense configuration-history backup before any address is updated.",
+    "description": "Feature summary for backup ordering."
+  },
+  "home.features.notify.title": {
+    "message": "Notify After Success",
+    "description": "Feature title for verified notifications."
+  },
+  "home.features.notify.description": {
+    "message": "Notifications are sent only after an update is checked. Routine checks stay quiet when the prefix has not changed.",
+    "description": "Feature summary for verified notifications."
+  },
+  "home.stats.heading": {
+    "message": "Safety You Can Verify",
+    "description": "Heading above homepage safety metrics."
+  },
+  "home.stats.boundaries": {
+    "message": "Supported prefix boundaries",
+    "description": "Label for supported prefix-boundary metric."
+  },
+  "home.stats.backups": {
+    "message": "Backup before each change",
+    "description": "Label for backup-count metric."
+  },
+  "home.stats.writes": {
+    "message": "Configuration write per change",
+    "description": "Label for configuration-write metric."
+  },
+  "home.stats.noChange": {
+    "message": "Writes when the prefix is unchanged",
+    "description": "Label for no-change write metric."
+  },
+  "home.routes.eyebrow": {
+    "message": "Pick up where you are",
+    "description": "Short label above documentation routes."
+  },
+  "home.routes.heading": {
+    "message": "Follow the route for your next task.",
+    "description": "Heading above task-oriented documentation routes."
+  },
+  "home.routes.install.title": {
+    "message": "Install the Package",
+    "description": "Installation route title."
+  },
+  "home.routes.install.description": {
+    "message": "Install the latest GitHub release with one pfSense shell command, then confirm the package in the WebGUI.",
+    "description": "Installation route summary."
+  },
+  "home.routes.open": {
+    "message": "Open guide",
+    "description": "Label used to open a documentation route."
+  },
+  "home.routes.configure.title": {
+    "message": "Select the Interface and Prefix",
+    "description": "Configuration route title."
+  },
+  "home.routes.configure.description": {
+    "message": "Confirm which interface owns the global address and enter the delegated boundary supplied by the ISP.",
+    "description": "Configuration route summary."
+  },
+  "home.routes.status.title": {
+    "message": "Read Status and Command Output",
+    "description": "Status route title."
+  },
+  "home.routes.status.description": {
+    "message": "Verify the chosen address, masked prefix, result, backup state, changed fields, and reloaded services after every run.",
+    "description": "Status route summary."
+  },
+  "home.routes.troubleshoot.title": {
+    "message": "Troubleshoot a Run",
+    "description": "Troubleshooting route title."
+  },
+  "home.routes.troubleshoot.description": {
+    "message": "Resolve wrong source addresses, zero-match warnings, failed safety stages, and recovery from pfSense configuration history.",
+    "description": "Troubleshooting route summary."
+  },
+  "home.spotlight.heading": {
+    "message": "A run should never be a black box.",
+    "description": "Heading above the final homepage call to action."
+  },
+  "home.spotlight.description": {
+    "message": "The Status tab and read-only command output show the exact source address, old and new prefixes, field count, backup result, service reloads, and final outcome.",
+    "description": "Summary of observable run evidence."
+  },
+  "home.spotlight.statusAction": {
+    "message": "Read the Status Guide",
+    "description": "Call to action for the status guide."
+  },
+  "home.spotlight.testsAction": {
+    "message": "Check Before Automation",
+    "description": "Call to action for the pre-automation checklist."
+  },
+  "home.blogPreview.heading": {
+    "message": "From the Blog",
+    "description": "Heading above the homepage blog preview."
+  },
+  "home.blogPreview.description": {
+    "message": "Release notes, setup guides, and notes on dynamic IPv6 prefixes.",
+    "description": "Summary below the homepage blog preview heading."
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "description": {
+    "message": "Informacje o wydaniach, przewodniki konfiguracji i artykuły o tym, jak utrzymać aktualne adresy pfSense, gdy zmienia się prefiks IPv6."
+  },
+  "sidebar.title": {
+    "message": "Najnowsze wpisy"
+  }
+}

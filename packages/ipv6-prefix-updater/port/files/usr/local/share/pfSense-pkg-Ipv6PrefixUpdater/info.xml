@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<pfsensepkgs>
+	<package>
+		<name>Ipv6PrefixUpdater</name>
+		<descr><![CDATA[Tracks a dynamic delegated IPv6 prefix and safely updates the pfSense fields you select, such as interfaces, virtual IPs, aliases, firewall rules, NAT, DHCPv6, router advertisements, DNS host overrides, IPsec, OpenVPN, and WireGuard, while preserving host bits. Includes native scheduling, configuration backups, locking, notifications, dry runs, and WebGUI status.]]></descr>
+		<version>%%PKGVERSION%%</version>
+		<configurationfile>ipv6-prefix-updater.xml</configurationfile>
+	</package>
+</pfsensepkgs>

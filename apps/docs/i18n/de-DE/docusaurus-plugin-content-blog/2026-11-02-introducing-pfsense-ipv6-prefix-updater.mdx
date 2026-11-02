@@ -1,0 +1,60 @@
+---
+title: "pfSense IPv6 Prefix Updater: Der sicherere Nachfolger"
+description: pfSense IPv6 Prefix Updater, Nachfolger des update.php-Skripts, folgt neuen IPv6-Präfixen, behält Hostanteile und erstellt vor jeder Änderung eine Sicherung.
+slug: introducing-pfsense-ipv6-prefix-updater
+authors:
+  - mrjackyliang
+keywords:
+  - pfsense ipv6 prefix updater
+  - pfsense-paket
+  - dynamisches ipv6-präfix
+  - ipv6-präfixdelegierung
+  - legacy-updater
+tags:
+  - release
+  - ipv6
+  - pfsense
+---
+
+Viele Internetanbieter delegieren ein IPv6-Präfix, das sich ohne Vorankündigung ändern kann. Passiert das, veralten die Adressen aus dem alten Präfix in pfSense-Aliasen, Schnittstellen und VPN-Einstellungen auf einen Schlag, und Dienste können auf schwer nachvollziehbare Weise ausfallen.
+
+pfSense IPv6 Prefix Updater ist meine Antwort darauf: ein natives pfSense-Paket, das dem neuen Präfix folgt und Adressen in den von Ihnen genehmigten Einstellungsbereichen aktualisiert.
+
+{/* truncate */}
+
+## Warum ich es gebaut habe \{#why-i-built-it}
+
+Dieses Projekt begann als `update.php`, ein Skript, das in `/root` installiert und über einen Eintrag im Cron-Paket ausgeführt wurde. Es bewies, dass pfSense ein neues Präfix erkennen, die Konfiguration sichern und alte Adressen umschreiben kann.
+
+Installationen und Upgrades waren jedoch fehleranfällig, und das Skript ersetzte den alten Präfixtext an beliebiger Stelle der Konfiguration. Ich wollte einen Nachfolger, der nur die Felder ändert, die er versteht, und anzeigt, was er getan hat, ohne manuelle Installation und ohne von Hand angelegten Eintrag im Cron-Paket.
+
+## Was das Paket tut \{#what-it-does}
+
+Das Paket überwacht die Schnittstellen, die Sie auswählen. Wenn sich ein Präfix ändert, geht es so vor:
+
+- **Behält den Hostanteil bei** — Nur die Präfixbits ändern sich, sodass jedes Gerät dasselbe Adresssuffix behält.
+- **Ändert nur genehmigte Felder** — Elf pfSense-Gruppen, etwa Aliase, Firewallregeln, DHCPv6-Server und WireGuard, sind anfangs eingeschaltet, und auf der Registerkarte Felder können Sie eine Gruppe ausschalten oder bei einem einzelnen Feld das Häkchen entfernen.
+- **Sichert vor dem Schreiben** — Eine Konfigurationssicherung wird in der Config History abgelegt, danach werden alle Änderungen in einem einzigen Schreibvorgang gespeichert.
+- **Verifiziert das Ergebnis** — Es prüft die gespeicherten Werte, lädt nur die betroffenen Dienste neu und prüft die Werte erneut.
+
+Entfernte VPN-Netze und Peers ändern sich nur, wenn Sie sie unter [Weitere Einstellungen](/docs/configure/configuration-scopes#other-settings) ankreuzen, und auf jede erfolgreiche Aktualisierung folgt eine optionale Änderungsbenachrichtigung.
+
+## So richten Sie es ein \{#how-you-set-it-up}
+
+Fügen Sie auf der Registerkarte Einstellungen unter **Services → IPv6 Prefix Updater** für jede zu überwachende Schnittstelle eine Zeile unter Überwachte Schnittstellen mit der Länge des delegierten Präfixes Ihres Internetanbieters hinzu und speichern Sie.
+
+Wählen Sie dann auf der Registerkarte Status **Jetzt ausführen**. Der erste Lauf zeichnet nur eine Basislinie auf, sodass Sie Adresse und Präfix prüfen und die Registerkarte Felder durchsehen können, bevor Sie geplante Aktualisierungen einschalten, die standardmäßig stündlich über einen von pfSense verwalteten Cron-Eintrag laufen.
+
+Eine Prüfung, die dasselbe Präfix vorfindet, schreibt nichts, und **Testlauf** führt eine Prüfung ohne Sicherung und ohne Schreibvorgang aus.
+
+:::info
+
+Dieses inoffizielle Paket wird mit `pkg` aus einem GitHub-Release installiert, und Netgate prüft oder unterstützt es nicht. Releases der Version 1.x enthalten nur das Skript, daher schlägt `pkg add` mit einem Fehler Not Found (404) fehl, wenn das neueste Release keine `.pkg`-Datei hat.
+
+:::
+
+## Umstieg vom Skript \{#moving-from-the-script}
+
+Wenn `update.php` noch über das Cron-Paket läuft, lassen Sie es bestehen und installieren Sie das Paket. Es übernimmt die Cron-Einträge, gespeicherten Präfixe und Sicherungen des Skripts und löscht die alten Dateien, wie [Vom Skript migrieren](/docs/migrate-from-legacy) erklärt.
+
+Ist das Projekt neu für Sie? Beginnen Sie mit [Paket installieren](/docs/installation).

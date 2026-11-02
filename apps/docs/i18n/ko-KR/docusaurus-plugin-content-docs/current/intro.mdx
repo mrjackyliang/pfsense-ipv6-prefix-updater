@@ -1,0 +1,90 @@
+---
+id: intro
+title: 개요
+description: ISP가 새 IPv6 접두사를 위임해도 pfSense 별칭, 인터페이스, VPN 주소를 현재 접두사에 맞게 유지하며, 변경할 때마다 먼저 백업을 만듭니다.
+keywords:
+  - pfsense ipv6 prefix updater
+  - 개요
+  - ipv6 접두사 위임
+  - 동적 접두사
+  - pfsense 패키지
+tags:
+  - setup
+  - overview
+  - ipv6
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+ISP가 새 <Terminology title="ISP가 방화벽으로 라우팅하는 IPv6 네트워크" to="/docs/reference/terminology#delegated-prefix">위임된 접두사</Terminology>를 할당해도 pfSense에 저장된 IPv6 주소를 현재 접두사에 맞게 유지합니다.
+
+## 패키지가 하는 일 \{#what-it-does}
+
+pfSense IPv6 Prefix Updater는 선택한 인터페이스에서 새 접두사를 감시하는 pfSense 패키지입니다. 접두사가 바뀌면 선택한 필드에서 일치하는 주소를 다시 쓰고, 각 주소의 <Terminology title="위임된 접두사 뒤의 주소 비트" to="/docs/reference/terminology#host-portion">호스트 부분</Terminology>은 그대로 유지합니다.
+
+## 이 패키지를 사용하는 이유 \{#why-use-this-package}
+
+1. 모든 주소의 <Terminology title="위임된 접두사 뒤의 주소 비트" to="/docs/reference/terminology#host-portion">호스트 부분</Terminology>을 유지하므로 접두사가 바뀐 뒤에도 각 장치의 접미사가 그대로입니다.
+2. 필드 탭에서 선택한 <Terminology title="패키지가 다시 쓸 수 있는 정확한 구성 필드" to="/docs/reference/terminology#approved-field">승인된 필드</Terminology>만 변경하므로 원격 VPN 네트워크, 피어, 게이트웨이, 경로는 설정한 그대로 남습니다.
+3. 쓰기 전마다 <Terminology title="쓰기 전에 저장한 구성 사본" to="/docs/reference/terminology#configuration-backup">구성 백업</Terminology>을 저장하므로 <Terminology title="저장된 구성 리비전을 보여 주는 pfSense 목록" to="/docs/reference/terminology#config-history">Config History</Terminology>에서 이전 구성을 바로 사용할 수 있습니다.
+4. pfSense가 관리하는 일정으로 실행되므로 Cron 패키지나 홈 디렉터리의 스크립트가 필요하지 않습니다.
+5. 모든 결과를 상태 탭에 표시하므로 무엇이 바뀌었는지, 어떤 서비스가 다시 로드되었는지, 백업이 만들어졌는지 확인할 수 있습니다.
+
+## 업데이트하는 항목 \{#what-it-updates}
+
+- **별칭**: 호스트 및 네트워크 별칭의 주소와 네트워크.
+- **정적 인터페이스**: Static IPv6로 설정된 인터페이스의 주소.
+- **<Terminology title="CARP나 IP Alias 같은 추가 인터페이스 주소" to="/docs/reference/terminology#virtual-ip">가상 IP 주소</Terminology>**: CARP 및 IP Alias <Terminology title="CARP나 IP Alias 같은 추가 인터페이스 주소" to="/docs/reference/terminology#virtual-ip">가상 IP</Terminology>.
+- **IPsec**: Tunnel IPv6 및 Routed (VTI) <Terminology title="로컬 및 원격 네트워크를 정의하는 IPsec 항목" to="/docs/reference/terminology#ipsec-phase-2">2단계</Terminology> 항목의 로컬 쪽.
+- **OpenVPN**: 서버와 <Terminology title="서버에 있는 클라이언트별 OpenVPN 설정" to="/docs/reference/terminology#client-specific-override">클라이언트별 재정의</Terminology>의 IPv6 터널 및 로컬 네트워크, 그리고 클라이언트의 IPv6 터널 네트워크.
+- **WireGuard**: WireGuard 패키지가 설치된 경우 <Terminology title="pfSense WireGuard 터널에 할당된 주소" to="/docs/reference/terminology#wireguard-tunnel-address">터널 주소</Terminology>.
+- **DHCPv6 서버**: 주소 범위, 접두사 위임 범위, 풀 범위, 정적 매핑, 그리고 클라이언트에 제공하는 DNS 및 NTP 서버.
+- **라우터 알림**: 알리는 DNS 서버와 RA 서브넷.
+- **DNS 호스트 재정의**: DNS Resolver와 DNS Forwarder의 호스트 재정의.
+- **방화벽 규칙**: 규칙에 직접 입력한 출발지 및 목적지 주소.
+- **NAT 및 NPt**: 포트 포워드, 아웃바운드 NAT, 1:1 NAT에 직접 입력한 주소와 NPt 접두사.
+- **다른 패키지의 설정**: 선택한 필드만 업데이트하고, 그다음 그 패키지의 설정을 다시 적용합니다.
+
+**필드** 탭에는 접두사 안의 모든 주소가 <Terminology title="필드 탭에서 스위치 하나로 켜고 끄는 필드 묶음" to="/docs/reference/terminology#field-group">필드 그룹</Terminology>마다 스위치 하나, 필드마다 확인란 하나와 함께 나열됩니다.
+
+## 선택을 기다리는 항목 \{#what-waits-for-you}
+
+**기타 설정** 그룹은 꺼진 상태로 시작하므로, 다음 값은 직접 선택할 때만 바뀝니다.
+
+- IPsec 및 OpenVPN 원격 네트워크, WireGuard 피어, 허용 IP, 엔드포인트 같은 VPN의 원격 쪽.
+- 게이트웨이, 정적 경로, DNS 도메인 재정의, 인증서, 비밀 값, Base64로 인코딩된 값, 설명.
+- 포트, URL 및 기타 유형의 별칭.
+
+DHCPv6, SLAAC, <Terminology title="다른 인터페이스의 위임된 접두사로 주소를 받는 인터페이스" to="/docs/reference/terminology#tracked-interface">Track Interface</Terminology>로 주소를 받는 인터페이스는 pfSense가 그 주소를 생성하므로 절대 변경하지 않습니다. IPv4 주소, 호스트 이름, 이전 접두사 밖의 IPv6 주소도 마찬가지입니다. 전체 목록은 [기타 설정](/docs/configure/configuration-scopes#other-settings)에 있습니다.
+
+## 확인 작동 방식 \{#how-a-check-works}
+
+1. 각 <Terminology title="주소로 현재 접두사를 알려 주는 인터페이스" to="/docs/reference/terminology#monitored-interface">모니터링할 인터페이스</Terminology>의 <Terminology title="2000::/3 범위의 공인 IPv6 주소" to="/docs/reference/terminology#global-unicast-address">글로벌 주소</Terminology>를 읽고 그 접두사를 계산합니다.
+2. 이 접두사를 <Terminology title="다음 확인이 비교 기준으로 삼는 접두사" to="/docs/reference/terminology#last-successful-prefix">마지막 성공 접두사</Terminology>와 비교하고, 둘이 같으면 <Terminology title="결과: 접두사 그대로, 검색이나 쓰기 없음" to="/docs/reference/terminology#no-change">변경 없음</Terminology>으로 끝냅니다.
+3. <Terminology title="마지막 성공 접두사나 길이와 달라진 상태" to="/docs/reference/terminology#prefix-transition">접두사 전환</Terminology>이 있으면 아직 이전 접두사를 쓰는 <Terminology title="패키지가 다시 쓸 수 있는 정확한 구성 필드" to="/docs/reference/terminology#approved-field">승인된 필드</Terminology>에 대해 <Terminology title="쓰기 전에 만드는 전체 필드 변경 목록" to="/docs/reference/terminology#change-plan">변경 계획</Terminology>을 만듭니다.
+4. <Terminology title="쓰기 전에 저장한 구성 사본" to="/docs/reference/terminology#configuration-backup">구성 백업</Terminology>을 저장하고, 모든 변경을 한 번에 저장하고, 영향을 받는 서비스만 다시 로드한 뒤 값을 다시 검사합니다.
+5. 결과를 상태 탭에 기록하고, 켜져 있으면 <Terminology title="검증된 업데이트가 성공한 뒤 보내는 알림" to="/docs/reference/terminology#change-notification">변경 알림</Terminology>을 보냅니다.
+
+단계별 보호 장치는 [안전 모델](/docs/operations)에서 설명합니다.
+
+## 시작하기 전에 \{#before-you-start}
+
+:::warning
+
+pfSense IPv6 Prefix Updater는 <Terminology title="Netgate 저장소가 아닌 GitHub에서 설치하는 패키지" to="/docs/reference/terminology#unofficial-package">비공식 패키지</Terminology>입니다. GitHub에서 `pkg`로 설치하며, Netgate가 검토하거나 지원하지 않습니다.
+
+:::
+
+패키지 릴리스는 프로젝트의 GitHub Releases 페이지에 게시됩니다. 버전 1.x 릴리스에는 이 패키지가 아니라 <Terminology title="Cron 패키지로 실행하던 원래 update.php 스크립트" to="/docs/reference/terminology#legacy-updater">레거시 업데이터</Terminology>만 들어 있습니다.
+
+## 언어 \{#languages}
+
+패키지의 모든 탭, <Terminology title="지금 실행이나 시험 실행 후 표시되는 읽기 전용 결과" to="/docs/reference/terminology#command-output">명령 출력</Terminology>, 패키지 메시지는 pfSense에서 선택한 언어를 따릅니다. 패키지에는 pfSense 언어 18개에 대한 번역이 들어 있으며, 그 밖의 언어에서는 영어로 표시됩니다.
+
+## 다음 단계 \{#next-steps}
+
+- **[패키지 설치](/docs/installation)**: GitHub 릴리스에서 패키지를 추가합니다.
+- **[기준선 설정](/docs/first-run)**: 일정을 켜기 전에 현재 접두사를 기록하고 확인합니다.
+- **[스크립트에서 마이그레이션](/docs/migrate-from-legacy)**: 버전 1.x 스크립트에서 전환합니다.
+- **[안전 모델](/docs/operations)**: 패키지가 보호하는 것과 여전히 영향을 줄 수 있는 것을 확인합니다.

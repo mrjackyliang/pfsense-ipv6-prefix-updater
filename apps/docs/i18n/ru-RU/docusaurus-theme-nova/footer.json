@@ -1,0 +1,38 @@
+{
+  "layout.learn.title": {
+    "message": "Руководства"
+  },
+  "layout.resources.title": {
+    "message": "Ресурсы"
+  },
+  "sections.learn.0.label": {
+    "message": "Установка и настройка"
+  },
+  "sections.learn.1.label": {
+    "message": "Контролируемые интерфейсы / Длина делегированного префикса"
+  },
+  "sections.learn.2.label": {
+    "message": "Состояние / Действия"
+  },
+  "sections.learn.3.label": {
+    "message": "Устранение неполадок"
+  },
+  "sections.resources.0.label": {
+    "message": "Безопасность и работа"
+  },
+  "sections.resources.1.label": {
+    "message": "Результаты и тесты"
+  },
+  "sections.resources.2.label": {
+    "message": "Документация pfSense"
+  },
+  "sections.resources.3.label": {
+    "message": "Исходный код"
+  },
+  "sections.resources.4.label": {
+    "message": "Блог"
+  },
+  "copyright": {
+    "message": "Copyright © 2023-2026 Jacky Liang. Выпущено по лицензии MIT."
+  }
+}

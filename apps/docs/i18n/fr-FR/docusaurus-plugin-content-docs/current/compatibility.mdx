@@ -1,0 +1,60 @@
+---
+id: compatibility
+title: Compatibilité
+description: Vérifiez les exigences de pfSense, de PHP, d’adresse et de longueur de préfixe, la dépendance WireGuard facultative et les limites connues avant de compter sur le paquet.
+keywords:
+  - pfsense ipv6 prefix updater
+  - compatibilité
+  - prérequis
+  - adresse ipv6 globale
+  - limites connues
+tags:
+  - setup
+  - compatibility
+  - ipv6
+sidebar_position: 4
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Vérifiez que votre pare-feu, votre interface et la délégation de votre FAI remplissent les conditions du paquet avant de vous fier aux <Terminology title="vérifications automatiques via une entrée cron gérée par pfSense" to="/docs/reference/terminology#scheduled-updates">mises à jour planifiées</Terminology>.
+
+## Versions prises en charge \{#supported-releases}
+
+- Le projet n’a pas encore publié de liste des versions de pfSense testées.
+- Le paquet ne vérifie pas la version de pfSense. Chaque exécution vérifie qu’elle tourne sur pfSense avec les fichiers et fonctions qu’elle utilise, et s’arrête avant de lire les paramètres s’ils manquent.
+- Le code du paquet nécessite PHP 8.1 ou une version ultérieure.
+- Le fichier `.pkg` doit être compilé pour la version de FreeBSD sur laquelle repose votre version de pfSense, sinon `pkg` signale une incompatibilité d’ABI.
+
+## Exigences d’adresse \{#address-requirements}
+
+- Chaque <Terminology title="interface dont l’adresse révèle le préfixe actuel" to="/docs/reference/terminology#monitored-interface">interface surveillée</Terminology> doit avoir une <Terminology title="adresse IPv6 publique comprise dans 2000::/3" to="/docs/reference/terminology#global-unicast-address">adresse unicast globale</Terminology> active. Le paquet ne se rabat jamais sur une <Terminology title="adresse fe80:: valable sur un seul lien" to="/docs/reference/terminology#link-local-address">adresse lien-local</Terminology>.
+- Les adresses locales uniques (`fc00::/7`), multicast, de bouclage, non spécifiées, mappées IPv4 et qualifiées par une zone ne peuvent pas servir d’<Terminology title="adresse globale signalée par pfSense pour l’interface surveillée" to="/docs/reference/terminology#source-address">adresse source</Terminology>.
+- La <Terminology title="paramètre de taille du préfixe du FAI, de /48 à /64" to="/docs/reference/terminology#delegated-prefix-length">longueur du préfixe délégué</Terminology> doit être comprise entre `/48` et `/64`. Les longueurs qui se terminent au milieu d’un chiffre hexadécimal, comme `/57`, fonctionnent aussi.
+
+Si une adresse ne convient pas, cette interface se solde par un <Terminology title="résultat : une vérification ou une étape de sécurité a arrêté l’exécution" to="/docs/reference/terminology#failure">Échec</Terminology> avec un motif comme `L’interface « lan » ne possède aucune adresse IPv6 globale active.` [Dépannage](/docs/operate/troubleshooting#run-failed) liste les messages.
+
+## Quand le WAN n’a pas d’adresse globale \{#when-wan-has-no-global-address}
+
+Certains FAI délèguent un préfixe sans attribuer au WAN sa propre <Terminology title="adresse IPv6 publique comprise dans 2000::/3" to="/docs/reference/terminology#global-unicast-address">adresse globale</Terminology>. Une <Terminology title="interface adressée depuis le préfixe délégué d’une autre interface" to="/docs/reference/terminology#tracked-interface">interface suivie</Terminology> comme LAN porte alors une adresse issue du <Terminology title="réseau IPv6 que votre FAI route vers le pare-feu" to="/docs/reference/terminology#delegated-prefix">préfixe délégué</Terminology>, et c’est elle qu’il faut surveiller.
+
+**Status → Interfaces** indique quelles interfaces ont une <Terminology title="adresse IPv6 publique comprise dans 2000::/3" to="/docs/reference/terminology#global-unicast-address">adresse globale</Terminology>.
+
+## Ce que le paquet reconnaît \{#what-the-package-recognizes}
+
+Le paquet met à jour les adresses et réseaux IPv6 littéraux des <Terminology title="champ de configuration précis que le paquet peut réécrire" to="/docs/reference/terminology#approved-field">champs approuvés</Terminology>. Les noms d’hôte, les URL, les valeurs IPv4 et tout autre texte restent inchangés.
+
+Les adresses générées par pfSense, comme celles des <Terminology title="interface adressée depuis le préfixe délégué d’une autre interface" to="/docs/reference/terminology#tracked-interface">interfaces suivies</Terminology>, ne sont jamais modifiées. Les adresses qui décrivent d’autres appareils, comme les réseaux VPN distants et les pairs WireGuard, ne changent que si vous les cochez sous [Autres paramètres](/docs/configure/configuration-scopes#other-settings).
+
+## Dépendances facultatives \{#optional-dependencies}
+
+- **Paquet WireGuard** : nécessaire uniquement quand des <Terminology title="adresse attribuée à un tunnel WireGuard de pfSense" to="/docs/reference/terminology#wireguard-tunnel-address">adresses de tunnel WireGuard</Terminology> doivent changer. Sans lui, une exécution réelle comportant des modifications WireGuard s’arrête avant la sauvegarde.
+
+## Limites connues \{#known-limits}
+
+- Ajouter une <Terminology title="interface dont l’adresse révèle le préfixe actuel" to="/docs/reference/terminology#monitored-interface">interface surveillée</Terminology>, ou remplacer l’interface d’une ligne par une autre, enregistre une nouvelle <Terminology title="préfixe de départ enregistré sans modifier la configuration" to="/docs/reference/terminology#baseline">référence</Terminology> pour celle-ci, et changer la <Terminology title="paramètre de taille du préfixe du FAI, de /48 à /64" to="/docs/reference/terminology#delegated-prefix-length">longueur du préfixe délégué</Terminology> d’une ligne compte comme un <Terminology title="écart avec le dernier préfixe réussi ou sa longueur" to="/docs/reference/terminology#prefix-transition">changement de préfixe</Terminology>.
+- Une <Terminology title="aperçu qui ne sauvegarde ni n’écrit jamais" to="/docs/reference/terminology#dry-run">simulation</Terminology> ne peut pas simuler un changement de préfixe ; les modifications prévues n’apparaissent donc qu’après un vrai changement.
+- Les paires haute disponibilité (CARP) ne font l’objet d’aucun traitement particulier.
+- Comme il s’agit d’un <Terminology title="paquet installé depuis GitHub, hors du dépôt de Netgate" to="/docs/reference/terminology#unofficial-package">paquet non officiel</Terminology>, les nouvelles versions s’installent avec `pkg`, comme décrit dans [Mettre à jour ou supprimer](/docs/reference/package-lifecycle).
+
+Consultez [Interface et préfixe](/docs/configure/interface-and-prefix) pour choisir la source et [Champs](/docs/configure/configuration-scopes) pour les champs que le paquet peut modifier.

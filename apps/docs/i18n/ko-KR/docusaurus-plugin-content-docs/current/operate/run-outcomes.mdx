@@ -1,0 +1,71 @@
+---
+id: run-outcomes
+title: 실행 결과
+description: 상태 탭에 표시되는 초기화됨, 수락됨, 변경 없음, 경고, 성공, 실패 등 각 결과의 의미와 주의가 필요한 경우를 알아봅니다.
+keywords:
+  - pfsense ipv6 prefix updater
+  - 실행 결과
+  - 경고
+  - 실패
+  - 상태 탭
+tags:
+  - operations
+  - outcomes
+  - status
+sidebar_position: 2
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+각 실행의 결과를 보고 정상적으로 끝났는지, 주의가 필요한지 판단합니다.
+
+## 결과 참조 \{#outcome-reference}
+
+| 결과                                                                                                                         | 의미                                                                                                                                                                                                                                                          | 구성                           | <Terminology title="구성을 바꾸지 않고 기록한 시작 접두사" to="/docs/reference/terminology#baseline">기준선</Terminology> |
+|----------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------|--------------------------------------------------------------------------------------------------------|
+| <Terminology title="결과: 기준선 기록, 구성 변경 없음" to="/docs/reference/terminology#initialized">초기화됨</Terminology>                  | 해당 인터페이스의 <Terminology title="구성을 바꾸지 않고 기록한 시작 접두사" to="/docs/reference/terminology#baseline">기준선</Terminology>이 없었음                                                                                                                                       | 변경되지 않음                      | 기록됨                                                                                                    |
+| <Terminology title="결과: 기준선이 생기기 전의 시험 실행" to="/docs/reference/terminology#initialization-preview">초기화 미리 보기</Terminology> | <Terminology title="백업도 쓰기도 하지 않는 미리 보기" to="/docs/reference/terminology#dry-run">시험 실행</Terminology>이 <Terminology title="구성을 바꾸지 않고 기록한 시작 접두사" to="/docs/reference/terminology#baseline">기준선</Terminology>이 없음을 확인하고 기록할 기준선을 보여 줌                       | 변경되지 않음                      | 기록되지 않음                                                                                                |
+| <Terminology title="결과: 접두사 그대로, 검색이나 쓰기 없음" to="/docs/reference/terminology#no-change">변경 없음</Terminology>                | <Terminology title="접두사 길이로 마스킹한 원본 주소" to="/docs/reference/terminology#observed-prefix">관찰된 접두사</Terminology>와 길이가 <Terminology title="다음 확인이 비교 기준으로 삼는 접두사" to="/docs/reference/terminology#last-successful-prefix">마지막 성공 접두사</Terminology>와 일치함        | 검색되지 않음                      | 유지됨                                                                                                    |
+| <Terminology title="백업도 쓰기도 하지 않는 미리 보기" to="/docs/reference/terminology#dry-run">시험 실행</Terminology>                      | <Terminology title="백업도 쓰기도 하지 않는 미리 보기" to="/docs/reference/terminology#dry-run">시험 실행</Terminology>이 <Terminology title="마지막 성공 접두사나 길이와 달라진 상태" to="/docs/reference/terminology#prefix-transition">접두사 전환</Terminology>을 찾고 필드 변경을 하나 이상 계획함             | 변경되지 않음                      | 유지됨                                                                                                    |
+| <Terminology title="결과: 접두사가 바뀌었지만 일치하는 승인된 필드 없음" to="/docs/reference/terminology#warning">경고</Terminology>               | <Terminology title="마지막 성공 접두사나 길이와 달라진 상태" to="/docs/reference/terminology#prefix-transition">접두사 전환</Terminology>을 찾았지만 이전 접두사에 속한 <Terminology title="패키지가 다시 쓸 수 있는 정확한 구성 필드" to="/docs/reference/terminology#approved-field">승인된 필드</Terminology>가 없음 | 변경되지 않음                      | 유지됨                                                                                                    |
+| 수락됨                                                                                                                        | 운영자가 저장된 주소가 이미 활성 접두사를 사용함을 확인하고 **현재 접두사 수락**을 선택함                                                                                                                                                                                                        | 승인된 필드를 검색하거나 변경하지 않음        | 활성 접두사로 이동                                                                                             |
+| <Terminology title="결과: 필드 업데이트, 저장, 다시 로드, 검증 완료" to="/docs/reference/terminology#success">성공</Terminology>               | 백업, 한 번의 쓰기, <Terminology title="변경된 설정을 적용하는 pfSense 동작" to="/docs/reference/terminology#service-reload">서비스 다시 로드</Terminology>, 값 검사가 완료됨                                                                                                                | 한 번 저장됨                      | 새 접두사로 이동                                                                                              |
+| <Terminology title="결과: 검사나 안전 단계가 실행을 중단함" to="/docs/reference/terminology#failure">실패</Terminology>                      | 검사나 안전 단계가 실행을 중단함                                                                                                                                                                                                                                          | 변경되지 않음, 또는 저장 후 멈췄다면 이미 저장됨 | 유지됨                                                                                                    |
+
+아홉 번째 결과인 <Terminology title="결과: 업데이트가 꺼져 있어 예약 확인을 건너뜀" to="/docs/reference/terminology#disabled">사용 안 함</Terminology>은 <Terminology title="pfSense가 관리하는 cron 항목으로 실행하는 자동 확인" to="/docs/reference/terminology#scheduled-updates">예약 업데이트</Terminology>가 꺼져 있을 때 셸에서 옵션 없이 패키지 명령을 실행한 경우에만 나타납니다. 이 결과는 기록되지 않으므로 상태 탭에는 절대 표시되지 않습니다.
+
+## 현재 상태와 마지막 실행의 차이 \{#current-state-versus-last-run}
+
+**현재 상태**는 <Terminology title="결과: 기준선 기록, 구성 변경 없음" to="/docs/reference/terminology#initialized">초기화됨</Terminology>, **수락됨**, <Terminology title="결과: 필드 업데이트, 저장, 다시 로드, 검증 완료" to="/docs/reference/terminology#success">성공</Terminology>에서만 바뀝니다. 실패한 시도는 운영자가 나중에 저장된 값을 검증하고 활성 접두사를 명시적으로 수락하지 않는 한 다음 비교 기준이 되지 않으며, **마지막 실행**은 표에 있는 모든 결과의 최근 실행을 기록합니다.
+
+다른 확인이 <Terminology title="두 확인이 동시에 실행되지 않게 막는 잠금" to="/docs/reference/terminology#run-lock">실행 잠금</Terminology>을 잡고 있거나, 모니터링하는 어떤 인터페이스에도 <Terminology title="2000::/3 범위의 공인 IPv6 주소" to="/docs/reference/terminology#global-unicast-address">글로벌 주소</Terminology>가 없을 때처럼 실행이 <Terminology title="기준선과 마지막 실행을 담은 패키지 파일" to="/docs/reference/terminology#package-state">패키지 상태</Terminology>를 읽기 전에 멈추면 **마지막 실행**은 그대로 유지됩니다. 이런 실행은 이유를 <Terminology title="지금 실행이나 시험 실행 후 표시되는 읽기 전용 결과" to="/docs/reference/terminology#command-output">명령 출력</Terminology>과 <Terminology title="패키지가 기록하는 pfSense 일반 로그" to="/docs/reference/terminology#system-log">시스템 로그</Terminology>에 남깁니다.
+
+## 경고: 일치하는 필드 없음 \{#warning-no-matching-fields}
+
+<Terminology title="결과: 접두사가 바뀌었지만 일치하는 승인된 필드 없음" to="/docs/reference/terminology#warning">경고</Terminology>는 접두사가 바뀌었지만 이전 접두사에 속한 <Terminology title="패키지가 다시 쓸 수 있는 정확한 구성 필드" to="/docs/reference/terminology#approved-field">승인된 필드</Terminology>가 하나도 없다는 뜻입니다. 아무것도 쓰지 않고 <Terminology title="구성을 바꾸지 않고 기록한 시작 접두사" to="/docs/reference/terminology#baseline">기준선</Terminology>은 이전 접두사에 머물므로, 다음 실행은 같은 <Terminology title="마지막 성공 접두사나 길이와 달라진 상태" to="/docs/reference/terminology#prefix-transition">접두사 전환</Terminology>을 다시 검사합니다.
+
+<Terminology title="결과: 접두사가 바뀌었지만 일치하는 승인된 필드 없음" to="/docs/reference/terminology#warning">경고</Terminology>가 발생할 때마다 <Terminology title="pfSense 알림 목록에 표시되는 항목" to="/docs/reference/terminology#webgui-notice">WebGUI 알림</Terminology>이 추가되며, <Terminology title="백업도 쓰기도 하지 않는 미리 보기" to="/docs/reference/terminology#dry-run">시험 실행</Terminology>에서 발생한 경고도 마찬가지입니다. 원인을 해결하지 않으면 예약 실행 때마다 새 알림이 추가됩니다.
+
+흔한 원인:
+
+- 주소가 있는 <Terminology title="필드 탭에서 스위치 하나로 켜고 끄는 필드 묶음" to="/docs/reference/terminology#field-group">필드 그룹</Terminology>이 꺼져 있거나 해당 필드가 선택 해제되어 있습니다.
+- 주소가 이미 패키지 밖에서 변경되었습니다.
+- 주소가 [기타 설정](/docs/configure/configuration-scopes#other-settings) 그룹에 있으며, 이 그룹은 주소를 선택할 때까지 꺼져 있습니다.
+- 이전 <Terminology title="결과: 검사나 안전 단계가 실행을 중단함" to="/docs/reference/terminology#failure">실패</Terminology>가 새 값을 저장했지만 이전 <Terminology title="구성을 바꾸지 않고 기록한 시작 접두사" to="/docs/reference/terminology#baseline">기준선</Terminology>을 유지했습니다.
+- 접두사 변경 없이 <Terminology title="ISP 접두사 크기 설정, /48~/64" to="/docs/reference/terminology#delegated-prefix-length">위임된 접두사 길이</Terminology>를 줄여 범위를 [넓혔습니다](/docs/configure/interface-and-prefix#changing-the-prefix-length).
+
+각 원인은 [문제 해결](/docs/operate/troubleshooting#warning-on-every-run)에서 다룹니다.
+
+주소가 이미 올바르게 변경되었다면 저장된 주소와 영향을 받는 서비스를 검증한 뒤 **상태 → 작업 → 기준선 복구 → 현재 접두사 수락**을 사용합니다. 이 작업은 승인된 필드를 검색하거나 방화벽 구성을 변경하지 않고 **수락됨** 결과를 기록하므로, 승인된 필드에 아직 이전 접두사가 들어 있다면 사용하지 마십시오.
+
+## 저장 후 실패 \{#failures-after-the-save}
+
+저장 뒤에 이어지는 값 검사나 <Terminology title="변경된 설정을 적용하는 pfSense 동작" to="/docs/reference/terminology#service-reload">서비스 다시 로드</Terminology> 중에 발생한 <Terminology title="결과: 검사나 안전 단계가 실행을 중단함" to="/docs/reference/terminology#failure">실패</Terminology>는 새 값을 저장된 채로 남깁니다. 자동으로 롤백되는 것은 없으며 <Terminology title="구성을 바꾸지 않고 기록한 시작 접두사" to="/docs/reference/terminology#baseline">기준선</Terminology>은 이전 접두사에 머뭅니다.
+
+이런 실행에서는 **<Terminology title="쓰기 전에 저장한 구성 사본" to="/docs/reference/terminology#configuration-backup">구성 백업 생성됨</Terminology>**에 예가 표시됩니다. 복원 후 다시 시도하는 방법과 **현재 접두사 수락**으로 검증된 저장 값을 유지하는 방법은 [백업 및 복구](/docs/operate/backups-and-recovery#after-a-failed-run)에서 설명합니다.
+
+## 알림 실패 \{#notification-failures}
+
+<Terminology title="검증된 업데이트가 성공한 뒤 보내는 알림" to="/docs/reference/terminology#change-notification">변경 알림</Terminology>을 보낼 수 없어도 결과는 여전히 <Terminology title="결과: 필드 업데이트, 저장, 다시 로드, 검증 완료" to="/docs/reference/terminology#success">성공</Terminology>이며 <Terminology title="구성을 바꾸지 않고 기록한 시작 접두사" to="/docs/reference/terminology#baseline">기준선</Terminology>도 새 접두사로 이동합니다. 상태 탭은 전달 상태를 표시하지 않으며, <Terminology title="패키지가 기록하는 pfSense 일반 로그" to="/docs/reference/terminology#system-log">시스템 로그</Terminology>에는 `구성은 성공했지만 변경 알림에 실패했습니다.`가 기록됩니다.
+
+각 결과에 해당하는 필드는 [상태 및 작업](/docs/operate/status-and-actions)에서, 단계 순서는 [업데이트 작동 방식](/docs/safety/how-updates-work)에서 검토합니다.

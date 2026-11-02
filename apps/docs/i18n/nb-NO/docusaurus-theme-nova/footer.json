@@ -1,0 +1,38 @@
+{
+  "layout.learn.title": {
+    "message": "Veiledninger"
+  },
+  "layout.resources.title": {
+    "message": "Ressurser"
+  },
+  "sections.learn.0.label": {
+    "message": "Installer og konfigurer"
+  },
+  "sections.learn.1.label": {
+    "message": "Overvåkede grensesnitt / Lengde på delegert prefiks"
+  },
+  "sections.learn.2.label": {
+    "message": "Status / Handlinger"
+  },
+  "sections.learn.3.label": {
+    "message": "Feilsøking"
+  },
+  "sections.resources.0.label": {
+    "message": "Sikkerhet og drift"
+  },
+  "sections.resources.1.label": {
+    "message": "Resultater og tester"
+  },
+  "sections.resources.2.label": {
+    "message": "pfSense-dokumentasjon"
+  },
+  "sections.resources.3.label": {
+    "message": "Kildekode"
+  },
+  "sections.resources.4.label": {
+    "message": "Blogg"
+  },
+  "copyright": {
+    "message": "Opphavsrett © 2023-2026 Jacky Liang. Utgitt under MIT-lisensen."
+  }
+}

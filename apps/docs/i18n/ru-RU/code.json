@@ -1,0 +1,173 @@
+{
+  "home.meta.description": {
+    "message": "Обнаруживайте изменения делегированного префикса, обновляйте только разрешённые поля pfSense, сохраняйте биты узла и проверяйте каждую транзакцию."
+  },
+  "home.meta.title": {
+    "message": "Обновление префикса IPv6 - Безопасно поддерживайте соответствие динамических префиксов IPv6."
+  },
+  "home.hero.eyebrow": {
+    "message": "Нативный пакет pfSense"
+  },
+  "home.hero.heading": {
+    "message": "Безопасно поддерживайте соответствие динамических префиксов IPv6."
+  },
+  "home.hero.tagline": {
+    "message": "Обнаруживайте изменения делегированного префикса, обновляйте только разрешённые поля pfSense, сохраняйте биты узла и проверяйте каждую транзакцию."
+  },
+  "home.hero.primaryAction": {
+    "message": "Установка и настройка"
+  },
+  "home.hero.secondaryAction": {
+    "message": "Проверить безопасность"
+  },
+  "home.preview.ariaLabel": {
+    "message": "Длина делегированного префикса: /56"
+  },
+  "home.preview.dryRun": {
+    "message": "Пробный запуск"
+  },
+  "home.preview.detected": {
+    "message": "Обнаруженный исходный адрес"
+  },
+  "home.preview.previous": {
+    "message": "Предыдущий префикс"
+  },
+  "home.preview.current": {
+    "message": "Текущий префикс"
+  },
+  "home.preview.prefixChanged": {
+    "message": "Обнаруженный префикс"
+  },
+  "home.preview.hostPreserved": {
+    "message": "Длина делегированного префикса"
+  },
+  "home.preview.result": {
+    "message": "Пробный запуск обнаружил 2 разрешённых изменений полей для 2001:db8:abcd:8800::/56; конфигурация не изменена."
+  },
+  "home.workflow.eyebrow": {
+    "message": "Безопасность и работа"
+  },
+  "home.workflow.heading": {
+    "message": "Безопасная транзакция"
+  },
+  "home.workflow.detect": {
+    "message": "Обнаруженный исходный адрес"
+  },
+  "home.workflow.plan": {
+    "message": "Изменённые поля"
+  },
+  "home.workflow.backup": {
+    "message": "Создана резервная копия конфигурации"
+  },
+  "home.workflow.write": {
+    "message": "Текущий префикс"
+  },
+  "home.workflow.verify": {
+    "message": "Успешно"
+  },
+  "home.workflow.notify": {
+    "message": "Уведомления"
+  },
+  "home.features.interface.title": {
+    "message": "Контролируемые интерфейсы"
+  },
+  "home.features.interface.description": {
+    "message": "Добавьте по одной строке для каждого интерфейса, основной активный глобальный IPv6-адрес которого содержит делегированный префикс. Для DHCPv6 только с префиксом на WAN выберите отслеживаемый интерфейс ниже по цепочке. Биты узла после длины префикса сохраняются без изменений, а адрес, который pfSense выбирает для каждого интерфейса, показан на вкладке «Состояние»."
+  },
+  "home.features.prefix.title": {
+    "message": "Длина делегированного префикса"
+  },
+  "home.features.prefix.description": {
+    "message": "Введите границу префикса, делегированного провайдером. Биты узла после этой границы сохраняются без изменений."
+  },
+  "home.features.scopes.title": {
+    "message": "Поля"
+  },
+  "home.features.scopes.description": {
+    "message": "На вкладке «Поля» выберите, какие поля конфигурации меняются вместе с префиксом."
+  },
+  "home.features.dryRun.title": {
+    "message": "Пробный запуск"
+  },
+  "home.features.dryRun.description": {
+    "message": "«Запустить сейчас» может обновить разрешённые поля после обнаруженного изменения. Пробный запуск только сохраняет предварительный результат и никогда не записывает конфигурацию межсетевого экрана."
+  },
+  "home.features.backup.title": {
+    "message": "Создана резервная копия конфигурации"
+  },
+  "home.features.backup.description": {
+    "message": "Создана резервная копия конфигурации: Да."
+  },
+  "home.features.notify.title": {
+    "message": "Уведомления"
+  },
+  "home.features.notify.description": {
+    "message": "Использует настроенные каналы уведомлений pfSense после проверенного успешного обновления префикса. Проверки без изменений никогда не отправляют уведомления."
+  },
+  "home.stats.heading": {
+    "message": "Безопасность и работа"
+  },
+  "home.stats.boundaries": {
+    "message": "Длина делегированного префикса"
+  },
+  "home.stats.backups": {
+    "message": "Создана резервная копия конфигурации"
+  },
+  "home.stats.writes": {
+    "message": "Изменённые поля"
+  },
+  "home.stats.noChange": {
+    "message": "Активный префикс IPv6 не изменился; разрешённые цели конфигурации не читались и не записывались."
+  },
+  "home.routes.eyebrow": {
+    "message": "Руководства"
+  },
+  "home.routes.heading": {
+    "message": "Установка и настройка"
+  },
+  "home.routes.install.title": {
+    "message": "Установка пакета"
+  },
+  "home.routes.install.description": {
+    "message": "Выполните эту команду в shell pfSense, чтобы установить последнюю версию напрямую с GitHub."
+  },
+  "home.routes.open": {
+    "message": "Начать чтение"
+  },
+  "home.routes.configure.title": {
+    "message": "Контролируемые интерфейсы / Длина делегированного префикса"
+  },
+  "home.routes.configure.description": {
+    "message": "Добавьте по одной строке для каждого интерфейса, основной активный глобальный IPv6-адрес которого содержит делегированный префикс. Для DHCPv6 только с префиксом на WAN выберите отслеживаемый интерфейс ниже по цепочке. Биты узла после длины префикса сохраняются без изменений, а адрес, который pfSense выбирает для каждого интерфейса, показан на вкладке «Состояние»."
+  },
+  "home.routes.status.title": {
+    "message": "Состояние / Вывод команды"
+  },
+  "home.routes.status.description": {
+    "message": "«Запустить сейчас» может обновить разрешённые поля после обнаруженного изменения. Пробный запуск только сохраняет предварительный результат и никогда не записывает конфигурацию межсетевого экрана."
+  },
+  "home.routes.troubleshoot.title": {
+    "message": "Устранение неполадок"
+  },
+  "home.routes.troubleshoot.description": {
+    "message": "Если исходный адрес неверен, выберите нижестоящий отслеживаемый интерфейс с реальным глобальным адресом; не компенсируйте это угаданной длиной."
+  },
+  "home.spotlight.heading": {
+    "message": "Вывод команды"
+  },
+  "home.spotlight.description": {
+    "message": "Проверяйте каждый запуск на странице «Состояние»: исходный адрес, вычисленный префикс, резервную копию и результат."
+  },
+  "home.spotlight.statusAction": {
+    "message": "Состояние / Вывод команды"
+  },
+  "home.spotlight.testsAction": {
+    "message": "Результаты и тесты"
+  },
+  "home.blogPreview.heading": {
+    "message": "Из блога"
+  },
+  "home.blogPreview.description": {
+    "message": "Примечания к выпускам, руководства по настройке и статьи о динамических префиксах IPv6."
+  }
+}

@@ -1,0 +1,122 @@
+---
+id: status-and-actions
+title: Status og handlinger
+description: Les panelene Gjeldende tilstand og Siste kjøring, kjør kontroller og forhåndsvisninger, gjenopprett grunnlinjen og forstå Kommandoutdata i fanen Status.
+keywords:
+  - pfsense ipv6 prefix updater
+  - statusfanen
+  - kjør nå
+  - testkjøring
+  - kommandoutdata
+tags:
+  - operations
+  - status
+  - dry run
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import unchangedRun from './_assets_/status-and-actions-1.png';
+import changedRun from './_assets_/status-and-actions-2.png';
+import runByInterface from './_assets_/status-and-actions-3.png';
+
+Se hva den gjeldende grunnlinjen og den nyeste kjøringen registrerte, og start en kontroll, en forhåndsvisning eller en gjenoppretting av grunnlinjen fra fanen Status.
+
+## Gjeldende tilstand \{#current-state}
+
+Fanen **Status** under **Services → IPv6 Prefix Updater** starter med denne tabellen, som har én rad per overvåket grensesnitt og beskriver <Terminology title="startprefiks registrert uten å endre konfigurasjonen" to="/docs/reference/terminology#baseline">grunnlinjen</Terminology> som neste kontroll sammenligner med:
+
+- **<Terminology title="grensesnittet der adressen avslører gjeldende prefiks" to="/docs/reference/terminology#monitored-interface">Overvåket grensesnitt</Terminology>**: beskrivelsen av grensesnittet etterfulgt av det interne navnet pfSense bruker, for eksempel `LAN (lan)`.
+- **<Terminology title="prefikset neste kontroll sammenligner med" to="/docs/reference/terminology#last-successful-prefix">Siste vellykkede prefiks</Terminology>**: prefikset og lengden, for eksempel `2001:db8:abcd:7800::/56`.
+- **<Terminology title="global adresse pfSense rapporterer for det overvåkede grensesnittet" to="/docs/reference/terminology#source-address">Siste vellykkede kildeadresse</Terminology>**: adressen i <Terminology title="korteste standardskrivemåte for en adresse, med små bokstaver" to="/docs/reference/terminology#canonical-form">kanonisk form</Terminology>. En kjøring med <Terminology title="resultat: prefiks uendret, ingenting gjennomsøkt eller skrevet" to="/docs/reference/terminology#no-change">Ingen endring</Terminology> oppdaterer den også.
+- **Siste vellykkede oppdatering**: tidspunktet i UTC da <Terminology title="startprefiks registrert uten å endre konfigurasjonen" to="/docs/reference/terminology#baseline">grunnlinjen</Terminology> ble initialisert, godtatt eller flyttet etter det siste resultatet <Terminology title="resultat: felt oppdatert, lagret, lastet inn igjen og verifisert" to="/docs/reference/terminology#success">Vellykket</Terminology>, for eksempel `2026-10-24T14:00:00+00:00`.
+
+Før den første kjøringen for et grensesnitt viser raden `Ikke initialisert. Kjør en normal kontroll én gang for å opprette en sikker grunnlinje.` En <Terminology title="startprefiks registrert uten å endre konfigurasjonen" to="/docs/reference/terminology#baseline">grunnlinje</Terminology> som er overtatt fra det eldre oppdateringsskriptet, viser `Ikke registrert av denne pakkeversjonen` som kildeadresse frem til den første kontrollen.
+
+## Siste kjøring \{#last-run}
+
+Dette panelet registrerer den nyeste kjøringen. Når du overvåker ett grensesnitt, viser panelet resultatet for det grensesnittet direkte:
+
+- **Resultat**: utfallet, som forklares i [Kjøreresultater](/docs/operate/run-outcomes).
+- **Tidsstempel (UTC)**: når kjøringen ble fullført.
+- **<Terminology title="global adresse pfSense rapporterer for det overvåkede grensesnittet" to="/docs/reference/terminology#source-address">Observert kildeadresse</Terminology>**: adressen pfSense returnerte for det <Terminology title="grensesnittet der adressen avslører gjeldende prefiks" to="/docs/reference/terminology#monitored-interface">overvåkede grensesnittet</Terminology>.
+- **<Terminology title="kildeadressen maskert ved prefikslengden" to="/docs/reference/terminology#observed-prefix">Observert prefiks</Terminology>**: nettverket som er beregnet fra den adressen og <Terminology title="innstilling for leverandørens prefiksstørrelse, /48 til /64" to="/docs/reference/terminology#delegated-prefix-length">lengden på det delegerte prefikset</Terminology>.
+- **Endrede felt**: antall <Terminology title="eksakt konfigurasjonsfelt som pakken kan skrive om" to="/docs/reference/terminology#approved-field">godkjente felt</Terminology> kjøringen endret, eller ville ha endret etter en <Terminology title="forhåndsvisning som aldri sikkerhetskopierer eller skriver" to="/docs/reference/terminology#dry-run">testkjøring</Terminology>.
+- **<Terminology title="kopi av konfigurasjonen lagret før en skriving" to="/docs/reference/terminology#configuration-backup">Konfigurasjonssikkerhetskopi opprettet</Terminology>**: `Ja` eller `Nei – denne kjøringen skrev ikke konfigurasjonen`.
+- **<Terminology title="pfSense-handling som tar i bruk endrede innstillinger" to="/docs/reference/terminology#service-reload">Tjenester lastet inn på nytt</Terminology>**: tjenestene kjøringen lastet inn på nytt, eller ville ha lastet inn på nytt etter en <Terminology title="forhåndsvisning som aldri sikkerhetskopierer eller skriver" to="/docs/reference/terminology#dry-run">testkjøring</Terminology>.
+- **Sammendrag**: én setning om resultatet, inkludert det forrige prefikset etter en <Terminology title="endring fra siste vellykkede prefiks eller lengde" to="/docs/reference/terminology#prefix-transition">prefiksovergang</Terminology>.
+- **Pakker**: vises når kjøringen endret innstillingene til en annen pakke, med én linje per pakke, for eksempel `Innstillingene for pakken <package> ble brukt på nytt.` [Felt](/docs/configure/configuration-scopes#other-packages-settings) viser hver melding.
+- **Felt som ble hoppet over**: vises når avkryssede felt ikke lenger finnes, med `Disse valgte feltene finnes ikke lenger, så kjøringen hoppet over dem. Gå gjennom dem på Felt-fanen.` og identiteten til hvert felt.
+
+Det anbefales å kontrollere den observerte adressen og prefikset først. De viser om pfSense returnerte den tiltenkte adressen, og om lengden ga det forventede nettverket.
+
+**Siste kjøring** oppdateres ikke når en annen kontroll holder <Terminology title="sperre som hindrer to kontroller i å kjøre samtidig" to="/docs/reference/terminology#run-lock">kjørelåsen</Terminology>, eller når en kjøring stopper før den leser <Terminology title="pakkefil med grunnlinjen og siste kjøring" to="/docs/reference/terminology#package-state">pakketilstanden</Terminology>, for eksempel når ingen av de overvåkede grensesnittene har en <Terminology title="offentlig IPv6-adresse innenfor 2000::/3" to="/docs/reference/terminology#global-unicast-address">global adresse</Terminology>. En <Terminology title="resultat: en kontroll eller et sikkerhetstrinn stoppet kjøringen" to="/docs/reference/terminology#failure">Feil</Terminology> viser alltid `0` endrede felt, som [Kjøreresultater](/docs/operate/run-outcomes#failures-after-the-save) forklarer.
+
+### Siste kjøring per grensesnitt \{#last-run-by-interface}
+
+Når du overvåker mer enn ett grensesnitt, viser **Siste kjøring** totalene, og **Sammendrag** teller grensesnittene som ble oppdatert, var uendret eller trenger oppmerksomhet. Tabellen **Siste kjøring per grensesnitt** under den viser hvert grensesnitt med eget resultat, observert prefiks, endrede felt og sammendrag.
+
+- **Endrede felt** i **Siste kjøring** teller hvert felt én gang, selv når to grensesnitt som deler et <Terminology title="IPv6-nettverket internettleverandøren ruter til brannmuren" to="/docs/reference/terminology#delegated-prefix">delegert prefiks</Terminology>, begge planla det.
+- Et grensesnitt uten <Terminology title="offentlig IPv6-adresse innenfor 2000::/3" to="/docs/reference/terminology#global-unicast-address">global adresse</Terminology> rapporterer <Terminology title="resultat: en kontroll eller et sikkerhetstrinn stoppet kjøringen" to="/docs/reference/terminology#failure">Feil</Terminology> i sin egen rad, mens de andre grensesnittene fortsatt kontrolleres.
+- Hvis to grensesnitt planlegger ulike verdier for det samme feltet, stopper kjøringen før noe skrives og rapporterer hvilket felt som ikke stemte overens.
+
+## Handlinger \{#actions}
+
+| Handling                                                                                                                                           | Hva den gjør                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+|----------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Kjør nå                                                                                                                                            | Kjører en full kontroll, også mens <Terminology title="automatiske kontroller fra en cron-oppføring styrt av pfSense" to="/docs/reference/terminology#scheduled-updates">planlagte oppdateringer</Terminology> er slått av. Den registrerer en <Terminology title="startprefiks registrert uten å endre konfigurasjonen" to="/docs/reference/terminology#baseline">grunnlinje</Terminology> når ingen finnes, og tar i bruk en <Terminology title="endring fra siste vellykkede prefiks eller lengde" to="/docs/reference/terminology#prefix-transition">prefiksovergang</Terminology> når den finner en. |
+| <Terminology title="forhåndsvisning som aldri sikkerhetskopierer eller skriver" to="/docs/reference/terminology#dry-run">Testkjøring</Terminology> | Kjører den samme kontrollen uten sikkerhetskopi eller skriving. Før en <Terminology title="startprefiks registrert uten å endre konfigurasjonen" to="/docs/reference/terminology#baseline">grunnlinje</Terminology> finnes, rapporterer den <Terminology title="resultat: testkjøring før en grunnlinje finnes" to="/docs/reference/terminology#initialization-preview">Forhåndsvisning av initialisering</Terminology>.                                                                                                                                                                                  |
+| Godta gjeldende prefiks                                                                                                                            | Registrerer etter bekreftelse den aktive kildeadressen, prefikset og lengden som ny <Terminology title="startprefiks registrert uten å endre konfigurasjonen" to="/docs/reference/terminology#baseline">grunnlinje</Terminology>. Den undersøker ikke godkjente felt, tar ingen sikkerhetskopi, skriver ikke konfigurasjon og laster ikke tjenester inn på nytt.                                                                                                                                                                                                                                          |
+
+Kjør nå og <Terminology title="forhåndsvisning som aldri sikkerhetskopierer eller skriver" to="/docs/reference/terminology#dry-run">Testkjøring</Terminology> er <Terminology title="kontroll startet fra fanen Status" to="/docs/reference/terminology#manual-run">manuelle kjøringer</Terminology>. **Godta gjeldende prefiks** er en gjenopprettingshandling og bør bare brukes etter at de lagrede adressene og de berørte tjenestene er kontrollert.
+
+Hver handling viser et banner om fullføring eller advarsel. Bekreftelsen på **Godta gjeldende prefiks** er den siste sikringen før pakken erstatter grunnlinjen den sammenligner med.
+
+En kontroll som finner en annen kjøring i gang, viser også fullføringsbanneret, så det anbefales å lese <Terminology title="skrivebeskyttede resultater vist etter Kjør nå eller Testkjøring" to="/docs/reference/terminology#command-output">Kommandoutdata</Terminology> også.
+
+## Kommandoutdata \{#command-output}
+
+Etter en handling vises en skrivebeskyttet boks, **Nyeste kjøring**, under **<Terminology title="skrivebeskyttede resultater vist etter Kjør nå eller Testkjøring" to="/docs/reference/terminology#command-output">Kommandoutdata</Terminology>**:
+
+```text
+Status: Ingen endring
+Grensesnitt: lan
+Observert kildeadresse: 2001:db8:abcd:78aa::1
+Forrige prefiks: 2001:db8:abcd:7800::
+Gjeldende prefiks: 2001:db8:abcd:7800::/56
+Planlagte eller endrede felt: 0
+Konfigurasjonssikkerhetskopi: Ikke opprettet
+Tjenester lastet inn på nytt: Ingen
+Sammendrag: Det aktive IPv6-prefikset er uendret; ingen godkjente konfigurasjonsmål ble lest eller skrevet.
+```
+
+Det forrige prefikset skrives ut uten lengde. En mislykket kjøring viser i stedet én enkelt linje som starter med `IPv6-prefiksoppdateringen mislyktes:`.
+
+Etter en <Terminology title="forhåndsvisning som aldri sikkerhetskopierer eller skriver" to="/docs/reference/terminology#dry-run">testkjøring</Terminology> eller en endring følger `Feltendringer:` med hver adresse kjøringen erstattet, eller ville ha erstattet, og feltet den hører til:
+
+```text
+Feltendringer:
+- aliases/alias/0/address: 2001:db8:abcd:78aa::10 → 2001:db8:abcd:88aa::10
+```
+
+## Velge felt \{#choosing-fields}
+
+Hvilke felt en kjøring oppdaterer, velges i fanen **Felt**, som viser alle adresser innenfor prefikset til hver <Terminology title="startprefiks registrert uten å endre konfigurasjonen" to="/docs/reference/terminology#baseline">grunnlinje</Terminology>. [Felt](/docs/configure/configuration-scopes) forklarer gruppene, unntakene for enkeltfelt og gruppen Andre innstillinger.
+
+## Skjermbilder \{#screenshots}
+
+Det første skjermbildet viser resultatet <Terminology title="resultat: prefiks uendret, ingenting gjennomsøkt eller skrevet" to="/docs/reference/terminology#no-change">Ingen endring</Terminology> for to overvåkede grensesnitt, uten endrede felt og uten sikkerhetskopi.
+
+<img src={unchangedRun} alt="Fanen Status i IPv6 Prefix Updater som viser siste kjøring og siste kjøring per grensesnitt for to uendrede grensesnitt, med null endrede felt og ingen sikkerhetskopi" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+Det andre skjermbildet viser resultatet <Terminology title="resultat: felt oppdatert, lagret, lastet inn igjen og verifisert" to="/docs/reference/terminology#success">Vellykket</Terminology> etter en kjøring som endret ett <Terminology title="eksakt konfigurasjonsfelt som pakken kan skrive om" to="/docs/reference/terminology#approved-field">godkjent felt</Terminology>, opprettet en <Terminology title="kopi av konfigurasjonen lagret før en skriving" to="/docs/reference/terminology#configuration-backup">konfigurasjonssikkerhetskopi</Terminology> og lastet brannmurfilteret inn på nytt.
+
+<img src={changedRun} alt="Fanen Status i IPv6 Prefix Updater som viser en vellykket /56-prefiksovergang for to overvåkede grensesnitt med ett endret felt, en konfigurasjonssikkerhetskopi og ny innlasting av brannmurfilteret" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+Det tredje skjermbildet viser tabellen **Siste kjøring per grensesnitt** for den samme kjøringen, der LAN og LAB deler ett <Terminology title="IPv6-nettverket internettleverandøren ruter til brannmuren" to="/docs/reference/terminology#delegated-prefix">delegert prefiks</Terminology> og begge rapporterer det samme endrede feltet.
+
+<img src={runByInterface} alt="Tabellen siste kjøring per grensesnitt i IPv6 Prefix Updater som viser at LAN og LAB begge rapporterer Vellykket med ett endret felt fra den samme /56-prefiksovergangen" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+Adressene i `2001:db8::/32` i disse skjermbildene er reserverte dokumentasjonseksempler.
+
+Se [Kjøreresultater](/docs/operate/run-outcomes) for alle resultater og [Sikkerhetskopier og gjenoppretting](/docs/operate/backups-and-recovery) før du stoler på en kjøring som har endret noe.

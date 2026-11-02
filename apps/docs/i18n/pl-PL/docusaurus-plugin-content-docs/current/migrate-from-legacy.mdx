@@ -1,0 +1,85 @@
+---
+id: migrate-from-legacy
+title: Migracja ze skryptu
+description: Zainstaluj pakiet bez usuwania starszego skryptu update.php, pozwól pakietowi samodzielnie przenieść wpisy Cron, zapisane prefiksy i kopie zapasowe, a następnie sprawdź wynik na karcie Porządkowanie.
+keywords:
+  - pfsense ipv6 prefix updater
+  - starszy aktualizator
+  - migracja
+  - update.php
+  - pakiet cron
+  - porządkowanie
+tags:
+  - setup
+  - migration
+  - legacy updater
+sidebar_position: 5
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import cleanupBefore from './_assets_/migrate-from-legacy-1.png';
+import cleanupAfter from './_assets_/migrate-from-legacy-2.png';
+
+Przejdź ze <Terminology title="pierwotny skrypt update.php uruchamiany przez pakiet Cron" to="/docs/reference/terminology#legacy-updater">starszego aktualizatora</Terminology> na pakiet, instalując go, a pakiet sam przejmie interfejsy, zapisane prefiksy i kopie zapasowe skryptu.
+
+## Co się zmienia \{#what-changes}
+
+| Obszar           | <Terminology title="pierwotny skrypt update.php uruchamiany przez pakiet Cron" to="/docs/reference/terminology#legacy-updater">Starszy aktualizator</Terminology> | Pakiet                                                                                                                                                                                                                                                                                                                                                                 |
+|------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Instalacja       | `install.sh` kopiuje pliki do `/root/pfsense-ipv6-prefix-updater`                                                                                                 | `pkg add` instaluje pakiet pfSense                                                                                                                                                                                                                                                                                                                                     |
+| Harmonogram      | Wpis pakietu Cron, który tworzysz samodzielnie                                                                                                                    | Ustawienie **Harmonogram** z wpisem cron zarządzanym przez pfSense                                                                                                                                                                                                                                                                                                     |
+| Interfejsy       | Jeden wpis Cron na każde urządzenie systemu operacyjnego, na przykład `igb1`                                                                                      | Jeden wiersz pola **Monitorowane interfejsy** na każdy interfejs pfSense, na przykład LAN, przy czym wszystkie są sprawdzane w jednym uruchomieniu                                                                                                                                                                                                                     |
+| Co się zmienia   | Tekst starego prefiksu w dowolnym miejscu konfiguracji, także w wartościach zakodowanych w base64                                                                 | <Terminology title="konkretne pole konfiguracji, które pakiet może przepisać" to="/docs/reference/terminology#approved-field">Zatwierdzone pola</Terminology> wybrane na karcie **Pola**                                                                                                                                                                               |
+| Kopie zapasowe   | Kopie czytelne dla wszystkich użytkowników w `/root/pfsense-ipv6-prefix-updater-backups`                                                                          | <Terminology title="kopia konfiguracji wykonana przed zapisem" to="/docs/reference/terminology#configuration-backup">Kopia zapasowa konfiguracji</Terminology> w <Terminology title="lista zapisanych rewizji konfiguracji w pfSense" to="/docs/reference/terminology#config-history">Config History</Terminology> i na karcie **Kopie zapasowe** przed każdym zapisem |
+| Zapisany prefiks | `/root/pfsense-ipv6-prefix-updater-cache`                                                                                                                         | <Terminology title="plik pakietu z wartością bazową i ostatnim uruchomieniem" to="/docs/reference/terminology#package-state">Stan pakietu</Terminology>, wypełniony podczas przeniesienia danymi ze starszej pamięci podręcznej                                                                                                                                        |
+| Powiadomienia    | Wysyłane po każdej zmianie                                                                                                                                        | Opcjonalne <Terminology title="alert wysyłany po zweryfikowanej udanej aktualizacji" to="/docs/reference/terminology#change-notification">powiadomienie o zmianie</Terminology> po wyniku <Terminology title="wynik: pola zaktualizowane, zapisane, ponownie załadowane i zweryfikowane" to="/docs/reference/terminology#success">Sukces</Terminology>                 |
+
+## Instalacja pakietu \{#install-the-package}
+
+[Zainstaluj pakiet](/docs/installation) poleceniem `pkg add`, pozostawiając starszy aktualizator na miejscu. Niczego nie trzeba wcześniej usuwać, a zaleca się nie usuwać samodzielnie wpisów Cron ani katalogów w `/root`, ponieważ pakiet odczytuje je podczas przeniesienia.
+
+Ponowne uruchomienie starego polecenia instalacji nie instaluje skryptu ponownie. Od wersji 2 wyświetla ono błąd z poleceniem `pkg add` i niczego nie zmienia.
+
+## Co dzieje się automatycznie \{#what-happens-automatically}
+
+Krok instalacji wykrywa starszy aktualizator i przenosi go do pakietu w tej kolejności:
+
+1. **Kopia zapasowa**: zapisuje <Terminology title="kopia konfiguracji wykonana przed zapisem" to="/docs/reference/terminology#configuration-backup">kopię zapasową konfiguracji</Terminology>, zanim cokolwiek się zmieni.
+2. **Interfejsy**: zamienia każdy wpis Cron w wiersz pola **Monitorowane interfejsy**, przypisując jego urządzenie, na przykład `igb1.10`, do interfejsu pfSense, który używa tego urządzenia, i zachowuje <Terminology title="liczba początkowych bitów sieci, np. /56" to="/docs/reference/terminology#prefix-length">długość prefiksu</Terminology> z tego wpisu.
+3. **Harmonogram**: wybiera taki **Harmonogram** pakietu, który sprawdza co najmniej tak często, jak robiły to wpisy Cron, i włącza <Terminology title="automatyczne sprawdzenia z wpisu cron zarządzanego przez pfSense" to="/docs/reference/terminology#scheduled-updates">zaplanowane aktualizacje</Terminology>.
+4. **Wartości bazowe**: przyjmuje każdy zapisany prefiks jako <Terminology title="prefiks startowy zapisany bez zmiany konfiguracji" to="/docs/reference/terminology#baseline">wartość bazową</Terminology> dla jego interfejsu, dzięki czemu żadna zmiana prefiksu nie przepada.
+5. **Wpisy Cron**: usuwa tylko wpisy uruchamiające `update.php`, w tym samym zapisie konfiguracji co nowe ustawienia, więc oba aktualizatory nigdy nie działają jednocześnie.
+6. **Kopie zapasowe**: kopiuje każdą kopię zapasową starszego aktualizatora na kartę **Kopie zapasowe**, gdzie może ją odczytać tylko root, i usuwa oryginał po zweryfikowaniu kopii.
+7. **Stare pliki**: usuwa z `/root` skrypt, jego zapisane prefiksy, pobrane archiwum i zapisany instalator.
+
+Po zakończeniu przeniesienia komunikat WebGUI prowadzi do karty Porządkowanie. Jeśli starszy skrypt akurat w tym momencie działa, pakiet czeka i kończy przeniesienie przy następnym zaplanowanym sprawdzeniu.
+
+### Kilka wpisów Cron \{#several-cron-entries}
+
+Każdy wpis Cron, który wskazuje inne urządzenie, staje się osobnym wierszem, a jedno uruchomienie sprawdza je wszystkie. Interfejsy współdzielące jeden <Terminology title="sieć IPv6, którą dostawca kieruje do zapory" to="/docs/reference/terminology#delegated-prefix">delegowany prefiks</Terminology> aktualizują wspólne pola tylko raz, w jednym zapisie poprzedzonym kopią zapasową.
+
+Wpis Cron, którego urządzenie nie należy już do żadnego interfejsu pfSense, jest usuwany i wymieniany jako ostrzeżenie, ponieważ skrypt i tak nie mógł niczego przez niego zaktualizować.
+
+### Nieaktualne zapisane prefiksy \{#saved-prefixes-that-are-out-of-date}
+
+Jeśli dostawca internetu zmienił prefiks po ostatnim uruchomieniu starszego aktualizatora, jego zapisany prefiks pozostaje <Terminology title="prefiks startowy zapisany bez zmiany konfiguracji" to="/docs/reference/terminology#baseline">wartością bazową</Terminology>. Pierwsze sprawdzenie pakietu znajduje wtedy pola, które nadal używają starego prefiksu, i je aktualizuje.
+
+Gdy żadne zatwierdzone pole nie używa starego zapisanego prefiksu, wartością bazową zostaje zamiast niego bieżący prefiks, więc pierwsze sprawdzenie nie zgłasza wyniku <Terminology title="wynik: prefiks się zmienił, ale żadne zatwierdzone pole nie pasowało" to="/docs/reference/terminology#warning">Ostrzeżenie</Terminology>.
+
+## Przegląd karty Porządkowanie \{#review-the-cleanup-tab}
+
+Otwórz **Services → IPv6 Prefix Updater → Porządkowanie**, aby zobaczyć każdą pozostałość starszego aktualizatora i to, co się z nią stało.
+
+<img src={cleanupBefore} alt="Karta Porządkowanie pakietu IPv6 Prefix Updater przed porządkowaniem, z dwoma wpisami Cron starszego aktualizatora, starszym skryptem, zapisanymi prefiksami dla dwóch urządzeń, jedną kopią zapasową starszego aktualizatora i dwoma pobranymi plikami instalacyjnymi" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+- **Pozostałości 1.x**: wpisy Cron, skrypt, zapisane prefiksy, kopie zapasowe, pobrane pliki instalacyjne i blokada skryptu, a każdy element jest oznaczony jako **Znaleziono** lub **Brak**.
+- **Ostatnie porządkowanie**: każdy krok wykonany podczas przeniesienia i każde ostrzeżenie, na przykład o urządzeniu, które nie jest przypisane do interfejsu.
+- **Uporządkuj teraz**: od razu wykonuje to samo przeniesienie, zamiast czekać na następne zaplanowane sprawdzenie. Inne wpisy Cron zawsze pozostają nietknięte.
+
+<img src={cleanupAfter} alt="Karta Porządkowanie pakietu IPv6 Prefix Updater po użyciu Uporządkuj teraz, z kopią zapasową, usuniętymi wpisami Cron, przeniesioną kopią zapasową i usuniętymi plikami starszego aktualizatora" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Sprawdzenie zasięgu zmian \{#check-coverage}
+
+Po pierwszej rzeczywistej <Terminology title="różnica względem ostatniego pomyślnego prefiksu lub długości" to="/docs/reference/terminology#prefix-transition">zmianie prefiksu</Terminology> porównaj pola **Zmienione pola** i **Podsumowanie** z tym, co zmieniał <Terminology title="pierwotny skrypt update.php uruchamiany przez pakiet Cron" to="/docs/reference/terminology#legacy-updater">starszy aktualizator</Terminology>. Starszy aktualizator przepisywał też bramy, trasy statyczne, opisy i wartości zakodowane w Base64. Pakiet zmienia je tylko wtedy, gdy są zaznaczone w grupie **Inne ustawienia** na karcie **Pola**, dlatego zaleca się zaznaczyć je, zanim prefiks się zmieni.
+
+Po przeniesieniu każda <Terminology title="grupa pól z jednym przełącznikiem na karcie Pola" to="/docs/reference/terminology#field-group">grupa pól</Terminology> pfSense jest włączona, tak jak ustawia to **Wybierz automatycznie**. Każdą grupę i sposób jej wyłączenia opisuje strona [Pola](/docs/configure/configuration-scopes).

@@ -1,0 +1,157 @@
+---
+id: approved-fields
+title: Разрешённые поля
+description: Перечисляет точные пути конфигурации pfSense, которые может перезаписывать каждая группа полей, правила сопоставления значений в них и перезагрузку службы для каждого пути.
+keywords:
+  - pfsense ipv6 prefix updater
+  - разрешённые поля
+  - пути конфигурации
+  - config_get_path
+  - перезагрузка служб
+tags:
+  - reference
+  - approved fields
+  - configuration paths
+sidebar_position: 3
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Проверьте точные пути конфигурации pfSense, которые может перезаписывать каждая <Terminology title="группа полей с одним переключателем на вкладке «Поля»" to="/docs/reference/terminology#field-group">группа полей</Terminology>, и службу, которую перезагружает каждый из них.
+
+## Матрица полей \{#field-matrix}
+
+Пути используют принятый в pfSense синтаксис с косой чертой в качестве разделителя для `config_get_path()` и `config_set_path()`. В путях ниже `<index>` обозначает позицию в списке, `<interface>` — ключ интерфейса, например `lan`, `<boundary>` — `from` или `to`, `<side>` — `source` или `destination`, а `<section>` — ключ настроек другого пакета.
+
+| <Terminology title="группа полей с одним переключателем на вкладке «Поля»" to="/docs/reference/terminology#field-group">Группа</Terminology>                     | Путь                                                                             | Когда выбирается                                                                                                    | Служба                  |
+|------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------|-------------------------|
+| Псевдонимы                                                                                                                                                       | `aliases/alias/<index>/address`                                                  | `type` — `host` или `network`                                                                                       | `filter`                |
+| Статические интерфейсы                                                                                                                                           | `interfaces/<interface>/ipaddrv6`                                                | Значение содержит `:`                                                                                               | `interfaces`            |
+| <Terminology title="дополнительный адрес интерфейса, например CARP или IP Alias" to="/docs/reference/terminology#virtual-ip">Виртуальные IP-адреса</Terminology> | `virtualip/vip/<index>/subnet`                                                   | `mode` — `carp` или `ipalias`                                                                                       | `interfaces`            |
+| IPsec                                                                                                                                                            | `ipsec/phase2/<index>/localid/address`                                           | `mode` — `tunnel6` или `vti`, а `localid/type` — `address` или `network`                                            | `ipsec`                 |
+| IPsec                                                                                                                                                            | `ipsec/phase2/<index>/natlocalid/address`                                        | `mode` — `tunnel6` или `vti`, а `natlocalid/type` — `address` или `network`                                         | `ipsec`                 |
+| OpenVPN                                                                                                                                                          | `openvpn/openvpn-server/<index>/tunnel_networkv6`                                | `tunnel_networkv6_type` не равно `track6`                                                                           | `openvpn`               |
+| OpenVPN                                                                                                                                                          | `openvpn/openvpn-server/<index>/local_networkv6`                                 | Всегда                                                                                                              | `openvpn`               |
+| OpenVPN                                                                                                                                                          | `openvpn/openvpn-client/<index>/tunnel_networkv6`                                | Всегда                                                                                                              | `openvpn`               |
+| OpenVPN                                                                                                                                                          | `openvpn/openvpn-csc/<index>/tunnel_networkv6`                                   | Всегда                                                                                                              | `openvpn`               |
+| OpenVPN                                                                                                                                                          | `openvpn/openvpn-csc/<index>/local_networkv6`                                    | Всегда                                                                                                              | `openvpn`               |
+| WireGuard                                                                                                                                                        | `installedpackages/wireguard/tunnels/item/<index>/addresses/row/<index>/address` | Всегда                                                                                                              | `wireguard`             |
+| DHCPv6-сервер                                                                                                                                                    | `dhcpdv6/<interface>/range/<boundary>`                                           | Всегда                                                                                                              | `dhcpv6`                |
+| DHCPv6-сервер                                                                                                                                                    | `dhcpdv6/<interface>/prefixrange/<boundary>`                                     | Всегда                                                                                                              | `dhcpv6`                |
+| DHCPv6-сервер                                                                                                                                                    | `dhcpdv6/<interface>/pool/<index>/range/<boundary>`                              | Всегда                                                                                                              | `dhcpv6`                |
+| DHCPv6-сервер                                                                                                                                                    | `dhcpdv6/<interface>/pool/<index>/prefixrange/<boundary>`                        | Всегда                                                                                                              | `dhcpv6`                |
+| DHCPv6-сервер                                                                                                                                                    | `dhcpdv6/<interface>/dnsserver/<index>`                                          | Всегда, а также внутри каждого пула                                                                                 | `dhcpv6`                |
+| DHCPv6-сервер                                                                                                                                                    | `dhcpdv6/<interface>/ntpserver/<index>`                                          | Всегда, а также внутри каждого пула                                                                                 | `dhcpv6`                |
+| DHCPv6-сервер                                                                                                                                                    | `dhcpdv6/<interface>/staticmap/<index>/ipaddrv6`                                 | Всегда                                                                                                              | `dhcpv6`                |
+| Объявления маршрутизатора                                                                                                                                        | `dhcpdv6/<interface>/radnsserver/<index>`                                        | Всегда                                                                                                              | `router_advertisements` |
+| Объявления маршрутизатора                                                                                                                                        | `dhcpdv6/<interface>/subnets/item/<index>`                                       | Всегда                                                                                                              | `router_advertisements` |
+| Переопределения узлов DNS                                                                                                                                        | `unbound/hosts/<index>/ip`                                                       | Всегда                                                                                                              | `dns_resolver`          |
+| Переопределения узлов DNS                                                                                                                                        | `dnsmasq/hosts/<index>/ip`                                                       | Всегда                                                                                                              | `dns_forwarder`         |
+| Правила межсетевого экрана                                                                                                                                       | `filter/rule/<index>/<side>/address`                                             | Сторона содержит адрес, а не `network` или `any`                                                                    | `filter`                |
+| NAT и NPt                                                                                                                                                        | `nat/rule/<index>/<side>/address`                                                | Всегда                                                                                                              | `filter`                |
+| NAT и NPt                                                                                                                                                        | `nat/rule/<index>/target`                                                        | Всегда                                                                                                              | `filter`                |
+| NAT и NPt                                                                                                                                                        | `nat/outbound/rule/<index>/<side>/network`                                       | Всегда                                                                                                              | `filter`                |
+| NAT и NPt                                                                                                                                                        | `nat/outbound/rule/<index>/target`                                               | Всегда                                                                                                              | `filter`                |
+| NAT и NPt                                                                                                                                                        | `nat/onetoone/<index>/external`                                                  | Всегда                                                                                                              | `filter`                |
+| NAT и NPt                                                                                                                                                        | `nat/onetoone/<index>/<side>/address`                                            | Всегда                                                                                                              | `filter`                |
+| NAT и NPt                                                                                                                                                        | `nat/npt/<index>/<side>/address`                                                 | Префикс введён вручную, а не отслеживает интерфейс                                                                  | `filter`                |
+| Настройки другого пакета                                                                                                                                         | `installedpackages/<section>/...`                                                | Значение содержит IPv6-адрес, и к нему не относится ни один из видов из раздела [Другие настройки](#other-settings) | `package:<section>`     |
+
+Пустые значения пропускаются, а повторяющийся идентификатор цели или путь останавливает запуск до каких-либо изменений. Каждая цель получает идентификатор по идентификатору записи из раздела [Идентификаторы полей](#field-identities), а если у записи его нет — по позиции в списке. Поля другого пакета никогда не выбираются автоматически, как объясняется в разделе [Поля](/docs/configure/configuration-scopes#other-packages-settings).
+
+## Форматы значений \{#value-formats}
+
+- Каждое поле содержит одно значение, кроме трёх списков ниже.
+- Значение `address` псевдонима — список, разделённый пробельными символами.
+- Значение OpenVPN `local_networkv6` на серверах и в <Terminology title="настройки OpenVPN для отдельного клиента на сервере" to="/docs/reference/terminology#client-specific-override">переопределениях для клиентов</Terminology> — список, разделённый запятыми и пробельными символами.
+- Значение `ip` переопределения узла в DNS Resolver — список, разделённый запятыми и пробельными символами.
+- Значения в настройках другого пакета и в группе «Другие настройки» — это текст. Каждый адрес в тексте сопоставляется отдельно, а остальное сохраняется в исходном виде.
+- Значение в кодировке Base64 декодируется, сопоставляется как текст и при изменении снова кодируется.
+- Разделители сохраняются в точности как записаны, а токены, которые не являются IPv6-адресами, например имена псевдонимов, сети IPv4 и имена узлов, пропускаются без изменений.
+
+## Правила сопоставления \{#matching-rules}
+
+- Токен может заканчиваться суффиксом CIDR от `/0` до `/128`, который сохраняется. Токен с любым другим суффиксом остаётся без изменений.
+- Токен изменяется, только если его адрес относится к прежнему префиксу при прежней <Terminology title="число начальных битов сети, например /56" to="/docs/reference/terminology#prefix-length">длине префикса</Terminology>.
+- Новое значение берёт начальные биты из текущего <Terminology title="глобальный адрес контролируемого интерфейса по данным pfSense" to="/docs/reference/terminology#source-address">исходного адреса</Terminology> при текущей <Terminology title="число начальных битов сети, например /56" to="/docs/reference/terminology#prefix-length">длине префикса</Terminology>, а все остальные биты — из токена. Оно записывается в <Terminology title="стандартная краткая запись адреса строчными буквами" to="/docs/reference/terminology#canonical-form">канонической форме</Terminology>.
+- Токены, которые не являются <Terminology title="публичный IPv6-адрес из диапазона 2000::/3" to="/docs/reference/terminology#global-unicast-address">глобальными одноадресными адресами</Terminology>, пропускаются без изменений, в том числе суффиксы вида `::1000`, которые содержат настройки DHCPv6 на <Terminology title="интерфейс с адресом из делегированного префикса другого интерфейса" to="/docs/reference/terminology#tracked-interface">интерфейсе в режиме Track Interface</Terminology>.
+- Поле, новое значение которого совпадает с прежним, не считается изменённым.
+
+## Идентификаторы полей \{#field-identities}
+
+Каждое <Terminology title="отдельное поле, отметка которого расходится с переключателем группы" to="/docs/reference/terminology#field-exception">исключение для поля</Terminology> на вкладке «Поля» хранится как идентификатор, который называет запись, а не её позицию в списке:
+
+| Запись                             | Идентификатор поля                                                                                                                                                                                          |
+|------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Псевдоним                          | `alias:<name>`                                                                                                                                                                                              |
+| Статический интерфейс              | `interface:<interface>`                                                                                                                                                                                     |
+| Виртуальный IP-адрес               | `virtual-ip:<uniqid or description>`                                                                                                                                                                        |
+| Фаза 2 IPsec                       | `ipsec:<uniqid, reqid, or ikeid>:<localid or natlocalid>`                                                                                                                                                   |
+| OpenVPN                            | `openvpn-server:<vpnid>:<tunnel or local>`, `openvpn-client:<vpnid>:tunnel` или `openvpn-override:<common name>:<tunnel or local>`                                                                          |
+| Туннель WireGuard                  | `wireguard:<tunnel name>:addresses`, охватывает все строки адресов                                                                                                                                          |
+| DHCPv6-сервер                      | `dhcpv6:<interface>:<field>`, где `<field>` — имя параметра, например `range-from`, `dns-servers` или `ntp-servers`                                                                                         |
+| Пул DHCPv6                         | `dhcpv6-pool:<interface>:<description>:<field>`                                                                                                                                                             |
+| Статическое сопоставление DHCPv6   | `dhcpv6-static-mapping:<interface>:<DUID>`                                                                                                                                                                  |
+| Объявления маршрутизатора          | `router-advertisements:<interface>:<dns-servers or subnets>`                                                                                                                                                |
+| Переопределение узла DNS Resolver  | `dns-resolver-host:<host>:<domain>:<inet, inet6, or inet46>`                                                                                                                                                |
+| Переопределение узла DNS Forwarder | `dns-forwarder-host:<host>:<domain>:<inet, inet6, or inet46>`                                                                                                                                               |
+| Правило межсетевого экрана         | `firewall-rule:<tracker>:<side>`                                                                                                                                                                            |
+| Проброс порта                      | `port-forward:<created time>:<source, destination, or target>`                                                                                                                                              |
+| Правило исходящего NAT             | `outbound-nat:<created time>:<source, destination, or target>`                                                                                                                                              |
+| Запись NAT 1:1                     | `one-to-one-nat:<description>:<external, source, or destination>`                                                                                                                                           |
+| Запись NPt                         | `npt:<description>:<side>`                                                                                                                                                                                  |
+| Настройка другого пакета           | `package:<section>:<path>`, где каждая позиция в списке внутри пути заменяется на `<field>=<value>` из поля, которое однозначно называет запись, или на `0` для единственной записи настроек пакета         |
+| Другие настройки                   | `other:<path>`, построенный тем же способом из поля, которое не содержит адреса, например `name=<gateway name>`. Простой список, например `system/dnsserver`, сохраняет один идентификатор для всех записей |
+
+- Части идентификатора кодируются для URL, поэтому описание, например `Web forward`, выглядит как `Web%20forward`.
+- Запись, у которой нет идентификатора или он совпадает с идентификатором другой записи в том же списке, не получает флажка, и её поля следуют только переключателю своей группы.
+- Исключения сохраняются в `installedpackages/ipv6prefixupdater/fields`, рядом с записью настроек, которую вкладка «Настройки» заменяет при каждом сохранении, как описано в разделе [Командная строка и файлы](/docs/reference/command-line-and-files#field-selection).
+- Каждый запуск заново проверяет сохранённые идентификаторы и игнорирует некорректные. Отмеченное поле, которого нет ни у одной текущей записи, пропускается и указывается в строке **Пропущенные поля** на вкладке «Состояние». Идентификатор может называть только поле из матрицы или из группы «Другие настройки».
+
+## Действия перезагрузки \{#reload-actions}
+
+| Служба                  | Подпись на вкладке «Состояние»  | Вызов pfSense                                                                                      |
+|-------------------------|---------------------------------|----------------------------------------------------------------------------------------------------|
+| `interfaces`            | Интерфейсы                      | `interfaces_configure()`, затем `filter_configure()`                                               |
+| `routing`               | Маршрутизация                   | `system_routing_configure()` и `setup_gateways_monitor()`, затем `filter_configure()`              |
+| `filter`                | Фильтр межсетевого экрана       | `filter_configure()`, пропускается, если его уже выполнил `interfaces`                             |
+| `dhcpv6`                | DHCPv6-сервер                   | `services_dhcpd_configure('inet6')`, который также перезапускает radvd                             |
+| `router_advertisements` | Объявления маршрутизатора       | `services_radvd_configure()`, пропускается после `dhcpv6`                                          |
+| `dns`                   | DNS-серверы                     | `system_resolvconf_generate()`, затем перезагрузка DNS Resolver и DNS Forwarder, если они включены |
+| `dns_resolver`          | DNS Resolver                    | `services_unbound_configure(false)`                                                                |
+| `dns_forwarder`         | DNS Forwarder                   | `services_dnsmasq_configure(false)`                                                                |
+| `ipsec`                 | IPsec                           | `ipsec_configure()`                                                                                |
+| `openvpn`               | OpenVPN                         | `openvpn_resync_all()`                                                                             |
+| `wireguard`             | WireGuard                       | `wg_resync()`                                                                                      |
+| `package:<section>`     | Указывается в строке **Пакеты** | `sync_package()` для установленного пакета, у которого XML-элемент `<name>` совпадает с разделом   |
+
+Службы перезагружаются в порядке этой таблицы, а настройки других пакетов применяются повторно в последнюю очередь, после перезагрузок и их проверки. Перед перезагрузками каждая сеть статического маршрута, которую заменил запуск, удаляется из таблицы маршрутизации командой `/sbin/route delete`, потому что `system_routing_configure()` только добавляет и изменяет маршруты. Так же действует кнопка **Apply Changes** на странице Static Routes. В pfSense 2.7.2 `interfaces_configure()` уже перезапускает DHCPv6, radvd и обе службы DNS, поэтому после него эти перезагрузки пропускаются.
+
+Если DNS Forwarder или DNS Resolver регистрирует статические сопоставления DHCP, `dhcpv6` вместо этого выполняет перезагрузку этой службы, которая перезапускает и DHCP. Так же действует кнопка **Apply Changes** на странице DHCPv6 Server.
+
+`sync_package()` выполняет команду повторной синхронизации пакета, как это делает его кнопка **Save**, а её вывод отбрасывается. Если разделом не владеет ни один установленный пакет, об этом сообщается вместо применения, а об ошибке сообщается для соответствующего пакета. Ни то ни другое не отменяет сохранённые значения.
+
+Перед резервным копированием этап предварительной проверки загружает каждую нужную функцию из фиксированного файла, например `/etc/inc/filter.inc`, `/etc/inc/pkg-utils.inc` или `/usr/local/pkg/wireguard/includes/wg.inc`, и останавливает запуск, если какая-либо из них отсутствует. `filter_configure()`, `services_unbound_configure()` и `services_dnsmasq_configure()` приводят к ошибке запуска, если возвращают `false` или ненулевое целое число, а остальные вызовы — только если выбрасывают исключение.
+
+## Другие настройки \{#other-settings}
+
+Любой другой путь конфигурации, значение которого содержит IPv6-адрес в виде текста или в кодировке Base64, относится к группе **Другие настройки**. Изначально она выключена, и значение в ней меняется, только если оно отмечено или группа включена. В строках указываются такие виды:
+
+- Идентификаторы IPsec `remoteid` и удалённые шлюзы фазы 1, а также сети OpenVPN `remote_networkv6` и адреса серверов в настройках клиентов.
+- Пиры WireGuard, включая их разрешённые IP-адреса и конечные точки.
+- Шлюзы и статические маршруты.
+- Сертификаты, ключи, пароли и другие секреты, значения которых вкладка скрывает.
+- Любые другие значения в кодировке Base64.
+- Описания.
+- В настройках другого пакета — значения, имя которых указывает на сертификат, ключ, пароль, секрет, хеш или описание.
+
+Типы псевдонимов, кроме `host` и `network`, режимы <Terminology title="дополнительный адрес интерфейса, например CARP или IP Alias" to="/docs/reference/terminology#virtual-ip">виртуальных IP-адресов</Terminology>, кроме `carp` и `ipalias`, и все остальные пути вне матрицы вместо вида показывают имя своей настройки. Перезагрузка зависит от пути: `gateways` и `staticroutes` используют `routing`, `system/dnsserver` использует `dns`, `unbound` и `dnsmasq` используют свою службу DNS, `ipsec`, `openvpn`, `filter`, `aliases`, `nat`, `dhcpdv6`, `interfaces` и `virtualip` используют перезагрузки, описанные выше, раздел другого пакета применяется повторно, а описания, сертификаты и все остальные пути ничего не перезагружают.
+
+## Запись и проверка \{#write-and-verification}
+
+- Перед резервным копированием каждый запланированный путь должен содержать своё запланированное прежнее значение.
+- Затем выполняется `backup_config()`, который должен вернуть `true`.
+- План применяется через `config_set_path()` и сохраняется один раз через `write_config($description, false, true)`, что пропускает вторую резервную копию и несвязанную синхронизацию.
+- После записи и ещё раз после перезагрузок каждый запланированный путь должен содержать своё запланированное новое значение.
+
+Несоответствие останавливает запуск с сообщением `Путь конфигурации «<path>» изменился вне разрешённого плана.` Ошибка после записи оставляет новые значения сохранёнными, как описано в разделе [Результаты запусков](/docs/operate/run-outcomes#failures-after-the-save).

@@ -1,0 +1,157 @@
+---
+id: approved-fields
+title: Godkjente felt
+description: Se de eksakte pfSense-konfigurasjonsbanene hver feltgruppe kan skrive om, hvordan verdiene sammenlignes, og hvilken tjeneste hver bane laster inn på nytt.
+keywords:
+  - pfsense ipv6 prefix updater
+  - godkjente felt
+  - konfigurasjonsbaner
+  - config_get_path
+  - ny innlasting av tjenester
+tags:
+  - reference
+  - approved fields
+  - configuration paths
+sidebar_position: 3
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Kontroller de nøyaktige konfigurasjonsbanene i pfSense som hver <Terminology title="gruppe av felt med én bryter i fanen Felt" to="/docs/reference/terminology#field-group">feltgruppe</Terminology> kan skrive om, og tjenesten hver av dem laster inn på nytt.
+
+## Feltmatrise \{#field-matrix}
+
+Banene bruker den skråstrekdelte syntaksen i pfSense for `config_get_path()` og `config_set_path()`. I banene nedenfor står `<index>` for en posisjon i en liste, `<interface>` for en grensesnittnøkkel som `lan`, `<boundary>` for `from` eller `to`, `<side>` for `source` eller `destination` og `<section>` for innstillingsnøkkelen til en annen pakke.
+
+| <Terminology title="gruppe av felt med én bryter i fanen Felt" to="/docs/reference/terminology#field-group">Gruppe</Terminology>                                 | Bane                                                                             | Tas med når                                                                                                         | Tjeneste                |
+|------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------|-------------------------|
+| Aliaser                                                                                                                                                          | `aliases/alias/<index>/address`                                                  | `type` er `host` eller `network`                                                                                    | `filter`                |
+| Statiske grensesnitt                                                                                                                                             | `interfaces/<interface>/ipaddrv6`                                                | Verdien inneholder `:`                                                                                              | `interfaces`            |
+| <Terminology title="ekstra grensesnittadresse, for eksempel CARP eller IP Alias" to="/docs/reference/terminology#virtual-ip">Virtuelle IP-adresser</Terminology> | `virtualip/vip/<index>/subnet`                                                   | `mode` er `carp` eller `ipalias`                                                                                    | `interfaces`            |
+| IPsec                                                                                                                                                            | `ipsec/phase2/<index>/localid/address`                                           | `mode` er `tunnel6` eller `vti`, og `localid/type` er `address` eller `network`                                     | `ipsec`                 |
+| IPsec                                                                                                                                                            | `ipsec/phase2/<index>/natlocalid/address`                                        | `mode` er `tunnel6` eller `vti`, og `natlocalid/type` er `address` eller `network`                                  | `ipsec`                 |
+| OpenVPN                                                                                                                                                          | `openvpn/openvpn-server/<index>/tunnel_networkv6`                                | `tunnel_networkv6_type` er ikke `track6`                                                                            | `openvpn`               |
+| OpenVPN                                                                                                                                                          | `openvpn/openvpn-server/<index>/local_networkv6`                                 | Alltid                                                                                                              | `openvpn`               |
+| OpenVPN                                                                                                                                                          | `openvpn/openvpn-client/<index>/tunnel_networkv6`                                | Alltid                                                                                                              | `openvpn`               |
+| OpenVPN                                                                                                                                                          | `openvpn/openvpn-csc/<index>/tunnel_networkv6`                                   | Alltid                                                                                                              | `openvpn`               |
+| OpenVPN                                                                                                                                                          | `openvpn/openvpn-csc/<index>/local_networkv6`                                    | Alltid                                                                                                              | `openvpn`               |
+| WireGuard                                                                                                                                                        | `installedpackages/wireguard/tunnels/item/<index>/addresses/row/<index>/address` | Alltid                                                                                                              | `wireguard`             |
+| DHCPv6-server                                                                                                                                                    | `dhcpdv6/<interface>/range/<boundary>`                                           | Alltid                                                                                                              | `dhcpv6`                |
+| DHCPv6-server                                                                                                                                                    | `dhcpdv6/<interface>/prefixrange/<boundary>`                                     | Alltid                                                                                                              | `dhcpv6`                |
+| DHCPv6-server                                                                                                                                                    | `dhcpdv6/<interface>/pool/<index>/range/<boundary>`                              | Alltid                                                                                                              | `dhcpv6`                |
+| DHCPv6-server                                                                                                                                                    | `dhcpdv6/<interface>/pool/<index>/prefixrange/<boundary>`                        | Alltid                                                                                                              | `dhcpv6`                |
+| DHCPv6-server                                                                                                                                                    | `dhcpdv6/<interface>/dnsserver/<index>`                                          | Alltid, og også i hver pool                                                                                         | `dhcpv6`                |
+| DHCPv6-server                                                                                                                                                    | `dhcpdv6/<interface>/ntpserver/<index>`                                          | Alltid, og også i hver pool                                                                                         | `dhcpv6`                |
+| DHCPv6-server                                                                                                                                                    | `dhcpdv6/<interface>/staticmap/<index>/ipaddrv6`                                 | Alltid                                                                                                              | `dhcpv6`                |
+| Ruterannonseringer                                                                                                                                               | `dhcpdv6/<interface>/radnsserver/<index>`                                        | Alltid                                                                                                              | `router_advertisements` |
+| Ruterannonseringer                                                                                                                                               | `dhcpdv6/<interface>/subnets/item/<index>`                                       | Alltid                                                                                                              | `router_advertisements` |
+| DNS-vertsoverstyringer                                                                                                                                           | `unbound/hosts/<index>/ip`                                                       | Alltid                                                                                                              | `dns_resolver`          |
+| DNS-vertsoverstyringer                                                                                                                                           | `dnsmasq/hosts/<index>/ip`                                                       | Alltid                                                                                                              | `dns_forwarder`         |
+| Brannmurregler                                                                                                                                                   | `filter/rule/<index>/<side>/address`                                             | Siden har en adresse i stedet for `network` eller `any`                                                             | `filter`                |
+| NAT og NPt                                                                                                                                                       | `nat/rule/<index>/<side>/address`                                                | Alltid                                                                                                              | `filter`                |
+| NAT og NPt                                                                                                                                                       | `nat/rule/<index>/target`                                                        | Alltid                                                                                                              | `filter`                |
+| NAT og NPt                                                                                                                                                       | `nat/outbound/rule/<index>/<side>/network`                                       | Alltid                                                                                                              | `filter`                |
+| NAT og NPt                                                                                                                                                       | `nat/outbound/rule/<index>/target`                                               | Alltid                                                                                                              | `filter`                |
+| NAT og NPt                                                                                                                                                       | `nat/onetoone/<index>/external`                                                  | Alltid                                                                                                              | `filter`                |
+| NAT og NPt                                                                                                                                                       | `nat/onetoone/<index>/<side>/address`                                            | Alltid                                                                                                              | `filter`                |
+| NAT og NPt                                                                                                                                                       | `nat/npt/<index>/<side>/address`                                                 | Prefikset er skrevet inn i stedet for å spores fra et grensesnitt                                                   | `filter`                |
+| Innstillinger for en annen pakke                                                                                                                                 | `installedpackages/<section>/...`                                                | Verdien inneholder en IPv6-adresse, og ingen av typene under [Andre innstillinger](#other-settings) gjelder for den | `package:<section>`     |
+
+Tomme verdier hoppes over, og en duplisert mål-ID eller bane stopper kjøringen før noe endres. Hvert mål får ID-en sin fra identiteten til oppføringen i [Feltidentiteter](#field-identities), eller fra posisjonen i listen når oppføringen ikke har noen. Felt i en annen pakke velges aldri automatisk, som [Felt](/docs/configure/configuration-scopes#other-packages-settings) forklarer.
+
+## Verdiformater \{#value-formats}
+
+- Hvert felt har én enkelt verdi, bortsett fra de tre listene nedenfor.
+- `address` i aliaser er en liste som deles på blanktegn.
+- OpenVPN-feltet `local_networkv6` på servere og <Terminology title="OpenVPN-innstillinger per klient på en server" to="/docs/reference/terminology#client-specific-override">klientspesifikke overstyringer</Terminology> er en liste som deles på komma og blanktegn.
+- `ip` i vertsoverstyringer for DNS Resolver er en liste som deles på komma og blanktegn.
+- Verdier i innstillingene til en annen pakke og i gruppen Andre innstillinger er tekst. Hver adresse i teksten sammenlignes for seg, og resten forblir slik den er skrevet.
+- En verdi som er lagret i Base64, dekodes, sammenlignes som tekst og kodes på nytt når den endres.
+- Skilletegn forblir nøyaktig slik de er skrevet, og elementer som ikke er IPv6-adresser, for eksempel aliasnavn, IPv4-nettverk og vertsnavn, slippes gjennom uendret.
+
+## Samsvarsregler \{#matching-rules}
+
+- Et element kan slutte med et CIDR-suffiks fra `/0` til `/128`, som beholdes. Et element med et annet suffiks forblir uendret.
+- Et element endres bare når adressen hører til det forrige prefikset ved den forrige <Terminology title="antall innledende nettverksbiter, for eksempel /56" to="/docs/reference/terminology#prefix-length">prefikslengden</Terminology>.
+- Den nye verdien tar de innledende bitene fra den gjeldende <Terminology title="global adresse pfSense rapporterer for det overvåkede grensesnittet" to="/docs/reference/terminology#source-address">kildeadressen</Terminology> ved den gjeldende <Terminology title="antall innledende nettverksbiter, for eksempel /56" to="/docs/reference/terminology#prefix-length">prefikslengden</Terminology> og alle andre biter fra elementet. Den skrives i <Terminology title="korteste standardskrivemåte for en adresse, med små bokstaver" to="/docs/reference/terminology#canonical-form">kanonisk form</Terminology>.
+- Elementer som ikke er <Terminology title="offentlig IPv6-adresse innenfor 2000::/3" to="/docs/reference/terminology#global-unicast-address">globale unicast-adresser</Terminology>, slippes gjennom uendret, også suffikser i stilen `::1000` som DHCPv6-innstillinger har på et <Terminology title="grensesnitt adressert fra et annet grensesnitts delegerte prefiks" to="/docs/reference/terminology#tracked-interface">sporet grensesnitt</Terminology>.
+- Et felt der den nye verdien er lik den gamle, regnes ikke som en endring.
+
+## Feltidentiteter \{#field-identities}
+
+Hvert <Terminology title="enkeltfelt der avkrysningen avviker fra gruppebryteren" to="/docs/reference/terminology#field-exception">feltunntak</Terminology> i fanen Felt lagres som en identitet som angir oppføringen i stedet for posisjonen i listen:
+
+| Oppføring                      | Feltidentitet                                                                                                                                                                                                         |
+|--------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Alias                          | `alias:<name>`                                                                                                                                                                                                        |
+| Statisk grensesnitt            | `interface:<interface>`                                                                                                                                                                                               |
+| Virtuell IP                    | `virtual-ip:<uniqid or description>`                                                                                                                                                                                  |
+| IPsec fase 2                   | `ipsec:<uniqid, reqid, or ikeid>:<localid or natlocalid>`                                                                                                                                                             |
+| OpenVPN                        | `openvpn-server:<vpnid>:<tunnel or local>`, `openvpn-client:<vpnid>:tunnel` eller `openvpn-override:<common name>:<tunnel or local>`                                                                                  |
+| WireGuard-tunnel               | `wireguard:<tunnel name>:addresses`, som dekker hver adresserad                                                                                                                                                       |
+| DHCPv6-server                  | `dhcpv6:<interface>:<field>`, der `<field>` er navnet på innstillingen, for eksempel `range-from`, `dns-servers` eller `ntp-servers`                                                                                  |
+| DHCPv6-pool                    | `dhcpv6-pool:<interface>:<description>:<field>`                                                                                                                                                                       |
+| Statisk DHCPv6-tilordning      | `dhcpv6-static-mapping:<interface>:<DUID>`                                                                                                                                                                            |
+| Ruterannonseringer             | `router-advertisements:<interface>:<dns-servers or subnets>`                                                                                                                                                          |
+| Vert i DNS Resolver            | `dns-resolver-host:<host>:<domain>:<inet, inet6, or inet46>`                                                                                                                                                          |
+| Vert i DNS Forwarder           | `dns-forwarder-host:<host>:<domain>:<inet, inet6, or inet46>`                                                                                                                                                         |
+| Brannmurregel                  | `firewall-rule:<tracker>:<side>`                                                                                                                                                                                      |
+| Portvideresending              | `port-forward:<created time>:<source, destination, or target>`                                                                                                                                                        |
+| Regel for utgående NAT         | `outbound-nat:<created time>:<source, destination, or target>`                                                                                                                                                        |
+| 1:1-NAT-oppføring              | `one-to-one-nat:<description>:<external, source, or destination>`                                                                                                                                                     |
+| NPt-oppføring                  | `npt:<description>:<side>`                                                                                                                                                                                            |
+| Innstilling for en annen pakke | `package:<section>:<path>`, der hver listeposisjon i banen blir `<field>=<value>` fra et felt som identifiserer oppføringen entydig, eller `0` når pakken har én enkelt innstillingsoppføring                         |
+| Andre innstillinger            | `other:<path>`, bygd opp på samme måte fra et felt som ikke inneholder noen adresse, for eksempel `name=<gateway name>`. En enkel liste, for eksempel `system/dnsserver`, beholder én identitet for alle oppføringene |
+
+- Delene av en identitet er URL-kodet, så en beskrivelse som `Web forward` vises som `Web%20forward`.
+- En oppføring som mangler identitet eller deler den med en annen oppføring i samme liste, får ingen avkrysningsboks, og feltene følger bare gruppebryteren.
+- Unntakene lagres under `installedpackages/ipv6prefixupdater/fields`, ved siden av innstillingsoppføringen som fanen Innstillinger erstatter ved hver lagring, som [Kommandolinje og filer](/docs/reference/command-line-and-files#field-selection) beskriver.
+- Hver kjøring validerer de lagrede identitetene på nytt og ignorerer feilformede identiteter. Et avkrysset felt som ingen nåværende oppføring har, hoppes over og vises under **Felt som ble hoppet over** i fanen Status. En identitet kan bare angi et felt i matrisen eller i gruppen Andre innstillinger.
+
+## Handlinger for ny innlasting \{#reload-actions}
+
+| Tjeneste                | Etikett i Status       | Kall i pfSense                                                                                              |
+|-------------------------|------------------------|-------------------------------------------------------------------------------------------------------------|
+| `interfaces`            | Grensesnitt            | `interfaces_configure()`, deretter `filter_configure()`                                                     |
+| `routing`               | Ruting                 | `system_routing_configure()` og `setup_gateways_monitor()`, deretter `filter_configure()`                   |
+| `filter`                | Brannmurfilter         | `filter_configure()`, hoppes over når `interfaces` allerede har kjørt den                                   |
+| `dhcpv6`                | DHCPv6-server          | `services_dhcpd_configure('inet6')`, som også starter radvd på nytt                                         |
+| `router_advertisements` | Ruterannonseringer     | `services_radvd_configure()`, hoppes over etter `dhcpv6`                                                    |
+| `dns`                   | DNS-servere            | `system_resolvconf_generate()`, deretter innlastingene for DNS Resolver og DNS Forwarder når de er aktivert |
+| `dns_resolver`          | DNS Resolver           | `services_unbound_configure(false)`                                                                         |
+| `dns_forwarder`         | DNS Forwarder          | `services_dnsmasq_configure(false)`                                                                         |
+| `ipsec`                 | IPsec                  | `ipsec_configure()`                                                                                         |
+| `openvpn`               | OpenVPN                | `openvpn_resync_all()`                                                                                      |
+| `wireguard`             | WireGuard              | `wg_resync()`                                                                                               |
+| `package:<section>`     | Vises under **Pakker** | `sync_package()` for den installerte pakken der XML-elementet `<name>` samsvarer med seksjonen              |
+
+Tjenestene lastes inn på nytt i rekkefølgen i denne tabellen, og innstillingene til andre pakker brukes på nytt til slutt, etter innlastingene og verifiseringen av dem. Før innlastingene fjernes hvert nettverk i en statisk rute som en kjøring har erstattet, fra rutingtabellen med `/sbin/route delete`, fordi `system_routing_configure()` bare legger til og endrer ruter. **Apply Changes** på siden Static Routes gjør det samme. I pfSense 2.7.2 starter `interfaces_configure()` allerede DHCPv6, radvd og begge DNS-tjenestene på nytt, så disse innlastingene hoppes over etter den.
+
+Når DNS Forwarder eller DNS Resolver registrerer statiske DHCP-tilordninger, kjører `dhcpv6` i stedet innlastingen for den tjenesten, som også starter DHCP på nytt. Dette tilsvarer **Apply Changes** på siden DHCPv6 Server.
+
+`sync_package()` kjører synkroniseringskommandoen til pakken, slik **Save**-knappen i pakken gjør, og utdataene forkastes. En seksjon som ingen installert pakke eier, rapporteres i stedet for å tas i bruk, og en feil rapporteres for den pakken. Ingen av delene angrer de lagrede verdiene.
+
+Før sikkerhetskopien laster et forhåndskontrolltrinn hver nødvendig funksjon fra en fast fil, for eksempel `/etc/inc/filter.inc`, `/etc/inc/pkg-utils.inc` eller `/usr/local/pkg/wireguard/includes/wg.inc`, og stopper kjøringen hvis en mangler. `filter_configure()`, `services_unbound_configure()` og `services_dnsmasq_configure()` får kjøringen til å mislykkes når de returnerer `false` eller et heltall som ikke er null, og de andre kallene får den til å mislykkes bare når de kaster et unntak.
+
+## Andre innstillinger \{#other-settings}
+
+Alle andre konfigurasjonsbaner der verdien inneholder en IPv6-adresse, som tekst eller i Base64, hører til gruppen **Andre innstillinger**. Den starter slått av, og en verdi i den endres bare når den er krysset av eller gruppen er på. Radene oppgir disse typene:
+
+- IPsec-identiteter i `remoteid` og eksterne gatewayer i fase 1, og OpenVPN-nettverk i `remote_networkv6` og serveradressene til klienter.
+- WireGuard-noder, inkludert tillatte IP-er og endepunkter.
+- Gatewayer og statiske ruter.
+- Sertifikater, nøkler, passord og andre hemmeligheter, der fanen skjuler verdiene.
+- Alle andre verdier som er lagret i Base64.
+- Beskrivelser.
+- I innstillingene til en annen pakke: verdier der navnet angir et sertifikat, en nøkkel, et passord, en hemmelighet, en hash eller en beskrivelse.
+
+Andre aliastyper enn `host` og `network`, andre moduser for <Terminology title="ekstra grensesnittadresse, for eksempel CARP eller IP Alias" to="/docs/reference/terminology#virtual-ip">virtuell IP</Terminology> enn `carp` og `ipalias` og alle andre baner utenfor matrisen viser i stedet navnet på innstillingen sin. Innlastingen følger banen: `gateways` og `staticroutes` bruker `routing`, `system/dnsserver` bruker `dns`, `unbound` og `dnsmasq` bruker sin DNS-tjeneste, `ipsec`, `openvpn`, `filter`, `aliases`, `nat`, `dhcpdv6`, `interfaces` og `virtualip` bruker innlastingene ovenfor, seksjonen til en annen pakke brukes på nytt, og beskrivelser, sertifikater og alle andre baner laster ikke inn noe på nytt.
+
+## Skriving og verifisering \{#write-and-verification}
+
+- Før sikkerhetskopien må hver planlagt bane ha den planlagte gamle verdien.
+- Deretter kjører `backup_config()`, som må returnere `true`.
+- Planen utføres med `config_set_path()` og lagres én gang med `write_config($description, false, true)`, som hopper over en ekstra sikkerhetskopi og urelatert synkronisering.
+- Etter skrivingen, og igjen etter innlastingene, må hver planlagt bane ha den planlagte nye verdien.
+
+Et avvik stopper kjøringen med `Konfigurasjonsbanen «<path>» ble endret utenfor den godkjente planen.` En feil etter skrivingen lar de nye verdiene forbli lagret, som [Kjøreresultater](/docs/operate/run-outcomes#failures-after-the-save) beskriver.

@@ -1,0 +1,60 @@
+---
+id: compatibility
+title: 相容性
+description: 在倚賴此套件之前，先檢查 pfSense、PHP、位址與前綴長度的需求，以及選用的 WireGuard 相依項目與已知限制。
+keywords:
+  - pfsense ipv6 prefix updater
+  - 相容性
+  - 系統需求
+  - 全域 IPv6 位址
+  - 已知限制
+tags:
+  - setup
+  - compatibility
+  - ipv6
+sidebar_position: 4
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+確認您的防火牆、介面與 ISP 委派都符合套件的需求，然後再倚賴<Terminology title="由 pfSense 管理的 cron 項目執行的自動檢查" to="/docs/reference/terminology#scheduled-updates">排程更新</Terminology>自動執行。
+
+## 支援的版本 \{#supported-releases}
+
+- 專案尚未公布經過測試的 pfSense 版本清單。
+- 套件不會檢查 pfSense 版本。每次執行都會確認自己在 pfSense 上執行且所需的檔案與函式齊全，缺少時會在讀取設定之前停止。
+- 套件程式碼需要 PHP 8.1 或更新版本。
+- `.pkg` 檔案必須針對您的 pfSense 版本所使用的 FreeBSD 版本建置，否則 `pkg` 會回報 ABI 不符。
+
+## 位址需求 \{#address-requirements}
+
+- 每個<Terminology title="其位址可反映目前前綴的介面" to="/docs/reference/terminology#monitored-interface">監控介面</Terminology>都必須具備作用中的<Terminology title="位於 2000::/3 內的公用 IPv6 位址" to="/docs/reference/terminology#global-unicast-address">全域單播位址</Terminology>。套件絕不會改用<Terminology title="僅在單一鏈路上有效的 fe80:: 位址" to="/docs/reference/terminology#link-local-address">鏈路本機位址</Terminology>。
+- 唯一本機位址（`fc00::/7`）、多播位址、迴路位址、未指定位址、IPv4 對映位址以及含區域識別碼的位址，都不能作為<Terminology title="pfSense 回報的監控介面全域位址" to="/docs/reference/terminology#source-address">來源位址</Terminology>。
+- <Terminology title="ISP 前綴大小設定，/48 至 /64" to="/docs/reference/terminology#delegated-prefix-length">委派前綴長度</Terminology>必須介於 `/48` 到 `/64`。邊界落在某個十六進位數字內部的長度（例如 `/57`）同樣可以使用。
+
+位址不符合條件時，該介面會以<Terminology title="結果：檢查或安全階段中止了執行" to="/docs/reference/terminology#failure">失敗</Terminology>結束並提供原因，例如 `介面「lan」沒有作用中的全域 IPv6 位址。` [疑難排解](/docs/operate/troubleshooting#run-failed)列出了這些訊息。
+
+## WAN 沒有全域位址時 \{#when-wan-has-no-global-address}
+
+有些 ISP 只委派前綴，而不為 WAN 本身指派<Terminology title="位於 2000::/3 內的公用 IPv6 位址" to="/docs/reference/terminology#global-unicast-address">全域位址</Terminology>。此時，LAN 等<Terminology title="位址取自另一介面委派前綴的介面" to="/docs/reference/terminology#tracked-interface">追蹤介面</Terminology>會持有來自<Terminology title="ISP 路由到防火牆的 IPv6 網路" to="/docs/reference/terminology#delegated-prefix">委派前綴</Terminology>的位址，應該監控的就是它。
+
+**Status → Interfaces**（狀態 → 介面）會顯示哪些介面具有<Terminology title="位於 2000::/3 內的公用 IPv6 位址" to="/docs/reference/terminology#global-unicast-address">全域位址</Terminology>。
+
+## 套件能辨識的內容 \{#what-the-package-recognizes}
+
+套件會更新<Terminology title="套件可改寫的確切設定欄位" to="/docs/reference/terminology#approved-field">已核准欄位</Terminology>中以字面形式寫出的 IPv6 位址與網路。主機名稱、URL、IPv4 值與其他文字則維持不變。
+
+由 pfSense 產生的位址（例如<Terminology title="位址取自另一介面委派前綴的介面" to="/docs/reference/terminology#tracked-interface">追蹤介面</Terminology>上的位址）絕不會被變更。描述其他裝置的位址（例如遠端 VPN 網路與 WireGuard 對等端）只有在您於[其他設定](/docs/configure/configuration-scopes#other-settings)中勾選後才會變更。
+
+## 選用相依項目 \{#optional-dependencies}
+
+- **WireGuard 套件**：只有在需要變更 <Terminology title="指派給 pfSense WireGuard 通道的位址" to="/docs/reference/terminology#wireguard-tunnel-address">WireGuard 通道位址</Terminology>時才需要。若未安裝，包含 WireGuard 變更的實際執行會在備份之前停止。
+
+## 已知限制 \{#known-limits}
+
+- 新增<Terminology title="其位址可反映目前前綴的介面" to="/docs/reference/terminology#monitored-interface">監控介面</Terminology>或將某一列切換為其他介面時，會為它記錄新的<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>；變更某一列的<Terminology title="ISP 前綴大小設定，/48 至 /64" to="/docs/reference/terminology#delegated-prefix-length">委派前綴長度</Terminology>則會視為一次<Terminology title="與上次成功前綴或長度不同" to="/docs/reference/terminology#prefix-transition">前綴變更</Terminology>。
+- <Terminology title="不備份也不寫入的預覽" to="/docs/reference/terminology#dry-run">試執行</Terminology>無法模擬前綴變更，因此只有在實際發生變更後才會出現規劃的變更。
+- 高可用性（CARP）配對不會得到特殊處理。
+- 由於這是<Terminology title="從 GitHub 而非 Netgate 套件庫安裝的套件" to="/docs/reference/terminology#unofficial-package">非官方套件</Terminology>，新版本需要使用 `pkg` 安裝，詳見[更新或移除](/docs/reference/package-lifecycle)。
+
+如何選擇位址來源請參閱[介面與前綴](/docs/configure/interface-and-prefix)，套件可變更的欄位請參閱[欄位](/docs/configure/configuration-scopes)頁面。

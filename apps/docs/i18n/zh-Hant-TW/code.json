@@ -1,0 +1,173 @@
+{
+  "home.meta.description": {
+    "message": "偵測委派前綴變更，只更新已核准的 pfSense 欄位，保留主機位元，並驗證每次交易。"
+  },
+  "home.meta.title": {
+    "message": "IPv6 前綴更新器 - 安全地維持動態 IPv6 前綴一致。"
+  },
+  "home.hero.eyebrow": {
+    "message": "原生 pfSense 套件"
+  },
+  "home.hero.heading": {
+    "message": "安全地維持動態 IPv6 前綴一致。"
+  },
+  "home.hero.tagline": {
+    "message": "偵測委派前綴變更，只更新已核准的 pfSense 欄位，保留主機位元，並驗證每次交易。"
+  },
+  "home.hero.primaryAction": {
+    "message": "安裝與設定"
+  },
+  "home.hero.secondaryAction": {
+    "message": "檢視安全機制"
+  },
+  "home.preview.ariaLabel": {
+    "message": "委派前綴長度: /56"
+  },
+  "home.preview.dryRun": {
+    "message": "試執行"
+  },
+  "home.preview.detected": {
+    "message": "觀察到的來源位址"
+  },
+  "home.preview.previous": {
+    "message": "先前前綴"
+  },
+  "home.preview.current": {
+    "message": "目前前綴"
+  },
+  "home.preview.prefixChanged": {
+    "message": "觀察到的前綴"
+  },
+  "home.preview.hostPreserved": {
+    "message": "委派前綴長度"
+  },
+  "home.preview.result": {
+    "message": "試執行找到 2 個針對 2001:db8:abcd:8800::/56 的已核准欄位變更；設定未修改。"
+  },
+  "home.workflow.eyebrow": {
+    "message": "安全與操作"
+  },
+  "home.workflow.heading": {
+    "message": "安全交易"
+  },
+  "home.workflow.detect": {
+    "message": "觀察到的來源位址"
+  },
+  "home.workflow.plan": {
+    "message": "已變更欄位"
+  },
+  "home.workflow.backup": {
+    "message": "已建立設定備份"
+  },
+  "home.workflow.write": {
+    "message": "目前前綴"
+  },
+  "home.workflow.verify": {
+    "message": "成功"
+  },
+  "home.workflow.notify": {
+    "message": "通知"
+  },
+  "home.features.interface.title": {
+    "message": "監控介面"
+  },
+  "home.features.interface.description": {
+    "message": "為每個主要作用中全域 IPv6 位址帶有委派前綴的介面新增一列。如果 WAN 上的 DHCPv6 只取得前綴，請選擇下游的追蹤介面。前綴長度之後的主機位元會完整保留，pfSense 為每個介面選擇的位址會顯示在「狀態」分頁上。"
+  },
+  "home.features.prefix.title": {
+    "message": "委派前綴長度"
+  },
+  "home.features.prefix.description": {
+    "message": "輸入 ISP 委派的前綴邊界。此邊界後的主機位元會完整保留。"
+  },
+  "home.features.scopes.title": {
+    "message": "欄位"
+  },
+  "home.features.scopes.description": {
+    "message": "在「欄位」分頁中選擇哪些設定欄位隨前綴變更。"
+  },
+  "home.features.dryRun.title": {
+    "message": "試執行"
+  },
+  "home.features.dryRun.description": {
+    "message": "「立即執行」可能在偵測到變更後更新已核准欄位。「試執行」只記錄預覽，絕不寫入防火牆設定。"
+  },
+  "home.features.backup.title": {
+    "message": "已建立設定備份"
+  },
+  "home.features.backup.description": {
+    "message": "已建立設定備份: 是."
+  },
+  "home.features.notify.title": {
+    "message": "通知"
+  },
+  "home.features.notify.description": {
+    "message": "在前綴更新驗證成功後使用已設定的 pfSense 通知管道。無變更的檢查絕不通知。"
+  },
+  "home.stats.heading": {
+    "message": "安全與操作"
+  },
+  "home.stats.boundaries": {
+    "message": "委派前綴長度"
+  },
+  "home.stats.backups": {
+    "message": "已建立設定備份"
+  },
+  "home.stats.writes": {
+    "message": "已變更欄位"
+  },
+  "home.stats.noChange": {
+    "message": "作用中 IPv6 前綴未變更；未讀取或寫入任何已核准的設定目標。"
+  },
+  "home.routes.eyebrow": {
+    "message": "指南"
+  },
+  "home.routes.heading": {
+    "message": "安裝與設定"
+  },
+  "home.routes.install.title": {
+    "message": "安裝套件"
+  },
+  "home.routes.install.description": {
+    "message": "在 pfSense shell 中執行以下命令，直接從 GitHub 安裝最新版本。"
+  },
+  "home.routes.open": {
+    "message": "開始閱讀"
+  },
+  "home.routes.configure.title": {
+    "message": "監控介面 / 委派前綴長度"
+  },
+  "home.routes.configure.description": {
+    "message": "為每個主要作用中全域 IPv6 位址帶有委派前綴的介面新增一列。如果 WAN 上的 DHCPv6 只取得前綴，請選擇下游的追蹤介面。前綴長度之後的主機位元會完整保留，pfSense 為每個介面選擇的位址會顯示在「狀態」分頁上。"
+  },
+  "home.routes.status.title": {
+    "message": "狀態 / 命令輸出"
+  },
+  "home.routes.status.description": {
+    "message": "「立即執行」可能在偵測到變更後更新已核准欄位。「試執行」只記錄預覽，絕不寫入防火牆設定。"
+  },
+  "home.routes.troubleshoot.title": {
+    "message": "疑難排解"
+  },
+  "home.routes.troubleshoot.description": {
+    "message": "若來源位址錯誤，請選擇真正擁有全域位址的下游追蹤介面，不要以猜測前綴長度補償。若前綴變更後出現零符合警告，請檢查狀態頁的舊前綴與已啟用範圍。發生錯誤時，請檢視 狀態 → 命令輸出與系統記錄；必要時從原生 pfSense 設定歷程還原。"
+  },
+  "home.spotlight.heading": {
+    "message": "命令輸出"
+  },
+  "home.spotlight.description": {
+    "message": "請在狀態頁檢查每次執行的來源位址、推導前綴、備份結果與最終狀態。"
+  },
+  "home.spotlight.statusAction": {
+    "message": "狀態 / 命令輸出"
+  },
+  "home.spotlight.testsAction": {
+    "message": "結果與測試"
+  },
+  "home.blogPreview.heading": {
+    "message": "網誌文章"
+  },
+  "home.blogPreview.description": {
+    "message": "版本說明、設定指南，以及動態 IPv6 前綴的相關文章。"
+  }
+}

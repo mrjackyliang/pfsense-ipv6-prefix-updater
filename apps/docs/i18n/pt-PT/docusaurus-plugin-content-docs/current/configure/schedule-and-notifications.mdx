@@ -1,0 +1,71 @@
+---
+id: schedule-and-notifications
+title: Agendamento e notificações
+description: Escolha com que frequência o pfSense verifica o prefixo, ative as atualizações agendadas e decida se cada atualização bem-sucedida envia uma notificação.
+keywords:
+  - pfsense ipv6 prefix updater
+  - agendamento
+  - cron
+  - notificações de alteração
+  - alertas da webgui
+tags:
+  - configuration
+  - scheduling
+  - notifications
+sidebar_position: 3
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Escolha com que frequência o pfSense verifica o prefixo e se recebe uma <Terminology title="alerta enviado após uma atualização verificada com sucesso" to="/docs/reference/terminology#change-notification">notificação de alteração</Terminology> após uma atualização bem-sucedida.
+
+## Escolher uma agenda \{#choose-a-schedule}
+
+| Agenda                   | Quando é executada                       |
+|--------------------------|------------------------------------------|
+| A cada 15 minutos        | Aos minutos 0, 15, 30 e 45 de cada hora  |
+| De hora a hora           | Ao minuto 0 de cada hora, a predefinição |
+| A cada 6 horas           | Às 00:00, 06:00, 12:00 e 18:00           |
+| Diariamente à meia-noite | Às 00:00                                 |
+
+As horas seguem o fuso horário da firewall, enquanto o separador Estado mostra UTC.
+
+## Ativar as atualizações agendadas \{#turn-on-scheduled-updates}
+
+A opção **<Terminology title="verificações automáticas por entrada cron gerida pelo pfSense" to="/docs/reference/terminology#scheduled-updates">Ativar atualizações agendadas</Terminology>** está desmarcada após a instalação. Guardar as Definições adiciona ou remove uma entrada cron gerida pelo pfSense, pelo que não é preciso o pacote Cron nem uma tarefa cron escrita à mão.
+
+Com a caixa desmarcada, nenhuma verificação é executada sozinha, mas **Executar agora** e **<Terminology title="pré-visualização que nunca cria cópias de segurança nem grava" to="/docs/reference/terminology#dry-run">Simulação</Terminology>** continuam a funcionar. Recomenda-se ativá-la apenas depois de a [primeira execução](/docs/first-run) ter registado e verificado a <Terminology title="prefixo inicial registado sem alterar a configuração" to="/docs/reference/terminology#baseline">referência</Terminology>.
+
+## O que custa uma verificação de rotina \{#what-a-routine-check-costs}
+
+Uma verificação com o resultado <Terminology title="resultado: prefixo inalterado, nada analisado nem gravado" to="/docs/reference/terminology#no-change">Sem alteração</Terminology> lê apenas as definições, os endereços das interfaces e o <Terminology title="ficheiro do pacote com referência e última execução" to="/docs/reference/terminology#package-state">estado do pacote</Terminology>. Não analisa a configuração, não cria uma cópia de segurança, não recarrega serviços nem envia uma notificação.
+
+Mesmo assim, escreve uma linha no <Terminology title="registo geral do pfSense onde o pacote escreve" to="/docs/reference/terminology#system-log">registo do sistema</Terminology>.
+
+## Execuções sobrepostas \{#overlapping-runs}
+
+Um <Terminology title="proteção que impede duas verificações em simultâneo" to="/docs/reference/terminology#run-lock">bloqueio de execução</Terminology> permite apenas uma verificação de cada vez. Uma verificação que começa enquanto outra está em curso termina sem ler a configuração e deixa a **Última execução** inalterada.
+
+Essa verificação regista `Outra execução detém o bloqueio do pacote; esta invocação terminou sem ler a configuração.` no <Terminology title="registo geral do pfSense onde o pacote escreve" to="/docs/reference/terminology#system-log">registo do sistema</Terminology>.
+
+## Notificações de alteração \{#change-notifications}
+
+A opção **<Terminology title="alerta enviado após uma atualização verificada com sucesso" to="/docs/reference/terminology#change-notification">Enviar notificações de alteração</Terminology>** está ativada por predefinição. Após um <Terminology title="resultado: campos atualizados, guardados, recarregados e verificados" to="/docs/reference/terminology#success">Sucesso</Terminology>, envia uma mensagem pelos <Terminology title="serviços de alerta remotos configurados no pfSense" to="/docs/reference/terminology#notification-channels">canais de notificação</Terminology> do pfSense e adiciona um <Terminology title="alerta mostrado na lista de avisos do pfSense" to="/docs/reference/terminology#webgui-notice">alerta da WebGUI</Terminology>.
+
+A mensagem é semelhante a `Foram atualizados 1 campo(s) aprovado(s) de 2001:db8:abcd:7800::/56 para 2001:db8:abcd:8800::/56 na interface lan.` Nenhum outro resultado envia uma <Terminology title="alerta enviado após uma atualização verificada com sucesso" to="/docs/reference/terminology#change-notification">notificação de alteração</Terminology>.
+
+Se a entrega falhar, a atualização conta na mesma como <Terminology title="resultado: campos atualizados, guardados, recarregados e verificados" to="/docs/reference/terminology#success">Sucesso</Terminology>. O separador Estado não mostra o estado da entrega, e o <Terminology title="registo geral do pfSense onde o pacote escreve" to="/docs/reference/terminology#system-log">registo do sistema</Terminology> regista `A configuração foi bem-sucedida, mas a notificação da alteração falhou.`
+
+## Alertas de Aviso e de Falha \{#warning-and-failure-notices}
+
+Os resultados <Terminology title="resultado: o prefixo mudou, mas nenhum campo aprovado correspondeu" to="/docs/reference/terminology#warning">Aviso</Terminology> e <Terminology title="resultado: verificação ou etapa de segurança parou a execução" to="/docs/reference/terminology#failure">Falha</Terminology> adicionam sempre um <Terminology title="alerta mostrado na lista de avisos do pfSense" to="/docs/reference/terminology#webgui-notice">alerta da WebGUI</Terminology> local, mesmo com a opção **<Terminology title="alerta enviado após uma atualização verificada com sucesso" to="/docs/reference/terminology#change-notification">Enviar notificações de alteração</Terminology>** desmarcada. Estes alertas não são enviados para os <Terminology title="serviços de alerta remotos configurados no pfSense" to="/docs/reference/terminology#notification-channels">canais de notificação</Terminology>, e uma causa por corrigir adiciona um novo alerta em cada execução agendada.
+
+## Validar o agendamento \{#validate-the-schedule}
+
+1. Guarde as Definições e confirme a mensagem `Definições guardadas.`
+2. No separador Estado, selecione **Executar agora** e confirme um resultado <Terminology title="resultado: prefixo inalterado, nada analisado nem gravado" to="/docs/reference/terminology#no-change">Sem alteração</Terminology> com uma **Data e hora (UTC)** atual.
+3. Confirme que **<Terminology title="cópia da configuração guardada antes de uma gravação" to="/docs/reference/terminology#configuration-backup">Cópia de segurança da configuração criada</Terminology>** mostra Não e que **Campos alterados** mostra `0`.
+4. Após a hora agendada seguinte, atualize o separador Estado e confirme que a data e hora avançou.
+5. Para testar a entrega, use os botões de teste do próprio pfSense em **System → Advanced → Notifications**.
+
+Continue com [Estado e ações](/docs/operate/status-and-actions) para conhecer os campos que as verificações agendadas e as <Terminology title="verificação iniciada no separador Estado" to="/docs/reference/terminology#manual-run">execuções manuais</Terminology> registam.

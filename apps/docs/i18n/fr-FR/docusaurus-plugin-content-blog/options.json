@@ -1,0 +1,8 @@
+{
+  "description": {
+    "message": "Notes de version, guides de configuration et articles pour garder les adresses pfSense à jour lorsque le préfixe IPv6 change."
+  },
+  "sidebar.title": {
+    "message": "Articles récents"
+  }
+}

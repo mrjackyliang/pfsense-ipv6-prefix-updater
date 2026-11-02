@@ -1,0 +1,39 @@
+{
+  "name": "pfsense-pkg-ipv6-prefix-updater",
+  "version": "2.0.0",
+  "license": "MIT",
+  "type": "module",
+  "files": [
+    "build"
+  ],
+  "private": true,
+  "scripts": {
+    "check": "nova utility run-scripts --sequential \"check:*\"",
+    "check:lint-scripts": "eslint ./ --max-warnings=0",
+    "check:types-scripts": "nova utility type-check --project tsconfig.scripts.json",
+    "check:types-tests": "nova utility type-check --project tsconfig.tests.json",
+    "check:test-domain": "sh ./scripts/test-domain.sh",
+    "check:test-scripts": "vitest run",
+    "check:package": "node ./scripts/check-package.mjs",
+    "build": "nova utility run-scripts --sequential --node-env production \"build:*\"",
+    "build:reset": "shx rm -rf ./build",
+    "build:stage": "node ./scripts/stage-package.mjs",
+    "deploy": "nova utility run-scripts --sequential --node-env production \"deploy:*\"",
+    "deploy:package": "sh ./scripts/build-package.sh",
+    "clean": "nova utility run-scripts --parallel \"clean:*\"",
+    "clean:build": "shx rm -rf ./build"
+  },
+  "engines": {
+    "node": "^22 || ^24 || ^26"
+  },
+  "dependencies": {
+    "@cbnventures/nova": "0.38.0"
+  },
+  "devDependencies": {
+    "@types/node": "24.9.1",
+    "eslint": "9.39.5",
+    "shx": "0.4.0",
+    "typescript": "6.0.3",
+    "vitest": "4.1.11"
+  }
+}

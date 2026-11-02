@@ -1,0 +1,173 @@
+{
+  "home.meta.description": {
+    "message": "Detecteer wijzigingen in gedelegeerde prefixen, werk alleen goedgekeurde pfSense-velden bij, behoud hostbits en verifieer elke transactie."
+  },
+  "home.meta.title": {
+    "message": "IPv6-prefixupdater - Houd dynamische IPv6-prefixen veilig op één lijn."
+  },
+  "home.hero.eyebrow": {
+    "message": "Native pfSense-pakket"
+  },
+  "home.hero.heading": {
+    "message": "Houd dynamische IPv6-prefixen veilig op één lijn."
+  },
+  "home.hero.tagline": {
+    "message": "Detecteer wijzigingen in gedelegeerde prefixen, werk alleen goedgekeurde pfSense-velden bij, behoud hostbits en verifieer elke transactie."
+  },
+  "home.hero.primaryAction": {
+    "message": "Installeren en configureren"
+  },
+  "home.hero.secondaryAction": {
+    "message": "Veilig gedrag bekijken"
+  },
+  "home.preview.ariaLabel": {
+    "message": "Lengte gedelegeerde prefix: /56"
+  },
+  "home.preview.dryRun": {
+    "message": "Testuitvoering"
+  },
+  "home.preview.detected": {
+    "message": "Waargenomen bronadres"
+  },
+  "home.preview.previous": {
+    "message": "Vorige prefix"
+  },
+  "home.preview.current": {
+    "message": "Huidige prefix"
+  },
+  "home.preview.prefixChanged": {
+    "message": "Waargenomen prefix"
+  },
+  "home.preview.hostPreserved": {
+    "message": "Lengte gedelegeerde prefix"
+  },
+  "home.preview.result": {
+    "message": "De testuitvoering vond 2 goedgekeurde veldwijziging(en) voor 2001:db8:abcd:8800::/56; de configuratie is niet gewijzigd."
+  },
+  "home.workflow.eyebrow": {
+    "message": "Veiligheid en werking"
+  },
+  "home.workflow.heading": {
+    "message": "Veilige transactie"
+  },
+  "home.workflow.detect": {
+    "message": "Waargenomen bronadres"
+  },
+  "home.workflow.plan": {
+    "message": "Gewijzigde velden"
+  },
+  "home.workflow.backup": {
+    "message": "Configuratieback-up gemaakt"
+  },
+  "home.workflow.write": {
+    "message": "Huidige prefix"
+  },
+  "home.workflow.verify": {
+    "message": "Geslaagd"
+  },
+  "home.workflow.notify": {
+    "message": "Meldingen"
+  },
+  "home.features.interface.title": {
+    "message": "Bewaakte interfaces"
+  },
+  "home.features.interface.description": {
+    "message": "Voeg één rij toe per interface waarvan het primaire actieve globale IPv6-adres een gedelegeerde prefix draagt. Kies bij DHCPv6 met alleen een prefix op WAN een downstream gevolgde interface. Hostbits na de prefixlengte blijven exact behouden, en het adres dat pfSense per interface kiest, staat op het tabblad Status."
+  },
+  "home.features.prefix.title": {
+    "message": "Lengte gedelegeerde prefix"
+  },
+  "home.features.prefix.description": {
+    "message": "Voer de door de ISP gedelegeerde prefixgrens in. Hostbits na deze grens blijven exact behouden."
+  },
+  "home.features.scopes.title": {
+    "message": "Velden"
+  },
+  "home.features.scopes.description": {
+    "message": "Kies op het tabblad Velden welke configuratievelden met de prefix meeveranderen."
+  },
+  "home.features.dryRun.title": {
+    "message": "Testuitvoering"
+  },
+  "home.features.dryRun.description": {
+    "message": "Nu uitvoeren kan goedgekeurde velden bijwerken nadat een wijziging is gedetecteerd. Testuitvoering legt alleen een voorbeeld vast en schrijft nooit de firewallconfiguratie."
+  },
+  "home.features.backup.title": {
+    "message": "Configuratieback-up gemaakt"
+  },
+  "home.features.backup.description": {
+    "message": "Configuratieback-up gemaakt: Ja."
+  },
+  "home.features.notify.title": {
+    "message": "Meldingen"
+  },
+  "home.features.notify.description": {
+    "message": "Gebruik geconfigureerde pfSense-meldingskanalen na een geverifieerde, geslaagde prefixupdate. Controles zonder wijziging sturen nooit een melding."
+  },
+  "home.stats.heading": {
+    "message": "Veiligheid en werking"
+  },
+  "home.stats.boundaries": {
+    "message": "Lengte gedelegeerde prefix"
+  },
+  "home.stats.backups": {
+    "message": "Configuratieback-up gemaakt"
+  },
+  "home.stats.writes": {
+    "message": "Gewijzigde velden"
+  },
+  "home.stats.noChange": {
+    "message": "De actieve IPv6-prefix is ongewijzigd; er zijn geen goedgekeurde configuratiedoelen gelezen of geschreven."
+  },
+  "home.routes.eyebrow": {
+    "message": "Handleidingen"
+  },
+  "home.routes.heading": {
+    "message": "Installeren en configureren"
+  },
+  "home.routes.install.title": {
+    "message": "Het pakket installeren"
+  },
+  "home.routes.install.description": {
+    "message": "Voer deze opdracht uit in een pfSense-shell om de nieuwste versie rechtstreeks vanaf GitHub te installeren."
+  },
+  "home.routes.open": {
+    "message": "Begin met lezen"
+  },
+  "home.routes.configure.title": {
+    "message": "Bewaakte interfaces / Lengte gedelegeerde prefix"
+  },
+  "home.routes.configure.description": {
+    "message": "Voeg één rij toe per interface waarvan het primaire actieve globale IPv6-adres een gedelegeerde prefix draagt. Kies bij DHCPv6 met alleen een prefix op WAN een downstream gevolgde interface. Hostbits na de prefixlengte blijven exact behouden, en het adres dat pfSense per interface kiest, staat op het tabblad Status."
+  },
+  "home.routes.status.title": {
+    "message": "Status / Opdrachtuitvoer"
+  },
+  "home.routes.status.description": {
+    "message": "Nu uitvoeren kan goedgekeurde velden bijwerken nadat een wijziging is gedetecteerd. Testuitvoering legt alleen een voorbeeld vast en schrijft nooit de firewallconfiguratie."
+  },
+  "home.routes.troubleshoot.title": {
+    "message": "Problemen oplossen"
+  },
+  "home.routes.troubleshoot.description": {
+    "message": "Kies bij een verkeerd bronadres de benedenstroomse gevolgde interface die werkelijk het globale adres heeft; compenseer niet met een gegokte prefixlengte."
+  },
+  "home.spotlight.heading": {
+    "message": "Opdrachtuitvoer"
+  },
+  "home.spotlight.description": {
+    "message": "Controleer iedere uitvoering op de Statuspagina: bronadres, afgeleide prefix, back-upresultaat en uitkomst."
+  },
+  "home.spotlight.statusAction": {
+    "message": "Status / Opdrachtuitvoer"
+  },
+  "home.spotlight.testsAction": {
+    "message": "Uitkomsten en tests"
+  },
+  "home.blogPreview.heading": {
+    "message": "Uit de blog"
+  },
+  "home.blogPreview.description": {
+    "message": "Releaseopmerkingen, installatiehandleidingen en artikelen over dynamische IPv6-prefixen."
+  }
+}

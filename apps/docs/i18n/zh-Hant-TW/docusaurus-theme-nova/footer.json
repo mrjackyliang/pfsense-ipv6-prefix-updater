@@ -1,0 +1,38 @@
+{
+  "layout.learn.title": {
+    "message": "指南"
+  },
+  "layout.resources.title": {
+    "message": "資源"
+  },
+  "sections.learn.0.label": {
+    "message": "安裝與設定"
+  },
+  "sections.learn.1.label": {
+    "message": "監控介面 / 委派前綴長度"
+  },
+  "sections.learn.2.label": {
+    "message": "狀態 / 動作"
+  },
+  "sections.learn.3.label": {
+    "message": "疑難排解"
+  },
+  "sections.resources.0.label": {
+    "message": "安全與操作"
+  },
+  "sections.resources.1.label": {
+    "message": "結果與測試"
+  },
+  "sections.resources.2.label": {
+    "message": "pfSense 文件"
+  },
+  "sections.resources.3.label": {
+    "message": "原始碼"
+  },
+  "sections.resources.4.label": {
+    "message": "網誌"
+  },
+  "copyright": {
+    "message": "版權所有 © 2023-2026 Jacky Liang。依 MIT 授權條款發布。"
+  }
+}

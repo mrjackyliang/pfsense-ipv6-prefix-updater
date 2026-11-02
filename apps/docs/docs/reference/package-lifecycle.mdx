@@ -1,0 +1,65 @@
+---
+id: package-lifecycle
+title: Update or Remove
+description: Check the installed version, install a newer release over the old one, or remove the package, and see what each of these steps keeps or deletes.
+keywords:
+  - pfsense ipv6 prefix updater
+  - package update
+  - package removal
+  - pkg delete
+  - reinstall
+tags:
+  - reference
+  - maintenance
+  - pfsense
+sidebar_position: 5
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Check the installed version, install a newer release, or remove the package from a pfSense shell.
+
+## Check the Installed Version
+
+```shell
+pkg info pfSense-pkg-Ipv6PrefixUpdater
+```
+
+Compare the reported version with the [latest GitHub release](https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest).
+
+## Update the Package
+
+It is recommended to download a copy of the configuration from **Diagnostics → Backup & Restore** first. Then install the latest release over the existing package:
+
+```shell
+pkg add -f https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
+```
+
+The install step syncs the cron entry with the saved settings again and keeps every <Terminology title="starting prefix recorded without changing configuration" to="/docs/reference/terminology#baseline">baseline</Terminology>. The checksum steps in [Install the Package](/docs/installation#verify-the-download-first) work for updates as well.
+
+After the update:
+
+1. Open **Services → IPv6 Prefix Updater → Settings** and confirm the saved values.
+2. On the Status tab, check **Current State**. Each interface keeps its <Terminology title="starting prefix recorded without changing configuration" to="/docs/reference/terminology#baseline">baseline</Terminology>.
+
+If a row shows `Not initialized`, **Run Now** records a new <Terminology title="starting prefix recorded without changing configuration" to="/docs/reference/terminology#baseline">baseline</Terminology> for it. Addresses that still use a prefix from before that baseline then stay unchanged.
+
+## Remove the Package
+
+Clearing **<Terminology title="automatic checks run from a pfSense-managed cron entry" to="/docs/reference/terminology#scheduled-updates">Enable Scheduled Updates</Terminology>** first keeps a later reinstall from starting the schedule right away if pfSense keeps the saved settings. Then run:
+
+```shell
+pkg delete pfSense-pkg-Ipv6PrefixUpdater
+```
+
+Removal deletes the package's cron entry and its <Terminology title="guard that stops two checks running at once" to="/docs/reference/terminology#run-lock">run lock</Terminology> file. It keeps the <Terminology title="package file holding the baseline and last run" to="/docs/reference/terminology#package-state">package state</Terminology> and the **Backups** tab copies in `/cf/conf/ipv6-prefix-updater`, so pfSense's own remove-and-reinstall during updates never loses a <Terminology title="starting prefix recorded without changing configuration" to="/docs/reference/terminology#baseline">baseline</Terminology>.
+
+Removal doesn't undo addresses already saved to the configuration, and the package's revisions stay in <Terminology title="pfSense list of saved configuration revisions" to="/docs/reference/terminology#config-history">Config History</Terminology>. To remove the kept files as well, run `rm -rf /cf/conf/ipv6-prefix-updater` after removing the package.
+
+## Reinstall Later
+
+A reinstall finds the kept <Terminology title="package file holding the baseline and last run" to="/docs/reference/terminology#package-state">package state</Terminology>, so the first run compares against each saved <Terminology title="starting prefix recorded without changing configuration" to="/docs/reference/terminology#baseline">baseline</Terminology> and updates fields left on an older prefix. If the earlier settings are still present with **<Terminology title="automatic checks run from a pfSense-managed cron entry" to="/docs/reference/terminology#scheduled-updates">Enable Scheduled Updates</Terminology>** selected, the install step turns the schedule on right away.
+
+For a fresh start, delete `/cf/conf/ipv6-prefix-updater` before reinstalling. The first run then records a new <Terminology title="starting prefix recorded without changing configuration" to="/docs/reference/terminology#baseline">baseline</Terminology> and reports <Terminology title="outcome: baseline recorded, configuration unchanged" to="/docs/reference/terminology#initialized">Initialized</Terminology> without changing the configuration.
+
+Review [Backups and Recovery](/docs/operate/backups-and-recovery) before maintenance and [Establish the Baseline](/docs/first-run) after a reinstall.

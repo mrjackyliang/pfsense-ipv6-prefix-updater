@@ -1,0 +1,17 @@
+{
+  "item.label.Home": {
+    "message": "首页"
+  },
+  "item.label.Guides": {
+    "message": "文档"
+  },
+  "item.label.Safety": {
+    "message": "安全与运行"
+  },
+  "item.label.Troubleshooting": {
+    "message": "故障排除"
+  },
+  "item.label.Blog": {
+    "message": "博客"
+  }
+}

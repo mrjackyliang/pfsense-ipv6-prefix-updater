@@ -1,0 +1,20 @@
+{
+  "sidebar.docs.category.Start Here": {
+    "message": "Pour commencer"
+  },
+  "sidebar.docs.category.Configure": {
+    "message": "Configuration"
+  },
+  "sidebar.docs.category.Operate": {
+    "message": "Exploitation"
+  },
+  "sidebar.docs.category.Safety": {
+    "message": "Sécurité"
+  },
+  "sidebar.docs.category.Reference": {
+    "message": "Référence"
+  },
+  "sidebar.docs.category.Contributing": {
+    "message": "Contribuer"
+  }
+}

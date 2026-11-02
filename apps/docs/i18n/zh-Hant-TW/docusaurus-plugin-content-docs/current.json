@@ -1,0 +1,20 @@
+{
+  "sidebar.docs.category.Start Here": {
+    "message": "入門"
+  },
+  "sidebar.docs.category.Configure": {
+    "message": "設定"
+  },
+  "sidebar.docs.category.Operate": {
+    "message": "日常維運"
+  },
+  "sidebar.docs.category.Safety": {
+    "message": "安全機制"
+  },
+  "sidebar.docs.category.Reference": {
+    "message": "參考"
+  },
+  "sidebar.docs.category.Contributing": {
+    "message": "參與貢獻"
+  }
+}

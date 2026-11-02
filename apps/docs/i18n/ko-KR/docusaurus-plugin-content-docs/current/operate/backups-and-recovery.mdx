@@ -1,0 +1,120 @@
+---
+id: backups-and-recovery
+title: 백업 및 복구
+description: 백업 탭이나 Config History에서 패키지 업데이트 이전의 구성을 찾아 pfSense로 복원하고, 저장한 뒤에 실패한 실행을 복구합니다.
+keywords:
+  - pfsense ipv6 prefix updater
+  - 구성 백업
+  - config history
+  - 복원
+  - 복구
+tags:
+  - operations
+  - backup
+  - recovery
+  - config history
+sidebar_position: 3
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import backupList from './_assets_/backups-and-recovery-1.png';
+
+**백업** 탭이나 pfSense의 <Terminology title="저장된 구성 리비전을 보여 주는 pfSense 목록" to="/docs/reference/terminology#config-history">Config History</Terminology>에서 업데이트 이전의 구성을 찾아 pfSense 자체 도구로 복원합니다.
+
+## 백업이 만들어지는 경우 \{#when-a-backup-is-created}
+
+패키지는 쓰기를 하는 실행에서만, 필드를 변경하기 직전에 <Terminology title="쓰기 전에 저장한 구성 사본" to="/docs/reference/terminology#configuration-backup">구성 백업</Terminology>을 만듭니다. 최근 실행이 백업을 만들었는지는 상태 탭의 **<Terminology title="쓰기 전에 저장한 구성 사본" to="/docs/reference/terminology#configuration-backup">구성 백업 생성됨</Terminology>**에 표시됩니다.
+
+실행이 다음 결과로 끝나면 백업이 만들어지지 않습니다.
+
+- <Terminology title="결과: 기준선 기록, 구성 변경 없음" to="/docs/reference/terminology#initialized">초기화됨</Terminology> 또는 <Terminology title="결과: 기준선이 생기기 전의 시험 실행" to="/docs/reference/terminology#initialization-preview">초기화 미리 보기</Terminology>.
+- <Terminology title="결과: 접두사 그대로, 검색이나 쓰기 없음" to="/docs/reference/terminology#no-change">변경 없음</Terminology>.
+- <Terminology title="백업도 쓰기도 하지 않는 미리 보기" to="/docs/reference/terminology#dry-run">시험 실행</Terminology>.
+- **수락됨**. 현재 접두사를 수락하면 <Terminology title="기준선과 마지막 실행을 담은 패키지 파일" to="/docs/reference/terminology#package-state">패키지 상태</Terminology>만 바뀌기 때문입니다.
+- <Terminology title="결과: 접두사가 바뀌었지만 일치하는 승인된 필드 없음" to="/docs/reference/terminology#warning">경고</Terminology>.
+- 설정, 주소, 다시 로드 기능 문제처럼 백업 단계 전에 발생한 <Terminology title="결과: 검사나 안전 단계가 실행을 중단함" to="/docs/reference/terminology#failure">실패</Terminology>.
+
+## 백업 탭 \{#backups-tab}
+
+**Services → IPv6 Prefix Updater → 백업**에는 패키지가 직접 보관하는 `config.xml` 사본이 최신순으로 나열됩니다. 이 사본은 pfSense가 오래된 리비전을 <Terminology title="저장된 구성 리비전을 보여 주는 pfSense 목록" to="/docs/reference/terminology#config-history">Config History</Terminology>에서 순환 삭제한 뒤에도 계속 사용할 수 있습니다.
+
+<img src={backupList} alt="접두사 업데이트 전과 레거시 마이그레이션 전에 만든 패키지 백업, 그리고 레거시 업데이터에서 가져온 백업을 각각 다운로드 및 삭제 작업과 함께 나열하는 IPv6 Prefix Updater 백업 탭" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+- **접두사 업데이트 전**: 실행이 쓰기 직전에 만든 백업입니다. **세부 정보**에는 각 인터페이스의 이전 접두사와 새 접두사가 나옵니다.
+- **1.x 전환 전**: 패키지가 [레거시 업데이터를 자체 설정으로 옮기기](/docs/migrate-from-legacy) 전에 만든 백업입니다.
+- **1.x 스크립트**: <Terminology title="Cron 패키지로 실행하던 원래 update.php 스크립트" to="/docs/reference/terminology#legacy-updater">레거시 업데이터</Terminology>가 만든 백업으로, 원래 이름과 시간 그대로 가져온 것입니다.
+
+패키지 백업은 최신 10개만 보관되며, 가져온 레거시 백업은 삭제할 때까지 유지됩니다. 모든 백업은 `/cf/conf/ipv6-prefix-updater/backups`에 root만 읽을 수 있게 저장되며, 재부팅과 패키지 제거 후에도 남습니다.
+
+백업을 복원하려면 **다운로드**를 선택한 다음 **Diagnostics → Backup & Restore → Restore Backup**에서 파일을 업로드합니다. 복원하면 전체 구성이 교체되므로 아래 경고는 이 파일에도 적용됩니다.
+
+## 리비전 설명 방식 \{#how-the-revisions-are-labelled}
+
+업데이트할 때마다 <Terminology title="저장된 구성 리비전을 보여 주는 pfSense 목록" to="/docs/reference/terminology#config-history">Config History</Terminology>에 리비전이 두 개 남으며, 업데이트를 되돌리는 것은 더 오래된 리비전뿐입니다.
+
+- **업데이트 전 구성**: <Terminology title="쓰기 전에 저장한 구성 사본" to="/docs/reference/terminology#configuration-backup">구성 백업</Terminology>은 이 리비전의 사본입니다. 이 리비전은 업데이트 전에 마지막으로 저장된 변경의 설명을 그대로 유지합니다.
+- **업데이트된 구성**: 패키지는 변경 내용을 `IPv6 접두사 업데이터가 인터페이스 <interface>의 승인된 필드 <count>개를 변경했습니다`라는 설명의 새 리비전으로 저장합니다.
+
+:::warning
+
+패키지의 설명이 붙은 리비전에는 업데이트된 구성이 들어 있습니다. 이 리비전을 복원해도 업데이트는 되돌려지지 않습니다.
+
+:::
+
+## 올바른 리비전 찾기 \{#find-the-right-revision}
+
+1. **Diagnostics → Backup & Restore → Config History**를 엽니다.
+2. `IPv6 접두사 업데이터가 인터페이스 ...의 승인된 필드 ...개를 변경했습니다`라는 설명이 붙은 가장 최근 리비전을 찾습니다. 업데이트 후 저장된 것이 없다면 이 리비전이 현재 구성입니다.
+3. 그 바로 앞에 저장된 리비전, 즉 업데이트 전의 구성을 고릅니다.
+4. diff 보기로 두 리비전을 비교합니다. 리비전 정보를 제외하면 **변경된 필드**에 집계된 필드만 달라야 합니다.
+5. 업데이트 후 다른 변경이 저장되었는지 확인합니다. 이전 리비전을 복원하면 그 변경도 함께 사라지기 때문입니다.
+
+## 리비전 복원 \{#restore-the-revision}
+
+1. 업데이트 전 리비전에 대해 pfSense의 복원 작업을 실행하고 안내를 따릅니다.
+2. 복원한 리비전은 그 시점의 패키지 설정도 되돌리므로, **Services → IPv6 Prefix Updater → 설정**을 열어 **<Terminology title="pfSense가 관리하는 cron 항목으로 실행하는 자동 확인" to="/docs/reference/terminology#scheduled-updates">예약 업데이트 사용</Terminology>**을 확인합니다.
+3. 상태 탭에서 **<Terminology title="백업도 쓰기도 하지 않는 미리 보기" to="/docs/reference/terminology#dry-run">시험 실행</Terminology>**을 선택해 다음 실행이 무엇을 할지 확인합니다.
+
+다음 실행의 동작은 되돌리는 결과에 따라 다릅니다.
+
+- **<Terminology title="결과: 검사나 안전 단계가 실행을 중단함" to="/docs/reference/terminology#failure">실패</Terminology> 후**: <Terminology title="구성을 바꾸지 않고 기록한 시작 접두사" to="/docs/reference/terminology#baseline">기준선</Terminology>이 아직 이전 접두사를 가지고 있으므로 다음 실행은 같은 업데이트를 다시 계획합니다.
+- **<Terminology title="결과: 필드 업데이트, 저장, 다시 로드, 검증 완료" to="/docs/reference/terminology#success">성공</Terminology> 후**: <Terminology title="구성을 바꾸지 않고 기록한 시작 접두사" to="/docs/reference/terminology#baseline">기준선</Terminology>이 이미 새 접두사를 가지고 있으므로 이후 실행은 <Terminology title="결과: 접두사 그대로, 검색이나 쓰기 없음" to="/docs/reference/terminology#no-change">변경 없음</Terminology>을 보고하고 업데이트를 다시 적용하지 않습니다. 복원된 주소는 직접 변경할 때까지 이전 접두사를 유지합니다.
+
+:::warning
+
+리비전을 복원하면 그 리비전 이후에 저장된 모든 변경을 포함해 전체 구성이 교체됩니다.
+
+:::
+
+## 실패한 실행 후 \{#after-a-failed-run}
+
+**마지막 실행** 패널의 **<Terminology title="쓰기 전에 저장한 구성 사본" to="/docs/reference/terminology#configuration-backup">구성 백업 생성됨</Terminology>**과 **요약**부터 확인합니다. <Terminology title="결과: 검사나 안전 단계가 실행을 중단함" to="/docs/reference/terminology#failure">실패</Terminology>는 필드가 이미 쓰인 경우에도 **변경된 필드**에 항상 `0`을 표시합니다.
+
+- **<Terminology title="쓰기 전에 저장한 구성 사본" to="/docs/reference/terminology#configuration-backup">구성 백업 생성됨</Terminology>이 아니요인 경우**: 실행이 쓰기 전에 멈췄으므로 구성은 변경되지 않았습니다. 원인 목록은 [문제 해결](/docs/operate/troubleshooting#run-failed)에 있습니다.
+- **요약이 `실행 실패: pfSense가 계획된 구성을 쓰지 못했습니다.`인 경우**: pfSense가 쓰기 실패를 보고했습니다. 패키지는 멈추기 전에 메모리에 있는 원래 값을 복원했습니다.
+- **백업이 있는 그 밖의 실패**: 새 값은 이미 저장되었고 아무것도 롤백되지 않았습니다. <Terminology title="구성을 바꾸지 않고 기록한 시작 접두사" to="/docs/reference/terminology#baseline">기준선</Terminology>은 아직 이전 접두사를 가지고 있으며, 저장된 값이 더 이상 이 접두사에 속하지 않으므로 이후 실행은 <Terminology title="결과: 접두사가 바뀌었지만 일치하는 승인된 필드 없음" to="/docs/reference/terminology#warning">경고</Terminology>를 보고합니다.
+
+마지막 경우에는 저장된 구성에 맞는 복구 방법을 선택합니다.
+
+- **업데이트를 다시 적용**: 실패한 검사나 다시 로드를 고치고, 업데이트 전 리비전을 복원하고, <Terminology title="백업도 쓰기도 하지 않는 미리 보기" to="/docs/reference/terminology#dry-run">시험 실행</Terminology>을 실행한 다음 **지금 실행**을 선택합니다.
+- **저장된 새 접두사 값 유지**: 먼저 승인된 주소와 영향을 받는 서비스를 직접 검증합니다. 그런 다음 **상태 → 작업 → 기준선 복구**를 열고 **현재 접두사 수락**을 선택한 뒤 작업을 확인합니다.
+
+**현재 접두사 수락**은 활성 원본 주소, 접두사, 접두사 길이를 새 <Terminology title="구성을 바꾸지 않고 기록한 시작 접두사" to="/docs/reference/terminology#baseline">기준선</Terminology>으로 기록합니다. 방화벽 구성을 검색하거나, 백업을 만들거나, 구성을 쓰거나, 서비스를 다시 로드하지 않으며, 결과는 **수락됨**이고 다음 일반 확인은 <Terminology title="결과: 접두사 그대로, 검색이나 쓰기 없음" to="/docs/reference/terminology#no-change">변경 없음</Terminology>을 보고해야 합니다.
+
+:::warning
+
+경고를 없애려는 목적만으로 현재 접두사를 수락하지 마십시오. 새 접두사를 써야 하는 모든 주소가 이미 올바른지, 그리고 다시 로드가 실패한 경우에는 영향을 받은 서비스가 저장된 구성으로 동작하는지 확인한 뒤에만 수락합니다.
+
+:::
+
+**마지막 실행**이 전혀 바뀌지 않았다면 실행이 <Terminology title="기준선과 마지막 실행을 담은 패키지 파일" to="/docs/reference/terminology#package-state">패키지 상태</Terminology>를 읽기 전에 멈춘 것입니다. 그 이유는 <Terminology title="지금 실행이나 시험 실행 후 표시되는 읽기 전용 결과" to="/docs/reference/terminology#command-output">명령 출력</Terminology>과 <Terminology title="패키지가 기록하는 pfSense 일반 로그" to="/docs/reference/terminology#system-log">시스템 로그</Terminology>에 있습니다.
+
+## 장치 외부 백업 유지 \{#keep-off-device-backups}
+
+<Terminology title="저장된 구성 리비전을 보여 주는 pfSense 목록" to="/docs/reference/terminology#config-history">Config History</Terminology>는 방화벽 자체에 저장됩니다. 패키지를 설치하거나 업데이트하기 전, 또는 <Terminology title="pfSense가 관리하는 cron 항목으로 실행하는 자동 확인" to="/docs/reference/terminology#scheduled-updates">예약 업데이트</Terminology>를 켜기 전에 **Diagnostics → Backup & Restore**에서 백업도 다운로드해 두는 것을 권장합니다.
+
+## 증거 보존 \{#preserve-evidence}
+
+복원하기 전에 **마지막 실행** 패널, <Terminology title="지금 실행이나 시험 실행 후 표시되는 읽기 전용 결과" to="/docs/reference/terminology#command-output">명령 출력</Terminology>, `IPv6 Prefix Updater:`로 시작하는 <Terminology title="패키지가 기록하는 pfSense 일반 로그" to="/docs/reference/terminology#system-log">시스템 로그</Terminology> 줄을 복사해 두는 것을 권장합니다. 이 정보를 함께 보면 어느 단계에서 멈췄는지, 구성이 쓰였는지 알 수 있습니다.
+
+실패 메시지는 [문제 해결](/docs/operate/troubleshooting)에서 검토하고, 일정을 다시 켜기 전에는 [자동화 전 점검](/docs/safety/testing-and-verification)을 검토합니다.

@@ -1,0 +1,52 @@
+---
+id: settings
+title: 设置参考
+description: 查阅 IPv6 Prefix Updater “设置”选项卡上的每个字段，包括其默认值、可接受的值以及可能显示的验证消息。
+keywords:
+  - pfsense ipv6 prefix updater
+  - 设置
+  - 默认值
+  - 验证
+  - WebGUI
+tags:
+  - reference
+  - settings
+  - webgui
+sidebar_position: 2
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+查阅“设置”选项卡上的每个字段及其默认值和可接受的值。
+
+## 前缀监控 \{#prefix-monitoring}
+
+**Services → IPv6 Prefix Updater** 下的 **设置** 选项卡以这些字段开头，保存表单后会显示 `设置已保存。`
+
+| 字段                                                                                                                        | 说明                                                                                                                                                                                                                                                                          |
+|---------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| <Terminology title="由 pfSense 管理的 cron 条目运行的自动检查" to="/docs/reference/terminology#scheduled-updates">启用计划更新</Terminology> | 按所选的 **计划** 运行检查。默认关闭，保存时会添加或删除 cron 条目。                                                                                                                                                                                                                                    |
+| <Terminology title="其地址可反映当前前缀的接口" to="/docs/reference/terminology#monitored-interface">监控接口</Terminology>                | 必填。每个<Terminology title="位于 2000::/3 内的公网 IPv6 地址" to="/docs/reference/terminology#global-unicast-address">全局地址</Terminology>承载<Terminology title="ISP 路由到防火墙的 IPv6 网络" to="/docs/reference/terminology#delegated-prefix">委派前缀</Terminology>的接口占一行。**添加** 会添加一行，每个接口只能出现一次。 |
+| <Terminology title="ISP 前缀大小设置，/48 至 /64" to="/docs/reference/terminology#delegated-prefix-length">委派前缀长度</Terminology>   | 每行必填。范围为 `/48` 到 `/64`，默认选择 `/56`。                                                                                                                                                                                                                                          |
+| 计划                                                                                                                        | 每 15 分钟、每小时、每 6 小时或每天午夜。默认为每小时。                                                                                                                                                                                                                                             |
+
+## 字段选择 \{#field-selection}
+
+在 **计划** 下方，“设置”选项卡会显示 `在“字段”选项卡中选择哪些配置字段随前缀变化。` <Terminology title="“字段”选项卡上由一个开关控制的一组字段" to="/docs/reference/terminology#field-group">字段组</Terminology>和单个字段在 **字段** 选项卡中选择，并与这些设置分开保存，因此保存“设置”选项卡绝不会更改它们。[字段](/docs/configure/configuration-scopes)介绍了每个组及其默认状态。
+
+## 通知 \{#notifications}
+
+| 字段                                                                                                           | 说明                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+|--------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| <Terminology title="更新经验证成功后发送的提醒" to="/docs/reference/terminology#change-notification">发送变化通知</Terminology> | 默认勾选。每次<Terminology title="结果：字段已更新、保存、重新加载并验证" to="/docs/reference/terminology#success">成功</Terminology>后发送<Terminology title="更新经验证成功后发送的提醒" to="/docs/reference/terminology#change-notification">变化通知</Terminology>；无论是否勾选，<Terminology title="结果：前缀已变化，但没有匹配的已批准字段" to="/docs/reference/terminology#warning">警告</Terminology>和<Terminology title="结果：检查或安全阶段中止了运行" to="/docs/reference/terminology#failure">失败</Terminology>通知都会出现。 |
+
+## 验证消息 \{#validation-messages}
+
+| 消息                                 | 原因                              |
+|------------------------------------|---------------------------------|
+| `请选择要监控的已配置 pfSense 接口。`           | 没有任何行，或某一行的接口不是已配置的 pfSense 接口。 |
+| `每个接口只能列出一次。请删除 <interface> 的多余行。` | **监控接口** 中有两行指定了同一个接口。          |
+| `委派前缀长度必须介于 48 到 64 之间。`           | 长度超出可接受的范围。                     |
+| `请选择受支持的软件包计划。`                    | 计划不属于这四个选项之一。                   |
+
+每次运行都会再次检查已保存的设置，因为表单保存后它们可能已被更改。运行可能报告的消息见[故障排除](/docs/operate/troubleshooting#run-failed)。

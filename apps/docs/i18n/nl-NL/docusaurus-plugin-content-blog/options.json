@@ -1,0 +1,8 @@
+{
+  "description": {
+    "message": "Releaseopmerkingen, installatiehandleidingen en artikelen over het actueel houden van pfSense-adressen wanneer de IPv6-prefix verandert."
+  },
+  "sidebar.title": {
+    "message": "Recente berichten"
+  }
+}

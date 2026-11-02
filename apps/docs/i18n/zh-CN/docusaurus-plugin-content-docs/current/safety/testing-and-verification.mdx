@@ -1,0 +1,63 @@
+---
+id: testing-and-verification
+title: 自动化前的检查
+description: 在让软件包无人值守地按计划运行之前，先在你自己的防火墙上核实接口、前缀、恢复途径和通知。
+keywords:
+  - pfsense ipv6 prefix updater
+  - 检查清单
+  - 试运行
+  - 配置历史
+  - 计划更新
+tags:
+  - safety
+  - checklist
+  - scheduled updates
+sidebar_position: 2
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+检查防火墙上的接口、前缀、恢复途径和通知，然后再让软件包按计划运行。
+
+## 1. 确认地址来源 \{#1-confirm-the-source}
+
+在 **<Terminology title="由 pfSense 管理的 cron 条目运行的自动检查" to="/docs/reference/terminology#scheduled-updates">启用计划更新</Terminology>** 未勾选的情况下保存设置，并选择一次 **立即运行**。然后检查“状态”选项卡：
+
+- **<Terminology title="其地址可反映当前前缀的接口" to="/docs/reference/terminology#monitored-interface">监控接口</Terminology>** 是预期的 WAN 或<Terminology title="地址来自另一接口委派前缀的接口" to="/docs/reference/terminology#tracked-interface">跟踪接口</Terminology>。
+- **<Terminology title="pfSense 为监控接口报告的全局地址" to="/docs/reference/terminology#source-address">上次成功源地址</Terminology>** 与 **Status → Interfaces**（状态 → 接口）中的地址一致。
+- **<Terminology title="下次检查用于比较的前缀" to="/docs/reference/terminology#last-successful-prefix">上次成功前缀</Terminology>** 与 ISP 委派的前缀一致。
+- **上次运行** 下的 **结果** 为<Terminology title="结果：已记录基线，配置未更改" to="/docs/reference/terminology#initialized">已初始化</Terminology>，**已更改字段** 为 `0`。
+
+如果任何值不符合预期，建议先更正再继续。[接口与前缀](/docs/configure/interface-and-prefix#changing-the-interfaces)说明了<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>建立后更改接口或长度会产生什么影响。
+
+## 2. 运行预览 \{#2-run-a-preview}
+
+选择 **<Terminology title="不备份也不写入的预览" to="/docs/reference/terminology#dry-run">试运行</Terminology>**。前缀未变化时，它会报告<Terminology title="结果：前缀未变化，未扫描或写入任何内容" to="/docs/reference/terminology#no-change">无变化</Terminology>，**<Terminology title="写入前保存的配置副本" to="/docs/reference/terminology#configuration-backup">已创建配置备份</Terminology>** 显示“否”。
+
+<Terminology title="不备份也不写入的预览" to="/docs/reference/terminology#dry-run">试运行</Terminology>无法模拟前缀变化，因此只有在真正发生<Terminology title="与上次成功前缀或长度不同" to="/docs/reference/terminology#prefix-transition">前缀变化</Terminology>后，它才会列出计划更改的字段。
+
+## 3. 检查恢复途径 \{#3-check-recovery}
+
+打开 **Diagnostics → Backup & Restore → Config History**（诊断 → 备份与恢复 → 配置历史），确认 pfSense 会保留配置历史。需要写入的运行会在第一次更改之前将<Terminology title="写入前保存的配置副本" to="/docs/reference/terminology#configuration-backup">配置备份</Terminology>保存在那里。
+
+建议现在就阅读[找到正确的修订版本](/docs/operate/backups-and-recovery#find-the-right-revision)，因为以软件包命名的修订版本保存的是更新后的配置。另外也值得下载一份设备外备份，因为<Terminology title="pfSense 已保存配置修订版本的列表" to="/docs/reference/terminology#config-history">配置历史</Terminology>存放在防火墙本机上。
+
+## 4. 测试通知 \{#4-test-notifications}
+
+如果勾选了 **<Terminology title="更新经验证成功后发送的提醒" to="/docs/reference/terminology#change-notification">发送变化通知</Terminology>**，建议使用 pfSense 在 **System → Advanced → Notifications**（系统 → 高级 → 通知）中自带的按钮发送一条测试通知。软件包使用的就是在那里配置好的<Terminology title="在 pfSense 中配置的远程提醒服务" to="/docs/reference/terminology#notification-channels">通知渠道</Terminology>。
+
+<Terminology title="结果：前缀已变化，但没有匹配的已批准字段" to="/docs/reference/terminology#warning">警告</Terminology>和<Terminology title="结果：检查或安全阶段中止了运行" to="/docs/reference/terminology#failure">失败</Terminology>通知只显示在 WebGUI 中，不使用这些渠道。
+
+## 5. 开启计划更新 \{#5-turn-on-the-schedule}
+
+上述步骤显示的地址和前缀都符合预期后，勾选 **<Terminology title="由 pfSense 管理的 cron 条目运行的自动检查" to="/docs/reference/terminology#scheduled-updates">启用计划更新</Terminology>**。**计划** 的默认值为 **每小时**。
+
+到达第一个计划时间后，建议查看 **上次运行** 下的 **时间戳 (UTC)** 和 **结果**。
+
+## 需要真实前缀变化才能验证的内容 \{#what-needs-a-real-prefix-change}
+
+<Terminology title="写入前生成的完整字段变更列表" to="/docs/reference/terminology#change-plan">变更计划</Terminology>、<Terminology title="写入前保存的配置副本" to="/docs/reference/terminology#configuration-backup">配置备份</Terminology>、<Terminology title="让更改后的设置生效的 pfSense 操作" to="/docs/reference/terminology#service-reload">服务重新加载</Terminology>和<Terminology title="更新经验证成功后发送的提醒" to="/docs/reference/terminology#change-notification">变化通知</Terminology>只会在真正发生<Terminology title="与上次成功前缀或长度不同" to="/docs/reference/terminology#prefix-transition">前缀变化</Terminology>后才出现。要观察一次完整运行，最安全的地方是前缀可以变化的实验室防火墙。
+
+在你自己的防火墙上，建议在“状态”选项卡中检查第一次真实的变化，先从 **已更改字段**、**<Terminology title="让更改后的设置生效的 pfSense 操作" to="/docs/reference/terminology#service-reload">已重新加载的服务</Terminology>** 和 **摘要** 看起。
+
+运行后显示的每个字段请参阅[状态与操作](/docs/operate/status-and-actions)。

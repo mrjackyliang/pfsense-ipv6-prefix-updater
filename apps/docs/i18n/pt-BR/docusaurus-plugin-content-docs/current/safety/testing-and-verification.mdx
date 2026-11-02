@@ -1,0 +1,63 @@
+---
+id: testing-and-verification
+title: Verificar antes de automatizar
+description: Confira a interface, o prefixo, o caminho de recuperação e as notificações no seu firewall antes de deixar o pacote rodar agendado sem supervisão.
+keywords:
+  - pfsense ipv6 prefix updater
+  - checklist
+  - simulação
+  - config history
+  - atualizações agendadas
+tags:
+  - safety
+  - checklist
+  - scheduled updates
+sidebar_position: 2
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Confira a interface, o prefixo, o caminho de recuperação e as notificações no seu firewall antes de deixar o pacote rodar em um agendamento.
+
+## 1. Confirmar a origem \{#1-confirm-the-source}
+
+Com **<Terminology title="verificações automáticas por entrada cron gerenciada pelo pfSense" to="/docs/reference/terminology#scheduled-updates">Ativar atualizações agendadas</Terminology>** desmarcada, salve as Configurações e clique em **Executar agora** uma vez. Depois, confira a guia Status:
+
+- **<Terminology title="interface cujo endereço revela o prefixo atual" to="/docs/reference/terminology#monitored-interface">Interface monitorada</Terminology>** é a WAN ou a <Terminology title="interface endereçada pelo prefixo delegado de outra interface" to="/docs/reference/terminology#tracked-interface">interface rastreada</Terminology> pretendida.
+- **<Terminology title="endereço global informado pelo pfSense para a interface monitorada" to="/docs/reference/terminology#source-address">Último endereço de origem bem-sucedido</Terminology>** corresponde ao endereço em **Status → Interfaces**.
+- **<Terminology title="prefixo usado na comparação da próxima verificação" to="/docs/reference/terminology#last-successful-prefix">Último prefixo bem-sucedido</Terminology>** corresponde ao prefixo que o seu provedor delega.
+- **Resultado**, em **Última execução**, é <Terminology title="resultado: referência registrada, configuração inalterada" to="/docs/reference/terminology#initialized">Inicializado</Terminology>, e **Campos alterados** é `0`.
+
+Se algum valor for inesperado, é recomendável corrigi-lo antes de continuar. [Interface e prefixo](/docs/configure/interface-and-prefix#changing-the-interfaces) explica o que acontece ao trocar a interface ou o comprimento depois que a <Terminology title="prefixo inicial registrado sem alterar a configuração" to="/docs/reference/terminology#baseline">referência</Terminology> existe.
+
+## 2. Executar uma prévia \{#2-run-a-preview}
+
+Clique em **<Terminology title="prévia que nunca faz backup nem grava" to="/docs/reference/terminology#dry-run">Simulação</Terminology>**. Com o prefixo inalterado, ela informa <Terminology title="resultado: prefixo inalterado, nada analisado nem gravado" to="/docs/reference/terminology#no-change">Sem alteração</Terminology>, e **<Terminology title="cópia da configuração salva antes de uma gravação" to="/docs/reference/terminology#configuration-backup">Cópia de segurança da configuração criada</Terminology>** mostra Não.
+
+Uma <Terminology title="prévia que nunca faz backup nem grava" to="/docs/reference/terminology#dry-run">simulação</Terminology> não consegue simular uma mudança de prefixo, então ela só lista campos planejados depois de uma <Terminology title="mudança em relação ao último prefixo ou comprimento bem-sucedido" to="/docs/reference/terminology#prefix-transition">transição de prefixo</Terminology> real.
+
+## 3. Conferir a recuperação \{#3-check-recovery}
+
+Abra **Diagnostics → Backup & Restore → Config History** e confirme que o pfSense mantém o histórico de configurações. Uma execução que grava salva ali o <Terminology title="cópia da configuração salva antes de uma gravação" to="/docs/reference/terminology#configuration-backup">backup da configuração</Terminology> antes da primeira alteração.
+
+É recomendável ler agora [Encontrar a revisão certa](/docs/operate/backups-and-recovery#find-the-right-revision), porque a revisão com o nome do pacote contém a configuração atualizada. Também vale a pena baixar um backup para fora do dispositivo, porque o <Terminology title="lista do pfSense com as revisões salvas da configuração" to="/docs/reference/terminology#config-history">Config History</Terminology> fica no firewall.
+
+## 4. Testar as notificações \{#4-test-notifications}
+
+Se **<Terminology title="alerta enviado após uma atualização verificada com sucesso" to="/docs/reference/terminology#change-notification">Enviar notificações de alteração</Terminology>** estiver marcada, é recomendável enviar um teste com os próprios botões do pfSense em **System → Advanced → Notifications**. O pacote usa os <Terminology title="serviços de alerta remotos configurados no pfSense" to="/docs/reference/terminology#notification-channels">canais de notificação</Terminology> já configurados ali.
+
+Os alertas de <Terminology title="resultado: o prefixo mudou, mas nenhum campo aprovado correspondeu" to="/docs/reference/terminology#warning">Aviso</Terminology> e <Terminology title="resultado: verificação ou etapa de segurança interrompeu a execução" to="/docs/reference/terminology#failure">Falha</Terminology> ficam na WebGUI e não usam esses canais.
+
+## 5. Ativar o agendamento \{#5-turn-on-the-schedule}
+
+Marque **<Terminology title="verificações automáticas por entrada cron gerenciada pelo pfSense" to="/docs/reference/terminology#scheduled-updates">Ativar atualizações agendadas</Terminology>** quando as etapas acima mostrarem o endereço e o prefixo esperados. **A cada hora** é o **Agendamento** padrão.
+
+Depois do primeiro horário agendado, é recomendável conferir **Data e hora (UTC)** e **Resultado** em **Última execução**.
+
+## O que exige uma mudança de prefixo real \{#what-needs-a-real-prefix-change}
+
+O <Terminology title="lista completa das alterações, montada antes de gravar" to="/docs/reference/terminology#change-plan">plano de alterações</Terminology>, o <Terminology title="cópia da configuração salva antes de uma gravação" to="/docs/reference/terminology#configuration-backup">backup da configuração</Terminology>, os <Terminology title="ação do pfSense que aplica configurações alteradas" to="/docs/reference/terminology#service-reload">recarregamentos de serviços</Terminology> e a <Terminology title="alerta enviado após uma atualização verificada com sucesso" to="/docs/reference/terminology#change-notification">notificação de alteração</Terminology> só acontecem depois de uma <Terminology title="mudança em relação ao último prefixo ou comprimento bem-sucedido" to="/docs/reference/terminology#prefix-transition">transição de prefixo</Terminology> real. Um firewall de laboratório cujo prefixo possa mudar é o lugar mais seguro para acompanhar uma execução completa.
+
+No seu próprio firewall, é recomendável revisar a primeira alteração real na guia Status, começando por **Campos alterados**, **<Terminology title="ação do pfSense que aplica configurações alteradas" to="/docs/reference/terminology#service-reload">Serviços recarregados</Terminology>** e **Resumo**.
+
+Consulte [Status e ações](/docs/operate/status-and-actions) para ver todos os campos exibidos depois de uma execução.

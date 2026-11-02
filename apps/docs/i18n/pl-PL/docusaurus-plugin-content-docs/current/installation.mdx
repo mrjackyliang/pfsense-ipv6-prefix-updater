@@ -1,0 +1,89 @@
+---
+id: installation
+title: Instalacja pakietu
+description: Zainstaluj pfSense IPv6 Prefix Updater z wydania w serwisie GitHub za pomocą pkg, sprawdź pobrany plik względem pliku SHA-256 i potwierdź nowe strony w WebGUI.
+keywords:
+  - pfsense ipv6 prefix updater
+  - instalacja
+  - pkg add
+  - wydanie github
+  - suma kontrolna sha256
+tags:
+  - setup
+  - installation
+  - pfsense
+sidebar_position: 2
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Zainstaluj pakiet z wydania w serwisie GitHub narzędziem `pkg` z pfSense, a następnie potwierdź, że jego strony pojawiły się w WebGUI.
+
+## Wymagania \{#requirements}
+
+- **Powłoka administratora** — dostęp SSH lub z konsoli do powłoki pfSense. Pojedyncze polecenia można też uruchamiać w WebGUI przez **Diagnostics → Command Prompt**.
+- **Dostęp HTTPS do serwisu GitHub** — zapora pobiera pakiet z GitHub Releases.
+- **Pasująca kompilacja pakietu** — pakiet musi być zbudowany dla wersji FreeBSD, na której działa używane wydanie pfSense.
+- **Aktualna kopia zapasowa** — przed instalacją pobierz kopię konfiguracji z **Diagnostics → Backup & Restore**.
+- **<Terminology title="pierwotny skrypt update.php uruchamiany przez pakiet Cron" to="/docs/reference/terminology#legacy-updater">Starszy aktualizator</Terminology> może pozostać** — jeśli skrypt w wersji 1.x nadal działa z pakietu Cron, pozostaw go na miejscu. Krok instalacji przeniesie go do pakietu, co wyjaśnia przewodnik [Migracja ze skryptu](/docs/migrate-from-legacy).
+
+:::warning
+
+pfSense IPv6 Prefix Updater to <Terminology title="pakiet z serwisu GitHub, nie z repozytorium Netgate" to="/docs/reference/terminology#unofficial-package">nieoficjalny pakiet</Terminology>. Instalacja pliku `.pkg` z serwisu GitHub omija weryfikację i wsparcie pakietów Netgate, dlatego zaleca się najpierw wypróbować go na zaporze z aktualną kopią zapasową lub na zaporze testowej.
+
+:::
+
+## Sprawdzenie wydania \{#check-the-release}
+
+Wydania pakietu są wymienione na [stronie GitHub Releases](https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases). Każde wydanie pakietu zawiera te pliki:
+
+| Plik                                          | Opis                                                             |
+|-----------------------------------------------|------------------------------------------------------------------|
+| `pfSense-pkg-Ipv6PrefixUpdater.pkg`           | Pakiet pod stałą nazwą, której używają polecenia na tej stronie. |
+| `pfSense-pkg-Ipv6PrefixUpdater-<version>.pkg` | Ten sam pakiet z numerem wersji w nazwie pliku.                  |
+| Pliki `.sha256`                               | Jedna suma kontrolna SHA-256 dla każdego pliku pakietu.          |
+
+:::info
+
+Wydania w wersji 1.x zawierają tylko <Terminology title="pierwotny skrypt update.php uruchamiany przez pakiet Cron" to="/docs/reference/terminology#legacy-updater">starszy aktualizator</Terminology>. Jeśli najnowsze wydanie nie ma pliku `.pkg`, polecenia na tej stronie kończą się błędem not found (404).
+
+:::
+
+## Instalacja pakietu \{#install-the-package}
+
+Uruchom to polecenie w powłoce pfSense:
+
+```shell
+pkg add https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
+```
+
+`pkg` pobiera pakiet z najnowszego wydania i wykonuje jego krok instalacji, który rejestruje w pfSense pozycję **Services → IPv6 Prefix Updater**.
+
+## Najpierw zweryfikuj pobrany plik \{#verify-the-download-first}
+
+Aby przed instalacją sprawdzić plik względem jego sumy kontrolnej, pobierz oba pliki do `/tmp` i wyświetl obie wartości:
+
+```shell
+cd /tmp
+fetch https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
+fetch https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg.sha256
+sha256 -q pfSense-pkg-Ipv6PrefixUpdater.pkg
+cat pfSense-pkg-Ipv6PrefixUpdater.pkg.sha256
+```
+
+Dwa ostatnie polecenia wyświetlają tę samą wartość, gdy pobrany plik jest nienaruszony. Następnie możesz zainstalować sprawdzony plik poleceniem `pkg add /tmp/pfSense-pkg-Ipv6PrefixUpdater.pkg`.
+
+## Potwierdzenie w WebGUI \{#confirm-in-the-webgui}
+
+1. Zaloguj się do WebGUI pfSense.
+2. Otwórz **Services → IPv6 Prefix Updater** i potwierdź, że widoczne są karty **Ustawienia**, **Stan**, **Pola**, **Kopie zapasowe** i **Porządkowanie**.
+3. Na karcie Stan potwierdź, że sekcja **Bieżący stan** pokazuje `Nie zapisano jeszcze żadnych monitorowanych interfejsów. Dodaj je na karcie Ustawienia.` Po przeniesieniu starszego aktualizatora sekcja zamiast tego wymienia przeniesione interfejsy.
+4. Pozostaw opcję **<Terminology title="automatyczne sprawdzenia z wpisu cron zarządzanego przez pfSense" to="/docs/reference/terminology#scheduled-updates">Włącz zaplanowane aktualizacje</Terminology>** odznaczoną, tak jak jest domyślnie, dopóki nie [ustalisz wartości bazowej](/docs/first-run). Po przeniesieniu starszego aktualizatora opcja jest już włączona, zgodnie ze starym harmonogramem Cron.
+
+## Jeśli instalacja się nie powiedzie \{#if-installation-fails}
+
+- **Not found (404)**: najnowsze wydanie nie ma pliku pakietu. Sekcja [Sprawdzenie wydania](/docs/installation#check-the-release) wyjaśnia, które wydania go zawierają.
+- **Niezgodność ABI lub wersji systemu**: pakiet zbudowano dla innej wersji FreeBSD niż ta, na której działa używane wydanie pfSense. Zaleca się użycie pasującej kompilacji zamiast wymuszania instalacji.
+- **Błędy DNS, TLS lub certyfikatów**: pfSense musi rozwiązywać nazwę `github.com`, łączyć się z tym serwerem przez HTTPS i mieć poprawny czas do weryfikacji certyfikatów.
+
+Gdy pakiet pojawi się w WebGUI, przejdź do strony [Ustalenie wartości bazowej](/docs/first-run).

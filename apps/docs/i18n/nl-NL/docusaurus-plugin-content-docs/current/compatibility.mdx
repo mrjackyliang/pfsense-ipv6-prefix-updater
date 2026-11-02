@@ -1,0 +1,60 @@
+---
+id: compatibility
+title: Compatibiliteit
+description: Controleer de vereisten voor pfSense, PHP, adres en prefixlengte, de optionele WireGuard-afhankelijkheid en de bekende beperkingen voordat je op het pakket vertrouwt.
+keywords:
+  - pfsense ipv6 prefix updater
+  - compatibiliteit
+  - vereisten
+  - globaal ipv6-adres
+  - bekende beperkingen
+tags:
+  - setup
+  - compatibility
+  - ipv6
+sidebar_position: 4
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Controleer of je firewall, je interface en de delegatie van je ISP aan de vereisten van het pakket voldoen voordat je op <Terminology title="automatische controles via een door pfSense beheerde cronjob" to="/docs/reference/terminology#scheduled-updates">geplande updates</Terminology> vertrouwt.
+
+## Ondersteunde versies \{#supported-releases}
+
+- Het project heeft nog geen lijst met geteste pfSense-releases gepubliceerd.
+- Het pakket controleert de pfSense-versie niet. Elke uitvoering controleert of ze op pfSense draait met de bestanden en functies die ze gebruikt, en stopt vóór het lezen van de instellingen als die ontbreken.
+- De pakketcode vereist PHP 8.1 of hoger.
+- Het `.pkg`-bestand moet gebouwd zijn voor de FreeBSD-versie waarop je pfSense-release draait, anders meldt `pkg` een ABI-conflict.
+
+## Adresvereisten \{#address-requirements}
+
+- Elke <Terminology title="interface waarvan het adres de huidige prefix verraadt" to="/docs/reference/terminology#monitored-interface">bewaakte interface</Terminology> heeft een actief <Terminology title="openbaar IPv6-adres binnen 2000::/3" to="/docs/reference/terminology#global-unicast-address">globaal unicastadres</Terminology> nodig. Het pakket valt nooit terug op een <Terminology title="fe80::-adres dat alleen op één link werkt" to="/docs/reference/terminology#link-local-address">link-local-adres</Terminology>.
+- Unique-local- (`fc00::/7`), multicast-, loopback-, niet-gespecificeerde en IPv4-mapped adressen en adressen met zoneaanduiding kunnen niet het <Terminology title="globaal adres dat pfSense voor de bewaakte interface meldt" to="/docs/reference/terminology#source-address">bronadres</Terminology> zijn.
+- De <Terminology title="instelling voor de prefixgrootte van de ISP, /48 tot /64" to="/docs/reference/terminology#delegated-prefix-length">lengte van de gedelegeerde prefix</Terminology> moet tussen `/48` en `/64` liggen. Lengtes die midden in een hexadecimaal cijfer eindigen, zoals `/57`, werken ook.
+
+Is een adres niet geschikt, dan eindigt die interface met <Terminology title="resultaat: een controle of veiligheidsstap stopte de uitvoering" to="/docs/reference/terminology#failure">Mislukt</Terminology> en een reden zoals `Interface ‘lan’ heeft geen actief globaal IPv6-adres.` [Probleemoplossing](/docs/operate/troubleshooting#run-failed) toont de meldingen.
+
+## Als WAN geen globaal adres heeft \{#when-wan-has-no-global-address}
+
+Sommige ISP's delegeren een prefix zonder WAN een eigen <Terminology title="openbaar IPv6-adres binnen 2000::/3" to="/docs/reference/terminology#global-unicast-address">globaal adres</Terminology> te geven. Een <Terminology title="interface met een adres uit de gedelegeerde prefix van een andere" to="/docs/reference/terminology#tracked-interface">gevolgde interface</Terminology> zoals LAN draagt dan een adres uit de <Terminology title="IPv6-netwerk dat je ISP naar de firewall routeert" to="/docs/reference/terminology#delegated-prefix">gedelegeerde prefix</Terminology> en is dat de interface die je moet bewaken.
+
+**Status → Interfaces** laat zien welke interfaces een <Terminology title="openbaar IPv6-adres binnen 2000::/3" to="/docs/reference/terminology#global-unicast-address">globaal adres</Terminology> hebben.
+
+## Wat het pakket herkent \{#what-the-package-recognizes}
+
+Het pakket werkt letterlijke IPv6-adressen en -netwerken in <Terminology title="exact configuratieveld dat het pakket mag herschrijven" to="/docs/reference/terminology#approved-field">goedgekeurde velden</Terminology> bij. Hostnamen, URL's, IPv4-waarden en andere tekst blijven zoals ze zijn.
+
+Adressen die pfSense genereert, zoals die op <Terminology title="interface met een adres uit de gedelegeerde prefix van een andere" to="/docs/reference/terminology#tracked-interface">gevolgde interfaces</Terminology>, worden nooit gewijzigd. Adressen die andere apparaten beschrijven, zoals externe VPN-netwerken en WireGuard-peers, veranderen alleen als je ze aanvinkt onder [Overige instellingen](/docs/configure/configuration-scopes#other-settings).
+
+## Optionele afhankelijkheden \{#optional-dependencies}
+
+- **WireGuard-pakket**: alleen nodig als <Terminology title="adres van een WireGuard-tunnel in pfSense" to="/docs/reference/terminology#wireguard-tunnel-address">WireGuard-tunneladressen</Terminology> moeten veranderen. Zonder dit pakket stopt een echte uitvoering met WireGuard-wijzigingen vóór de back-up.
+
+## Bekende beperkingen \{#known-limits}
+
+- Voeg je een <Terminology title="interface waarvan het adres de huidige prefix verraadt" to="/docs/reference/terminology#monitored-interface">bewaakte interface</Terminology> toe of zet je een rij om naar een andere interface, dan wordt daarvoor een nieuwe <Terminology title="startprefix, vastgelegd zonder de configuratie te wijzigen" to="/docs/reference/terminology#baseline">baseline</Terminology> vastgelegd, en een wijziging van de <Terminology title="instelling voor de prefixgrootte van de ISP, /48 tot /64" to="/docs/reference/terminology#delegated-prefix-length">lengte van de gedelegeerde prefix</Terminology> van een rij telt als <Terminology title="afwijking van de laatste geslaagde prefix of lengte" to="/docs/reference/terminology#prefix-transition">prefixwissel</Terminology>.
+- Een <Terminology title="voorbeeld dat nooit een back-up maakt of schrijft" to="/docs/reference/terminology#dry-run">testuitvoering</Terminology> kan geen prefixwijziging simuleren, dus geplande wijzigingen verschijnen pas na een echte.
+- Paren voor hoge beschikbaarheid (CARP) krijgen geen speciale behandeling.
+- Omdat het een <Terminology title="pakket van GitHub, niet uit de repository van Netgate" to="/docs/reference/terminology#unofficial-package">onofficieel pakket</Terminology> is, installeer je nieuwere releases met `pkg`, zoals beschreven in [Bijwerken of verwijderen](/docs/reference/package-lifecycle).
+
+Lees [Interface en prefix](/docs/configure/interface-and-prefix) voor het kiezen van de bron en [Velden](/docs/configure/configuration-scopes) voor de velden die het pakket kan wijzigen.

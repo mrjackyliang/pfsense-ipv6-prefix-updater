@@ -1,0 +1,76 @@
+---
+id: first-run
+title: De baseline vastleggen
+description: Leg de huidige IPv6-prefix met Nu uitvoeren vast als baseline, controleer het gemelde adres en de prefix, bekijk het tabblad Velden en schakel pas daarna geplande updates in.
+keywords:
+  - pfsense ipv6 prefix updater
+  - eerste uitvoering
+  - baseline
+  - nu uitvoeren
+  - geïnitialiseerd
+tags:
+  - setup
+  - baseline
+  - status
+sidebar_position: 3
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Leg de huidige prefix vast als <Terminology title="startprefix, vastgelegd zonder de configuratie te wijzigen" to="/docs/reference/terminology#baseline">baseline</Terminology> en controleer hem voordat je <Terminology title="automatische controles via een door pfSense beheerde cronjob" to="/docs/reference/terminology#scheduled-updates">geplande updates</Terminology> inschakelt.
+
+## De eerste instellingen opslaan \{#save-the-initial-settings}
+
+1. Open **Services → IPv6 Prefix Updater** en daarna het tabblad **Instellingen**.
+2. Laat **<Terminology title="automatische controles via een door pfSense beheerde cronjob" to="/docs/reference/terminology#scheduled-updates">Geplande updates inschakelen</Terminology>** uitgevinkt.
+3. Voeg in **<Terminology title="interface waarvan het adres de huidige prefix verraadt" to="/docs/reference/terminology#monitored-interface">Bewaakte interfaces</Terminology>** een rij toe voor elke interface waarvan het <Terminology title="openbaar IPv6-adres binnen 2000::/3" to="/docs/reference/terminology#global-unicast-address">globale adres</Terminology> uit de <Terminology title="IPv6-netwerk dat je ISP naar de firewall routeert" to="/docs/reference/terminology#delegated-prefix">gedelegeerde prefix</Terminology> komt, zoals beschreven in [Interface en prefix](/docs/configure/interface-and-prefix).
+4. Selecteer in elke rij bij **<Terminology title="instelling voor de prefixgrootte van de ISP, /48 tot /64" to="/docs/reference/terminology#delegated-prefix-length">Lengte gedelegeerde prefix</Terminology>** de lengte die je ISP delegeert.
+5. Sla op en controleer of de melding `Instellingen opgeslagen.` verschijnt.
+
+## De eerste controle uitvoeren \{#run-the-first-check}
+
+Selecteer op het tabblad **Status** de knop **Nu uitvoeren**. Omdat er nog geen <Terminology title="startprefix, vastgelegd zonder de configuratie te wijzigen" to="/docs/reference/terminology#baseline">baseline</Terminology> is, legt de uitvoering voor elke interface het <Terminology title="globaal adres dat pfSense voor de bewaakte interface meldt" to="/docs/reference/terminology#source-address">bronadres</Terminology> en de prefix vast en meldt ze <Terminology title="resultaat: baseline vastgelegd, configuratie ongewijzigd" to="/docs/reference/terminology#initialized">Geïnitialiseerd</Terminology>.
+
+Het vastleggen van een <Terminology title="startprefix, vastgelegd zonder de configuratie te wijzigen" to="/docs/reference/terminology#baseline">baseline</Terminology> wijzigt de configuratie niet, maakt geen back-up en verstuurt geen melding.
+
+## Het resultaat controleren \{#verify-the-result}
+
+Controleer deze waarden in elke rij onder **Huidige status**:
+
+- **<Terminology title="interface waarvan het adres de huidige prefix verraadt" to="/docs/reference/terminology#monitored-interface">Bewaakte interface</Terminology>** toont de bedoelde interface met haar beschrijving en interne naam, zoals `LAN (lan)`.
+- **<Terminology title="globaal adres dat pfSense voor de bewaakte interface meldt" to="/docs/reference/terminology#source-address">Laatste geslaagde bronadres</Terminology>** komt overeen met het adres van die interface onder **Status → Interfaces**.
+- **<Terminology title="prefix waarmee de volgende controle vergelijkt" to="/docs/reference/terminology#last-successful-prefix">Laatste geslaagde prefix</Terminology>** komt overeen met de prefix die je ISP delegeert.
+- **Laatste geslaagde update** toont het tijdstip van deze uitvoering in UTC.
+
+De <Terminology title="alleen-lezen resultaten na Nu uitvoeren of Testuitvoering" to="/docs/reference/terminology#command-output">Opdrachtuitvoer</Terminology> hoort `Status: Geïnitialiseerd`, `Geplande of gewijzigde velden: 0` en `Configuratieback-up: Niet gemaakt` te tonen. Met een lengte van `/56` valt het documentatieadres `2001:db8:abcd:78aa::1` bijvoorbeeld binnen `2001:db8:abcd:7800::/56`.
+
+:::warning
+
+Klopt de interface of de lengte niet, dan is het aan te raden om de instellingen te corrigeren voordat je het schema inschakelt. Een andere interface legt een nieuwe <Terminology title="startprefix, vastgelegd zonder de configuratie te wijzigen" to="/docs/reference/terminology#baseline">baseline</Terminology> vast, terwijl een andere lengte telt als <Terminology title="afwijking van de laatste geslaagde prefix of lengte" to="/docs/reference/terminology#prefix-transition">prefixwissel</Terminology>, zoals [Interface en prefix](/docs/configure/interface-and-prefix#changing-the-prefix-length) uitlegt.
+
+:::
+
+## De velden bekijken \{#review-the-fields}
+
+Open het tabblad **Velden**. Nu de <Terminology title="startprefix, vastgelegd zonder de configuratie te wijzigen" to="/docs/reference/terminology#baseline">baseline</Terminology> is vastgelegd, toont het elk adres binnen de prefix en welke adressen de volgende wijziging zou bijwerken.
+
+1. Zet de <Terminology title="groep velden met één schakelaar op het tabblad Velden" to="/docs/reference/terminology#field-group">veldgroepen</Terminology> uit die de firewall niet gebruikt. Alle elf pfSense-groepen staan standaard aan.
+2. Vink afzonderlijke velden uit die hun waarde moeten houden, en vink elk veld van een ander pakket aan dat de prefix moet volgen.
+3. Vink onder **Overige instellingen** elk veld aan dat de prefix moet volgen, zoals een gateway of statische route.
+4. Selecteer **Opslaan** en controleer of de melding `Veldselectie opgeslagen.` verschijnt.
+
+[Velden](/docs/configure/configuration-scopes) legt elke groep en elk bedieningselement uit.
+
+## Wat een testuitvoering nu laat zien \{#what-a-dry-run-shows-now}
+
+Bij een ongewijzigde prefix meldt **<Terminology title="voorbeeld dat nooit een back-up maakt of schrijft" to="/docs/reference/terminology#dry-run">Testuitvoering</Terminology>** <Terminology title="resultaat: prefix ongewijzigd, niets gescand of geschreven" to="/docs/reference/terminology#no-change">Geen wijziging</Terminology> zonder de configuratie te scannen, omdat de planning pas begint na een echte <Terminology title="afwijking van de laatste geslaagde prefix of lengte" to="/docs/reference/terminology#prefix-transition">prefixwissel</Terminology>. Het tabblad Velden laat zien welke velden een toekomstige wijziging zou raken.
+
+Een <Terminology title="voorbeeld dat nooit een back-up maakt of schrijft" to="/docs/reference/terminology#dry-run">testuitvoering</Terminology> die je uitvoert voordat er een <Terminology title="startprefix, vastgelegd zonder de configuratie te wijzigen" to="/docs/reference/terminology#baseline">baseline</Terminology> bestaat, meldt <Terminology title="resultaat: testuitvoering voordat er een baseline bestaat" to="/docs/reference/terminology#initialization-preview">Voorbeeld van initialisatie</Terminology> en legt niets vast.
+
+## Het schema inschakelen \{#turn-on-the-schedule}
+
+Kloppen de waarden, vink dan **<Terminology title="automatische controles via een door pfSense beheerde cronjob" to="/docs/reference/terminology#scheduled-updates">Geplande updates inschakelen</Terminology>** aan, kies een **Schema** en sla op. [Schema en meldingen](/docs/configure/schedule-and-notifications) legt elke optie uit.
+
+Na het eerste geplande tijdstip toont **Tijdstempel (UTC)** onder **Laatste uitvoering** wanneer die controle heeft gedraaid.
+
+Ga verder met [Controleren vóór automatisering](/docs/safety/testing-and-verification) voor een volledige checklist.

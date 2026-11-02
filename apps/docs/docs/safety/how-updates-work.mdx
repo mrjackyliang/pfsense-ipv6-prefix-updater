@@ -1,0 +1,79 @@
+---
+id: how-updates-work
+title: How Updates Work
+description: Follow one run stage by stage, from reading the interface addresses through planning, the backup, the single write, service reloads, and the recorded result.
+keywords:
+  - pfsense ipv6 prefix updater
+  - update process
+  - change plan
+  - service reload
+  - verification
+tags:
+  - safety
+  - update process
+  - service reload
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Follow one run from reading the interface addresses to recording the result, including every point where it can stop.
+
+## 1. Read and Validate
+
+- A scheduled check stops right away as <Terminology title="outcome: scheduled check skipped while updates are off" to="/docs/reference/terminology#disabled">Disabled</Terminology> when **<Terminology title="automatic checks run from a pfSense-managed cron entry" to="/docs/reference/terminology#scheduled-updates">Enable Scheduled Updates</Terminology>** is off. A <Terminology title="check started from the Status tab" to="/docs/reference/terminology#manual-run">manual run</Terminology> continues.
+- The run checks the saved settings again, because they could have changed since the form was saved.
+- It reads the <Terminology title="public IPv6 address inside 2000::/3" to="/docs/reference/terminology#global-unicast-address">global address</Terminology> of each <Terminology title="interface whose address reveals the current prefix" to="/docs/reference/terminology#monitored-interface">Monitored Interface</Terminology> fresh, without a <Terminology title="fe80:: address that works only on one link" to="/docs/reference/terminology#link-local-address">link-local address</Terminology> fallback, and converts it to <Terminology title="lowercase, shortest standard spelling of an address" to="/docs/reference/terminology#canonical-form">canonical form</Terminology>.
+- It masks each address at its row's <Terminology title="setting for the ISP prefix size, /48 to /64" to="/docs/reference/terminology#delegated-prefix-length">Delegated Prefix Length</Terminology> to get the <Terminology title="source address masked at the prefix length" to="/docs/reference/terminology#observed-prefix">observed prefix</Terminology>.
+
+## 2. Compare
+
+- With no <Terminology title="starting prefix recorded without changing configuration" to="/docs/reference/terminology#baseline">baseline</Terminology> for the interface, the run records one and ends as <Terminology title="outcome: baseline recorded, configuration unchanged" to="/docs/reference/terminology#initialized">Initialized</Terminology>.
+- When the prefix and its length match the <Terminology title="prefix the next check compares against" to="/docs/reference/terminology#last-successful-prefix">last successful prefix</Terminology>, the run ends as <Terminology title="outcome: prefix unchanged, nothing scanned or written" to="/docs/reference/terminology#no-change">No change</Terminology> without scanning the configuration.
+- A different prefix or length is a <Terminology title="change from the last successful prefix or length" to="/docs/reference/terminology#prefix-transition">prefix transition</Terminology>, and the run continues.
+
+## 3. Plan
+
+- The run reads the configuration through pfSense's configuration functions and keeps only the fields selected on the Fields tab. Selected fields that no longer exist are skipped and listed under **Skipped Fields**.
+- Each address in an <Terminology title="exact configuration field the package may rewrite" to="/docs/reference/terminology#approved-field">approved field</Terminology> that belongs to the old prefix, at the stored length, gets the new prefix bits at the current length and keeps its <Terminology title="address bits after the delegated prefix" to="/docs/reference/terminology#host-portion">host portion</Terminology>. Together these changes form the complete <Terminology title="full list of field changes, built before writing" to="/docs/reference/terminology#change-plan">change plan</Terminology>.
+- With nothing to change, the run ends as <Terminology title="outcome: prefix changed, but no approved field matched" to="/docs/reference/terminology#warning">Warning</Terminology>. A <Terminology title="preview that never backs up or writes" to="/docs/reference/terminology#dry-run">dry run</Terminology> with changes ends here as <Terminology title="preview that never backs up or writes" to="/docs/reference/terminology#dry-run">Dry run</Terminology>.
+
+## 4. Preflight
+
+- The run confirms that pfSense can reload every service in the plan. <Terminology title="address assigned to a pfSense WireGuard tunnel" to="/docs/reference/terminology#wireguard-tunnel-address">WireGuard tunnel addresses</Terminology> need the WireGuard package for this.
+- It confirms that each planned field still holds the value it had when the plan was built.
+
+## 5. Back Up and Write Once
+
+- pfSense creates a <Terminology title="copy of the configuration saved before a write" to="/docs/reference/terminology#configuration-backup">configuration backup</Terminology>, and the run stops if pfSense doesn't confirm it.
+- The run applies every change and saves once, with the description `IPv6 Prefix Updater changed <count> approved field(s) for interface <interface>`.
+- If pfSense reports the save as failed, the run puts the original values back in memory and stops.
+
+## 6. Verify, Reload, Verify
+
+- The run checks that the saved values match the plan, reloads the affected services, and checks the values again.
+- Services reload in the fixed order that [Reload Actions](/docs/reference/approved-fields#reload-actions) lists, from Interfaces to WireGuard. An Interfaces reload is followed by a firewall filter reload, which then isn't repeated.
+- The firewall filter, DNS Resolver, and DNS Forwarder reloads fail the run when they return a failure. The other reloads fail it only when they raise an error.
+- Other packages' settings are applied again last, after the reloads and their verification. A package that can't be applied is reported, and the saved values stay.
+- A failure in this stage leaves the new values saved.
+
+## 7. Record and Notify
+
+- The <Terminology title="starting prefix recorded without changing configuration" to="/docs/reference/terminology#baseline">baseline</Terminology> moves to the new prefix, and **Last Run** records the <Terminology title="outcome: fields updated, saved, reloaded, and verified" to="/docs/reference/terminology#success">Success</Terminology> with the changed-field count and the <Terminology title="pfSense action that applies changed settings" to="/docs/reference/terminology#service-reload">reloaded services</Terminology>.
+- The run writes a <Terminology title="pfSense general log the package writes to" to="/docs/reference/terminology#system-log">system log</Terminology> line and sends a <Terminology title="alert sent after a verified successful update" to="/docs/reference/terminology#change-notification">change notification</Terminology> if it's turned on. A failed notification doesn't change the outcome.
+
+## Where a Run Can Stop
+
+| Where it stops                                                                                                                                                                                                                                                                                   | Configuration written      | Backup created | Last Run updated                                                                                                                                   |
+|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------|----------------|----------------------------------------------------------------------------------------------------------------------------------------------------|
+| <Terminology title="outcome: scheduled check skipped while updates are off" to="/docs/reference/terminology#disabled">Disabled</Terminology> scheduled check                                                                                                                                     | No                         | No             | No                                                                                                                                                 |
+| Settings, address, or unreadable <Terminology title="package file holding the baseline and last run" to="/docs/reference/terminology#package-state">package state</Terminology>                                                                                                                  | No                         | No             | No                                                                                                                                                 |
+| <Terminology title="outcome: baseline recorded, configuration unchanged" to="/docs/reference/terminology#initialized">Initialized</Terminology> or <Terminology title="outcome: prefix unchanged, nothing scanned or written" to="/docs/reference/terminology#no-change">No change</Terminology> | No                         | No             | Yes                                                                                                                                                |
+| <Terminology title="outcome: prefix changed, but no approved field matched" to="/docs/reference/terminology#warning">Warning</Terminology> or <Terminology title="preview that never backs up or writes" to="/docs/reference/terminology#dry-run">Dry run</Terminology>                          | No                         | No             | Yes                                                                                                                                                |
+| Preflight failure                                                                                                                                                                                                                                                                                | No                         | No             | Yes                                                                                                                                                |
+| Backup failure                                                                                                                                                                                                                                                                                   | No                         | No             | Yes                                                                                                                                                |
+| Write failure                                                                                                                                                                                                                                                                                    | No, as reported by pfSense | Yes            | Yes                                                                                                                                                |
+| Verification or reload failure                                                                                                                                                                                                                                                                   | Yes                        | Yes            | Yes                                                                                                                                                |
+| Notification failure                                                                                                                                                                                                                                                                             | Yes                        | Yes            | Yes, as <Terminology title="outcome: fields updated, saved, reloaded, and verified" to="/docs/reference/terminology#success">Success</Terminology> |
+
+[Approved Fields](/docs/reference/approved-fields) lists the pfSense function behind each reload, and [Backups and Recovery](/docs/operate/backups-and-recovery) covers recovery after a failure.

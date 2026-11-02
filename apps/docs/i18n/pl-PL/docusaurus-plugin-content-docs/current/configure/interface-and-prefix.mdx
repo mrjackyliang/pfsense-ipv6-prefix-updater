@@ -1,0 +1,95 @@
+---
+id: interface-and-prefix
+title: Interfejs i prefiks
+description: Wybierz monitorowane interfejsy z delegowanymi prefiksami, wprowadź dla każdego z nich długość prefiksu używaną przez dostawcę internetu i zobacz, co powoduje późniejsza zmiana któregokolwiek z tych ustawień.
+keywords:
+  - pfsense ipv6 prefix updater
+  - monitorowany interfejs
+  - długość delegowanego prefiksu
+  - delegowanie prefiksu dhcpv6
+  - bity hosta
+tags:
+  - configuration
+  - interface
+  - prefix length
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import monitoredInterfaces from './_assets_/interface-and-prefix-1.png';
+
+Wybierz interfejsy, które ujawniają bieżące prefiksy, i wprowadź dla każdego z nich <Terminology title="liczba początkowych bitów sieci, np. /56" to="/docs/reference/terminology#prefix-length">długość prefiksu</Terminology> delegowaną przez dostawcę internetu.
+
+## Wybór monitorowanych interfejsów \{#choose-the-monitored-interfaces}
+
+Dodaj w polu **Monitorowane interfejsy** wiersz dla każdego interfejsu, którego <Terminology title="publiczny adres IPv6 z zakresu 2000::/3" to="/docs/reference/terminology#global-unicast-address">globalny adres</Terminology> pochodzi z <Terminology title="sieć IPv6, którą dostawca kieruje do zapory" to="/docs/reference/terminology#delegated-prefix">delegowanego prefiksu</Terminology>. Pakiet odczytuje każdy z tych adresów na nowo przy każdym uruchomieniu i nigdy nie używa zastępczo <Terminology title="adres fe80:: działający tylko w jednym łączu" to="/docs/reference/terminology#link-local-address">adresu link-local</Terminology>.
+
+Jeśli WAN otrzymuje tylko <Terminology title="sieć IPv6, którą dostawca kieruje do zapory" to="/docs/reference/terminology#delegated-prefix">delegowany prefiks</Terminology>, <Terminology title="interfejs adresowany z delegowanego prefiksu innego interfejsu" to="/docs/reference/terminology#tracked-interface">śledzony interfejs</Terminology>, na przykład LAN, zwykle ma z niego <Terminology title="publiczny adres IPv6 z zakresu 2000::/3" to="/docs/reference/terminology#global-unicast-address">globalny adres</Terminology> i jest właściwym wyborem.
+
+<img src={monitoredInterfaces} alt="Karta Ustawienia pakietu IPv6 Prefix Updater z dwoma wierszami w polu Monitorowane interfejsy, LAN i LAB, każdy z długością delegowanego prefiksu /56, oraz wskazówką odsyłającą do karty Pola" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+- **Dodaj**: dodaje wiersz. Każdy interfejs może wystąpić tylko w jednym wierszu, a zapisanie bez żadnego wiersza jest odrzucane.
+- **Usuń**: usuwa wiersz. pfSense ukrywa ten przycisk, gdy pozostaje tylko jeden wiersz.
+- **Jedno uruchomienie dla wszystkich wierszy**: każde zaplanowane sprawdzenie odczytuje wszystkie monitorowane interfejsy i wprowadza ich zmiany w jednym zapisie poprzedzonym kopią zapasową.
+
+Większość zapór potrzebuje jednego wiersza. Dodaj kolejne, gdy kilka interfejsów otrzymuje własny delegowany prefiks, na przykład przy dwóch połączeniach WAN, albo gdy chcesz sprawdzać adres każdego segmentu LAN.
+
+Aby potwierdzić wybór:
+
+1. Zapisz ustawienia z odznaczoną opcją **<Terminology title="automatyczne sprawdzenia z wpisu cron zarządzanego przez pfSense" to="/docs/reference/terminology#scheduled-updates">Włącz zaplanowane aktualizacje</Terminology>**.
+2. Na karcie Stan wybierz **Uruchom teraz**.
+3. Porównaj **<Terminology title="globalny adres zgłaszany przez pfSense dla monitorowanego interfejsu" to="/docs/reference/terminology#source-address">Zaobserwowany adres źródłowy</Terminology>** z adresem w **Status → Interfaces**.
+4. Jeśli adres należy do niewłaściwej sieci, wybierz inny interfejs i powtórz kroki.
+
+Karta Stan pokazuje opis każdego interfejsu, a po nim jego wewnętrzną nazwę w pfSense, na przykład `LAN (lan)`.
+
+## Wprowadzenie długości delegowanego prefiksu \{#enter-the-delegated-prefix-length}
+
+Wybierz długość na podstawie danych usługi od dostawcy internetu lub rozmiaru delegacji prefiksu DHCPv6 na interfejsie WAN. Pole **<Terminology title="ustawienie rozmiaru prefiksu od dostawcy, od /48 do /64" to="/docs/reference/terminology#delegated-prefix-length">Długość delegowanego prefiksu</Terminology>** przyjmuje wartości od `/48` do `/64`, domyślnie ma wartość `/56` i nigdy nie jest wykrywane automatycznie.
+
+:::tip
+
+Zaleca się potwierdzić długość przed pierwszym użyciem **Uruchom teraz**, ponieważ <Terminology title="prefiks startowy zapisany bez zmiany konfiguracji" to="/docs/reference/terminology#baseline">wartość bazowa</Terminology> przechowuje długość razem z prefiksem.
+
+:::
+
+## Sprawdzenie obliczonej sieci \{#check-the-calculated-network}
+
+Po uruchomieniu pole **<Terminology title="adres źródłowy zamaskowany do długości prefiksu" to="/docs/reference/terminology#observed-prefix">Zaobserwowany prefiks</Terminology>** pokazuje obliczoną sieć. Długości kończące się wewnątrz cyfry szesnastkowej, na przykład `/57` lub `/63`, działają tak samo, ponieważ pakiet maskuje adresy bit po bicie.
+
+Dla delegacji `/56`, która zmienia się z `2001:db8:abcd:7800::/56` na `2001:db8:abcd:8800::/56`:
+
+```text
+Source address:    2001:db8:abcd:88aa::1
+Current prefix:    2001:db8:abcd:8800::/56
+Previous address:  2001:db8:abcd:78aa::42
+Updated address:   2001:db8:abcd:88aa::42
+```
+
+Zmienia się tylko pierwsze 56 bitów, a <Terminology title="bity adresu po delegowanym prefiksie" to="/docs/reference/terminology#host-portion">część hosta</Terminology> `aa::42` pozostaje taka sama. Adresy z zakresu `2001:db8::/32` w tych przewodnikach to przykłady dokumentacyjne.
+
+## Zmiana interfejsów \{#changing-the-interfaces}
+
+:::warning
+
+Dodanie <Terminology title="interfejs, którego adres ujawnia bieżący prefiks" to="/docs/reference/terminology#monitored-interface">monitorowanego interfejsu</Terminology> albo przełączenie wiersza na inny interfejs sprawia, że następne uruchomienie zapisuje dla niego nową <Terminology title="prefiks startowy zapisany bez zmiany konfiguracji" to="/docs/reference/terminology#baseline">wartość bazową</Terminology> bez zmiany konfiguracji. Jeśli jego prefiks się zmienił, a pakiet jeszcze tej zmiany nie zastosował, zostanie ona pominięta.
+
+:::
+
+Usunięcie wiersza zachowuje <Terminology title="prefiks startowy zapisany bez zmiany konfiguracji" to="/docs/reference/terminology#baseline">wartość bazową</Terminology> tego interfejsu w <Terminology title="plik pakietu z wartością bazową i ostatnim uruchomieniem" to="/docs/reference/terminology#package-state">stanie pakietu</Terminology>. Jeśli później ponownie dodasz ten interfejs, pakiet porówna prefiks z zapisaną wartością bazową, zamiast zapisywać nową.
+
+## Zmiana długości prefiksu \{#changing-the-prefix-length}
+
+Zmiana pola **<Terminology title="ustawienie rozmiaru prefiksu od dostawcy, od /48 do /64" to="/docs/reference/terminology#delegated-prefix-length">Długość delegowanego prefiksu</Terminology>** po ustaleniu <Terminology title="prefiks startowy zapisany bez zmiany konfiguracji" to="/docs/reference/terminology#baseline">wartości bazowej</Terminology> liczy się jako <Terminology title="różnica względem ostatniego pomyślnego prefiksu lub długości" to="/docs/reference/terminology#prefix-transition">zmiana prefiksu</Terminology>, nawet jeśli sama sieć pozostaje taka sama. Pakiet dopasowuje adresy według długości zapisanej w <Terminology title="prefiks startowy zapisany bez zmiany konfiguracji" to="/docs/reference/terminology#baseline">wartości bazowej</Terminology> i zastępuje bity zgodnie z nową długością.
+
+:::danger
+
+Zawężenie długości nadpisuje bity podsieci każdego pasującego adresu. Przy <Terminology title="globalny adres zgłaszany przez pfSense dla monitorowanego interfejsu" to="/docs/reference/terminology#source-address">adresie źródłowym</Terminology> `2001:db8:1234:ab00::1` i <Terminology title="prefiks startowy zapisany bez zmiany konfiguracji" to="/docs/reference/terminology#baseline">wartości bazowej</Terminology> `/56` zmiana na `/64` zamienia `2001:db8:1234:abcc::42` w `2001:db8:1234:ab00::42`.
+
+:::
+
+Poszerzenie długości, na przykład z `/64` do `/56`, może sprawić, że uruchomienie nie będzie miało nic do zmiany. Wtedy każde uruchomienie zgłasza wynik <Terminology title="wynik: prefiks się zmienił, ale żadne zatwierdzone pole nie pasowało" to="/docs/reference/terminology#warning">Ostrzeżenie</Terminology>, dopóki sam prefiks się nie zmieni albo dopóki nie zweryfikujesz zapisanych adresów i nie [zaakceptujesz bieżącego prefiksu](/docs/operate/backups-and-recovery#after-a-failed-run) jako nowej wartości bazowej.
+
+Przed zmianą długości zaleca się odznaczyć opcję **<Terminology title="automatyczne sprawdzenia z wpisu cron zarządzanego przez pfSense" to="/docs/reference/terminology#scheduled-updates">Włącz zaplanowane aktualizacje</Terminology>** w tym samym zapisie. Wtedy **<Terminology title="podgląd bez kopii zapasowej i bez zapisu" to="/docs/reference/terminology#dry-run">Próba</Terminology>** pokaże liczbę zaplanowanych pól, każdą zaplanowaną zmianę pod nagłówkiem `Zmiany pól` i **Podsumowanie**, zanim wybierzesz **Uruchom teraz**.
+
+Następnie [ustal wartość bazową](/docs/first-run), a potem wybierz pola na karcie [Pola](/docs/configure/configuration-scopes).

@@ -1,0 +1,95 @@
+---
+id: interface-and-prefix
+title: Sučelje i prefiks
+description: Odaberite nadzirana sučelja koja nose vaše dodijeljene prefikse, unesite dužinu prefiksa koju ISP koristi za svako od njih i pogledajte šta uzrokuje kasnija promjena bilo koje od ovih postavki.
+keywords:
+  - pfsense ipv6 prefix updater
+  - nadzirano sučelje
+  - dužina dodijeljenog prefiksa
+  - dhcpv6 dodjela prefiksa
+  - bitovi hosta
+tags:
+  - configuration
+  - interface
+  - prefix length
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import monitoredInterfaces from './_assets_/interface-and-prefix-1.png';
+
+Odaberite sučelja koja otkrivaju trenutne prefikse i za svako od njih unesite <Terminology title="broj vodećih mrežnih bitova, npr. /56" to="/docs/reference/terminology#prefix-length">dužinu prefiksa</Terminology> koju dodjeljuje ISP.
+
+## Odabir nadziranih sučelja \{#choose-the-monitored-interfaces}
+
+Dodajte red u polju **Nadzirana sučelja** za svako sučelje čija <Terminology title="javna IPv6 adresa unutar 2000::/3" to="/docs/reference/terminology#global-unicast-address">globalna adresa</Terminology> dolazi iz <Terminology title="IPv6 mreža koju ISP usmjerava prema vatrozidu" to="/docs/reference/terminology#delegated-prefix">dodijeljenog prefiksa</Terminology>. Paket svaku od tih adresa čita iznova pri svakom pokretanju i nikada ne koristi <Terminology title="fe80:: adresa koja radi samo na jednoj vezi" to="/docs/reference/terminology#link-local-address">link-local adresu</Terminology> kao zamjenu.
+
+Ako WAN dobija samo <Terminology title="IPv6 mreža koju ISP usmjerava prema vatrozidu" to="/docs/reference/terminology#delegated-prefix">dodijeljeni prefiks</Terminology>, <Terminology title="sučelje adresirano iz dodijeljenog prefiksa drugog sučelja" to="/docs/reference/terminology#tracked-interface">sučelje tipa Track Interface</Terminology>, na primjer LAN, obično ima <Terminology title="javna IPv6 adresa unutar 2000::/3" to="/docs/reference/terminology#global-unicast-address">globalnu adresu</Terminology> iz njega i pravi je izbor.
+
+<img src={monitoredInterfaces} alt="Kartica Postavke paketa IPv6 Prefix Updater s dva reda u polju Nadzirana sučelja, LAN i LAB, svaki s dužinom dodijeljenog prefiksa /56, i napomenom koja upućuje na karticu Polja" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+- **Dodaj**: dodaje red. Svako sučelje može se pojaviti samo u jednom redu, a čuvanje bez ijednog reda se odbija.
+- **Obriši**: uklanja red. pfSense skriva to dugme dok je ostao samo jedan red.
+- **Jedno pokretanje za sve redove**: svaka zakazana provjera čita sva nadzirana sučelja i primjenjuje njihove promjene u jednom upisu kojem prethodi sigurnosna kopija.
+
+Većini vatrozida treba jedan red. Dodajte još redova kada nekoliko sučelja dobija vlastiti dodijeljeni prefiks, na primjer na dvije WAN veze, ili kada želite da se provjerava adresa svakog LAN segmenta.
+
+Da biste potvrdili izbor:
+
+1. Sačuvajte postavke s neoznačenom opcijom **<Terminology title="automatske provjere iz cron unosa kojim upravlja pfSense" to="/docs/reference/terminology#scheduled-updates">Omogući zakazana ažuriranja</Terminology>**.
+2. Na kartici Status odaberite **Pokreni sada**.
+3. Uporedite **<Terminology title="globalna adresa koju pfSense prijavljuje za nadzirano sučelje" to="/docs/reference/terminology#source-address">Uočena izvorna adresa</Terminology>** s adresom u **Status → Interfaces**.
+4. Ako adresa pripada pogrešnoj mreži, odaberite drugo sučelje i ponovite postupak.
+
+Kartica Status prikazuje opis svakog sučelja, a zatim njegov interni pfSense naziv, na primjer `LAN (lan)`.
+
+## Unos dužine dodijeljenog prefiksa \{#enter-the-delegated-prefix-length}
+
+Odaberite dužinu prema podacima o usluzi od ISP-a ili prema veličini DHCPv6 dodjele prefiksa na WAN sučelju. **<Terminology title="postavka veličine ISP prefiksa, od /48 do /64" to="/docs/reference/terminology#delegated-prefix-length">Dužina dodijeljenog prefiksa</Terminology>** prihvata vrijednosti od `/48` do `/64`, zadana je `/56` i nikada se ne otkriva automatski.
+
+:::tip
+
+Preporučuje se da potvrdite dužinu prije prvog **Pokreni sada**, jer <Terminology title="početni prefiks zabilježen bez promjene konfiguracije" to="/docs/reference/terminology#baseline">početno stanje</Terminology> čuva dužinu zajedno s prefiksom.
+
+:::
+
+## Provjera izračunate mreže \{#check-the-calculated-network}
+
+Nakon pokretanja, **<Terminology title="izvorna adresa maskirana na dužinu prefiksa" to="/docs/reference/terminology#observed-prefix">Uočeni prefiks</Terminology>** prikazuje izračunatu mrežu. Dužine koje završavaju unutar heksadecimalne cifre, na primjer `/57` ili `/63`, rade isto jer paket maskira adrese bit po bit.
+
+Za `/56` dodjelu koja se mijenja iz `2001:db8:abcd:7800::/56` u `2001:db8:abcd:8800::/56`:
+
+```text
+Source address:    2001:db8:abcd:88aa::1
+Current prefix:    2001:db8:abcd:8800::/56
+Previous address:  2001:db8:abcd:78aa::42
+Updated address:   2001:db8:abcd:88aa::42
+```
+
+Mijenja se samo prvih 56 bitova, a <Terminology title="bitovi adrese nakon dodijeljenog prefiksa" to="/docs/reference/terminology#host-portion">dio hosta</Terminology> `aa::42` ostaje isti. Adrese pod `2001:db8::/32` u ovim vodičima su dokumentacijski primjeri.
+
+## Promjena sučelja \{#changing-the-interfaces}
+
+:::warning
+
+Dodavanje <Terminology title="sučelje čija adresa otkriva trenutni prefiks" to="/docs/reference/terminology#monitored-interface">nadziranog sučelja</Terminology> ili prebacivanje reda na drugo sučelje čini da sljedeće pokretanje zabilježi novo <Terminology title="početni prefiks zabilježen bez promjene konfiguracije" to="/docs/reference/terminology#baseline">početno stanje</Terminology> za njega bez promjene konfiguracije. Ako se njegov prefiks promijenio, a paket tu promjenu još nije primijenio, ona se preskače.
+
+:::
+
+Brisanje reda zadržava <Terminology title="početni prefiks zabilježen bez promjene konfiguracije" to="/docs/reference/terminology#baseline">početno stanje</Terminology> tog sučelja u <Terminology title="datoteka paketa s početnim stanjem i posljednjim pokretanjem" to="/docs/reference/terminology#package-state">stanju paketa</Terminology>. Ako kasnije ponovo dodate to sučelje, paket poredi s tim sačuvanim početnim stanjem umjesto da bilježi novo.
+
+## Promjena dužine prefiksa \{#changing-the-prefix-length}
+
+Promjena polja **<Terminology title="postavka veličine ISP prefiksa, od /48 do /64" to="/docs/reference/terminology#delegated-prefix-length">Dužina dodijeljenog prefiksa</Terminology>** nakon što postoji <Terminology title="početni prefiks zabilježen bez promjene konfiguracije" to="/docs/reference/terminology#baseline">početno stanje</Terminology> računa se kao <Terminology title="razlika u odnosu na posljednji uspješni prefiks ili dužinu" to="/docs/reference/terminology#prefix-transition">promjena prefiksa</Terminology>, čak i kada sama mreža ostaje ista. Paket provjerava podudaranje adresa prema dužini sačuvanoj u <Terminology title="početni prefiks zabilježen bez promjene konfiguracije" to="/docs/reference/terminology#baseline">početnom stanju</Terminology> i zamjenjuje bitove prema novoj dužini.
+
+:::danger
+
+Sužavanje dužine prepisuje bitove podmreže svake odgovarajuće adrese. Uz <Terminology title="globalna adresa koju pfSense prijavljuje za nadzirano sučelje" to="/docs/reference/terminology#source-address">izvornu adresu</Terminology> `2001:db8:1234:ab00::1` i `/56` <Terminology title="početni prefiks zabilježen bez promjene konfiguracije" to="/docs/reference/terminology#baseline">početno stanje</Terminology>, promjena na `/64` pretvara `2001:db8:1234:abcc::42` u `2001:db8:1234:ab00::42`.
+
+:::
+
+Proširenje dužine, na primjer sa `/64` na `/56`, može ostaviti pokretanje bez ičega za promjenu. Tada pri svakom pokretanju prijavljuje ishod <Terminology title="ishod: prefiks promijenjen, ali nijedno odobreno polje nije odgovaralo" to="/docs/reference/terminology#warning">Upozorenje</Terminology> dok se sam prefiks ne promijeni ili dok ne provjerite sačuvane adrese i [prihvatite trenutni prefiks](/docs/operate/backups-and-recovery#after-a-failed-run) kao novo početno stanje.
+
+Prije promjene dužine preporučuje se da u istom čuvanju poništite oznaku **<Terminology title="automatske provjere iz cron unosa kojim upravlja pfSense" to="/docs/reference/terminology#scheduled-updates">Omogući zakazana ažuriranja</Terminology>**. **<Terminology title="pregled bez sigurnosne kopije i bez upisa" to="/docs/reference/terminology#dry-run">Probno pokretanje</Terminology>** tada prikazuje broj planiranih polja, svaku planiranu promjenu pod `Promjene polja` i **Sažetak** prije nego što odaberete **Pokreni sada**.
+
+Zatim [uspostavite početno stanje](/docs/first-run), a potom odaberite polja na kartici [Polja](/docs/configure/configuration-scopes).

@@ -1,0 +1,85 @@
+---
+id: migrate-from-legacy
+title: 從指令碼遷移
+description: 在保留舊版 update.php 指令碼的情況下直接安裝此套件，讓它替您遷移 Cron 項目、已儲存的前綴與備份，然後在「清理」分頁查看結果。
+keywords:
+  - pfsense ipv6 prefix updater
+  - 舊版更新器
+  - 遷移
+  - update.php
+  - Cron 套件
+  - 清理
+tags:
+  - setup
+  - migration
+  - legacy updater
+sidebar_position: 5
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import cleanupBefore from './_assets_/migrate-from-legacy-1.png';
+import cleanupAfter from './_assets_/migrate-from-legacy-2.png';
+
+只要安裝此套件，就能從<Terminology title="由 Cron 套件執行的原始 update.php 指令碼" to="/docs/reference/terminology#legacy-updater">舊版更新器</Terminology>遷移到套件，套件會自行接手該指令碼的介面、已儲存的前綴與備份。
+
+## 有哪些改變 \{#what-changes}
+
+| 項目    | <Terminology title="由 Cron 套件執行的原始 update.php 指令碼" to="/docs/reference/terminology#legacy-updater">舊版更新器</Terminology> | 套件                                                                                                                                                                                                                                        |
+|-------|------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 安裝    | 由 `install.sh` 將檔案複製到 `/root/pfsense-ipv6-prefix-updater`                                                              | 由 `pkg add` 安裝 pfSense 套件                                                                                                                                                                                                                 |
+| 排程    | 由您自行建立的 Cron 套件項目                                                                                                      | **排程** 設定，搭配由 pfSense 管理的 cron 項目                                                                                                                                                                                                         |
+| 介面    | 每個作業系統裝置一個 Cron 項目，例如 `igb1`                                                                                           | 每個 pfSense 介面（例如 LAN）在 **監控介面** 中各有一列，全部在一次執行中檢查                                                                                                                                                                                          |
+| 變更的內容 | 設定中任何位置的舊前綴文字，包括 base64 編碼的值                                                                                           | 您在 **欄位** 分頁上選取的<Terminology title="套件可改寫的確切設定欄位" to="/docs/reference/terminology#approved-field">已核准欄位</Terminology>                                                                                                                     |
+| 備份    | `/root/pfsense-ipv6-prefix-updater-backups` 中所有使用者皆可讀取的副本                                                              | 每次寫入前儲存在<Terminology title="pfSense 已儲存設定修訂版本的清單" to="/docs/reference/terminology#config-history">設定歷程</Terminology>與 **備份** 分頁中的<Terminology title="寫入前儲存的設定副本" to="/docs/reference/terminology#configuration-backup">設定備份</Terminology> |
+| 儲存的前綴 | `/root/pfsense-ipv6-prefix-updater-cache`                                                                              | <Terminology title="保存基準與上次執行的套件檔案" to="/docs/reference/terminology#package-state">套件狀態</Terminology>，遷移時以舊版快取作為初始資料                                                                                                                      |
+| 通知    | 每次變更後傳送                                                                                                                | <Terminology title="結果：欄位已更新、儲存、重新載入並驗證" to="/docs/reference/terminology#success">成功</Terminology>後傳送的選用<Terminology title="更新驗證成功後傳送的警示" to="/docs/reference/terminology#change-notification">變更通知</Terminology>                         |
+
+## 安裝套件 \{#install-the-package}
+
+在舊版更新器仍保留的情況下，使用 `pkg add` [安裝套件](/docs/installation)。不需要事先移除任何東西，也建議不要自行刪除 Cron 項目或 `/root` 中的資料夾，因為套件會在遷移時讀取它們。
+
+再次執行舊的安裝命令並不會重新安裝該指令碼。從版本 2 起，它只會列印一則附有 `pkg add` 命令的錯誤訊息，不做任何變更。
+
+## 自動執行的動作 \{#what-happens-automatically}
+
+安裝步驟會找到舊版更新器，並依下列順序將其遷移到套件中：
+
+1. **備份**：在做出任何變更之前儲存一份<Terminology title="寫入前儲存的設定副本" to="/docs/reference/terminology#configuration-backup">設定備份</Terminology>。
+2. **介面**：將每個 Cron 項目的裝置（例如 `igb1.10`）對應到使用該裝置的 pfSense 介面，藉此把該項目轉換為一列 **監控介面**，並保留其<Terminology title="開頭的網路位元數，例如 /56" to="/docs/reference/terminology#prefix-length">前綴長度</Terminology>。
+3. **排程**：選擇檢查頻率不低於原 Cron 項目的套件 **排程**，並開啟<Terminology title="由 pfSense 管理的 cron 項目執行的自動檢查" to="/docs/reference/terminology#scheduled-updates">排程更新</Terminology>。
+4. **基準**：將每個已儲存的前綴記錄為對應介面的<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>，因此不會遺失任何前綴變更。
+5. **Cron 項目**：只移除執行 `update.php` 的項目，並與新設定在同一次設定寫入中完成，因此兩個更新器絕不會同時執行。
+6. **舊版備份**：將每個舊版備份複製到 **備份** 分頁（僅 root 可讀取），並在確認副本無誤後刪除原始檔案。
+7. **舊檔案**：從 `/root` 中刪除該指令碼、其已儲存的前綴、下載的壓縮檔與儲存的安裝程式。
+
+遷移完成後，會出現一則連結到「清理」分頁的 WebGUI 通知。如果此時舊版指令碼正在執行，套件會等待，並在下一次排程檢查時完成遷移。
+
+### 多個 Cron 項目 \{#several-cron-entries}
+
+每個指定不同裝置的 Cron 項目都會成為各自的一列，一次執行就能檢查所有列。共用同一個<Terminology title="ISP 路由到防火牆的 IPv6 網路" to="/docs/reference/terminology#delegated-prefix">委派前綴</Terminology>的介面只會更新一次共用欄位，並在一次有備份的寫入中完成。
+
+如果某個 Cron 項目的裝置已不屬於任何 pfSense 介面，該項目會被移除並列為一則警告，因為指令碼不可能透過它更新任何內容。
+
+### 過期的已儲存前綴 \{#saved-prefixes-that-are-out-of-date}
+
+如果 ISP 在舊版更新器最後一次執行後更換了前綴，其已儲存的前綴仍會作為<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>。接著，套件的第一次檢查會找到仍在使用舊前綴的欄位並加以更新。
+
+如果沒有任何已核准欄位使用舊的已儲存前綴，則改以目前前綴作為基準，因此第一次檢查不會回報<Terminology title="結果：前綴已變更，但沒有符合的已核准欄位" to="/docs/reference/terminology#warning">警告</Terminology>。
+
+## 查看「清理」分頁 \{#review-the-cleanup-tab}
+
+開啟 **Services → IPv6 Prefix Updater** 的 **清理** 分頁，查看每一項舊版遺留內容及其處理結果。
+
+<img src={cleanupBefore} alt="IPv6 Prefix Updater 的「清理」分頁，在清理前列出兩個舊版 Cron 項目、舊版指令碼、兩個裝置的已儲存前綴、一個舊版備份與兩個安裝程式下載檔案" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+- **1.x 遺留內容**：Cron 項目、指令碼、已儲存的前綴、備份、安裝程式下載檔案與指令碼鎖定，每一項都會標示為 **已找到** 或 **不存在**。
+- **上次清理**：遷移執行的每個步驟以及所有警告，例如某個裝置未指派給任何介面。
+- **立即清理**：立即執行相同的遷移，而不必等待下一次排程檢查。其他 Cron 項目絕不會受到影響。
+
+<img src={cleanupAfter} alt="IPv6 Prefix Updater 的「清理」分頁，在執行「立即清理」後列出已儲存的備份、已移除的 Cron 項目、已遷移的備份與已刪除的舊版檔案" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+## 檢查涵蓋範圍 \{#check-coverage}
+
+第一次實際發生<Terminology title="與上次成功前綴或長度不同" to="/docs/reference/terminology#prefix-transition">前綴變更</Terminology>後，將 **已變更欄位** 與 **摘要** 和<Terminology title="由 Cron 套件執行的原始 update.php 指令碼" to="/docs/reference/terminology#legacy-updater">舊版更新器</Terminology>以往變更的內容進行比較。舊版更新器還會改寫閘道、靜態路由、描述與 Base64 編碼的值。只有在 **欄位** 分頁的 **其他設定** 中勾選這些值，套件才會變更它們，因此建議在前綴變更之前先勾選它們。
+
+遷移後，所有 pfSense <Terminology title="「欄位」分頁上共用一個開關的一組欄位" to="/docs/reference/terminology#field-group">欄位群組</Terminology>一開始都是開啟的，就像 **自動選取** 所設定的那樣。[欄位](/docs/configure/configuration-scopes)頁面列出了每個群組以及關閉群組的方法。

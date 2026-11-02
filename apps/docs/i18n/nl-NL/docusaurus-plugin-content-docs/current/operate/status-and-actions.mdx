@@ -1,0 +1,122 @@
+---
+id: status-and-actions
+title: Status en acties
+description: Lees de panelen Huidige status en Laatste uitvoering, start controles en voorbeelden, herstel de baseline en begrijp de Opdrachtuitvoer op het tabblad Status.
+keywords:
+  - pfsense ipv6 prefix updater
+  - tabblad status
+  - nu uitvoeren
+  - testuitvoering
+  - opdrachtuitvoer
+tags:
+  - operations
+  - status
+  - dry run
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import unchangedRun from './_assets_/status-and-actions-1.png';
+import changedRun from './_assets_/status-and-actions-2.png';
+import runByInterface from './_assets_/status-and-actions-3.png';
+
+Bekijk wat de huidige baseline en de laatste uitvoering hebben vastgelegd, en start vanaf het tabblad Status een controle, een voorbeeld of een herstel van de baseline.
+
+## Huidige status \{#current-state}
+
+Het tabblad **Status** onder **Services → IPv6 Prefix Updater** begint met deze tabel, die één rij per bewaakte interface heeft en de <Terminology title="startprefix, vastgelegd zonder de configuratie te wijzigen" to="/docs/reference/terminology#baseline">baseline</Terminology> beschrijft waarmee de volgende controle vergelijkt:
+
+- **<Terminology title="interface waarvan het adres de huidige prefix verraadt" to="/docs/reference/terminology#monitored-interface">Bewaakte interface</Terminology>**: de beschrijving van de interface, gevolgd door de interne pfSense-naam, zoals `LAN (lan)`.
+- **<Terminology title="prefix waarmee de volgende controle vergelijkt" to="/docs/reference/terminology#last-successful-prefix">Laatste geslaagde prefix</Terminology>**: de prefix en de lengte ervan, zoals `2001:db8:abcd:7800::/56`.
+- **<Terminology title="globaal adres dat pfSense voor de bewaakte interface meldt" to="/docs/reference/terminology#source-address">Laatste geslaagde bronadres</Terminology>**: het adres in <Terminology title="kortste standaardnotatie van een adres, in kleine letters" to="/docs/reference/terminology#canonical-form">canonieke vorm</Terminology>. Een uitvoering met <Terminology title="resultaat: prefix ongewijzigd, niets gescand of geschreven" to="/docs/reference/terminology#no-change">Geen wijziging</Terminology> werkt het ook bij.
+- **Laatste geslaagde update**: het UTC-tijdstip waarop de <Terminology title="startprefix, vastgelegd zonder de configuratie te wijzigen" to="/docs/reference/terminology#baseline">baseline</Terminology> is geïnitialiseerd, geaccepteerd of na het laatste resultaat <Terminology title="resultaat: velden bijgewerkt, opgeslagen, herladen en geverifieerd" to="/docs/reference/terminology#success">Geslaagd</Terminology> is verplaatst, zoals `2026-10-24T14:00:00+00:00`.
+
+Vóór de eerste uitvoering van een interface toont de rij ervan `Niet geïnitialiseerd. Voer eenmaal een normale controle uit om een veilige baseline vast te leggen.` Een <Terminology title="startprefix, vastgelegd zonder de configuratie te wijzigen" to="/docs/reference/terminology#baseline">baseline</Terminology> die is overgenomen van de legacy-updater, toont tot de eerste controle `Niet vastgelegd door deze pakketversie` als bronadres.
+
+## Laatste uitvoering \{#last-run}
+
+Dit paneel legt de laatste uitvoering vast. Bewaak je één interface, dan toont het direct het resultaat van die interface:
+
+- **Resultaat**: hoe de uitvoering is afgelopen, uitgelegd in [Uitvoeringsresultaten](/docs/operate/run-outcomes).
+- **Tijdstempel (UTC)**: wanneer de uitvoering klaar was.
+- **<Terminology title="globaal adres dat pfSense voor de bewaakte interface meldt" to="/docs/reference/terminology#source-address">Waargenomen bronadres</Terminology>**: het adres dat pfSense voor de <Terminology title="interface waarvan het adres de huidige prefix verraadt" to="/docs/reference/terminology#monitored-interface">bewaakte interface</Terminology> teruggaf.
+- **<Terminology title="bronadres, gemaskeerd op de prefixlengte" to="/docs/reference/terminology#observed-prefix">Waargenomen prefix</Terminology>**: het netwerk dat is berekend uit dat adres en de <Terminology title="instelling voor de prefixgrootte van de ISP, /48 tot /64" to="/docs/reference/terminology#delegated-prefix-length">lengte van de gedelegeerde prefix</Terminology>.
+- **Gewijzigde velden**: het aantal <Terminology title="exact configuratieveld dat het pakket mag herschrijven" to="/docs/reference/terminology#approved-field">goedgekeurde velden</Terminology> dat de uitvoering heeft gewijzigd, of na een <Terminology title="voorbeeld dat nooit een back-up maakt of schrijft" to="/docs/reference/terminology#dry-run">testuitvoering</Terminology> zou wijzigen.
+- **<Terminology title="kopie van de configuratie van vóór een schrijfactie" to="/docs/reference/terminology#configuration-backup">Configuratieback-up gemaakt</Terminology>**: `Ja` of `Nee - deze uitvoering heeft de configuratie niet geschreven`.
+- **<Terminology title="pfSense-actie die gewijzigde instellingen toepast" to="/docs/reference/terminology#service-reload">Opnieuw geladen services</Terminology>**: de services die de uitvoering heeft herladen, of na een <Terminology title="voorbeeld dat nooit een back-up maakt of schrijft" to="/docs/reference/terminology#dry-run">testuitvoering</Terminology> zou herladen.
+- **Samenvatting**: één zin over het resultaat, na een <Terminology title="afwijking van de laatste geslaagde prefix of lengte" to="/docs/reference/terminology#prefix-transition">prefixwissel</Terminology> inclusief de vorige prefix.
+- **Pakketten**: verschijnt als de uitvoering de instellingen van een ander pakket heeft gewijzigd, met één regel per pakket, zoals `De instellingen van het pakket <package> zijn opnieuw toegepast.` [Velden](/docs/configure/configuration-scopes#other-packages-settings) toont elke melding.
+- **Overgeslagen velden**: verschijnt als aangevinkte velden niet meer bestaan, met `Deze geselecteerde velden bestaan niet meer, dus de uitvoering heeft ze overgeslagen. Bekijk ze op het tabblad Velden.` en de identiteit van elk veld.
+
+Het is aan te raden om eerst het waargenomen adres en de waargenomen prefix te controleren. Daaraan zie je of pfSense het bedoelde adres teruggaf en of de lengte het verwachte netwerk oplevert.
+
+**Laatste uitvoering** wordt niet bijgewerkt als een andere controle de <Terminology title="vergrendeling die twee gelijktijdige controles voorkomt" to="/docs/reference/terminology#run-lock">uitvoeringsvergrendeling</Terminology> vasthoudt of als een uitvoering stopt voordat ze de <Terminology title="pakketbestand met de baseline en de laatste uitvoering" to="/docs/reference/terminology#package-state">pakketstatus</Terminology> leest, bijvoorbeeld wanneer geen enkele bewaakte interface een <Terminology title="openbaar IPv6-adres binnen 2000::/3" to="/docs/reference/terminology#global-unicast-address">globaal adres</Terminology> heeft. Het resultaat <Terminology title="resultaat: een controle of veiligheidsstap stopte de uitvoering" to="/docs/reference/terminology#failure">Mislukt</Terminology> toont altijd `0` gewijzigde velden, zoals [Uitvoeringsresultaten](/docs/operate/run-outcomes#failures-after-the-save) uitlegt.
+
+### Laatste uitvoering per interface \{#last-run-by-interface}
+
+Bewaak je meer dan één interface, dan toont **Laatste uitvoering** de totalen en telt **Samenvatting** de interfaces die zijn bijgewerkt, ongewijzigd zijn gebleven of aandacht vragen. De tabel **Laatste uitvoering per interface** eronder toont elke interface met een eigen resultaat, waargenomen prefix, gewijzigde velden en samenvatting.
+
+- **Gewijzigde velden** in **Laatste uitvoering** telt elk veld één keer, ook als twee interfaces die een <Terminology title="IPv6-netwerk dat je ISP naar de firewall routeert" to="/docs/reference/terminology#delegated-prefix">gedelegeerde prefix</Terminology> delen het allebei hebben gepland.
+- Een interface zonder <Terminology title="openbaar IPv6-adres binnen 2000::/3" to="/docs/reference/terminology#global-unicast-address">globaal adres</Terminology> meldt <Terminology title="resultaat: een controle of veiligheidsstap stopte de uitvoering" to="/docs/reference/terminology#failure">Mislukt</Terminology> in de eigen rij, terwijl de andere interfaces nog steeds worden gecontroleerd.
+- Plannen twee interfaces verschillende waarden voor hetzelfde veld, dan stopt de uitvoering voordat er iets wordt geschreven en meldt ze bij welk veld de waarden verschillen.
+
+## Acties \{#actions}
+
+| Actie                                                                                                                                        | Wat het doet                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+|----------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Nu uitvoeren                                                                                                                                 | Voert een volledige controle uit, ook als <Terminology title="automatische controles via een door pfSense beheerde cronjob" to="/docs/reference/terminology#scheduled-updates">geplande updates</Terminology> uit staan. Legt een <Terminology title="startprefix, vastgelegd zonder de configuratie te wijzigen" to="/docs/reference/terminology#baseline">baseline</Terminology> vast als er nog geen is en past een <Terminology title="afwijking van de laatste geslaagde prefix of lengte" to="/docs/reference/terminology#prefix-transition">prefixwissel</Terminology> toe als die wordt gevonden. |
+| <Terminology title="voorbeeld dat nooit een back-up maakt of schrijft" to="/docs/reference/terminology#dry-run">Testuitvoering</Terminology> | Voert dezelfde controle uit zonder back-up en zonder schrijfactie. Zolang er geen <Terminology title="startprefix, vastgelegd zonder de configuratie te wijzigen" to="/docs/reference/terminology#baseline">baseline</Terminology> bestaat, meldt ze <Terminology title="resultaat: testuitvoering voordat er een baseline bestaat" to="/docs/reference/terminology#initialization-preview">Voorbeeld van initialisatie</Terminology>.                                                                                                                                                                    |
+| Huidig prefix accepteren                                                                                                                     | Legt na bevestiging het actieve bronadres, de prefix en de lengte vast als nieuwe <Terminology title="startprefix, vastgelegd zonder de configuratie te wijzigen" to="/docs/reference/terminology#baseline">baseline</Terminology>. Controleert geen goedgekeurde velden, maakt geen back-up, schrijft geen configuratie en herlaadt geen services.                                                                                                                                                                                                                                                       |
+
+Nu uitvoeren en <Terminology title="voorbeeld dat nooit een back-up maakt of schrijft" to="/docs/reference/terminology#dry-run">Testuitvoering</Terminology> zijn <Terminology title="controle die je start vanaf het tabblad Status" to="/docs/reference/terminology#manual-run">handmatige uitvoeringen</Terminology>. **Huidig prefix accepteren** is een herstelactie en gebruik je pas nadat je de opgeslagen adressen en betrokken services hebt gecontroleerd.
+
+Elke actie toont een voltooiings- of waarschuwingsbanner. De bevestiging bij **Huidig prefix accepteren** is de laatste beveiliging voordat het pakket de baseline voor zijn vergelijkingen vervangt.
+
+Een controle die merkt dat er al een andere uitvoering bezig is, toont ook de voltooiingsbanner, dus het is aan te raden om ook de <Terminology title="alleen-lezen resultaten na Nu uitvoeren of Testuitvoering" to="/docs/reference/terminology#command-output">Opdrachtuitvoer</Terminology> te lezen.
+
+## Opdrachtuitvoer \{#command-output}
+
+Na een actie verschijnt onder **<Terminology title="alleen-lezen resultaten na Nu uitvoeren of Testuitvoering" to="/docs/reference/terminology#command-output">Opdrachtuitvoer</Terminology>** een alleen-lezen vak **Nieuwste uitvoering**:
+
+```text
+Status: Geen wijziging
+Interface: lan
+Waargenomen bronadres: 2001:db8:abcd:78aa::1
+Vorige prefix: 2001:db8:abcd:7800::
+Huidige prefix: 2001:db8:abcd:7800::/56
+Geplande of gewijzigde velden: 0
+Configuratieback-up: Niet gemaakt
+Opnieuw geladen services: Geen
+Samenvatting: De actieve IPv6-prefix is ongewijzigd; er zijn geen goedgekeurde configuratiedoelen gelezen of geschreven.
+```
+
+De vorige prefix wordt zonder lengte getoond. Een mislukte uitvoering toont in plaats daarvan één regel die begint met `IPv6-prefixupdater mislukt:`.
+
+Na een <Terminology title="voorbeeld dat nooit een back-up maakt of schrijft" to="/docs/reference/terminology#dry-run">testuitvoering</Terminology> of een wijziging volgt `Veldwijzigingen:` met elk adres dat de uitvoering heeft vervangen of zou vervangen, en het veld waar het bij hoort:
+
+```text
+Veldwijzigingen:
+- aliases/alias/0/address: 2001:db8:abcd:78aa::10 → 2001:db8:abcd:88aa::10
+```
+
+## Velden kiezen \{#choosing-fields}
+
+Welke velden een uitvoering bijwerkt, kies je op het tabblad **Velden**, dat elk adres binnen de prefix van elke <Terminology title="startprefix, vastgelegd zonder de configuratie te wijzigen" to="/docs/reference/terminology#baseline">baseline</Terminology> toont. [Velden](/docs/configure/configuration-scopes) beschrijft de groepen, de uitzonderingen per veld en de groep Overige instellingen.
+
+## Schermafbeeldingen \{#screenshots}
+
+De eerste schermafbeelding toont het resultaat <Terminology title="resultaat: prefix ongewijzigd, niets gescand of geschreven" to="/docs/reference/terminology#no-change">Geen wijziging</Terminology> voor twee bewaakte interfaces, zonder gewijzigde velden en zonder back-up.
+
+<img src={unchangedRun} alt="Tabblad Status van IPv6 Prefix Updater met Laatste uitvoering en Laatste uitvoering per interface voor twee ongewijzigde interfaces, zonder gewijzigde velden en zonder back-up" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+De tweede schermafbeelding toont het resultaat <Terminology title="resultaat: velden bijgewerkt, opgeslagen, herladen en geverifieerd" to="/docs/reference/terminology#success">Geslaagd</Terminology> dat één <Terminology title="exact configuratieveld dat het pakket mag herschrijven" to="/docs/reference/terminology#approved-field">goedgekeurd veld</Terminology> heeft gewijzigd, een <Terminology title="kopie van de configuratie van vóór een schrijfactie" to="/docs/reference/terminology#configuration-backup">configuratieback-up</Terminology> heeft gemaakt en het firewallfilter heeft herladen.
+
+<img src={changedRun} alt="Tabblad Status van IPv6 Prefix Updater met een geslaagde /56-prefixwissel voor twee bewaakte interfaces, één gewijzigd veld, een configuratieback-up en het herladen van het firewallfilter" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+De derde schermafbeelding toont de tabel **Laatste uitvoering per interface** voor die uitvoering, waarin LAN en LAB één <Terminology title="IPv6-netwerk dat je ISP naar de firewall routeert" to="/docs/reference/terminology#delegated-prefix">gedelegeerde prefix</Terminology> delen en elk hetzelfde gewijzigde veld melden.
+
+<img src={runByInterface} alt="Tabel Laatste uitvoering per interface van IPv6 Prefix Updater waarin LAN en LAB allebei Geslaagd melden met één gewijzigd veld uit dezelfde /56-prefixwissel" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+De `2001:db8::/32`-adressen in deze schermafbeeldingen zijn gereserveerde documentatievoorbeelden.
+
+Lees [Uitvoeringsresultaten](/docs/operate/run-outcomes) voor elk resultaat en [Back-ups en herstel](/docs/operate/backups-and-recovery) voordat je op een uitvoering met wijzigingen vertrouwt.

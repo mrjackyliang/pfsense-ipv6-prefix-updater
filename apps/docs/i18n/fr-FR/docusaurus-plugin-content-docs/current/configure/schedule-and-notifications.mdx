@@ -1,0 +1,71 @@
+---
+id: schedule-and-notifications
+title: Planification et notifications
+description: Choisissez à quelle fréquence pfSense vérifie le préfixe, activez les mises à jour planifiées et décidez si une notification part après chaque mise à jour réussie.
+keywords:
+  - pfsense ipv6 prefix updater
+  - planification
+  - cron
+  - notifications de changement
+  - alertes webgui
+tags:
+  - configuration
+  - scheduling
+  - notifications
+sidebar_position: 3
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Choisissez à quelle fréquence pfSense vérifie votre préfixe et si vous recevez une <Terminology title="alerte envoyée après une mise à jour réussie et vérifiée" to="/docs/reference/terminology#change-notification">notification de changement</Terminology> après une mise à jour réussie.
+
+## Choisir une planification \{#choose-a-schedule}
+
+| Planification         | Moment d’exécution                          |
+|-----------------------|---------------------------------------------|
+| Toutes les 15 minutes | Aux minutes 0, 15, 30 et 45 de chaque heure |
+| Toutes les heures     | À la minute 0 de chaque heure, par défaut   |
+| Toutes les 6 heures   | À 00:00, 06:00, 12:00 et 18:00              |
+| Chaque jour à minuit  | À 00:00                                     |
+
+Les heures suivent le fuseau horaire du pare-feu, tandis que l’onglet État affiche l’heure UTC.
+
+## Activer les mises à jour planifiées \{#turn-on-scheduled-updates}
+
+La case **<Terminology title="vérifications automatiques via une entrée cron gérée par pfSense" to="/docs/reference/terminology#scheduled-updates">Activer les mises à jour planifiées</Terminology>** est décochée après l’installation. L’enregistrement des paramètres ajoute ou supprime une entrée cron gérée par pfSense ; aucun paquet Cron ni tâche cron écrite à la main n’est donc nécessaire.
+
+Case décochée, aucune vérification ne se lance d’elle-même, mais **Exécuter maintenant** et **<Terminology title="aperçu qui ne sauvegarde ni n’écrit jamais" to="/docs/reference/terminology#dry-run">Simulation</Terminology>** continuent de fonctionner. Il est recommandé de ne cocher cette case qu’après que la [première exécution](/docs/first-run) a enregistré et vérifié la <Terminology title="préfixe de départ enregistré sans modifier la configuration" to="/docs/reference/terminology#baseline">référence</Terminology>.
+
+## Coût d’une vérification de routine \{#what-a-routine-check-costs}
+
+Une vérification qui aboutit à <Terminology title="résultat : préfixe inchangé, rien d’analysé ni d’écrit" to="/docs/reference/terminology#no-change">Aucun changement</Terminology> ne lit que ses paramètres, les adresses des interfaces et l’<Terminology title="fichier du paquet contenant la référence et la dernière exécution" to="/docs/reference/terminology#package-state">état du paquet</Terminology>. Elle n’analyse pas la configuration, ne crée pas de sauvegarde, ne recharge aucun service et n’envoie pas de notification.
+
+Elle écrit tout de même une ligne dans le <Terminology title="journal général de pfSense dans lequel écrit le paquet" to="/docs/reference/terminology#system-log">journal système</Terminology>.
+
+## Exécutions qui se chevauchent \{#overlapping-runs}
+
+Un <Terminology title="verrou qui empêche deux vérifications simultanées" to="/docs/reference/terminology#run-lock">verrou d’exécution</Terminology> ne laisse tourner qu’une vérification à la fois. Une vérification qui démarre pendant qu’une autre tourne s’arrête sans lire la configuration et laisse le panneau **Dernière exécution** inchangé.
+
+Cette vérification consigne `Une autre exécution détient le verrou du paquet ; cet appel s’est arrêté sans lire la configuration.` dans le <Terminology title="journal général de pfSense dans lequel écrit le paquet" to="/docs/reference/terminology#system-log">journal système</Terminology>.
+
+## Notifications de changement \{#change-notifications}
+
+La case **<Terminology title="alerte envoyée après une mise à jour réussie et vérifiée" to="/docs/reference/terminology#change-notification">Envoyer les notifications de changement</Terminology>** est cochée par défaut. Après une <Terminology title="résultat : champs mis à jour, enregistrés, rechargés et vérifiés" to="/docs/reference/terminology#success">Réussite</Terminology>, un message part par les <Terminology title="services d’alerte distants configurés dans pfSense" to="/docs/reference/terminology#notification-channels">canaux de notification</Terminology> de pfSense et une <Terminology title="alerte affichée dans la WebGUI de pfSense" to="/docs/reference/terminology#webgui-notice">alerte WebGUI</Terminology> est ajoutée.
+
+Le message ressemble à `1 champ(s) approuvé(s) ont été mis à jour de 2001:db8:abcd:7800::/56 vers 2001:db8:abcd:8800::/56 sur l’interface lan.` Aucun autre résultat n’envoie de <Terminology title="alerte envoyée après une mise à jour réussie et vérifiée" to="/docs/reference/terminology#change-notification">notification de changement</Terminology>.
+
+Si l’envoi échoue, la mise à jour compte toujours comme une <Terminology title="résultat : champs mis à jour, enregistrés, rechargés et vérifiés" to="/docs/reference/terminology#success">Réussite</Terminology>. L’onglet État n’affiche pas l’état de l’envoi, et le <Terminology title="journal général de pfSense dans lequel écrit le paquet" to="/docs/reference/terminology#system-log">journal système</Terminology> consigne `La configuration a réussi, mais la notification de changement a échoué.`
+
+## Alertes d’avertissement et d’échec \{#warning-and-failure-notices}
+
+Les résultats <Terminology title="résultat : préfixe changé, mais aucun champ approuvé correspondant" to="/docs/reference/terminology#warning">Avertissement</Terminology> et <Terminology title="résultat : une vérification ou une étape de sécurité a arrêté l’exécution" to="/docs/reference/terminology#failure">Échec</Terminology> ajoutent toujours une <Terminology title="alerte affichée dans la WebGUI de pfSense" to="/docs/reference/terminology#webgui-notice">alerte WebGUI</Terminology> locale, même si la case **<Terminology title="alerte envoyée après une mise à jour réussie et vérifiée" to="/docs/reference/terminology#change-notification">Envoyer les notifications de changement</Terminology>** est décochée. Ces alertes ne sont pas envoyées aux <Terminology title="services d’alerte distants configurés dans pfSense" to="/docs/reference/terminology#notification-channels">canaux de notification</Terminology>, et une cause non corrigée en ajoute une nouvelle à chaque exécution planifiée.
+
+## Valider la planification \{#validate-the-schedule}
+
+1. Enregistrez les paramètres et vérifiez que le message `Paramètres enregistrés.` s’affiche.
+2. Dans l’onglet État, cliquez sur **Exécuter maintenant** et vérifiez un résultat <Terminology title="résultat : préfixe inchangé, rien d’analysé ni d’écrit" to="/docs/reference/terminology#no-change">Aucun changement</Terminology> avec un **Horodatage (UTC)** actuel.
+3. Vérifiez que **<Terminology title="copie de la configuration enregistrée avant une écriture" to="/docs/reference/terminology#configuration-backup">Sauvegarde de configuration créée</Terminology>** indique Non et que **Champs modifiés** indique `0`.
+4. Après la prochaine échéance planifiée, actualisez l’onglet État et vérifiez que l’horodatage a changé.
+5. Pour tester l’envoi, utilisez les boutons de test de pfSense sous **System → Advanced → Notifications**.
+
+Continuez avec [État et actions](/docs/operate/status-and-actions) pour les champs qu’enregistrent les vérifications planifiées et les <Terminology title="vérification lancée depuis l’onglet État" to="/docs/reference/terminology#manual-run">exécutions manuelles</Terminology>.

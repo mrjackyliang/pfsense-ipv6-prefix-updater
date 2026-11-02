@@ -1,0 +1,174 @@
+---
+id: command-line-and-files
+title: Komandna linija i datoteke
+description: Pokrenite /usr/local/sbin/ipv6-prefix-updater iz ljuske i pregledajte njegove opcije, izlazne kodove, redove izlaza, datoteke, dnevnike i WebGUI obavijesti.
+keywords:
+  - pfsense ipv6 prefix updater
+  - komandna linija
+  - izlazni kodovi
+  - datoteka stanja
+  - file_notice
+tags:
+  - reference
+  - command line
+  - files
+sidebar_position: 4
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Pokrenite naredbu paketa iz ljuske i pronađite datoteke, dnevnike i obavijesti koje koristi.
+
+## Upotreba \{#usage}
+
+```shell
+/usr/local/sbin/ipv6-prefix-updater [--manual] [--dry-run] [--accept-current-prefix [--interface=NAME]] [--migrate-legacy] [--help]
+```
+
+Cron unos kojim upravlja pfSense pokreće naredbu kao `root` bez opcija. Prije svake provjere naredba također premješta u paket sve ostatke <Terminology title="originalna skripta update.php koju pokreće Cron paket" to="/docs/reference/terminology#legacy-updater">starog programa za ažuriranje</Terminology>. Kartica Status koristi `--manual` za **Pokreni sada**, `--dry-run` za **<Terminology title="pregled bez sigurnosne kopije i bez upisa" to="/docs/reference/terminology#dry-run">Probno pokretanje</Terminology>** i `--accept-current-prefix` za oporavak početnog stanja, a kartica Čišćenje koristi `--migrate-legacy`.
+
+Bez opcija, naredba se ponaša kao zakazana provjera i prijavljuje ishod <Terminology title="ishod: zakazana provjera preskočena dok su ažuriranja isključena" to="/docs/reference/terminology#disabled">Onemogućeno</Terminology> kada je **<Terminology title="automatske provjere iz cron unosa kojim upravlja pfSense" to="/docs/reference/terminology#scheduled-updates">Omogući zakazana ažuriranja</Terminology>** isključeno.
+
+## Opcije \{#options}
+
+| Zastavica                 | Opis                                                                                                                                                                                                                                                                                                        |
+|---------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `--manual`                | Radi čak i kada su <Terminology title="automatske provjere iz cron unosa kojim upravlja pfSense" to="/docs/reference/terminology#scheduled-updates">zakazana ažuriranja</Terminology> isključena.                                                                                                           |
+| `--dry-run`               | Prikazuje pregled bez sigurnosne kopije i bez upisa i podrazumijeva `--manual`.                                                                                                                                                                                                                             |
+| `--accept-current-prefix` | Bilježi aktivnu izvornu adresu, prefiks i dužinu kao početno stanje bez skeniranja odobrenih polja, pravljenja sigurnosne kopije, upisa konfiguracije ili ponovnog učitavanja usluga. Podrazumijeva `--manual` i ne može se kombinovati sa `--dry-run`.                                                     |
+| `--interface=NAME`        | Ograničava `--accept-current-prefix` na jedno nadzirano sučelje, zadano njegovim internim nazivom, na primjer `lan`. Bez ove opcije prihvata se svako nadzirano sučelje koje ima adresu.                                                                                                                    |
+| `--migrate-legacy`        | Odmah premješta <Terminology title="originalna skripta update.php koju pokreće Cron paket" to="/docs/reference/terminology#legacy-updater">stari program za ažuriranje</Terminology> u paket i ispisuje svaki korak, bez provjere prefiksa. Završava s kodom `2` kada je premještanje prijavilo upozorenje. |
+| `--help`                  | Ispisuje red za upotrebu i završava s kodom `0`. Red za upotrebu ne navodi samu opciju `--help`.                                                                                                                                                                                                            |
+
+Svaka druga opcija ispisuje `Nepoznata opcija: <option>` na standardni izlaz za greške i završava s kodom `64`. Kombinovanje `--accept-current-prefix` sa `--dry-run` također završava s kodom `64`.
+
+## Izlazni kodovi \{#exit-codes}
+
+| Kod  | Značenje                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+|------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `0`  | <Terminology title="ishod: početno stanje zabilježeno, konfiguracija nepromijenjena" to="/docs/reference/terminology#initialized">Inicijalizirano</Terminology>, <Terminology title="ishod: probno pokretanje prije postojanja početnog stanja" to="/docs/reference/terminology#initialization-preview">Pregled inicijalizacije</Terminology>, <Terminology title="ishod: prefiks nepromijenjen, ništa nije skenirano ni upisano" to="/docs/reference/terminology#no-change">Bez promjene</Terminology>, <Terminology title="pregled bez sigurnosne kopije i bez upisa" to="/docs/reference/terminology#dry-run">Probno pokretanje</Terminology>, **Prihvaćeno**, <Terminology title="ishod: polja ažurirana, sačuvana, ponovo učitana i provjerena" to="/docs/reference/terminology#success">Uspjeh</Terminology> ili <Terminology title="ishod: zakazana provjera preskočena dok su ažuriranja isključena" to="/docs/reference/terminology#disabled">Onemogućeno</Terminology>. Vraća se i kada <Terminology title="zaštita koja sprječava dvije istovremene provjere" to="/docs/reference/terminology#run-lock">zaključavanje pokretanja</Terminology> drži druga provjera te nakon `--help`. |
+| `1`  | <Terminology title="ishod: kontrola ili sigurnosna faza zaustavila je pokretanje" to="/docs/reference/terminology#failure">Greška</Terminology>. Na standardni izlaz za greške ispisuje se jedan red, `Ažuriranje IPv6 prefiksa nije uspjelo: <reason>`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `2`  | <Terminology title="ishod: prefiks promijenjen, ali nijedno odobreno polje nije odgovaralo" to="/docs/reference/terminology#warning">Upozorenje</Terminology>.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `64` | Nepoznata opcija.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+
+## Izlaz \{#output}
+
+Završeno pokretanje s jednim nadziranim sučeljem ispisuje devet redova na standardni izlaz, a nakon <Terminology title="pregled bez sigurnosne kopije i bez upisa" to="/docs/reference/terminology#dry-run">probnog pokretanja</Terminology> ili ishoda <Terminology title="ishod: polja ažurirana, sačuvana, ponovo učitana i provjerena" to="/docs/reference/terminology#success">Uspjeh</Terminology> slijede i promjene polja:
+
+```text
+Status: Uspjeh
+Sučelje: lan
+Uočena izvorna adresa: 2001:db8:abcd:88aa::1
+Prethodni prefiks: 2001:db8:abcd:7800::
+Trenutni prefiks: 2001:db8:abcd:8800::/56
+Planirana ili promijenjena polja: 1
+Sigurnosna kopija konfiguracije: Napravljeno
+Ponovo učitane usluge: Filter vatrozida
+Sažetak: Ažurirano je 1 odobreno polje sa 2001:db8:abcd:7800::/56 na 2001:db8:abcd:8800::/56 na sučelju lan.
+Promjene polja:
+- aliases/alias/0/address: 2001:db8:abcd:78aa::10 → 2001:db8:abcd:88aa::10
+```
+
+- `Prethodni prefiks` nema dužinu i prikazuje `Nije dostupno` nakon ishoda <Terminology title="ishod: početno stanje zabilježeno, konfiguracija nepromijenjena" to="/docs/reference/terminology#initialized">Inicijalizirano</Terminology> ili <Terminology title="ishod: probno pokretanje prije postojanja početnog stanja" to="/docs/reference/terminology#initialization-preview">Pregled inicijalizacije</Terminology>.
+- `Ponovo učitane usluge` navodi oznake s kartice Status ili `Nijedno`. Nakon <Terminology title="pregled bez sigurnosne kopije i bez upisa" to="/docs/reference/terminology#dry-run">probnog pokretanja</Terminology> navodi usluge koje bi bile ponovo učitane.
+- `Promjene polja` ima jedan red po zamijenjenoj adresi, zapisan kao `- <path>: <old> → <new>`, za najviše 200 polja.
+- Kada je pokretanje ponovo primijenilo postavke drugog paketa ili preskočilo označeno polje koje više ne postoji, za svaki takav slučaj slijedi po jedan red, sročen kao na kartici Status.
+- Kada <Terminology title="zaštita koja sprječava dvije istovremene provjere" to="/docs/reference/terminology#run-lock">zaključavanje pokretanja</Terminology> drži druga provjera, jedini izlaz je `Drugo pokretanje posjeduje zaključavanje paketa; ovo pokretanje je završilo bez čitanja konfiguracije.`
+- Uz više nadziranih sučelja, izlaz počinje ukupnim redovima `Status` i `Sažetak` te redovima o paketima i preskočenim poljima, nakon kojih slijede redovi svakog sučelja, pri čemu su blokovi odvojeni praznim redovima.
+- Kada je prije provjere došlo do premještanja <Terminology title="originalna skripta update.php koju pokreće Cron paket" to="/docs/reference/terminology#legacy-updater">starog programa za ažuriranje</Terminology>, njegovi koraci ispisuju se prvi.
+- Oznake i poruke prate jezičku postavku pfSense-a.
+
+## Datoteke i putanje \{#files-and-paths}
+
+| Putanja                                                   | Opis                                                                                                                                                                                                                                                                                                                                        |
+|-----------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `/usr/local/sbin/ipv6-prefix-updater`                     | Naredba, PHP skripta.                                                                                                                                                                                                                                                                                                                       |
+| `/usr/local/pkg/ipv6-prefix-updater.xml`                  | Definicija stranice Postavke i njeni hookovi životnog ciklusa.                                                                                                                                                                                                                                                                              |
+| `/usr/local/pkg/ipv6-prefix-updater.inc`                  | Funkcije za instalaciju, sinhronizaciju postavki, uklanjanje i validaciju obrasca.                                                                                                                                                                                                                                                          |
+| `/usr/local/pkg/ipv6-prefix-updater/`                     | Klase za izvršavanje i prijevodi.                                                                                                                                                                                                                                                                                                           |
+| `/usr/local/www/ipv6-prefix-updater-status.php`           | Kartica Status.                                                                                                                                                                                                                                                                                                                             |
+| `/usr/local/www/ipv6-prefix-updater-fields.php`           | Kartica Polja.                                                                                                                                                                                                                                                                                                                              |
+| `/usr/local/www/ipv6-prefix-updater-backups.php`          | Kartica Sigurnosne kopije.                                                                                                                                                                                                                                                                                                                  |
+| `/usr/local/www/ipv6-prefix-updater-cleanup.php`          | Kartica Čišćenje.                                                                                                                                                                                                                                                                                                                           |
+| `/usr/local/share/pfSense-pkg-Ipv6PrefixUpdater/info.xml` | Manifest paketa.                                                                                                                                                                                                                                                                                                                            |
+| `/cf/conf/ipv6-prefix-updater/state.json`                 | <Terminology title="datoteka paketa s početnim stanjem i posljednjim pokretanjem" to="/docs/reference/terminology#package-state">Stanje paketa</Terminology>. Njegov direktorij ima dozvole `0700`, datoteka `0600`, svaki upis atomski zamjenjuje datoteku, a ona preživljava ponovna pokretanja sistema, RAM diskove i uklanjanje paketa. |
+| `/cf/conf/ipv6-prefix-updater/backups/`                   | Kopije s kartice **Sigurnosne kopije**, svaka kao jedna konfiguracija `<id>.xml` i jedan opis `<id>.json`, sve s dozvolama `0600`.                                                                                                                                                                                                          |
+| `/var/run/ipv6-prefix-updater.lock`                       | <Terminology title="zaštita koja sprječava dvije istovremene provjere" to="/docs/reference/terminology#run-lock">Zaključavanje pokretanja</Terminology>, koje se drži neblokirajućim `flock` i sadrži ID pokrenutog procesa. Ostaje na disku između pokretanja.                                                                             |
+
+## Format stanja paketa \{#package-state-format}
+
+| Ključ                 | Opis                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+|-----------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `schema_version`      | Uvijek `1`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `targets.<interface>` | Jedno <Terminology title="početni prefiks zabilježen bez promjene konfiguracije" to="/docs/reference/terminology#baseline">početno stanje</Terminology> po nadziranom sučelju, s ključem prema njegovom internom nazivu, s poljima `interface`, `source_address`, `prefix`, `prefix_length` i `updated_at`. Početno stanje preuzeto od <Terminology title="originalna skripta update.php koju pokreće Cron paket" to="/docs/reference/terminology#legacy-updater">starog programa za ažuriranje</Terminology> ima i polje `source` postavljeno na `legacy_cache`. |
+| `last_run`            | Posljednje zabilježeno pokretanje, s poljima `status`, `timestamp`, `interface`, `observed_address`, `previous_prefix`, `current_prefix`, `current_prefix_length`, `change_count`, `backup_created`, `services`, `message`, `message_key` i `message_arguments`.                                                                                                                                                                                                                                                                                                  |
+| `legacy_migration`    | Prisutno nakon premještanja <Terminology title="originalna skripta update.php koju pokreće Cron paket" to="/docs/reference/terminology#legacy-updater">starog programa za ažuriranje</Terminology>, s poljima `status`, `steps`, `warnings` i `recorded_at`. Prikazuje ga kartica Čišćenje.                                                                                                                                                                                                                                                                       |
+
+- `status` je jedno od `initialized`, `initialization_preview`, `no_change`, `dry_run`, `warning`, `accepted`, `success` ili `failure`.
+- Nakon ishoda <Terminology title="ishod: polja ažurirana, sačuvana, ponovo učitana i provjerena" to="/docs/reference/terminology#success">Uspjeh</Terminology>, `last_run.notification` je `disabled` kada su obavještenja isključena, odnosno `sent` ili `failed` nakon pokušaja isporuke.
+- Nakon <Terminology title="pregled bez sigurnosne kopije i bez upisa" to="/docs/reference/terminology#dry-run">probnog pokretanja</Terminology> ili ishoda <Terminology title="ishod: polja ažurirana, sačuvana, ponovo učitana i provjerena" to="/docs/reference/terminology#success">Uspjeh</Terminology> svaki rezultat ima i `changes`, koje navodi `path` i `replacements` za najviše 200 polja, pri čemu je svaka zamjena par stare i nove adrese.
+- `package_reapply` navodi `section`, `package`, `status` i `error` za svaki paket čije je postavke pokretanje ponovo primijenilo, a `skipped_fields` navodi označena polja koja više ne postoje. Svako od njih pojavljuje se samo kada nije prazno.
+- Uz više nadziranih sučelja, `last_run` sadrži ukupne vrijednosti i listu `targets` s jednim rezultatom po sučelju.
+- Vremenske oznake koriste ISO 8601 u UTC-u. Datoteka koja se ne može raščlaniti ili ima drugu verziju sheme zaustavlja svako pokretanje porukom `Stanje Ažuriranja IPv6 prefiksa je nevažeće ili nepodržano.`
+
+## Čuvanje postavki \{#settings-storage}
+
+Postavke se nalaze u pfSense konfiguraciji na `installedpackages/ipv6prefixupdater/config/0`.
+
+| Ključ              | Opis                                                                                                                                                                                                            |
+|--------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `enabled`          | **<Terminology title="automatske provjere iz cron unosa kojim upravlja pfSense" to="/docs/reference/terminology#scheduled-updates">Omogući zakazana ažuriranja</Terminology>**, `on` kada je označeno.          |
+| `row`              | **Nadzirana sučelja**, lista s jednim `interface` (ključ sučelja, na primjer `lan`) i jednim `prefix_length` (od `48` do `64`) po redu.                                                                         |
+| `update_frequency` | **Raspored**, jedno od `every_fifteen_minutes`, `hourly`, `every_six_hours` ili `daily`.                                                                                                                        |
+| `notifications`    | **<Terminology title="obavještenje poslano nakon provjerenog uspješnog ažuriranja" to="/docs/reference/terminology#change-notification">Šalji obavještenja o promjenama</Terminology>**, `on` kada je označeno. |
+
+### Odabir polja \{#field-selection}
+
+Izbori s kartice Polja nalaze se pored zapisa postavki, na `installedpackages/ipv6prefixupdater/fields`, pa ih čuvanje kartice Postavke, koje zamjenjuje `config/0`, nikada ne briše.
+
+| Ključ                  | Opis                                                                                                                                       |
+|------------------------|--------------------------------------------------------------------------------------------------------------------------------------------|
+| `schema`               | Uvijek `1`. Označava odabir sačuvan s kartice Polja, čak i prazan.                                                                         |
+| `enabled_groups/item`  | Uključene grupe, na primjer `firewall_rules`, `dhcpv6` ili `package:<section>` za postavke drugog paketa.                                  |
+| `disabled_groups/item` | Isključene pfSense grupe. pfSense grupa koja nije ni na jednoj od ove dvije liste je uključena, a takva grupa drugog paketa je isključena. |
+| `include/item`         | Identiteti polja označenih u isključenoj grupi.                                                                                            |
+| `exclude/item`         | Identiteti polja s kojih je uklonjena kvačica u uključenoj grupi.                                                                          |
+
+- Ključevi pfSense grupa su `interfaces`, `virtual_ips`, `aliases`, `firewall_rules`, `nat`, `dhcpv6`, `router_advertisements`, `dns_host_overrides`, `ipsec`, `openvpn` i `wireguard`.
+- `include` i `exclude` čuvaju najviše po 1.000 identiteta, a svaki identitet ima oblik opisan u odjeljku [Identiteti polja](/docs/reference/approved-fields#field-identities).
+
+## Cron unos \{#cron-entry}
+
+Čuvanje postavki uklanja svaki postojeći unos za naredbu i, kada je `enabled` postavljeno na `on`, instalira novi za `root` pomoću pfSense funkcije `install_cron_job()`.
+
+| Vrijednost rasporeda    | Cron polja     |
+|-------------------------|----------------|
+| `every_fifteen_minutes` | `*/15 * * * *` |
+| `hourly`                | `0 * * * *`    |
+| `every_six_hours`       | `0 */6 * * *`  |
+| `daily`                 | `0 0 * * *`    |
+
+Nepoznata vrijednost vraća se na polja za svaki sat. Dok premještanje <Terminology title="originalna skripta update.php koju pokreće Cron paket" to="/docs/reference/terminology#legacy-updater">starog programa za ažuriranje</Terminology> čeka da stara skripta završi, paket zadržava unos `*/15 * * * *` kako bi se premještanje ponovo pokušalo čak i ako su zakazana ažuriranja isključena.
+
+## Dnevnici i obavijesti \{#logs-and-notices}
+
+Svaki red <Terminology title="opći pfSense dnevnik u koji paket upisuje" to="/docs/reference/terminology#system-log">sistemskog dnevnika</Terminology> upisuje se pomoću pfSense funkcije `log_error()` i počinje sa `IPv6 Prefix Updater:`. Obavijesti se prave pomoću `file_notice()` i vode na `/ipv6-prefix-updater-status.php`, osim obavijesti o migraciji, koja vodi na `/ipv6-prefix-updater-cleanup.php`.
+
+| ID obavijesti                           | Pravi se kada                                                                                                                                                                                                                                                               | Isporuka                                                                                                                                                                   |
+|-----------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `ipv6-prefix-updater-success`           | <Terminology title="ishod: polja ažurirana, sačuvana, ponovo učitana i provjerena" to="/docs/reference/terminology#success">Uspjeh</Terminology> uz `notifications` postavljeno na `on`                                                                                     | WebGUI i <Terminology title="udaljene usluge obavještavanja podešene u pfSense-u" to="/docs/reference/terminology#notification-channels">kanali obavještenja</Terminology> |
+| `ipv6-prefix-updater-no-matches`        | <Terminology title="ishod: prefiks promijenjen, ali nijedno odobreno polje nije odgovaralo" to="/docs/reference/terminology#warning">Upozorenje</Terminology>                                                                                                               | Samo WebGUI                                                                                                                                                                |
+| `ipv6-prefix-updater-failure`           | <Terminology title="ishod: kontrola ili sigurnosna faza zaustavila je pokretanje" to="/docs/reference/terminology#failure">Greška</Terminology>                                                                                                                             | Samo WebGUI                                                                                                                                                                |
+| `ipv6-prefix-updater-package-<section>` | Pokretanje je promijenilo postavke drugog paketa, a nijedan instalirani paket ne posjeduje taj odjeljak ili ponovna primjena njegovih postavki nije uspjela                                                                                                                 | Samo WebGUI                                                                                                                                                                |
+| `ipv6-prefix-updater-legacy-migration`  | Premještanje <Terminology title="originalna skripta update.php koju pokreće Cron paket" to="/docs/reference/terminology#legacy-updater">starog programa za ažuriranje</Terminology> koje je izvršilo barem jedan korak ili premještanje koje nije uspjelo tokom instalacije | Samo WebGUI                                                                                                                                                                |
+
+Ako vlastita provjera okruženja naredbe ne uspije ili se njena datoteka zaključavanja ne može otvoriti, razlog ide samo na standardni izlaz za greške. Svako pokretanje koje upisuje također čuva reviziju konfiguracije s opisom `Ažuriranje IPv6 prefiksa promijenilo je <count> odobrenih polja za sučelje <interface>`.
+
+## Privilegije stranica \{#page-privileges}
+
+Svaka stranica paketa deklariše vlastitu pfSense privilegiju, pa se pristup može dodijeliti za svaku stranicu posebno:
+
+- **Status**: `page-services-ipv6-prefix-updater-status` s nazivom `Services: IPv6 Prefix Updater: Status`.
+- **Polja**: `page-services-ipv6-prefix-updater-fields` s nazivom `Services: IPv6 Prefix Updater: Fields`. Može promijeniti koja polja pokretanje prepisuje, pa se preporučuje da je dodijelite samo administratorima.
+- **Sigurnosne kopije**: `page-services-ipv6-prefix-updater-backups` s nazivom `Services: IPv6 Prefix Updater: Backups`. Omogućava preuzimanje potpunih kopija konfiguracije, pa se preporučuje da je dodijelite samo administratorima.
+- **Čišćenje**: `page-services-ipv6-prefix-updater-cleanup` s nazivom `Services: IPv6 Prefix Updater: Cleanup`.

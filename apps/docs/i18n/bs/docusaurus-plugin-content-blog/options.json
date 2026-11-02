@@ -1,0 +1,8 @@
+{
+  "description": {
+    "message": "Napomene o izdanjima, vodiči za podešavanje i članci o tome kako adrese u pfSense-u održati ažurnim kada se IPv6 prefiks promijeni."
+  },
+  "sidebar.title": {
+    "message": "Najnovije objave"
+  }
+}

@@ -1,0 +1,71 @@
+---
+id: run-outcomes
+title: 运行结果
+description: 了解“状态”选项卡上每种结果的含义，包括已初始化、已接受、无变化、警告、成功和失败，以及哪些结果需要你处理。
+keywords:
+  - pfsense ipv6 prefix updater
+  - 运行结果
+  - 警告
+  - 失败
+  - 状态选项卡
+tags:
+  - operations
+  - outcomes
+  - status
+sidebar_position: 2
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+根据每次运行的结果，判断它是正常结束还是需要你处理。
+
+## 结果参考 \{#outcome-reference}
+
+| 结果                                                                                                            | 含义                                                                                                                                                                                                                          | 配置                  | <Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology> |
+|---------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------|-----------------------------------------------------------------------------------------------|
+| <Terminology title="结果：已记录基线，配置未更改" to="/docs/reference/terminology#initialized">已初始化</Terminology>           | 此前该接口没有<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>                                                                                                                        | 未更改                 | 已记录                                                                                           |
+| <Terminology title="结果：尚无基线时的试运行" to="/docs/reference/terminology#initialization-preview">初始化预览</Terminology> | <Terminology title="不备份也不写入的预览" to="/docs/reference/terminology#dry-run">试运行</Terminology>发现没有<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>，并显示了它将记录的基线                     | 未更改                 | 未记录                                                                                           |
+| <Terminology title="结果：前缀未变化，未扫描或写入任何内容" to="/docs/reference/terminology#no-change">无变化</Terminology>         | <Terminology title="按前缀长度掩码后的源地址" to="/docs/reference/terminology#observed-prefix">观察到的前缀</Terminology>及其长度与<Terminology title="下次检查用于比较的前缀" to="/docs/reference/terminology#last-successful-prefix">上次成功前缀</Terminology>一致 | 未扫描                 | 不变                                                                                            |
+| <Terminology title="不备份也不写入的预览" to="/docs/reference/terminology#dry-run">试运行</Terminology>                    | <Terminology title="不备份也不写入的预览" to="/docs/reference/terminology#dry-run">试运行</Terminology>发现了<Terminology title="与上次成功前缀或长度不同" to="/docs/reference/terminology#prefix-transition">前缀变化</Terminology>，并计划了至少一项字段更改           | 未更改                 | 不变                                                                                            |
+| <Terminology title="结果：前缀已变化，但没有匹配的已批准字段" to="/docs/reference/terminology#warning">警告</Terminology>           | 发现了<Terminology title="与上次成功前缀或长度不同" to="/docs/reference/terminology#prefix-transition">前缀变化</Terminology>，但没有<Terminology title="软件包可改写的具体配置字段" to="/docs/reference/terminology#approved-field">已批准字段</Terminology>属于旧前缀   | 未更改                 | 不变                                                                                            |
+| 已接受                                                                                                           | 操作员确认已保存的地址已在使用当前活动前缀，并选择了 **接受当前前缀**                                                                                                                                                                                       | 未扫描也未更改已批准字段        | 移到当前活动前缀                                                                                      |
+| <Terminology title="结果：字段已更新、保存、重新加载并验证" to="/docs/reference/terminology#success">成功</Terminology>            | 备份、单次写入、<Terminology title="让更改后的设置生效的 pfSense 操作" to="/docs/reference/terminology#service-reload">服务重新加载</Terminology>和值检查均已完成                                                                                             | 写入一次                | 移到新前缀                                                                                         |
+| <Terminology title="结果：检查或安全阶段中止了运行" to="/docs/reference/terminology#failure">失败</Terminology>                | 检查或安全阶段中止了运行                                                                                                                                                                                                                | 未更改；若运行在保存后才停止，则已保存 | 不变                                                                                            |
+
+第九种结果<Terminology title="结果：更新关闭时跳过的计划检查" to="/docs/reference/terminology#disabled">已禁用</Terminology>只会在<Terminology title="由 pfSense 管理的 cron 条目运行的自动检查" to="/docs/reference/terminology#scheduled-updates">计划更新</Terminology>关闭、且从 shell 不带选项运行软件包命令时出现。它不会被记录，因此“状态”选项卡从不显示它。
+
+## “当前状态”与“上次运行”的区别 \{#current-state-versus-last-run}
+
+**当前状态** 只会在<Terminology title="结果：已记录基线，配置未更改" to="/docs/reference/terminology#initialized">已初始化</Terminology>、**已接受** 和<Terminology title="结果：字段已更新、保存、重新加载并验证" to="/docs/reference/terminology#success">成功</Terminology>时改变。失败的尝试永远不会成为下一次比较的依据，除非操作员事后核实已保存的值并明确接受当前活动前缀；**上次运行** 则记录表中任意结果的最近一次运行。
+
+当另一个检查持有<Terminology title="防止两个检查同时运行的保护机制" to="/docs/reference/terminology#run-lock">运行锁</Terminology>，或运行在读取<Terminology title="保存基线和上次运行的软件包文件" to="/docs/reference/terminology#package-state">软件包状态</Terminology>之前就已停止（例如没有任何监控接口具有<Terminology title="位于 2000::/3 内的公网 IPv6 地址" to="/docs/reference/terminology#global-unicast-address">全局地址</Terminology>）时，**上次运行** 保持不变。这些运行会把原因留在<Terminology title="立即运行或试运行后显示的只读结果" to="/docs/reference/terminology#command-output">命令输出</Terminology>和<Terminology title="软件包写入的 pfSense 常规日志" to="/docs/reference/terminology#system-log">系统日志</Terminology>中。
+
+## 警告：没有匹配的字段 \{#warning-no-matching-fields}
+
+<Terminology title="结果：前缀已变化，但没有匹配的已批准字段" to="/docs/reference/terminology#warning">警告</Terminology>表示前缀已变化，但没有任何<Terminology title="软件包可改写的具体配置字段" to="/docs/reference/terminology#approved-field">已批准字段</Terminology>属于旧前缀。不会写入任何内容，<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>也停留在旧前缀上，因此下一次运行会再次检查同一<Terminology title="与上次成功前缀或长度不同" to="/docs/reference/terminology#prefix-transition">前缀变化</Terminology>。
+
+每次<Terminology title="结果：前缀已变化，但没有匹配的已批准字段" to="/docs/reference/terminology#warning">警告</Terminology>都会添加一条 <Terminology title="显示在 pfSense 通知列表中的提醒" to="/docs/reference/terminology#webgui-notice">WebGUI 通知</Terminology>，<Terminology title="不备份也不写入的预览" to="/docs/reference/terminology#dry-run">试运行</Terminology>产生的警告也不例外。如果原因未解决，每次计划运行都会再添加一条新通知。
+
+常见原因：
+
+- 包含这些地址的<Terminology title="“字段”选项卡上由一个开关控制的一组字段" to="/docs/reference/terminology#field-group">字段组</Terminology>已关闭，或相应字段已被取消勾选。
+- 这些地址已在软件包之外被更改。
+- 这些地址位于[其他设置](/docs/configure/configuration-scopes#other-settings)组中，该组在你勾选这些地址之前保持关闭。
+- 之前的一次<Terminology title="结果：检查或安全阶段中止了运行" to="/docs/reference/terminology#failure">失败</Terminology>已保存新值，但保留了旧<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>。
+- <Terminology title="ISP 前缀大小设置，/48 至 /64" to="/docs/reference/terminology#delegated-prefix-length">委派前缀长度</Terminology>被[改得更短](/docs/configure/interface-and-prefix#changing-the-prefix-length)（网络变宽），而前缀本身并未变化。
+
+[故障排除](/docs/operate/troubleshooting#warning-on-every-run)逐一介绍了这些原因。
+
+如果这些地址已被正确更改，请在核实已保存的地址和受影响的服务后，使用 **状态 → 操作 → 基线恢复 → 接受当前前缀**。这会记录一个 **已接受** 结果，既不扫描已批准字段，也不更改防火墙配置；如果已批准字段中仍包含旧前缀，请不要使用它。
+
+## 保存后的失败 \{#failures-after-the-save}
+
+如果在保存之后的值检查或<Terminology title="让更改后的设置生效的 pfSense 操作" to="/docs/reference/terminology#service-reload">服务重新加载</Terminology>中发生<Terminology title="结果：检查或安全阶段中止了运行" to="/docs/reference/terminology#failure">失败</Terminology>，新值仍会保持已保存状态。系统不会自动回滚任何内容，<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>也停留在旧前缀上。
+
+这类运行的 **<Terminology title="写入前保存的配置副本" to="/docs/reference/terminology#configuration-backup">已创建配置备份</Terminology>** 显示“是”。[备份与恢复](/docs/operate/backups-and-recovery#after-a-failed-run)说明了如何恢复后重试，或通过 **接受当前前缀** 保留已核实的已保存值。
+
+## 通知失败 \{#notification-failures}
+
+如果<Terminology title="更新经验证成功后发送的提醒" to="/docs/reference/terminology#change-notification">变化通知</Terminology>无法发送，结果仍为<Terminology title="结果：字段已更新、保存、重新加载并验证" to="/docs/reference/terminology#success">成功</Terminology>，<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>也照样移到新前缀。“状态”选项卡不显示发送状态，<Terminology title="软件包写入的 pfSense 常规日志" to="/docs/reference/terminology#system-log">系统日志</Terminology>会记录 `配置已成功更新，但变化通知发送失败。`
+
+每种结果对应的字段请参阅[状态与操作](/docs/operate/status-and-actions)，各阶段的顺序请参阅[更新工作原理](/docs/safety/how-updates-work)。

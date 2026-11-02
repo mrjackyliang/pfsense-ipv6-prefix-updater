@@ -1,0 +1,52 @@
+---
+id: settings
+title: Referencia de ajustes
+description: Consulta cada campo de la pestaña Configuración de IPv6 Prefix Updater con su valor predeterminado, los valores que acepta y el mensaje de validación que puede mostrar.
+keywords:
+  - pfsense ipv6 prefix updater
+  - ajustes
+  - valores predeterminados
+  - validación
+  - webgui
+tags:
+  - reference
+  - settings
+  - webgui
+sidebar_position: 2
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Consulta cada campo de la pestaña Configuración con su valor predeterminado y los valores que acepta.
+
+## Supervisión del prefijo \{#prefix-monitoring}
+
+La pestaña **Configuración** de **Services → IPv6 Prefix Updater** empieza con estos campos, y al guardar el formulario se muestra `Configuración guardada.`
+
+| Campo                                                                                                                                                                                                 | Descripción                                                                                                                                                                                                                                                                                                                                                                                                                          |
+|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| <Terminology title="comprobaciones automáticas desde una entrada de cron gestionada por pfSense" to="/docs/reference/terminology#scheduled-updates">Activar actualizaciones programadas</Terminology> | Ejecuta comprobaciones según la **Programación** seleccionada. Desactivado de forma predeterminada; al guardar se añade o se elimina la entrada de cron.                                                                                                                                                                                                                                                                             |
+| <Terminology title="interfaz cuya dirección revela el prefijo actual" to="/docs/reference/terminology#monitored-interface">Interfaces supervisadas</Terminology>                                      | Obligatorio. Una fila por cada interfaz cuya <Terminology title="dirección IPv6 pública dentro de 2000::/3" to="/docs/reference/terminology#global-unicast-address">dirección global</Terminology> lleva un <Terminology title="red IPv6 que tu ISP enruta al cortafuegos" to="/docs/reference/terminology#delegated-prefix">prefijo delegado</Terminology>. **Añadir** añade una fila, y cada interfaz solo puede aparecer una vez. |
+| <Terminology title="ajuste del tamaño del prefijo del ISP, de /48 a /64" to="/docs/reference/terminology#delegated-prefix-length">Longitud del prefijo delegado</Terminology>                         | Obligatorio en cada fila. De `/48` a `/64`, con `/56` seleccionado de forma predeterminada.                                                                                                                                                                                                                                                                                                                                          |
+| Programación                                                                                                                                                                                          | Cada 15 minutos, Cada hora, Cada 6 horas o Todos los días a medianoche. Cada hora de forma predeterminada.                                                                                                                                                                                                                                                                                                                           |
+
+## Selección de campos \{#field-selection}
+
+Debajo de **Programación**, la pestaña Configuración muestra `Elija en la pestaña Campos qué campos de la configuración cambian con el prefijo.` Los <Terminology title="grupo de campos con un interruptor en la pestaña Campos" to="/docs/reference/terminology#field-group">grupos de campos</Terminology> y los campos individuales se eligen en la pestaña **Campos** y se guardan aparte de estos ajustes, así que guardar la pestaña Configuración nunca los cambia. [Campos](/docs/configure/configuration-scopes) describe cada grupo y su valor predeterminado.
+
+## Notificaciones \{#notifications}
+
+| Campo                                                                                                                                                                              | Descripción                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| <Terminology title="alerta enviada tras una actualización correcta verificada" to="/docs/reference/terminology#change-notification">Enviar notificaciones de cambios</Terminology> | Marcado de forma predeterminada. Envía una <Terminology title="alerta enviada tras una actualización correcta verificada" to="/docs/reference/terminology#change-notification">notificación de cambios</Terminology> tras cada resultado <Terminology title="resultado: campos actualizados, guardados, recargados y verificados" to="/docs/reference/terminology#success">Correcto</Terminology>, mientras que los avisos de <Terminology title="resultado: el prefijo cambió, pero ningún campo aprobado coincidió" to="/docs/reference/terminology#warning">Advertencia</Terminology> y <Terminology title="resultado: una comprobación o etapa de seguridad detuvo la ejecución" to="/docs/reference/terminology#failure">Fallo</Terminology> aparecen en cualquier caso. |
+
+## Mensajes de validación \{#validation-messages}
+
+| Mensaje                                                                            | Causa                                                                                     |
+|------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
+| `Seleccione una interfaz pfSense configurada para supervisar.`                     | No hay ninguna fila, o la interfaz de una fila no es una interfaz de pfSense configurada. |
+| `Cada interfaz solo puede figurar una vez. Quite la fila adicional de <interfaz>.` | Dos filas de **Interfaces supervisadas** indican la misma interfaz.                       |
+| `La longitud del prefijo delegado debe estar entre 48 y 64.`                       | La longitud está fuera del intervalo aceptado.                                            |
+| `Seleccione una programación compatible con el paquete.`                           | La programación no es ninguna de las cuatro opciones.                                     |
+
+Cada ejecución vuelve a comprobar los ajustes guardados, porque podrían haber cambiado después de guardar el formulario. [Solución de problemas](/docs/operate/troubleshooting#run-failed) enumera los mensajes que puede dar una ejecución.

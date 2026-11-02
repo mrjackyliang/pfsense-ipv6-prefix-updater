@@ -1,0 +1,120 @@
+---
+id: backups-and-recovery
+title: Sikkerhetskopier og gjenoppretting
+description: Finn konfigurasjonen fra før en pakkeoppdatering i fanen Sikkerhetskopier eller i Config History, gjenopprett den med pfSense, og rett opp etter en kjøring som mislyktes etter lagringen.
+keywords:
+  - pfsense ipv6 prefix updater
+  - konfigurasjonssikkerhetskopi
+  - config history
+  - gjenoppretting
+  - revisjon
+tags:
+  - operations
+  - backup
+  - recovery
+  - config history
+sidebar_position: 3
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import backupList from './_assets_/backups-and-recovery-1.png';
+
+Finn konfigurasjonen fra før en oppdatering i fanen **Sikkerhetskopier** eller i <Terminology title="pfSense-liste over lagrede konfigurasjonsrevisjoner" to="/docs/reference/terminology#config-history">Config History</Terminology> i pfSense, og gjenopprett den med de innebygde verktøyene i pfSense.
+
+## Når en sikkerhetskopi opprettes \{#when-a-backup-is-created}
+
+Pakken oppretter bare en <Terminology title="kopi av konfigurasjonen lagret før en skriving" to="/docs/reference/terminology#configuration-backup">konfigurasjonssikkerhetskopi</Terminology> ved en kjøring som skriver, rett før den endrer noe felt. **<Terminology title="kopi av konfigurasjonen lagret før en skriving" to="/docs/reference/terminology#configuration-backup">Konfigurasjonssikkerhetskopi opprettet</Terminology>** i fanen Status viser om den nyeste kjøringen opprettet en.
+
+Det opprettes ingen sikkerhetskopi når en kjøring ender som:
+
+- <Terminology title="resultat: grunnlinje registrert, konfigurasjon uendret" to="/docs/reference/terminology#initialized">Initialisert</Terminology> eller <Terminology title="resultat: testkjøring før en grunnlinje finnes" to="/docs/reference/terminology#initialization-preview">Forhåndsvisning av initialisering</Terminology>.
+- <Terminology title="resultat: prefiks uendret, ingenting gjennomsøkt eller skrevet" to="/docs/reference/terminology#no-change">Ingen endring</Terminology>.
+- <Terminology title="forhåndsvisning som aldri sikkerhetskopierer eller skriver" to="/docs/reference/terminology#dry-run">Testkjøring</Terminology>.
+- **Godtatt**, fordi det å godta det gjeldende prefikset bare endrer <Terminology title="pakkefil med grunnlinjen og siste kjøring" to="/docs/reference/terminology#package-state">pakketilstanden</Terminology>.
+- <Terminology title="resultat: prefiks endret, men ingen godkjente felt samsvarte" to="/docs/reference/terminology#warning">Advarsel</Terminology>.
+- <Terminology title="resultat: en kontroll eller et sikkerhetstrinn stoppet kjøringen" to="/docs/reference/terminology#failure">Feil</Terminology> før sikkerhetskopieringstrinnet, for eksempel et problem med innstillingene, adressen eller muligheten til å laste inn tjenester på nytt.
+
+## Fanen Sikkerhetskopier \{#backups-tab}
+
+**Services → IPv6 Prefix Updater → Sikkerhetskopier** viser pakkens egne kopier av `config.xml`, med den nyeste først. De forblir tilgjengelige etter at pfSense automatisk har fjernet eldre revisjoner fra <Terminology title="pfSense-liste over lagrede konfigurasjonsrevisjoner" to="/docs/reference/terminology#config-history">Config History</Terminology>.
+
+<img src={backupList} alt="Fanen Sikkerhetskopier i IPv6 Prefix Updater med sikkerhetskopier fra pakken tatt før prefiksoppdateringer og før en migrering fra det eldre skriptet, samt sikkerhetskopier importert fra det eldre oppdateringsskriptet, hver med handlingene Last ned og Slett" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+- **Før prefiksoppdatering**: tatt rett før en kjøring skriver. **Detaljer** viser det gamle og det nye prefikset for hvert grensesnitt.
+- **Før overgang fra 1.x**: tatt før pakken [flyttet det eldre oppdateringsskriptet](/docs/migrate-from-legacy) inn i innstillingene sine.
+- **1.x-skript**: en sikkerhetskopi som det <Terminology title="opprinnelig update.php-skript kjørt av Cron-pakken" to="/docs/reference/terminology#legacy-updater">eldre oppdateringsskriptet</Terminology> laget, importert med opprinnelig navn og tidspunkt.
+
+Bare de 10 nyeste sikkerhetskopiene fra pakken beholdes, mens importerte sikkerhetskopier fra det eldre skriptet blir liggende til du sletter dem. Alle sikkerhetskopier lagres i `/cf/conf/ipv6-prefix-updater/backups`, kan bare leses av root og overlever omstarter og fjerning av pakken.
+
+For å gjenopprette en av dem velger du **Last ned** og laster deretter opp filen under **Diagnostics → Backup & Restore → Restore Backup**. Gjenoppretting erstatter hele konfigurasjonen, så advarslene nedenfor gjelder også for disse filene.
+
+## Slik er revisjonene merket \{#how-the-revisions-are-labelled}
+
+Hver oppdatering etterlater to revisjoner i <Terminology title="pfSense-liste over lagrede konfigurasjonsrevisjoner" to="/docs/reference/terminology#config-history">Config History</Terminology>, og bare den eldre av dem angrer oppdateringen:
+
+- **Konfigurasjonen før oppdateringen**: <Terminology title="kopi av konfigurasjonen lagret før en skriving" to="/docs/reference/terminology#configuration-backup">konfigurasjonssikkerhetskopien</Terminology> er en kopi av denne revisjonen. Den beholder beskrivelsen av den endringen som ble lagret før oppdateringen.
+- **Den oppdaterte konfigurasjonen**: pakken lagrer endringen sin som en ny revisjon med beskrivelsen `IPv6-prefiksoppdateringen endret <count> godkjent(e) felt for grensesnitt <interface>`.
+
+:::warning
+
+Revisjonen med beskrivelsen fra pakken inneholder den oppdaterte konfigurasjonen. Å gjenopprette den angrer ikke oppdateringen.
+
+:::
+
+## Finn riktig revisjon \{#find-the-right-revision}
+
+1. Åpne **Diagnostics → Backup & Restore → Config History**.
+2. Finn den nyeste revisjonen med beskrivelsen `IPv6-prefiksoppdateringen endret ... for grensesnitt ...`. Hvis ingenting er lagret etter oppdateringen, er dette den gjeldende konfigurasjonen.
+3. Velg revisjonen som ble lagret rett før den, som er konfigurasjonen fra før oppdateringen.
+4. Sammenlign de to revisjonene i diff-visningen. Bortsett fra revisjonsdetaljene skal bare feltene som telles i **Endrede felt**, være forskjellige.
+5. Kontroller om andre endringer er lagret etter oppdateringen, fordi gjenoppretting av en eldre revisjon også fjerner dem.
+
+## Gjenopprett revisjonen \{#restore-the-revision}
+
+1. Bruk gjenopprettingshandlingen i pfSense på revisjonen fra før oppdateringen, og følg instruksjonene.
+2. Åpne **Services → IPv6 Prefix Updater → Innstillinger**, og kontroller **<Terminology title="automatiske kontroller fra en cron-oppføring styrt av pfSense" to="/docs/reference/terminology#scheduled-updates">Aktiver planlagte oppdateringer</Terminology>**, fordi den gjenopprettede revisjonen tar med seg pakkeinnstillingene fra den gangen.
+3. Velg **<Terminology title="forhåndsvisning som aldri sikkerhetskopierer eller skriver" to="/docs/reference/terminology#dry-run">Testkjøring</Terminology>** i fanen Status for å se hva neste kjøring ville gjøre.
+
+Hva neste kjøring gjør, avhenger av resultatet du angrer:
+
+- **Etter en <Terminology title="resultat: en kontroll eller et sikkerhetstrinn stoppet kjøringen" to="/docs/reference/terminology#failure">Feil</Terminology>**: <Terminology title="startprefiks registrert uten å endre konfigurasjonen" to="/docs/reference/terminology#baseline">grunnlinjen</Terminology> har fortsatt det gamle prefikset, så neste kjøring planlegger den samme oppdateringen på nytt.
+- **Etter resultatet <Terminology title="resultat: felt oppdatert, lagret, lastet inn igjen og verifisert" to="/docs/reference/terminology#success">Vellykket</Terminology>**: <Terminology title="startprefiks registrert uten å endre konfigurasjonen" to="/docs/reference/terminology#baseline">grunnlinjen</Terminology> har allerede det nye prefikset, så senere kjøringer rapporterer <Terminology title="resultat: prefiks uendret, ingenting gjennomsøkt eller skrevet" to="/docs/reference/terminology#no-change">Ingen endring</Terminology> og tar ikke oppdateringen i bruk på nytt. De gjenopprettede adressene beholder det gamle prefikset til du endrer dem.
+
+:::warning
+
+Å gjenopprette en revisjon erstatter hele konfigurasjonen, inkludert alle endringer som er lagret etter den revisjonen.
+
+:::
+
+## Etter en mislykket kjøring \{#after-a-failed-run}
+
+Begynn med **<Terminology title="kopi av konfigurasjonen lagret før en skriving" to="/docs/reference/terminology#configuration-backup">Konfigurasjonssikkerhetskopi opprettet</Terminology>** og **Sammendrag** i panelet **Siste kjøring**. En <Terminology title="resultat: en kontroll eller et sikkerhetstrinn stoppet kjøringen" to="/docs/reference/terminology#failure">Feil</Terminology> viser alltid `0` under **Endrede felt**, selv når felt allerede er skrevet.
+
+- **<Terminology title="kopi av konfigurasjonen lagret før en skriving" to="/docs/reference/terminology#configuration-backup">Konfigurasjonssikkerhetskopi opprettet</Terminology> viser Nei**: kjøringen stoppet før skrivingen, så konfigurasjonen er uendret. [Feilsøking](/docs/operate/troubleshooting#run-failed) viser årsakene.
+- **Sammendrag viser `Kjøring mislyktes: pfSense kunne ikke skrive den planlagte konfigurasjonen.`**: pfSense rapporterte at skrivingen mislyktes. Pakken la de opprinnelige verdiene tilbake i minnet før den stoppet.
+- **Alle andre feil med sikkerhetskopi**: de nye verdiene er allerede lagret, og ingenting ble rullet tilbake. <Terminology title="startprefiks registrert uten å endre konfigurasjonen" to="/docs/reference/terminology#baseline">Grunnlinjen</Terminology> har fortsatt det gamle prefikset, så senere kjøringer rapporterer <Terminology title="resultat: prefiks endret, men ingen godkjente felt samsvarte" to="/docs/reference/terminology#warning">Advarsel</Terminology> fordi de lagrede verdiene ikke lenger hører til det.
+
+I det siste tilfellet velger du gjenopprettingen som passer til den lagrede konfigurasjonen:
+
+- **Utfør oppdateringen på nytt**: rett opp kontrollen eller innlastingen som mislyktes, gjenopprett revisjonen fra før oppdateringen, kjør en <Terminology title="forhåndsvisning som aldri sikkerhetskopierer eller skriver" to="/docs/reference/terminology#dry-run">Testkjøring</Terminology>, og velg deretter **Kjør nå**.
+- **Behold de lagrede verdiene med det nye prefikset**: kontroller først de godkjente adressene og de berørte tjenestene selv. Åpne deretter **Status → Handlinger → Gjenoppretting av grunnlinje**, velg **Godta gjeldende prefiks**, og bekreft handlingen.
+
+**Godta gjeldende prefiks** registrerer den aktive kildeadressen, prefikset og prefikslengden som ny <Terminology title="startprefiks registrert uten å endre konfigurasjonen" to="/docs/reference/terminology#baseline">grunnlinje</Terminology>. Den gjennomsøker ikke brannmurkonfigurasjonen, tar ingen sikkerhetskopi, skriver ikke konfigurasjon og laster ikke inn noen tjeneste på nytt; resultatet er **Godtatt**, og neste vanlige kontroll skal rapportere <Terminology title="resultat: prefiks uendret, ingenting gjennomsøkt eller skrevet" to="/docs/reference/terminology#no-change">Ingen endring</Terminology>.
+
+:::warning
+
+Ikke godta det gjeldende prefikset bare for å bli kvitt en advarsel. Godta det bare etter at du har bekreftet at alle adresser som skal bruke det nye prefikset, allerede er riktige, og – etter en feil ved ny innlasting – at den berørte tjenesten kjører med den lagrede konfigurasjonen.
+
+:::
+
+Hvis **Siste kjøring** ikke endret seg i det hele tatt, stoppet kjøringen før den leste <Terminology title="pakkefil med grunnlinjen og siste kjøring" to="/docs/reference/terminology#package-state">pakketilstanden</Terminology>. Årsaken står i <Terminology title="skrivebeskyttede resultater vist etter Kjør nå eller Testkjøring" to="/docs/reference/terminology#command-output">Kommandoutdata</Terminology> og <Terminology title="generell pfSense-logg som pakken skriver til" to="/docs/reference/terminology#system-log">systemloggen</Terminology>.
+
+## Behold sikkerhetskopier utenfor enheten \{#keep-off-device-backups}
+
+<Terminology title="pfSense-liste over lagrede konfigurasjonsrevisjoner" to="/docs/reference/terminology#config-history">Config History</Terminology> lagres på selve brannmuren. Det anbefales også å laste ned en sikkerhetskopi fra **Diagnostics → Backup & Restore** før du installerer eller oppdaterer pakken, eller slår på <Terminology title="automatiske kontroller fra en cron-oppføring styrt av pfSense" to="/docs/reference/terminology#scheduled-updates">planlagte oppdateringer</Terminology>.
+
+## Ta vare på bevis \{#preserve-evidence}
+
+Før du gjenoppretter, anbefales det å kopiere panelet **Siste kjøring**, <Terminology title="skrivebeskyttede resultater vist etter Kjør nå eller Testkjøring" to="/docs/reference/terminology#command-output">Kommandoutdata</Terminology> og linjene i <Terminology title="generell pfSense-logg som pakken skriver til" to="/docs/reference/terminology#system-log">systemloggen</Terminology> som starter med `IPv6 Prefix Updater:`. Til sammen viser de hvilket trinn som stoppet, og om konfigurasjonen ble skrevet.
+
+Se [Feilsøking](/docs/operate/troubleshooting) for feilmeldinger og [Kontroller før automatisering](/docs/safety/testing-and-verification) før du slår tidsplanen på igjen.

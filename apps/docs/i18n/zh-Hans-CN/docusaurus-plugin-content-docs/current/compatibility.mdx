@@ -1,0 +1,60 @@
+---
+id: compatibility
+title: 兼容性
+description: 在依赖此软件包之前，检查 pfSense、PHP、地址和前缀长度要求，以及可选的 WireGuard 依赖项和已知限制。
+keywords:
+  - pfsense ipv6 prefix updater
+  - 兼容性
+  - 系统要求
+  - 全局 IPv6 地址
+  - 已知限制
+tags:
+  - setup
+  - compatibility
+  - ipv6
+sidebar_position: 4
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+确认你的防火墙、接口和 ISP 委派都满足软件包的要求，然后再依靠<Terminology title="由 pfSense 管理的 cron 条目运行的自动检查" to="/docs/reference/terminology#scheduled-updates">计划更新</Terminology>自动运行。
+
+## 支持的版本 \{#supported-releases}
+
+- 项目尚未公布经过测试的 pfSense 版本列表。
+- 软件包不检查 pfSense 版本。每次运行都会确认自己运行在 pfSense 上且所需的文件和函数齐全，缺少时会在读取设置之前停止。
+- 软件包代码需要 PHP 8.1 或更高版本。
+- `.pkg` 文件必须针对你的 pfSense 版本所基于的 FreeBSD 版本构建，否则 `pkg` 会报告 ABI 不匹配。
+
+## 地址要求 \{#address-requirements}
+
+- 每个<Terminology title="其地址可反映当前前缀的接口" to="/docs/reference/terminology#monitored-interface">监控接口</Terminology>都必须有活动的<Terminology title="位于 2000::/3 内的公网 IPv6 地址" to="/docs/reference/terminology#global-unicast-address">全局单播地址</Terminology>。软件包绝不会回退使用<Terminology title="仅在单条链路上有效的 fe80:: 地址" to="/docs/reference/terminology#link-local-address">链路本地地址</Terminology>。
+- 唯一本地地址（`fc00::/7`）、组播地址、环回地址、未指定地址、IPv4 映射地址以及带区域标识符的地址都不能作为<Terminology title="pfSense 为监控接口报告的全局地址" to="/docs/reference/terminology#source-address">源地址</Terminology>。
+- <Terminology title="ISP 前缀大小设置，/48 至 /64" to="/docs/reference/terminology#delegated-prefix-length">委派前缀长度</Terminology>必须介于 `/48` 到 `/64` 之间。边界落在某个十六进制位内部的长度（如 `/57`）同样适用。
+
+某个地址不符合条件时，该接口会以<Terminology title="结果：检查或安全阶段中止了运行" to="/docs/reference/terminology#failure">失败</Terminology>结束并给出原因，例如 `接口“lan”没有活动的全局 IPv6 地址。` [故障排除](/docs/operate/troubleshooting#run-failed)列出了这些消息。
+
+## WAN 没有全局地址时 \{#when-wan-has-no-global-address}
+
+有些 ISP 只委派前缀，而不为 WAN 本身分配<Terminology title="位于 2000::/3 内的公网 IPv6 地址" to="/docs/reference/terminology#global-unicast-address">全局地址</Terminology>。这时，LAN 等<Terminology title="地址来自另一接口委派前缀的接口" to="/docs/reference/terminology#tracked-interface">跟踪接口</Terminology>会持有来自<Terminology title="ISP 路由到防火墙的 IPv6 网络" to="/docs/reference/terminology#delegated-prefix">委派前缀</Terminology>的地址，应当监控的就是它。
+
+**Status → Interfaces**（状态 → 接口）会显示哪些接口具有<Terminology title="位于 2000::/3 内的公网 IPv6 地址" to="/docs/reference/terminology#global-unicast-address">全局地址</Terminology>。
+
+## 软件包能识别的内容 \{#what-the-package-recognizes}
+
+软件包会更新<Terminology title="软件包可改写的具体配置字段" to="/docs/reference/terminology#approved-field">已批准字段</Terminology>中以字面形式写出的 IPv6 地址和网络。主机名、URL、IPv4 值和其他文本保持不变。
+
+由 pfSense 生成的地址（例如<Terminology title="地址来自另一接口委派前缀的接口" to="/docs/reference/terminology#tracked-interface">跟踪接口</Terminology>上的地址）绝不会被更改。描述其他设备的地址（例如远程 VPN 网络和 WireGuard 对等端）只有在你于[其他设置](/docs/configure/configuration-scopes#other-settings)中勾选后才会更改。
+
+## 可选依赖项 \{#optional-dependencies}
+
+- **WireGuard 软件包**：仅在需要更改 <Terminology title="分配给 pfSense WireGuard 隧道的地址" to="/docs/reference/terminology#wireguard-tunnel-address">WireGuard 隧道地址</Terminology>时才需要。若未安装，包含 WireGuard 更改的实际运行会在备份之前停止。
+
+## 已知限制 \{#known-limits}
+
+- 添加<Terminology title="其地址可反映当前前缀的接口" to="/docs/reference/terminology#monitored-interface">监控接口</Terminology>或将某一行切换为其他接口时，会为它记录新的<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>；更改某一行的<Terminology title="ISP 前缀大小设置，/48 至 /64" to="/docs/reference/terminology#delegated-prefix-length">委派前缀长度</Terminology>则算作一次<Terminology title="与上次成功前缀或长度不同" to="/docs/reference/terminology#prefix-transition">前缀变化</Terminology>。
+- <Terminology title="不备份也不写入的预览" to="/docs/reference/terminology#dry-run">试运行</Terminology>无法模拟前缀变化，因此只有在真正发生变化后才会出现计划的更改。
+- 高可用（CARP）对不会得到特殊处理。
+- 作为<Terminology title="从 GitHub 而非 Netgate 软件包仓库安装的软件包" to="/docs/reference/terminology#unofficial-package">非官方软件包</Terminology>，新版本需要用 `pkg` 安装，详见[更新或移除](/docs/reference/package-lifecycle)。
+
+如何选择地址来源请参阅[接口与前缀](/docs/configure/interface-and-prefix)，软件包可更改的字段请参阅[字段](/docs/configure/configuration-scopes)。

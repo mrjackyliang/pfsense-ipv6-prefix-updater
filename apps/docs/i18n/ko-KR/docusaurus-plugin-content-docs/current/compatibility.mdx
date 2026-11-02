@@ -1,0 +1,60 @@
+---
+id: compatibility
+title: 호환성
+description: 패키지를 믿고 쓰기 전에 pfSense, PHP, 주소, 접두사 길이 요구 사항과 선택적인 WireGuard 종속성, 알려진 제한 사항을 확인합니다.
+keywords:
+  - pfsense ipv6 prefix updater
+  - 호환성
+  - 요구 사항
+  - 글로벌 ipv6 주소
+  - 알려진 제한 사항
+tags:
+  - setup
+  - compatibility
+  - ipv6
+sidebar_position: 4
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+<Terminology title="pfSense가 관리하는 cron 항목으로 실행하는 자동 확인" to="/docs/reference/terminology#scheduled-updates">예약 업데이트</Terminology>에 의존하기 전에 방화벽, 인터페이스, ISP 위임이 패키지 요구 사항을 충족하는지 확인합니다.
+
+## 지원 릴리스 \{#supported-releases}
+
+- 프로젝트는 아직 테스트를 거친 pfSense 릴리스 목록을 게시하지 않았습니다.
+- 패키지는 pfSense 버전을 확인하지 않습니다. 각 실행은 패키지가 사용하는 파일과 함수가 있는 pfSense에서 실행 중인지 확인하고, 없으면 설정을 읽기 전에 멈춥니다.
+- 패키지 코드에는 PHP 8.1 이상이 필요합니다.
+- `.pkg` 파일은 사용 중인 pfSense 릴리스가 기반으로 하는 FreeBSD 버전용으로 빌드되어야 하며, 그렇지 않으면 `pkg`가 ABI 불일치를 보고합니다.
+
+## 주소 요구 사항 \{#address-requirements}
+
+- 각 <Terminology title="주소로 현재 접두사를 알려 주는 인터페이스" to="/docs/reference/terminology#monitored-interface">모니터링할 인터페이스</Terminology>에는 활성 <Terminology title="2000::/3 범위의 공인 IPv6 주소" to="/docs/reference/terminology#global-unicast-address">글로벌 유니캐스트 주소</Terminology>가 있어야 합니다. 패키지는 <Terminology title="하나의 링크에서만 동작하는 fe80:: 주소" to="/docs/reference/terminology#link-local-address">링크 로컬 주소</Terminology>로 대체하지 않습니다.
+- 고유 로컬(`fc00::/7`), 멀티캐스트, 루프백, 미지정, IPv4 매핑 주소와 영역 식별자가 붙은 주소는 <Terminology title="pfSense가 모니터링할 인터페이스에 보고하는 글로벌 주소" to="/docs/reference/terminology#source-address">원본 주소</Terminology>가 될 수 없습니다.
+- <Terminology title="ISP 접두사 크기 설정, /48~/64" to="/docs/reference/terminology#delegated-prefix-length">위임된 접두사 길이</Terminology>는 `/48`부터 `/64`까지여야 합니다. `/57`처럼 16진수 숫자 중간에서 끝나는 길이도 동작합니다.
+
+주소가 조건을 충족하지 않으면 그 인터페이스는 `인터페이스 “lan”에 활성 글로벌 IPv6 주소가 없습니다.` 같은 이유와 함께 <Terminology title="결과: 검사나 안전 단계가 실행을 중단함" to="/docs/reference/terminology#failure">실패</Terminology>로 끝납니다. 메시지 목록은 [문제 해결](/docs/operate/troubleshooting#run-failed)에 있습니다.
+
+## WAN에 글로벌 주소가 없는 경우 \{#when-wan-has-no-global-address}
+
+일부 ISP는 WAN 자체에는 <Terminology title="2000::/3 범위의 공인 IPv6 주소" to="/docs/reference/terminology#global-unicast-address">글로벌 주소</Terminology>를 주지 않고 접두사만 위임합니다. 이때는 LAN 같은 <Terminology title="다른 인터페이스의 위임된 접두사로 주소를 받는 인터페이스" to="/docs/reference/terminology#tracked-interface">추적 인터페이스</Terminology>가 <Terminology title="ISP가 방화벽으로 라우팅하는 IPv6 네트워크" to="/docs/reference/terminology#delegated-prefix">위임된 접두사</Terminology>의 주소를 가지므로 이 인터페이스를 모니터링해야 합니다.
+
+어떤 인터페이스에 <Terminology title="2000::/3 범위의 공인 IPv6 주소" to="/docs/reference/terminology#global-unicast-address">글로벌 주소</Terminology>가 있는지는 **Status → Interfaces**에서 확인할 수 있습니다.
+
+## 패키지가 인식하는 값 \{#what-the-package-recognizes}
+
+패키지는 <Terminology title="패키지가 다시 쓸 수 있는 정확한 구성 필드" to="/docs/reference/terminology#approved-field">승인된 필드</Terminology>에 직접 입력된 IPv6 주소와 네트워크를 업데이트합니다. 호스트 이름, URL, IPv4 값, 그 밖의 텍스트는 그대로 둡니다.
+
+<Terminology title="다른 인터페이스의 위임된 접두사로 주소를 받는 인터페이스" to="/docs/reference/terminology#tracked-interface">추적 인터페이스</Terminology>의 주소처럼 pfSense가 생성하는 주소는 절대 변경하지 않습니다. 원격 VPN 네트워크나 WireGuard 피어처럼 다른 장치를 나타내는 주소는 [기타 설정](/docs/configure/configuration-scopes#other-settings)에서 직접 선택할 때만 바뀝니다.
+
+## 선택적 종속성 \{#optional-dependencies}
+
+- **WireGuard 패키지**: <Terminology title="pfSense WireGuard 터널에 할당된 주소" to="/docs/reference/terminology#wireguard-tunnel-address">WireGuard 터널 주소</Terminology>를 변경해야 할 때만 필요합니다. 이 패키지가 없으면 WireGuard 변경이 포함된 실제 실행은 백업 전에 멈춥니다.
+
+## 알려진 제한 사항 \{#known-limits}
+
+- <Terminology title="주소로 현재 접두사를 알려 주는 인터페이스" to="/docs/reference/terminology#monitored-interface">모니터링할 인터페이스</Terminology>를 추가하거나 행을 다른 인터페이스로 바꾸면 그 인터페이스에 대한 새 <Terminology title="구성을 바꾸지 않고 기록한 시작 접두사" to="/docs/reference/terminology#baseline">기준선</Terminology>이 기록되고, 행의 <Terminology title="ISP 접두사 크기 설정, /48~/64" to="/docs/reference/terminology#delegated-prefix-length">위임된 접두사 길이</Terminology>를 변경하면 <Terminology title="마지막 성공 접두사나 길이와 달라진 상태" to="/docs/reference/terminology#prefix-transition">접두사 전환</Terminology>으로 간주됩니다.
+- <Terminology title="백업도 쓰기도 하지 않는 미리 보기" to="/docs/reference/terminology#dry-run">시험 실행</Terminology>은 접두사 변경을 시뮬레이션할 수 없으므로, 계획된 변경은 실제 변경이 일어난 뒤에만 나타납니다.
+- 고가용성(CARP) 쌍은 별도로 처리하지 않습니다.
+- <Terminology title="Netgate 저장소가 아닌 GitHub에서 설치하는 패키지" to="/docs/reference/terminology#unofficial-package">비공식 패키지</Terminology>이므로 새 릴리스는 [업데이트 또는 제거](/docs/reference/package-lifecycle)에 설명된 대로 `pkg`로 설치합니다.
+
+원본 주소를 고르는 방법은 [인터페이스와 접두사](/docs/configure/interface-and-prefix)를, 패키지가 변경할 수 있는 필드는 [필드](/docs/configure/configuration-scopes)를 검토합니다.

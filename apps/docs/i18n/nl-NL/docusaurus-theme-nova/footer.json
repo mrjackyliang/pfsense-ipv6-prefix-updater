@@ -1,0 +1,35 @@
+{
+  "layout.learn.title": {
+    "message": "Handleidingen"
+  },
+  "layout.resources.title": {
+    "message": "Bronnen"
+  },
+  "sections.learn.0.label": {
+    "message": "Installeren en configureren"
+  },
+  "sections.learn.1.label": {
+    "message": "Bewaakte interfaces / Lengte gedelegeerde prefix"
+  },
+  "sections.learn.2.label": {
+    "message": "Status / Acties"
+  },
+  "sections.learn.3.label": {
+    "message": "Problemen oplossen"
+  },
+  "sections.resources.0.label": {
+    "message": "Veiligheid en werking"
+  },
+  "sections.resources.1.label": {
+    "message": "Uitkomsten en tests"
+  },
+  "sections.resources.2.label": {
+    "message": "pfSense-documentatie"
+  },
+  "sections.resources.3.label": {
+    "message": "Broncode"
+  },
+  "copyright": {
+    "message": "Copyright © 2023-2026 Jacky Liang. Uitgegeven onder de MIT-licentie."
+  }
+}

@@ -1,0 +1,122 @@
+---
+id: status-and-actions
+title: Estado y acciones
+description: Interpretá los paneles Estado actual y Última ejecución, ejecutá comprobaciones y vistas previas, recuperá la referencia y entendé la Salida del comando de la pestaña Estado.
+keywords:
+  - pfsense ipv6 prefix updater
+  - pestaña estado
+  - ejecutar ahora
+  - simulación
+  - salida del comando
+tags:
+  - operations
+  - status
+  - dry run
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import unchangedRun from './_assets_/status-and-actions-1.png';
+import changedRun from './_assets_/status-and-actions-2.png';
+import runByInterface from './_assets_/status-and-actions-3.png';
+
+Mirá lo que registraron la referencia actual y la última ejecución, e iniciá una comprobación, una vista previa o una recuperación de la referencia desde la pestaña Estado.
+
+## Estado actual \{#current-state}
+
+La pestaña **Estado** de **Services → IPv6 Prefix Updater** empieza con esta tabla, que tiene una fila por cada interfaz supervisada y describe la <Terminology title="prefijo inicial registrado sin cambiar la configuración" to="/docs/reference/terminology#baseline">referencia</Terminology> contra la que se compara la próxima comprobación:
+
+- **<Terminology title="interfaz cuya dirección revela el prefijo actual" to="/docs/reference/terminology#monitored-interface">Interfaz supervisada</Terminology>**: la descripción de la interfaz seguida del nombre interno que pfSense le da, como `LAN (lan)`.
+- **<Terminology title="prefijo contra el que se compara la próxima comprobación" to="/docs/reference/terminology#last-successful-prefix">Último prefijo correcto</Terminology>**: el prefijo y su longitud, como `2001:db8:abcd:7800::/56`.
+- **<Terminology title="dirección global que pfSense informa para la interfaz supervisada" to="/docs/reference/terminology#source-address">Última dirección de origen correcta</Terminology>**: la dirección en <Terminology title="escritura estándar más corta y en minúsculas de una dirección" to="/docs/reference/terminology#canonical-form">forma canónica</Terminology>. Una ejecución con resultado <Terminology title="resultado: prefijo sin cambios, nada analizado ni escrito" to="/docs/reference/terminology#no-change">Sin cambios</Terminology> también la actualiza.
+- **Última actualización correcta**: la hora UTC en que la <Terminology title="prefijo inicial registrado sin cambiar la configuración" to="/docs/reference/terminology#baseline">referencia</Terminology> se inicializó, se aceptó o se movió después del último resultado <Terminology title="resultado: campos actualizados, guardados, recargados y verificados" to="/docs/reference/terminology#success">Correcto</Terminology>, como `2026-10-24T14:00:00+00:00`.
+
+Antes de la primera ejecución de una interfaz, su fila muestra `No inicializado. Ejecutá una comprobación normal una vez para establecer una referencia segura.` Una <Terminology title="prefijo inicial registrado sin cambiar la configuración" to="/docs/reference/terminology#baseline">referencia</Terminology> tomada del actualizador heredado muestra `No registrado por esta versión del paquete` como dirección de origen hasta la primera comprobación.
+
+## Última ejecución \{#last-run}
+
+Este panel registra la última ejecución. Si supervisás una sola interfaz, muestra directamente el resultado de esa interfaz:
+
+- **Resultado**: cómo terminó la ejecución, como se explica en [Resultados de ejecución](/docs/operate/run-outcomes).
+- **Fecha y hora (UTC)**: cuándo terminó la ejecución.
+- **<Terminology title="dirección global que pfSense informa para la interfaz supervisada" to="/docs/reference/terminology#source-address">Dirección de origen observada</Terminology>**: la dirección que devolvió pfSense para la <Terminology title="interfaz cuya dirección revela el prefijo actual" to="/docs/reference/terminology#monitored-interface">Interfaz supervisada</Terminology>.
+- **<Terminology title="dirección de origen enmascarada a la longitud del prefijo" to="/docs/reference/terminology#observed-prefix">Prefijo observado</Terminology>**: la red calculada a partir de esa dirección y de la <Terminology title="opción del tamaño del prefijo del ISP, de /48 a /64" to="/docs/reference/terminology#delegated-prefix-length">Longitud del prefijo delegado</Terminology>.
+- **Campos modificados**: la cantidad de <Terminology title="campo de configuración puntual que el paquete puede reescribir" to="/docs/reference/terminology#approved-field">campos aprobados</Terminology> que cambió la ejecución, o que cambiaría en el caso de una <Terminology title="vista previa que nunca hace copias ni escribe" to="/docs/reference/terminology#dry-run">simulación</Terminology>.
+- **<Terminology title="copia de la configuración guardada antes de escribir" to="/docs/reference/terminology#configuration-backup">Copia de seguridad de la configuración creada</Terminology>**: `Sí` o `No: esta ejecución no escribió la configuración`.
+- **<Terminology title="acción de pfSense que aplica la configuración modificada" to="/docs/reference/terminology#service-reload">Servicios recargados</Terminology>**: los servicios que recargó la ejecución, o que recargaría en el caso de una <Terminology title="vista previa que nunca hace copias ni escribe" to="/docs/reference/terminology#dry-run">simulación</Terminology>.
+- **Resumen**: una oración sobre el resultado, que incluye el prefijo anterior después de un <Terminology title="cambio respecto del último prefijo o longitud correctos" to="/docs/reference/terminology#prefix-transition">cambio de prefijo</Terminology>.
+- **Paquetes**: aparece cuando la ejecución cambió la configuración de otro paquete, con una línea por paquete, como `Se aplicó de nuevo la configuración del paquete <paquete>.` [Campos](/docs/configure/configuration-scopes#other-packages-settings) enumera cada mensaje.
+- **Campos omitidos**: aparece cuando hay campos tildados que ya no existen, con `Estos campos seleccionados ya no existen, así que la ejecución los omitió. Revisalos en la pestaña Campos.` y la identidad de cada campo.
+
+Se recomienda revisar primero la dirección y el prefijo observados. Muestran si pfSense devolvió la dirección prevista y si la longitud dio la red esperada.
+
+**Última ejecución** no se actualiza cuando otra comprobación tiene el <Terminology title="protección que evita dos comprobaciones al mismo tiempo" to="/docs/reference/terminology#run-lock">bloqueo de ejecución</Terminology> o cuando una ejecución se detiene antes de leer su <Terminology title="archivo del paquete con la referencia y la última ejecución" to="/docs/reference/terminology#package-state">estado del paquete</Terminology>, por ejemplo cuando ninguna interfaz supervisada tiene <Terminology title="dirección IPv6 pública dentro de 2000::/3" to="/docs/reference/terminology#global-unicast-address">dirección global</Terminology>. Un <Terminology title="resultado: una verificación o etapa de seguridad detuvo la ejecución" to="/docs/reference/terminology#failure">Fallo</Terminology> siempre muestra `0` campos modificados, como explica [Resultados de ejecución](/docs/operate/run-outcomes#failures-after-the-save).
+
+### Última ejecución por interfaz \{#last-run-by-interface}
+
+Si supervisás más de una interfaz, **Última ejecución** muestra los totales y **Resumen** cuenta las interfaces que se actualizaron, las que no tuvieron cambios y las que requieren atención. Debajo, la tabla **Última ejecución por interfaz** enumera cada interfaz con su propio resultado, prefijo observado, campos modificados y resumen.
+
+- **Campos modificados** en **Última ejecución** cuenta cada campo una sola vez, aunque lo hayan previsto dos interfaces que comparten un <Terminology title="red IPv6 que tu ISP enruta al firewall" to="/docs/reference/terminology#delegated-prefix">prefijo delegado</Terminology>.
+- Una interfaz sin <Terminology title="dirección IPv6 pública dentro de 2000::/3" to="/docs/reference/terminology#global-unicast-address">dirección global</Terminology> devuelve <Terminology title="resultado: una verificación o etapa de seguridad detuvo la ejecución" to="/docs/reference/terminology#failure">Fallo</Terminology> en su propia fila, y las demás interfaces se siguen comprobando igual.
+- Si dos interfaces prevén valores distintos para el mismo campo, la ejecución se detiene antes de escribir cualquier cosa e informa en qué campo no coincidieron.
+
+## Acciones \{#actions}
+
+| Acción                                                                                                                               | Qué hace                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+|--------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Ejecutar ahora                                                                                                                       | Ejecuta una comprobación completa, aunque las <Terminology title="comprobaciones automáticas desde una entrada de cron administrada por pfSense" to="/docs/reference/terminology#scheduled-updates">actualizaciones programadas</Terminology> estén desactivadas. Registra una <Terminology title="prefijo inicial registrado sin cambiar la configuración" to="/docs/reference/terminology#baseline">referencia</Terminology> si no existe ninguna y aplica un <Terminology title="cambio respecto del último prefijo o longitud correctos" to="/docs/reference/terminology#prefix-transition">cambio de prefijo</Terminology> cuando lo encuentra. |
+| <Terminology title="vista previa que nunca hace copias ni escribe" to="/docs/reference/terminology#dry-run">Simulación</Terminology> | Ejecuta la misma comprobación sin copia de seguridad ni escritura. Antes de que exista una <Terminology title="prefijo inicial registrado sin cambiar la configuración" to="/docs/reference/terminology#baseline">referencia</Terminology>, devuelve <Terminology title="resultado: simulación antes de que exista una referencia" to="/docs/reference/terminology#initialization-preview">Vista previa de la inicialización</Terminology>.                                                                                                                                                                                                          |
+| Aceptar prefijo actual                                                                                                               | Después de la confirmación, registra la dirección de origen, el prefijo y la longitud activos como <Terminology title="prefijo inicial registrado sin cambiar la configuración" to="/docs/reference/terminology#baseline">referencia</Terminology> nueva. No inspecciona los campos aprobados, no crea una copia de seguridad, no escribe la configuración ni recarga servicios.                                                                                                                                                                                                                                                                     |
+
+Ejecutar ahora y <Terminology title="vista previa que nunca hace copias ni escribe" to="/docs/reference/terminology#dry-run">Simulación</Terminology> son <Terminology title="comprobación iniciada desde la pestaña Estado" to="/docs/reference/terminology#manual-run">ejecuciones manuales</Terminology>. **Aceptar prefijo actual** es una acción de recuperación y solo debería usarse después de verificar las direcciones guardadas y los servicios afectados.
+
+Cada acción muestra un mensaje de finalización o de advertencia. La confirmación de **Aceptar prefijo actual** es la última protección antes de que el paquete reemplace su referencia de comparación.
+
+Una comprobación que encuentra otra ejecución en curso también muestra el mensaje de finalización, así que se recomienda leer también la <Terminology title="resultados de solo lectura después de Ejecutar ahora o Simulación" to="/docs/reference/terminology#command-output">Salida del comando</Terminology>.
+
+## Salida del comando \{#command-output}
+
+Después de una acción, aparece un cuadro de solo lectura **Ejecución más reciente** en **<Terminology title="resultados de solo lectura después de Ejecutar ahora o Simulación" to="/docs/reference/terminology#command-output">Salida del comando</Terminology>**:
+
+```text
+Estado: Sin cambios
+Interfaz: lan
+Dirección de origen observada: 2001:db8:abcd:78aa::1
+Prefijo anterior: 2001:db8:abcd:7800::
+Prefijo actual: 2001:db8:abcd:7800::/56
+Campos planificados o modificados: 0
+Copia de seguridad de la configuración: No creada
+Servicios recargados: Ninguno
+Resumen: El prefijo IPv6 activo no ha cambiado; no se leyó ni escribió ningún destino de configuración aprobado.
+```
+
+El prefijo anterior se muestra sin su longitud. En cambio, una ejecución fallida muestra una sola línea que empieza con `El Actualizador de prefijo IPv6 falló:`.
+
+Después de una <Terminology title="vista previa que nunca hace copias ni escribe" to="/docs/reference/terminology#dry-run">simulación</Terminology> o de un cambio, sigue `Cambios de campos:` con cada dirección que la ejecución reemplazó, o que reemplazaría, y el campo al que pertenece:
+
+```text
+Cambios de campos:
+- aliases/alias/0/address: 2001:db8:abcd:78aa::10 → 2001:db8:abcd:88aa::10
+```
+
+## Elegir los campos \{#choosing-fields}
+
+Los campos que actualiza una ejecución se eligen en la pestaña **Campos**, que muestra todas las direcciones del prefijo de cada <Terminology title="prefijo inicial registrado sin cambiar la configuración" to="/docs/reference/terminology#baseline">referencia</Terminology>. [Campos](/docs/configure/configuration-scopes) explica los grupos, las excepciones de campos individuales y el grupo Otra configuración.
+
+## Capturas de pantalla \{#screenshots}
+
+La primera captura muestra un resultado <Terminology title="resultado: prefijo sin cambios, nada analizado ni escrito" to="/docs/reference/terminology#no-change">Sin cambios</Terminology> para dos interfaces supervisadas, sin campos modificados y sin copia de seguridad.
+
+<img src={unchangedRun} alt="Pestaña Estado de IPv6 Prefix Updater con el panel Última ejecución y la tabla Última ejecución por interfaz para dos interfaces sin cambios, sin campos modificados ni copia de seguridad" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+La segunda captura muestra un resultado <Terminology title="resultado: campos actualizados, guardados, recargados y verificados" to="/docs/reference/terminology#success">Correcto</Terminology> que cambió un <Terminology title="campo de configuración puntual que el paquete puede reescribir" to="/docs/reference/terminology#approved-field">campo aprobado</Terminology>, creó una <Terminology title="copia de la configuración guardada antes de escribir" to="/docs/reference/terminology#configuration-backup">copia de seguridad de la configuración</Terminology> y recargó el filtro del firewall.
+
+<img src={changedRun} alt="Pestaña Estado de IPv6 Prefix Updater con un cambio de prefijo /56 correcto para dos interfaces supervisadas, un campo modificado, una copia de seguridad de la configuración y una recarga del filtro del firewall" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+La tercera captura muestra la tabla **Última ejecución por interfaz** de esa ejecución, en la que LAN y LAB comparten un mismo <Terminology title="red IPv6 que tu ISP enruta al firewall" to="/docs/reference/terminology#delegated-prefix">prefijo delegado</Terminology> y cada una informa el mismo campo modificado.
+
+<img src={runByInterface} alt="Tabla Última ejecución por interfaz de IPv6 Prefix Updater en la que LAN y LAB informan Correcto con un campo modificado por el mismo cambio de prefijo /56" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+Las direcciones `2001:db8::/32` de estas capturas son ejemplos reservados para documentación.
+
+Revisá [Resultados de ejecución](/docs/operate/run-outcomes) para ver todos los resultados y [Copias de seguridad y recuperación](/docs/operate/backups-and-recovery) antes de confiar en una ejecución con cambios.

@@ -1,0 +1,71 @@
+---
+id: schedule-and-notifications
+title: Pianificazione e notifiche
+description: Scegli ogni quanto pfSense controlla il prefisso, attiva gli aggiornamenti pianificati e decidi se inviare una notifica di modifica dopo ogni aggiornamento riuscito.
+keywords:
+  - pfsense ipv6 prefix updater
+  - pianificazione
+  - cron
+  - notifiche di modifica
+  - segnalazioni webgui
+tags:
+  - configuration
+  - scheduling
+  - notifications
+sidebar_position: 3
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Scegli ogni quanto pfSense controlla il prefisso e se ricevere una <Terminology title="messaggio inviato dopo un aggiornamento riuscito e verificato" to="/docs/reference/terminology#change-notification">notifica di modifica</Terminology> dopo un aggiornamento riuscito.
+
+## Scegli una pianificazione \{#choose-a-schedule}
+
+| Pianificazione           | Quando viene eseguita                          |
+|--------------------------|------------------------------------------------|
+| Ogni 15 minuti           | Ai minuti 0, 15, 30 e 45 di ogni ora           |
+| Ogni ora                 | Al minuto 0 di ogni ora, il valore predefinito |
+| Ogni 6 ore               | Alle 00:00, 06:00, 12:00 e 18:00               |
+| Ogni giorno a mezzanotte | Alle 00:00                                     |
+
+Gli orari seguono il fuso orario del firewall, mentre la scheda Stato mostra l’ora UTC.
+
+## Attiva gli aggiornamenti pianificati \{#turn-on-scheduled-updates}
+
+**<Terminology title="controlli automatici da una voce cron gestita da pfSense" to="/docs/reference/terminology#scheduled-updates">Abilita aggiornamenti pianificati</Terminology>** è disattivato dopo l’installazione. Salvare le impostazioni aggiunge o rimuove una voce cron gestita da pfSense, quindi non servono né il pacchetto Cron né un job cron scritto a mano.
+
+Con la casella deselezionata non parte alcun controllo automatico, mentre **Esegui ora** e **<Terminology title="anteprima che non esegue mai backup né scritture" to="/docs/reference/terminology#dry-run">Simulazione</Terminology>** continuano a funzionare. È consigliabile attivarlo solo dopo che la [prima esecuzione](/docs/first-run) ha registrato e verificato la <Terminology title="prefisso di partenza registrato senza modificare la configurazione" to="/docs/reference/terminology#baseline">linea di base</Terminology>.
+
+## Quanto costa un controllo di routine \{#what-a-routine-check-costs}
+
+Un controllo che termina con <Terminology title="risultato: prefisso invariato, nulla analizzato o scritto" to="/docs/reference/terminology#no-change">Nessuna modifica</Terminology> legge solo le sue impostazioni, gli indirizzi delle interfacce e lo <Terminology title="file del pacchetto con la linea di base e l’ultima esecuzione" to="/docs/reference/terminology#package-state">stato del pacchetto</Terminology>. Non analizza la configurazione, non crea backup, non ricarica servizi e non invia notifiche.
+
+Scrive comunque una riga nel <Terminology title="registro generale di pfSense in cui scrive il pacchetto" to="/docs/reference/terminology#system-log">registro di sistema</Terminology>.
+
+## Esecuzioni sovrapposte \{#overlapping-runs}
+
+Un <Terminology title="blocco che impedisce due controlli contemporanei" to="/docs/reference/terminology#run-lock">blocco di esecuzione</Terminology> consente un solo controllo alla volta. Un controllo che parte mentre un altro è in corso termina senza leggere la configurazione e lascia invariato il pannello **Ultima esecuzione**.
+
+Quel controllo scrive `Un’altra esecuzione possiede il blocco del pacchetto; questa invocazione è terminata senza leggere la configurazione.` nel <Terminology title="registro generale di pfSense in cui scrive il pacchetto" to="/docs/reference/terminology#system-log">registro di sistema</Terminology>.
+
+## Notifiche di modifica \{#change-notifications}
+
+**<Terminology title="messaggio inviato dopo un aggiornamento riuscito e verificato" to="/docs/reference/terminology#change-notification">Invia notifiche di modifica</Terminology>** è attivo per impostazione predefinita. Dopo un risultato <Terminology title="risultato: campi aggiornati, salvati, ricaricati e verificati" to="/docs/reference/terminology#success">Riuscito</Terminology>, invia un messaggio tramite i <Terminology title="servizi di notifica remoti configurati in pfSense" to="/docs/reference/terminology#notification-channels">canali di notifica</Terminology> di pfSense e aggiunge una <Terminology title="messaggio mostrato nella WebGUI di pfSense" to="/docs/reference/terminology#webgui-notice">segnalazione WebGUI</Terminology>.
+
+Il messaggio è simile a `Aggiornati 1 campo/campi approvati da 2001:db8:abcd:7800::/56 a 2001:db8:abcd:8800::/56 sull’interfaccia lan.` Nessun altro risultato invia una <Terminology title="messaggio inviato dopo un aggiornamento riuscito e verificato" to="/docs/reference/terminology#change-notification">notifica di modifica</Terminology>.
+
+Se l’invio non riesce, l’aggiornamento conta comunque come <Terminology title="risultato: campi aggiornati, salvati, ricaricati e verificati" to="/docs/reference/terminology#success">Riuscito</Terminology>. La scheda Stato non mostra lo stato dell’invio, e il <Terminology title="registro generale di pfSense in cui scrive il pacchetto" to="/docs/reference/terminology#system-log">registro di sistema</Terminology> registra `La configurazione è riuscita, ma la notifica di modifica non è stata inviata.`
+
+## Segnalazioni di avviso e di errore \{#warning-and-failure-notices}
+
+I risultati <Terminology title="risultato: prefisso cambiato, ma nessun campo approvato corrispondente" to="/docs/reference/terminology#warning">Avviso</Terminology> ed <Terminology title="risultato: un controllo o una fase di sicurezza ha fermato l’esecuzione" to="/docs/reference/terminology#failure">Errore</Terminology> aggiungono sempre una <Terminology title="messaggio mostrato nella WebGUI di pfSense" to="/docs/reference/terminology#webgui-notice">segnalazione WebGUI</Terminology> locale, anche con **<Terminology title="messaggio inviato dopo un aggiornamento riuscito e verificato" to="/docs/reference/terminology#change-notification">Invia notifiche di modifica</Terminology>** deselezionato. Queste segnalazioni non vengono inviate ai <Terminology title="servizi di notifica remoti configurati in pfSense" to="/docs/reference/terminology#notification-channels">canali di notifica</Terminology>, e una causa non risolta ne aggiunge una nuova a ogni esecuzione pianificata.
+
+## Verifica la pianificazione \{#validate-the-schedule}
+
+1. Salva le impostazioni e verifica che compaia il messaggio `Impostazioni salvate.`
+2. Nella scheda Stato, fai clic su **Esegui ora** e verifica un risultato <Terminology title="risultato: prefisso invariato, nulla analizzato o scritto" to="/docs/reference/terminology#no-change">Nessuna modifica</Terminology> con un valore **Data e ora (UTC)** aggiornato.
+3. Verifica che **<Terminology title="copia della configurazione salvata prima di una scrittura" to="/docs/reference/terminology#configuration-backup">Backup della configurazione creato</Terminology>** mostri No e che **Campi modificati** mostri `0`.
+4. Dopo l’orario pianificato successivo, aggiorna la scheda Stato e verifica che data e ora siano cambiate.
+5. Per provare l’invio, usa i pulsanti di test di pfSense in **System → Advanced → Notifications**.
+
+Continua con [Stato e azioni](/docs/operate/status-and-actions) per i campi che registrano i controlli pianificati e le <Terminology title="controllo avviato dalla scheda Stato" to="/docs/reference/terminology#manual-run">esecuzioni manuali</Terminology>.

@@ -1,0 +1,65 @@
+---
+id: package-lifecycle
+title: Oppdater eller fjern
+description: Kontroller den installerte versjonen, installer en nyere utgivelse over den gamle eller fjern pakken, og se hva hvert av disse trinnene beholder eller sletter.
+keywords:
+  - pfsense ipv6 prefix updater
+  - pakkeoppdatering
+  - fjerne pakken
+  - pkg delete
+  - reinstallasjon
+tags:
+  - reference
+  - maintenance
+  - pfsense
+sidebar_position: 5
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Kontroller den installerte versjonen, installer en nyere utgivelse eller fjern pakken fra et pfSense-skall.
+
+## Kontroller den installerte versjonen \{#check-the-installed-version}
+
+```shell
+pkg info pfSense-pkg-Ipv6PrefixUpdater
+```
+
+Sammenlign den rapporterte versjonen med den [nyeste GitHub-utgivelsen](https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest).
+
+## Oppdater pakken \{#update-the-package}
+
+Det anbefales å laste ned en kopi av konfigurasjonen fra **Diagnostics → Backup & Restore** først. Installer deretter den nyeste utgivelsen over den eksisterende pakken:
+
+```shell
+pkg add -f https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
+```
+
+Installasjonstrinnet synkroniserer cron-oppføringen med de lagrede innstillingene på nytt og beholder hver <Terminology title="startprefiks registrert uten å endre konfigurasjonen" to="/docs/reference/terminology#baseline">grunnlinje</Terminology>. Sjekksumtrinnene i [Installer pakken](/docs/installation#verify-the-download-first) fungerer også for oppdateringer.
+
+Etter oppdateringen:
+
+1. Åpne **Services → IPv6 Prefix Updater → Innstillinger**, og bekreft de lagrede verdiene.
+2. Kontroller **Gjeldende tilstand** i fanen Status. Hvert grensesnitt beholder <Terminology title="startprefiks registrert uten å endre konfigurasjonen" to="/docs/reference/terminology#baseline">grunnlinjen</Terminology> sin.
+
+Hvis en rad viser `Ikke initialisert`, registrerer **Kjør nå** en ny <Terminology title="startprefiks registrert uten å endre konfigurasjonen" to="/docs/reference/terminology#baseline">grunnlinje</Terminology> for den. Adresser som fortsatt bruker et prefiks fra før den grunnlinjen, forblir da uendret.
+
+## Fjern pakken \{#remove-the-package}
+
+Hvis du fjerner merket for **<Terminology title="automatiske kontroller fra en cron-oppføring styrt av pfSense" to="/docs/reference/terminology#scheduled-updates">Aktiver planlagte oppdateringer</Terminology>** først, unngår du at en senere reinstallasjon starter tidsplanen med en gang hvis pfSense beholder de lagrede innstillingene. Kjør deretter:
+
+```shell
+pkg delete pfSense-pkg-Ipv6PrefixUpdater
+```
+
+Fjerningen sletter cron-oppføringen til pakken og filen for <Terminology title="sperre som hindrer to kontroller i å kjøre samtidig" to="/docs/reference/terminology#run-lock">kjørelåsen</Terminology>. Den beholder <Terminology title="pakkefil med grunnlinjen og siste kjøring" to="/docs/reference/terminology#package-state">pakketilstanden</Terminology> og kopiene i fanen **Sikkerhetskopier** i `/cf/conf/ipv6-prefix-updater`, slik at fjerningen og reinstallasjonen som pfSense selv gjør under oppdateringer, aldri mister en <Terminology title="startprefiks registrert uten å endre konfigurasjonen" to="/docs/reference/terminology#baseline">grunnlinje</Terminology>.
+
+Fjerningen angrer ikke adresser som allerede er lagret i konfigurasjonen, og revisjonene fra pakken blir værende i <Terminology title="pfSense-liste over lagrede konfigurasjonsrevisjoner" to="/docs/reference/terminology#config-history">Config History</Terminology>. For også å fjerne filene som er beholdt, kjører du `rm -rf /cf/conf/ipv6-prefix-updater` etter at pakken er fjernet.
+
+## Installer på nytt senere \{#reinstall-later}
+
+En reinstallasjon finner <Terminology title="pakkefil med grunnlinjen og siste kjøring" to="/docs/reference/terminology#package-state">pakketilstanden</Terminology> som ble beholdt, så den første kjøringen sammenligner med hver lagrede <Terminology title="startprefiks registrert uten å endre konfigurasjonen" to="/docs/reference/terminology#baseline">grunnlinje</Terminology> og oppdaterer felt som fortsatt står på et eldre prefiks. Hvis de tidligere innstillingene fortsatt finnes med **<Terminology title="automatiske kontroller fra en cron-oppføring styrt av pfSense" to="/docs/reference/terminology#scheduled-updates">Aktiver planlagte oppdateringer</Terminology>** avmerket, slår installasjonstrinnet på tidsplanen med en gang.
+
+For en ny start sletter du `/cf/conf/ipv6-prefix-updater` før du installerer på nytt. Den første kjøringen registrerer da en ny <Terminology title="startprefiks registrert uten å endre konfigurasjonen" to="/docs/reference/terminology#baseline">grunnlinje</Terminology> og rapporterer <Terminology title="resultat: grunnlinje registrert, konfigurasjon uendret" to="/docs/reference/terminology#initialized">Initialisert</Terminology> uten å endre konfigurasjonen.
+
+Se [Sikkerhetskopier og gjenoppretting](/docs/operate/backups-and-recovery) før vedlikehold og [Opprett grunnlinjen](/docs/first-run) etter en reinstallasjon.

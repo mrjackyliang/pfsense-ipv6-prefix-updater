@@ -1,0 +1,71 @@
+---
+id: schedule-and-notifications
+title: 计划与通知
+description: 选择 pfSense 检查前缀的频率，开启计划更新，并决定每次成功更新后是否发送变化通知。
+keywords:
+  - pfsense ipv6 prefix updater
+  - 计划
+  - cron
+  - 变化通知
+  - WebGUI 通知
+tags:
+  - configuration
+  - scheduling
+  - notifications
+sidebar_position: 3
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+选择 pfSense 检查前缀的频率，以及成功更新后是否向你发送<Terminology title="更新经验证成功后发送的提醒" to="/docs/reference/terminology#change-notification">变化通知</Terminology>。
+
+## 选择计划 \{#choose-a-schedule}
+
+| 计划      | 运行时间                      |
+|---------|---------------------------|
+| 每 15 分钟 | 每小时的第 0、15、30 和 45 分钟     |
+| 每小时     | 每小时的第 0 分钟（默认值）           |
+| 每 6 小时  | 00:00、06:00、12:00 和 18:00 |
+| 每天午夜    | 00:00                     |
+
+这些时间以防火墙的时区为准，而“状态”选项卡显示的是 UTC 时间。
+
+## 开启计划更新 \{#turn-on-scheduled-updates}
+
+安装后 **<Terminology title="由 pfSense 管理的 cron 条目运行的自动检查" to="/docs/reference/terminology#scheduled-updates">启用计划更新</Terminology>** 默认关闭。保存设置时会添加或删除一个由 pfSense 管理的 cron 条目，因此不需要 Cron 软件包，也不需要手写 cron 任务。
+
+未勾选时不会自动运行任何检查，但 **立即运行** 和 **<Terminology title="不备份也不写入的预览" to="/docs/reference/terminology#dry-run">试运行</Terminology>** 仍可正常使用。建议等[首次运行](/docs/first-run)记录并核实<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>后再开启它。
+
+## 例行检查的开销 \{#what-a-routine-check-costs}
+
+结果为<Terminology title="结果：前缀未变化，未扫描或写入任何内容" to="/docs/reference/terminology#no-change">无变化</Terminology>的检查只读取自身设置、各接口的地址和<Terminology title="保存基线和上次运行的软件包文件" to="/docs/reference/terminology#package-state">软件包状态</Terminology>。它不会扫描配置、创建备份、重新加载服务或发送通知。
+
+它仍会向<Terminology title="软件包写入的 pfSense 常规日志" to="/docs/reference/terminology#system-log">系统日志</Terminology>写入一行记录。
+
+## 运行重叠 \{#overlapping-runs}
+
+<Terminology title="防止两个检查同时运行的保护机制" to="/docs/reference/terminology#run-lock">运行锁</Terminology>确保同一时间只有一个检查在运行。在另一个检查运行期间启动的检查会直接退出，不读取配置，**上次运行** 也保持不变。
+
+该检查会向<Terminology title="软件包写入的 pfSense 常规日志" to="/docs/reference/terminology#system-log">系统日志</Terminology>写入 `另一次运行持有软件包锁；本次调用未读取配置便已退出。`
+
+## 变化通知 \{#change-notifications}
+
+**<Terminology title="更新经验证成功后发送的提醒" to="/docs/reference/terminology#change-notification">发送变化通知</Terminology>** 默认开启。每次<Terminology title="结果：字段已更新、保存、重新加载并验证" to="/docs/reference/terminology#success">成功</Terminology>后，它会通过 pfSense 的<Terminology title="在 pfSense 中配置的远程提醒服务" to="/docs/reference/terminology#notification-channels">通知渠道</Terminology>发送消息，并添加一条 <Terminology title="显示在 pfSense 通知列表中的提醒" to="/docs/reference/terminology#webgui-notice">WebGUI 通知</Terminology>。
+
+消息内容类似 `已在接口 lan 上将 1 个已批准字段从 2001:db8:abcd:7800::/56 更新为 2001:db8:abcd:8800::/56。` 其他结果都不会发送<Terminology title="更新经验证成功后发送的提醒" to="/docs/reference/terminology#change-notification">变化通知</Terminology>。
+
+即使发送失败，此次更新仍算作<Terminology title="结果：字段已更新、保存、重新加载并验证" to="/docs/reference/terminology#success">成功</Terminology>。“状态”选项卡不显示发送状态，<Terminology title="软件包写入的 pfSense 常规日志" to="/docs/reference/terminology#system-log">系统日志</Terminology>会记录 `配置已成功更新，但变化通知发送失败。`
+
+## 警告和失败通知 \{#warning-and-failure-notices}
+
+即使未勾选 **<Terminology title="更新经验证成功后发送的提醒" to="/docs/reference/terminology#change-notification">发送变化通知</Terminology>**，<Terminology title="结果：前缀已变化，但没有匹配的已批准字段" to="/docs/reference/terminology#warning">警告</Terminology>和<Terminology title="结果：检查或安全阶段中止了运行" to="/docs/reference/terminology#failure">失败</Terminology>结果也总会添加一条本地 <Terminology title="显示在 pfSense 通知列表中的提醒" to="/docs/reference/terminology#webgui-notice">WebGUI 通知</Terminology>。这些通知不会发送到<Terminology title="在 pfSense 中配置的远程提醒服务" to="/docs/reference/terminology#notification-channels">通知渠道</Terminology>；如果原因未解决，每次计划运行都会再添加一条新通知。
+
+## 验证计划 \{#validate-the-schedule}
+
+1. 保存设置并确认出现 `设置已保存。` 消息。
+2. 在“状态”选项卡中选择 **立即运行**，确认结果为<Terminology title="结果：前缀未变化，未扫描或写入任何内容" to="/docs/reference/terminology#no-change">无变化</Terminology>，且 **时间戳 (UTC)** 为当前时间。
+3. 确认 **<Terminology title="写入前保存的配置副本" to="/docs/reference/terminology#configuration-backup">已创建配置备份</Terminology>** 显示“否”，**已更改字段** 显示 `0`。
+4. 到达下一个计划时间后，刷新“状态”选项卡，确认时间戳已更新。
+5. 如需测试通知发送，请使用 pfSense 在 **System → Advanced → Notifications**（系统 → 高级 → 通知）中自带的测试按钮。
+
+计划检查和<Terminology title="从“状态”选项卡启动的检查" to="/docs/reference/terminology#manual-run">手动运行</Terminology>会记录哪些字段，请继续阅读[状态与操作](/docs/operate/status-and-actions)。

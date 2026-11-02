@@ -1,0 +1,157 @@
+---
+id: approved-fields
+title: 已核准欄位
+description: 列出每個欄位群組可以改寫的確切 pfSense 設定路徑、其中的值如何比對，以及每條路徑會觸發哪項服務重新載入。
+keywords:
+  - pfsense ipv6 prefix updater
+  - 已核准欄位
+  - 設定路徑
+  - config_get_path
+  - 服務重新載入
+tags:
+  - reference
+  - approved fields
+  - configuration paths
+sidebar_position: 3
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+查看每個<Terminology title="「欄位」分頁上共用一個開關的一組欄位" to="/docs/reference/terminology#field-group">欄位群組</Terminology>可以改寫的確切 pfSense 設定路徑，以及每條路徑會重新載入的服務。
+
+## 欄位矩陣 \{#field-matrix}
+
+路徑採用 pfSense 中 `config_get_path()` 與 `config_set_path()` 所使用的斜線分隔語法。在下列路徑中，`<index>` 代表清單中的位置，`<interface>` 代表介面鍵（例如 `lan`），`<boundary>` 代表 `from` 或 `to`，`<side>` 代表 `source` 或 `destination`，`<section>` 則代表其他套件的設定鍵。
+
+| <Terminology title="「欄位」分頁上共用一個開關的一組欄位" to="/docs/reference/terminology#field-group">群組</Terminology>              | 路徑                                                                               | 選取條件                                                                   | 服務                      |
+|--------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|------------------------------------------------------------------------|-------------------------|
+| 別名                                                                                                                 | `aliases/alias/<index>/address`                                                  | `type` 為 `host` 或 `network`                                            | `filter`                |
+| 靜態介面                                                                                                               | `interfaces/<interface>/ipaddrv6`                                                | 值中包含 `:`                                                               | `interfaces`            |
+| <Terminology title="額外的介面位址，例如 CARP 或 IP Alias" to="/docs/reference/terminology#virtual-ip">虛擬 IP 位址</Terminology> | `virtualip/vip/<index>/subnet`                                                   | `mode` 為 `carp` 或 `ipalias`                                            | `interfaces`            |
+| IPsec                                                                                                              | `ipsec/phase2/<index>/localid/address`                                           | `mode` 為 `tunnel6` 或 `vti`，且 `localid/type` 為 `address` 或 `network`    | `ipsec`                 |
+| IPsec                                                                                                              | `ipsec/phase2/<index>/natlocalid/address`                                        | `mode` 為 `tunnel6` 或 `vti`，且 `natlocalid/type` 為 `address` 或 `network` | `ipsec`                 |
+| OpenVPN                                                                                                            | `openvpn/openvpn-server/<index>/tunnel_networkv6`                                | `tunnel_networkv6_type` 不是 `track6`                                    | `openvpn`               |
+| OpenVPN                                                                                                            | `openvpn/openvpn-server/<index>/local_networkv6`                                 | 一律                                                                     | `openvpn`               |
+| OpenVPN                                                                                                            | `openvpn/openvpn-client/<index>/tunnel_networkv6`                                | 一律                                                                     | `openvpn`               |
+| OpenVPN                                                                                                            | `openvpn/openvpn-csc/<index>/tunnel_networkv6`                                   | 一律                                                                     | `openvpn`               |
+| OpenVPN                                                                                                            | `openvpn/openvpn-csc/<index>/local_networkv6`                                    | 一律                                                                     | `openvpn`               |
+| WireGuard                                                                                                          | `installedpackages/wireguard/tunnels/item/<index>/addresses/row/<index>/address` | 一律                                                                     | `wireguard`             |
+| DHCPv6 伺服器                                                                                                         | `dhcpdv6/<interface>/range/<boundary>`                                           | 一律                                                                     | `dhcpv6`                |
+| DHCPv6 伺服器                                                                                                         | `dhcpdv6/<interface>/prefixrange/<boundary>`                                     | 一律                                                                     | `dhcpv6`                |
+| DHCPv6 伺服器                                                                                                         | `dhcpdv6/<interface>/pool/<index>/range/<boundary>`                              | 一律                                                                     | `dhcpv6`                |
+| DHCPv6 伺服器                                                                                                         | `dhcpdv6/<interface>/pool/<index>/prefixrange/<boundary>`                        | 一律                                                                     | `dhcpv6`                |
+| DHCPv6 伺服器                                                                                                         | `dhcpdv6/<interface>/dnsserver/<index>`                                          | 一律，每個位址池內的也包括在內                                                        | `dhcpv6`                |
+| DHCPv6 伺服器                                                                                                         | `dhcpdv6/<interface>/ntpserver/<index>`                                          | 一律，每個位址池內的也包括在內                                                        | `dhcpv6`                |
+| DHCPv6 伺服器                                                                                                         | `dhcpdv6/<interface>/staticmap/<index>/ipaddrv6`                                 | 一律                                                                     | `dhcpv6`                |
+| 路由器通告                                                                                                              | `dhcpdv6/<interface>/radnsserver/<index>`                                        | 一律                                                                     | `router_advertisements` |
+| 路由器通告                                                                                                              | `dhcpdv6/<interface>/subnets/item/<index>`                                       | 一律                                                                     | `router_advertisements` |
+| DNS 主機覆寫                                                                                                           | `unbound/hosts/<index>/ip`                                                       | 一律                                                                     | `dns_resolver`          |
+| DNS 主機覆寫                                                                                                           | `dnsmasq/hosts/<index>/ip`                                                       | 一律                                                                     | `dns_forwarder`         |
+| 防火牆規則                                                                                                              | `filter/rule/<index>/<side>/address`                                             | 該端保存的是位址，而不是 `network` 或 `any`                                         | `filter`                |
+| NAT 與 NPt                                                                                                          | `nat/rule/<index>/<side>/address`                                                | 一律                                                                     | `filter`                |
+| NAT 與 NPt                                                                                                          | `nat/rule/<index>/target`                                                        | 一律                                                                     | `filter`                |
+| NAT 與 NPt                                                                                                          | `nat/outbound/rule/<index>/<side>/network`                                       | 一律                                                                     | `filter`                |
+| NAT 與 NPt                                                                                                          | `nat/outbound/rule/<index>/target`                                               | 一律                                                                     | `filter`                |
+| NAT 與 NPt                                                                                                          | `nat/onetoone/<index>/external`                                                  | 一律                                                                     | `filter`                |
+| NAT 與 NPt                                                                                                          | `nat/onetoone/<index>/<side>/address`                                            | 一律                                                                     | `filter`                |
+| NAT 與 NPt                                                                                                          | `nat/npt/<index>/<side>/address`                                                 | 前綴為直接填寫，而不是從某個介面追蹤而來                                                   | `filter`                |
+| 其他套件的設定                                                                                                            | `installedpackages/<section>/...`                                                | 值中包含 IPv6 位址，且不屬於[其他設定](#other-settings)中的任何類型                         | `package:<section>`     |
+
+空值會被略過；如果目標 ID 或路徑重複，執行會在進行任何變更之前停止。每個目標的 ID 取自該記錄的識別碼（格式見[欄位識別碼](#field-identities)）；記錄沒有識別碼時，則取自它在清單中的位置。如[欄位](/docs/configure/configuration-scopes#other-packages-settings)頁面所述，其他套件的欄位絕不會被自動選取。
+
+## 值的格式 \{#value-formats}
+
+- 除了下列三種清單，每個欄位都只保存單一值。
+- 別名的 `address` 是以空白字元分隔的清單。
+- 伺服器與<Terminology title="伺服器上針對個別用戶端的 OpenVPN 設定" to="/docs/reference/terminology#client-specific-override">用戶端特定覆寫</Terminology>中的 OpenVPN `local_networkv6` 是以逗號與空白字元分隔的清單。
+- DNS 解析器主機覆寫的 `ip` 是以逗號與空白字元分隔的清單。
+- 其他套件設定中的值與「其他設定」群組中的值都是文字。文字中的每個位址都會個別比對，其餘部分維持原樣。
+- 以 Base64 儲存的值會先解碼，再以文字比對，值有變更時會重新編碼。
+- 分隔符號會完全維持原樣；不是 IPv6 位址的項目（例如別名名稱、IPv4 網路與主機名稱）會原樣保留。
+
+## 比對規則 \{#matching-rules}
+
+- 每個項目可以帶有 `/0` 到 `/128` 的 CIDR 尾碼，尾碼會被保留。帶有其他尾碼的項目維持不變。
+- 只有當項目的位址依先前的<Terminology title="開頭的網路位元數，例如 /56" to="/docs/reference/terminology#prefix-length">前綴長度</Terminology>屬於先前的前綴時，才會被變更。
+- 新值的開頭位元依目前的<Terminology title="開頭的網路位元數，例如 /56" to="/docs/reference/terminology#prefix-length">前綴長度</Terminology>取自目前的<Terminology title="pfSense 回報的監控介面全域位址" to="/docs/reference/terminology#source-address">來源位址</Terminology>，其餘位元都取自該項目本身。新值會以<Terminology title="位址的小寫、最短標準寫法" to="/docs/reference/terminology#canonical-form">標準形式</Terminology>寫入。
+- 不是<Terminology title="位於 2000::/3 內的公用 IPv6 位址" to="/docs/reference/terminology#global-unicast-address">全域單播位址</Terminology>的項目會原樣保留，包括 DHCPv6 設定在<Terminology title="位址取自另一介面委派前綴的介面" to="/docs/reference/terminology#tracked-interface">追蹤介面</Terminology>上保存的 `::1000` 這類尾碼。
+- 新值與舊值相同的欄位不計為變更。
+
+## 欄位識別碼 \{#field-identities}
+
+「欄位」分頁上的每個<Terminology title="勾選狀態與群組開關相反的單一欄位" to="/docs/reference/terminology#field-exception">欄位例外</Terminology>都會儲存為一個識別碼，以項目本身而非其清單位置來命名：
+
+| 項目           | 欄位識別碼                                                                                                                           |
+|--------------|---------------------------------------------------------------------------------------------------------------------------------|
+| 別名           | `alias:<name>`                                                                                                                  |
+| 靜態介面         | `interface:<interface>`                                                                                                         |
+| 虛擬 IP        | `virtual-ip:<uniqid or description>`                                                                                            |
+| IPsec 階段 2   | `ipsec:<uniqid, reqid, or ikeid>:<localid or natlocalid>`                                                                       |
+| OpenVPN      | `openvpn-server:<vpnid>:<tunnel or local>`、`openvpn-client:<vpnid>:tunnel` 或 `openvpn-override:<common name>:<tunnel or local>` |
+| WireGuard 通道 | `wireguard:<tunnel name>:addresses`，涵蓋每一列位址                                                                                     |
+| DHCPv6 伺服器   | `dhcpv6:<interface>:<field>`，其中 `<field>` 為設定名稱，例如 `range-from`、`dns-servers` 或 `ntp-servers`                                   |
+| DHCPv6 位址池   | `dhcpv6-pool:<interface>:<description>:<field>`                                                                                 |
+| DHCPv6 靜態對應  | `dhcpv6-static-mapping:<interface>:<DUID>`                                                                                      |
+| 路由器通告        | `router-advertisements:<interface>:<dns-servers or subnets>`                                                                    |
+| DNS 解析器主機    | `dns-resolver-host:<host>:<domain>:<inet, inet6, or inet46>`                                                                    |
+| DNS 轉送器主機    | `dns-forwarder-host:<host>:<domain>:<inet, inet6, or inet46>`                                                                   |
+| 防火牆規則        | `firewall-rule:<tracker>:<side>`                                                                                                |
+| 連接埠轉送        | `port-forward:<created time>:<source, destination, or target>`                                                                  |
+| 輸出 NAT 規則    | `outbound-nat:<created time>:<source, destination, or target>`                                                                  |
+| 1:1 NAT 項目   | `one-to-one-nat:<description>:<external, source, or destination>`                                                               |
+| NPt 項目       | `npt:<description>:<side>`                                                                                                      |
+| 其他套件的設定      | `package:<section>:<path>`，其中路徑中的每個清單位置都會變成 `<field>=<value>`，取自能唯一識別該項目的欄位；若是套件的單一設定記錄，則為 `0`                                  |
+| 其他設定         | `other:<path>`，以同樣的方式取自不包含位址的欄位，例如 `name=<gateway name>`；簡單清單（例如 `system/dnsserver`）的所有項目共用一個識別碼                                |
+
+- 識別碼的各部分都經過 URL 編碼，因此 `Web forward` 這類描述會顯示為 `Web%20forward`。
+- 如果記錄沒有識別碼，或與同一清單中的其他記錄共用識別碼，就不會有核取方塊，其欄位只會跟隨所屬群組的開關。
+- 如[命令列與檔案](/docs/reference/command-line-and-files#field-selection)所述，例外會儲存在 `installedpackages/ipv6prefixupdater/fields` 下，與「設定」分頁每次儲存時都會整筆取代的設定記錄並列。
+- 每次執行都會再次驗證已儲存的識別碼，並忽略格式錯誤的識別碼。目前沒有任何項目對應的已勾選欄位會被略過，並列在「狀態」分頁的 **略過的欄位** 下。識別碼只能指向矩陣中或「其他設定」群組中的欄位。
+
+## 重新載入動作 \{#reload-actions}
+
+| 服務                      | 狀態標籤        | pfSense 呼叫                                                                         |
+|-------------------------|-------------|------------------------------------------------------------------------------------|
+| `interfaces`            | 介面          | `interfaces_configure()`，接著是 `filter_configure()`                                  |
+| `routing`               | 路由          | `system_routing_configure()` 與 `setup_gateways_monitor()`，接著是 `filter_configure()` |
+| `filter`                | 防火牆篩選器      | `filter_configure()`；如果 `interfaces` 已經執行過，則略過                                     |
+| `dhcpv6`                | DHCPv6 伺服器  | `services_dhcpd_configure('inet6')`，同時也會重新啟動 radvd                                 |
+| `router_advertisements` | 路由器通告       | `services_radvd_configure()`；在 `dhcpv6` 之後則略過                                      |
+| `dns`                   | DNS 伺服器     | `system_resolvconf_generate()`，接著在 DNS 解析器與 DNS 轉送器已啟用時重新載入它們                      |
+| `dns_resolver`          | DNS 解析器     | `services_unbound_configure(false)`                                                |
+| `dns_forwarder`         | DNS 轉送器     | `services_dnsmasq_configure(false)`                                                |
+| `ipsec`                 | IPsec       | `ipsec_configure()`                                                                |
+| `openvpn`               | OpenVPN     | `openvpn_resync_all()`                                                             |
+| `wireguard`             | WireGuard   | `wg_resync()`                                                                      |
+| `package:<section>`     | 列在 **套件** 下 | 對 XML `<name>` 與該區段相符的已安裝套件執行 `sync_package()`                                     |
+
+服務會依此表中的順序重新載入；其他套件的設定則在重新載入及其驗證都完成後，最後才重新套用。在重新載入之前，執行所取代的每個靜態路由網路都會透過 `/sbin/route delete` 從路由表中移除，因為 `system_routing_configure()` 只會新增與變更路由。Static Routes 頁面上的 **Apply Changes**（套用變更）也會這麼做。在 pfSense 2.7.2 中，`interfaces_configure()` 本身就會重新啟動 DHCPv6、radvd 與兩項 DNS 服務，因此在它之後會略過這些重新載入。
+
+當 DNS 轉送器或 DNS 解析器設定為登錄 DHCP 靜態對應時，`dhcpv6` 會改為執行該服務的重新載入，這也會一併重新啟動 DHCP。這與 DHCPv6 伺服器頁面上的 **Apply Changes**（套用變更）效果相同。
+
+`sync_package()` 會像該套件的 **Save**（儲存）按鈕一樣執行套件的重新同步命令，其輸出會被捨棄。沒有任何已安裝套件擁有的區段只會被回報而不會套用；套用失敗時，則會針對該套件回報失敗。這兩種情況都不會撤銷已儲存的值。
+
+在備份之前，預檢步驟會從固定檔案（例如 `/etc/inc/filter.inc`、`/etc/inc/pkg-utils.inc` 或 `/usr/local/pkg/wireguard/includes/wg.inc`）載入所需的每個函式，缺少任何一個時就會停止執行。`filter_configure()`、`services_unbound_configure()` 與 `services_dnsmasq_configure()` 傳回 `false` 或非零整數時會讓執行失敗，其他呼叫只有在擲回例外時才會讓執行失敗。
+
+## 其他設定 \{#other-settings}
+
+值中以文字或 Base64 形式包含 IPv6 位址的所有其他設定路徑，都屬於 **其他設定** 群組。此群組預設關閉，其中的值只有在被勾選或群組開啟時才會變更。各列會註明以下類型：
+
+- IPsec 的 `remoteid` 識別與階段 1 的遠端閘道，以及 OpenVPN 的 `remote_networkv6` 網路與用戶端的伺服器位址。
+- WireGuard 對等端，包括其允許的 IP 與端點。
+- 閘道與靜態路由。
+- 憑證、金鑰、密碼與其他機密資訊，分頁會隱藏它們的值。
+- 其他任何以 Base64 儲存的值。
+- 描述。
+- 其他套件設定中，名稱表明為憑證、金鑰、密碼、機密、雜湊或描述的值。
+
+`host` 與 `network` 以外的別名類型、`carp` 與 `ipalias` 以外的<Terminology title="額外的介面位址，例如 CARP 或 IP Alias" to="/docs/reference/terminology#virtual-ip">虛擬 IP</Terminology> 模式，以及矩陣之外的所有其他路徑，都會改為顯示其設定名稱。重新載入取決於路徑：`gateways` 與 `staticroutes` 使用 `routing`，`system/dnsserver` 使用 `dns`，`unbound` 與 `dnsmasq` 使用各自的 DNS 服務，`ipsec`、`openvpn`、`filter`、`aliases`、`nat`、`dhcpdv6`、`interfaces` 與 `virtualip` 使用上述重新載入，其他套件的區段會重新套用，而描述、憑證與所有其他路徑不會重新載入任何內容。
+
+## 寫入與驗證 \{#write-and-verification}
+
+- 在備份之前，每條規劃路徑都必須保有其規劃的舊值。
+- 接著執行 `backup_config()`，它必須傳回 `true`。
+- 計畫會透過 `config_set_path()` 套用，並透過 `write_config($description, false, true)` 儲存一次，該呼叫會略過第二次備份與無關的同步處理。
+- 寫入之後以及重新載入之後，每條規劃路徑都必須保有其規劃的新值。
+
+任何不一致都會讓執行停止，並顯示 `設定路徑「<path>」在已核准計畫之外發生變更。` 如[執行結果](/docs/operate/run-outcomes#failures-after-the-save)所述，寫入之後的失敗會讓新值保持已儲存狀態。

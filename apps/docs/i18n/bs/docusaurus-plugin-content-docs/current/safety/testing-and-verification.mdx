@@ -1,0 +1,63 @@
+---
+id: testing-and-verification
+title: Provjera prije automatizacije
+description: Provjerite sučelje, prefiks, put oporavka i obavještenja na vlastitom vatrozidu prije nego što dozvolite paketu da radi po rasporedu bez nadzora.
+keywords:
+  - pfsense ipv6 prefix updater
+  - kontrolna lista
+  - probno pokretanje
+  - config history
+  - zakazana ažuriranja
+tags:
+  - safety
+  - checklist
+  - scheduled updates
+sidebar_position: 2
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Provjerite sučelje, prefiks, put oporavka i obavještenja na vatrozidu prije nego što dozvolite paketu da radi po rasporedu.
+
+## 1. Potvrda izvora \{#1-confirm-the-source}
+
+S neoznačenom opcijom **<Terminology title="automatske provjere iz cron unosa kojim upravlja pfSense" to="/docs/reference/terminology#scheduled-updates">Omogući zakazana ažuriranja</Terminology>** sačuvajte postavke i jednom odaberite **Pokreni sada**. Zatim provjerite karticu Status:
+
+- **<Terminology title="sučelje čija adresa otkriva trenutni prefiks" to="/docs/reference/terminology#monitored-interface">Nadzirano sučelje</Terminology>** je željeni WAN ili <Terminology title="sučelje adresirano iz dodijeljenog prefiksa drugog sučelja" to="/docs/reference/terminology#tracked-interface">sučelje tipa Track Interface</Terminology>.
+- **<Terminology title="globalna adresa koju pfSense prijavljuje za nadzirano sučelje" to="/docs/reference/terminology#source-address">Posljednja uspješna izvorna adresa</Terminology>** odgovara adresi u **Status → Interfaces**.
+- **<Terminology title="prefiks s kojim se poredi sljedeća provjera" to="/docs/reference/terminology#last-successful-prefix">Posljednji uspješni prefiks</Terminology>** odgovara prefiksu koji dodjeljuje ISP.
+- **Ishod** u odjeljku **Posljednje pokretanje** je <Terminology title="ishod: početno stanje zabilježeno, konfiguracija nepromijenjena" to="/docs/reference/terminology#initialized">Inicijalizirano</Terminology>, a **Promijenjena polja** je `0`.
+
+Ako je neka vrijednost neočekivana, preporučuje se da je ispravite prije nastavka. Uputstvo [Sučelje i prefiks](/docs/configure/interface-and-prefix#changing-the-interfaces) objašnjava šta uzrokuje promjena sučelja ili dužine kada <Terminology title="početni prefiks zabilježen bez promjene konfiguracije" to="/docs/reference/terminology#baseline">početno stanje</Terminology> već postoji.
+
+## 2. Pokretanje pregleda \{#2-run-a-preview}
+
+Odaberite **<Terminology title="pregled bez sigurnosne kopije i bez upisa" to="/docs/reference/terminology#dry-run">Probno pokretanje</Terminology>**. Uz nepromijenjen prefiks prijavljuje ishod <Terminology title="ishod: prefiks nepromijenjen, ništa nije skenirano ni upisano" to="/docs/reference/terminology#no-change">Bez promjene</Terminology>, a **<Terminology title="kopija konfiguracije napravljena prije upisa" to="/docs/reference/terminology#configuration-backup">Napravljena sigurnosna kopija konfiguracije</Terminology>** prikazuje Ne.
+
+<Terminology title="pregled bez sigurnosne kopije i bez upisa" to="/docs/reference/terminology#dry-run">Probno pokretanje</Terminology> ne može simulirati promjenu prefiksa, pa navodi planirana polja tek nakon stvarne <Terminology title="razlika u odnosu na posljednji uspješni prefiks ili dužinu" to="/docs/reference/terminology#prefix-transition">promjene prefiksa</Terminology>.
+
+## 3. Provjera oporavka \{#3-check-recovery}
+
+Otvorite **Diagnostics → Backup & Restore → Config History** i potvrdite da pfSense čuva historiju konfiguracije. Pokretanje koje upisuje tamo čuva svoju <Terminology title="kopija konfiguracije napravljena prije upisa" to="/docs/reference/terminology#configuration-backup">sigurnosnu kopiju konfiguracije</Terminology> prije prve promjene.
+
+Preporučuje se da sada pročitate odjeljak [Pronalaženje prave revizije](/docs/operate/backups-and-recovery#find-the-right-revision), jer revizija nazvana po paketu sadrži ažuriranu konfiguraciju. Vrijedi preuzeti i sigurnosnu kopiju izvan uređaja, jer se <Terminology title="pfSense lista sačuvanih revizija konfiguracije" to="/docs/reference/terminology#config-history">Config History</Terminology> nalazi na vatrozidu.
+
+## 4. Testiranje obavještenja \{#4-test-notifications}
+
+Ako je **<Terminology title="obavještenje poslano nakon provjerenog uspješnog ažuriranja" to="/docs/reference/terminology#change-notification">Šalji obavještenja o promjenama</Terminology>** označeno, preporučuje se da pošaljete test pomoću pfSense dugmadi u **System → Advanced → Notifications**. Paket koristi <Terminology title="udaljene usluge obavještavanja podešene u pfSense-u" to="/docs/reference/terminology#notification-channels">kanale obavještenja</Terminology> koji su tamo već podešeni.
+
+Obavijesti o ishodima <Terminology title="ishod: prefiks promijenjen, ali nijedno odobreno polje nije odgovaralo" to="/docs/reference/terminology#warning">Upozorenje</Terminology> i <Terminology title="ishod: kontrola ili sigurnosna faza zaustavila je pokretanje" to="/docs/reference/terminology#failure">Greška</Terminology> ostaju u WebGUI-ju i ne koriste te kanale.
+
+## 5. Uključivanje rasporeda \{#5-turn-on-the-schedule}
+
+Označite **<Terminology title="automatske provjere iz cron unosa kojim upravlja pfSense" to="/docs/reference/terminology#scheduled-updates">Omogući zakazana ažuriranja</Terminology>** kada gornji koraci pokažu očekivanu adresu i prefiks. **Svaki sat** je zadana vrijednost za **Raspored**.
+
+Nakon prvog zakazanog termina preporučuje se da provjerite **Vremenska oznaka (UTC)** i **Ishod** u odjeljku **Posljednje pokretanje**.
+
+## Šta zahtijeva stvarnu promjenu prefiksa \{#what-needs-a-real-prefix-change}
+
+<Terminology title="potpuna lista promjena polja, sastavljena prije upisa" to="/docs/reference/terminology#change-plan">Plan promjena</Terminology>, <Terminology title="kopija konfiguracije napravljena prije upisa" to="/docs/reference/terminology#configuration-backup">sigurnosna kopija konfiguracije</Terminology>, <Terminology title="pfSense radnja koja primjenjuje promijenjene postavke" to="/docs/reference/terminology#service-reload">ponovno učitavanje usluga</Terminology> i <Terminology title="obavještenje poslano nakon provjerenog uspješnog ažuriranja" to="/docs/reference/terminology#change-notification">obavještenje o promjeni</Terminology> dešavaju se samo nakon stvarne <Terminology title="razlika u odnosu na posljednji uspješni prefiks ili dužinu" to="/docs/reference/terminology#prefix-transition">promjene prefiksa</Terminology>. Laboratorijski vatrozid čiji se prefiks može promijeniti najsigurnije je mjesto za praćenje punog pokretanja.
+
+Na vlastitom vatrozidu preporučuje se da prvu stvarnu promjenu pregledate na kartici Status, počevši od **Promijenjena polja**, **<Terminology title="pfSense radnja koja primjenjuje promijenjene postavke" to="/docs/reference/terminology#service-reload">Ponovo učitane usluge</Terminology>** i **Sažetak**.
+
+Pregledajte uputstvo [Status i radnje](/docs/operate/status-and-actions) za svako polje prikazano nakon pokretanja.

@@ -1,0 +1,52 @@
+---
+id: settings
+title: Riferimento impostazioni
+description: Consulta ogni campo della scheda Impostazioni di IPv6 Prefix Updater con il valore predefinito, i valori accettati e il messaggio di convalida che può mostrare.
+keywords:
+  - pfsense ipv6 prefix updater
+  - impostazioni
+  - valori predefiniti
+  - convalida
+  - webgui
+tags:
+  - reference
+  - settings
+  - webgui
+sidebar_position: 2
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Consulta ogni campo della scheda Impostazioni con il suo valore predefinito e i valori che accetta.
+
+## Monitoraggio prefisso \{#prefix-monitoring}
+
+La scheda **Impostazioni** in **Services → IPv6 Prefix Updater** si apre con questi campi, e il salvataggio del modulo mostra `Impostazioni salvate.`
+
+| Campo                                                                                                                                                                                     | Descrizione                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| <Terminology title="controlli automatici da una voce cron gestita da pfSense" to="/docs/reference/terminology#scheduled-updates">Abilita aggiornamenti pianificati</Terminology>          | Esegue i controlli secondo la **Pianificazione** selezionata. Disattivato per impostazione predefinita; il salvataggio aggiunge o rimuove la voce cron.                                                                                                                                                                                                                                                                                                            |
+| <Terminology title="interfaccia il cui indirizzo rivela il prefisso attuale" to="/docs/reference/terminology#monitored-interface">Interfacce monitorate</Terminology>                     | Obbligatorie. Una riga per ogni interfaccia il cui <Terminology title="indirizzo IPv6 pubblico compreso in 2000::/3" to="/docs/reference/terminology#global-unicast-address">indirizzo globale</Terminology> porta un <Terminology title="rete IPv6 che il tuo ISP instrada verso il firewall" to="/docs/reference/terminology#delegated-prefix">prefisso delegato</Terminology>. **Aggiungi** aggiunge una riga, e ogni interfaccia può comparire una sola volta. |
+| <Terminology title="impostazione della dimensione del prefisso dell’ISP, da /48 a /64" to="/docs/reference/terminology#delegated-prefix-length">Lunghezza prefisso delegato</Terminology> | Obbligatoria in ogni riga. Da `/48` a `/64`, con `/56` selezionato per impostazione predefinita.                                                                                                                                                                                                                                                                                                                                                                   |
+| Pianificazione                                                                                                                                                                            | Ogni 15 minuti, Ogni ora, Ogni 6 ore oppure Ogni giorno a mezzanotte. Ogni ora per impostazione predefinita.                                                                                                                                                                                                                                                                                                                                                       |
+
+## Selezione dei campi \{#field-selection}
+
+Sotto **Pianificazione**, la scheda Impostazioni mostra `Scegli nella scheda Campi quali campi della configurazione cambiano con il prefisso.` I <Terminology title="gruppo di campi con un unico interruttore nella scheda Campi" to="/docs/reference/terminology#field-group">gruppi di campi</Terminology> e i singoli campi si scelgono nella scheda **Campi** e vengono salvati separatamente da queste impostazioni, quindi salvare la scheda Impostazioni non li modifica mai. [Campi](/docs/configure/configuration-scopes) descrive ogni gruppo e il suo valore predefinito.
+
+## Notifiche \{#notifications}
+
+| Campo                                                                                                                                                                             | Descrizione                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| <Terminology title="messaggio inviato dopo un aggiornamento riuscito e verificato" to="/docs/reference/terminology#change-notification">Invia notifiche di modifica</Terminology> | Selezionato per impostazione predefinita. Invia una <Terminology title="messaggio inviato dopo un aggiornamento riuscito e verificato" to="/docs/reference/terminology#change-notification">notifica di modifica</Terminology> dopo ogni risultato <Terminology title="risultato: campi aggiornati, salvati, ricaricati e verificati" to="/docs/reference/terminology#success">Riuscito</Terminology>, mentre le segnalazioni di <Terminology title="risultato: prefisso cambiato, ma nessun campo approvato corrispondente" to="/docs/reference/terminology#warning">Avviso</Terminology> ed <Terminology title="risultato: un controllo o una fase di sicurezza ha fermato l’esecuzione" to="/docs/reference/terminology#failure">Errore</Terminology> compaiono in ogni caso. |
+
+## Messaggi di convalida \{#validation-messages}
+
+| Messaggio                                                                                  | Causa                                                                                              |
+|--------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------|
+| `Selezionare un’interfaccia pfSense configurata da monitorare.`                            | Non esiste alcuna riga, oppure l’interfaccia di una riga non è un’interfaccia pfSense configurata. |
+| `Ogni interfaccia può comparire una sola volta. Rimuovi la riga in più per <interfaccia>.` | Due righe **Interfacce monitorate** indicano la stessa interfaccia.                                |
+| `La lunghezza del prefisso delegato deve essere compresa tra 48 e 64.`                     | La lunghezza è fuori dall’intervallo accettato.                                                    |
+| `Selezionare una pianificazione supportata dal pacchetto.`                                 | La pianificazione non è una delle quattro opzioni.                                                 |
+
+Ogni esecuzione ricontrolla le impostazioni salvate, perché potrebbero essere cambiate dopo il salvataggio del modulo. [Risoluzione dei problemi](/docs/operate/troubleshooting#run-failed) elenca i messaggi che un’esecuzione può riportare.

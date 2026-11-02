@@ -1,0 +1,95 @@
+---
+id: interface-and-prefix
+title: Interfaz y prefijo
+description: Elige las interfaces supervisadas que llevan tus prefijos delegados, introduce la longitud de prefijo que usa tu ISP para cada una y consulta qué ocurre si después cambias cualquiera de las dos.
+keywords:
+  - pfsense ipv6 prefix updater
+  - interfaz supervisada
+  - longitud del prefijo delegado
+  - delegación de prefijos dhcpv6
+  - bits de host
+tags:
+  - configuration
+  - interface
+  - prefix length
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import monitoredInterfaces from './_assets_/interface-and-prefix-1.png';
+
+Elige las interfaces que revelan tus prefijos actuales e introduce la <Terminology title="número de bits iniciales de red, como /56" to="/docs/reference/terminology#prefix-length">longitud del prefijo</Terminology> que delega tu ISP para cada una.
+
+## Elegir las interfaces supervisadas \{#choose-the-monitored-interfaces}
+
+Añade una fila de **Interfaces supervisadas** por cada interfaz cuya <Terminology title="dirección IPv6 pública dentro de 2000::/3" to="/docs/reference/terminology#global-unicast-address">dirección global</Terminology> procede del <Terminology title="red IPv6 que tu ISP enruta al cortafuegos" to="/docs/reference/terminology#delegated-prefix">prefijo delegado</Terminology>. El paquete vuelve a leer cada dirección en cada ejecución y nunca recurre a una <Terminology title="dirección fe80:: que solo funciona en un enlace" to="/docs/reference/terminology#link-local-address">dirección de enlace local</Terminology>.
+
+Si la WAN solo recibe un <Terminology title="red IPv6 que tu ISP enruta al cortafuegos" to="/docs/reference/terminology#delegated-prefix">prefijo delegado</Terminology>, una <Terminology title="interfaz que obtiene su dirección del prefijo delegado de otra" to="/docs/reference/terminology#tracked-interface">interfaz rastreada</Terminology> como LAN suele tener una <Terminology title="dirección IPv6 pública dentro de 2000::/3" to="/docs/reference/terminology#global-unicast-address">dirección global</Terminology> de ese prefijo y es la opción correcta.
+
+<img src={monitoredInterfaces} alt="Pestaña Configuración de IPv6 Prefix Updater con dos filas de Interfaces supervisadas, LAN y LAB, cada una con una longitud del prefijo delegado de /56, y una indicación que remite a la pestaña Campos" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+- **Añadir**: añade una fila. Cada interfaz solo puede aparecer en una fila, y se rechaza guardar sin ninguna fila.
+- **Eliminar**: quita una fila. pfSense oculta este botón mientras solo queda una fila.
+- **Una ejecución para todas las filas**: cada comprobación programada lee todas las interfaces supervisadas y aplica sus cambios en una sola escritura con copia de seguridad.
+
+La mayoría de los cortafuegos necesitan una sola fila. Añade más cuando varias interfaces reciban su propio prefijo delegado, como con dos conexiones WAN, o cuando quieras comprobar la dirección de cada segmento de LAN.
+
+Para confirmar la elección:
+
+1. Guarda los ajustes con **<Terminology title="comprobaciones automáticas desde una entrada de cron gestionada por pfSense" to="/docs/reference/terminology#scheduled-updates">Activar actualizaciones programadas</Terminology>** desmarcada.
+2. En la pestaña Estado, pulsa **Ejecutar ahora**.
+3. Compara **<Terminology title="dirección global que pfSense indica para la interfaz supervisada" to="/docs/reference/terminology#source-address">Dirección de origen observada</Terminology>** con la dirección que aparece en **Status → Interfaces**.
+4. Si la dirección pertenece a otra red, selecciona otra interfaz y repite los pasos.
+
+La pestaña Estado muestra la descripción de cada interfaz seguida del nombre interno que le da pfSense, como `LAN (lan)`.
+
+## Introducir la longitud del prefijo delegado \{#enter-the-delegated-prefix-length}
+
+Selecciona la longitud que indican los datos del servicio de tu ISP o el tamaño de la delegación de prefijos DHCPv6 de la interfaz WAN. **<Terminology title="ajuste del tamaño del prefijo del ISP, de /48 a /64" to="/docs/reference/terminology#delegated-prefix-length">Longitud del prefijo delegado</Terminology>** acepta de `/48` a `/64`, empieza en `/56` y nunca se detecta automáticamente.
+
+:::tip
+
+Se recomienda confirmar la longitud antes del primer **Ejecutar ahora**, porque la <Terminology title="prefijo inicial registrado sin cambiar la configuración" to="/docs/reference/terminology#baseline">referencia</Terminology> guarda la longitud junto con el prefijo.
+
+:::
+
+## Comprobar la red calculada \{#check-the-calculated-network}
+
+Después de una ejecución, **<Terminology title="dirección de origen enmascarada a la longitud del prefijo" to="/docs/reference/terminology#observed-prefix">Prefijo observado</Terminology>** muestra la red calculada. Las longitudes que terminan dentro de un dígito hexadecimal, como `/57` o `/63`, funcionan igual porque el paquete enmascara las direcciones bit a bit.
+
+Para una delegación `/56` que cambia de `2001:db8:abcd:7800::/56` a `2001:db8:abcd:8800::/56`:
+
+```text
+Source address:    2001:db8:abcd:88aa::1
+Current prefix:    2001:db8:abcd:8800::/56
+Previous address:  2001:db8:abcd:78aa::42
+Updated address:   2001:db8:abcd:88aa::42
+```
+
+Solo cambian los primeros 56 bits, y la <Terminology title="bits de la dirección tras el prefijo delegado" to="/docs/reference/terminology#host-portion">parte de host</Terminology> `aa::42` sigue igual. Las direcciones de `2001:db8::/32` que aparecen en estas guías son ejemplos de documentación.
+
+## Cambiar las interfaces \{#changing-the-interfaces}
+
+:::warning
+
+Añadir una <Terminology title="interfaz cuya dirección revela el prefijo actual" to="/docs/reference/terminology#monitored-interface">Interfaz supervisada</Terminology>, o cambiar una fila a otra interfaz, hace que la siguiente ejecución registre una nueva <Terminology title="prefijo inicial registrado sin cambiar la configuración" to="/docs/reference/terminology#baseline">referencia</Terminology> para ella sin cambiar la configuración. Si su prefijo había cambiado y el paquete aún no lo había aplicado, ese cambio se omite.
+
+:::
+
+Eliminar una fila conserva la <Terminology title="prefijo inicial registrado sin cambiar la configuración" to="/docs/reference/terminology#baseline">referencia</Terminology> de esa interfaz en el <Terminology title="archivo del paquete con la referencia y la última ejecución" to="/docs/reference/terminology#package-state">estado del paquete</Terminology>. Si más tarde vuelves a añadir la interfaz, se compara con esa referencia guardada en lugar de registrar una nueva.
+
+## Cambiar la longitud del prefijo \{#changing-the-prefix-length}
+
+Cambiar **<Terminology title="ajuste del tamaño del prefijo del ISP, de /48 a /64" to="/docs/reference/terminology#delegated-prefix-length">Longitud del prefijo delegado</Terminology>** cuando ya existe la <Terminology title="prefijo inicial registrado sin cambiar la configuración" to="/docs/reference/terminology#baseline">referencia</Terminology> cuenta como un <Terminology title="cambio respecto al último prefijo o longitud correctos" to="/docs/reference/terminology#prefix-transition">cambio de prefijo</Terminology>, aunque la red en sí siga siendo la misma. El paquete busca coincidencias con la longitud guardada en la <Terminology title="prefijo inicial registrado sin cambiar la configuración" to="/docs/reference/terminology#baseline">referencia</Terminology> y sustituye los bits con la nueva longitud.
+
+:::danger
+
+Cambiar a una red más estrecha sobrescribe los bits de subred de todas las direcciones que coinciden. Con la <Terminology title="dirección global que pfSense indica para la interfaz supervisada" to="/docs/reference/terminology#source-address">dirección de origen</Terminology> `2001:db8:1234:ab00::1` y una <Terminology title="prefijo inicial registrado sin cambiar la configuración" to="/docs/reference/terminology#baseline">referencia</Terminology> `/56`, pasar a `/64` convierte `2001:db8:1234:abcc::42` en `2001:db8:1234:ab00::42`.
+
+:::
+
+Cambiar a una red más amplia, por ejemplo de `/64` a `/56`, puede dejar la ejecución sin nada que cambiar. En ese caso devuelve <Terminology title="resultado: el prefijo cambió, pero ningún campo aprobado coincidió" to="/docs/reference/terminology#warning">Advertencia</Terminology> en cada ejecución hasta que cambie el propio prefijo o verifiques las direcciones guardadas y [aceptes el prefijo actual](/docs/operate/backups-and-recovery#after-a-failed-run) como nueva referencia.
+
+Antes de cambiar la longitud, se recomienda desmarcar **<Terminology title="comprobaciones automáticas desde una entrada de cron gestionada por pfSense" to="/docs/reference/terminology#scheduled-updates">Activar actualizaciones programadas</Terminology>** en el mismo guardado. Así, una **<Terminology title="vista previa que nunca crea copias ni escribe" to="/docs/reference/terminology#dry-run">Simulación</Terminology>** muestra el número de campos previstos, cada cambio previsto en `Cambios de campos` y el **Resumen** antes de que pulses **Ejecutar ahora**.
+
+A continuación, [establece la referencia](/docs/first-run) y después elige los campos en la pestaña [Campos](/docs/configure/configuration-scopes).

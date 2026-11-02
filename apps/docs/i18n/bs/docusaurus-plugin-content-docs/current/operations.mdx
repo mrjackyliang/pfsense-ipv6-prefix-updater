@@ -1,0 +1,66 @@
+---
+id: operations
+title: Sigurnosni model
+description: Pogledajte kontrole, sigurnosnu kopiju i jedan upis koje paket izvršava prije promjene pfSense-a, koja pokretanja nikada ne upisuju i šta i dalje može uticati na saobraćaj.
+keywords:
+  - pfsense ipv6 prefix updater
+  - sigurnosni model
+  - sigurnosna kopija konfiguracije
+  - provjera
+  - ponovno učitavanje usluge
+tags:
+  - safety
+  - backup
+  - verification
+sidebar_position: 6
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Pogledajte zaštite koje paket primjenjuje prije nego što promijeni konfiguraciju i šta i dalje može uticati na saobraćaj.
+
+## Šta se dešava pri promjeni prefiksa \{#what-happens-on-a-prefix-change}
+
+Kada paket pronađe <Terminology title="razlika u odnosu na posljednji uspješni prefiks ili dužinu" to="/docs/reference/terminology#prefix-transition">promjenu prefiksa</Terminology>, radi ovim redoslijedom:
+
+1. Čita <Terminology title="javna IPv6 adresa unutar 2000::/3" to="/docs/reference/terminology#global-unicast-address">globalnu adresu</Terminology> svakog <Terminology title="sučelje čija adresa otkriva trenutni prefiks" to="/docs/reference/terminology#monitored-interface">nadziranog sučelja</Terminology> i izračunava njegov prefiks.
+2. Poredi prefiks s <Terminology title="prefiks s kojim se poredi sljedeća provjera" to="/docs/reference/terminology#last-successful-prefix">posljednjim uspješnim prefiksom</Terminology>.
+3. Pronalazi <Terminology title="tačno polje konfiguracije koje paket smije prepisati" to="/docs/reference/terminology#approved-field">odobrena polja</Terminology> koja još koriste stari prefiks i sastavlja potpuni <Terminology title="potpuna lista promjena polja, sastavljena prije upisa" to="/docs/reference/terminology#change-plan">plan promjena</Terminology>.
+4. Potvrđuje da pfSense može ponovo učitati svaku pogođenu uslugu i da se nijedno planirano polje nije promijenilo otkako je pročitano.
+5. Pravi <Terminology title="kopija konfiguracije napravljena prije upisa" to="/docs/reference/terminology#configuration-backup">sigurnosnu kopiju konfiguracije</Terminology>.
+6. Primjenjuje sve promjene i jednom čuva konfiguraciju.
+7. Provjerava sačuvane vrijednosti, ponovo učitava samo pogođene usluge i ponovo provjerava vrijednosti.
+8. Pomjera <Terminology title="početni prefiks zabilježen bez promjene konfiguracije" to="/docs/reference/terminology#baseline">početno stanje</Terminology> na novi prefiks, bilježi rezultat i šalje <Terminology title="obavještenje poslano nakon provjerenog uspješnog ažuriranja" to="/docs/reference/terminology#change-notification">obavještenje o promjeni</Terminology> ako je uključeno.
+
+Ako bilo koji korak prije sigurnosne kopije ne uspije, konfiguracija ostaje kakva je bila.
+
+## Šta nikada ne uzrokuje upis \{#what-never-causes-a-write}
+
+Paket ne mijenja konfiguraciju pri ovim ishodima:
+
+- <Terminology title="ishod: početno stanje zabilježeno, konfiguracija nepromijenjena" to="/docs/reference/terminology#initialized">Inicijalizirano</Terminology> i <Terminology title="ishod: probno pokretanje prije postojanja početnog stanja" to="/docs/reference/terminology#initialization-preview">Pregled inicijalizacije</Terminology>.
+- <Terminology title="ishod: prefiks nepromijenjen, ništa nije skenirano ni upisano" to="/docs/reference/terminology#no-change">Bez promjene</Terminology>.
+- <Terminology title="pregled bez sigurnosne kopije i bez upisa" to="/docs/reference/terminology#dry-run">Probno pokretanje</Terminology>.
+- <Terminology title="ishod: prefiks promijenjen, ali nijedno odobreno polje nije odgovaralo" to="/docs/reference/terminology#warning">Upozorenje</Terminology>.
+- <Terminology title="ishod: kontrola ili sigurnosna faza zaustavila je pokretanje" to="/docs/reference/terminology#failure">Greška</Terminology> koja zaustavlja pokretanje prije sigurnosne kopije.
+
+## Šta i dalje može uticati na saobraćaj \{#what-can-still-affect-traffic}
+
+- **<Terminology title="pfSense radnja koja primjenjuje promijenjene postavke" to="/docs/reference/terminology#service-reload">Ponovno učitavanje usluga</Terminology>**: promjene statičkih sučelja ili <Terminology title="dodatna adresa sučelja, npr. CARP ili IP Alias" to="/docs/reference/terminology#virtual-ip">virtualnih IP adresa</Terminology> ponovo učitavaju sva sučelja, a zatim filter vatrozida. Promjene mrežnih prolaza i statičkih ruta ponovo učitavaju usmjeravanje i filter, promjene OpenVPN-a ponovo učitavaju sve OpenVPN instance, a promjene DHCPv6-a, oglašavanja rutera i DNS-a ponovo pokreću te usluge.
+- **Greške nakon čuvanja**: ako kontrola ili <Terminology title="pfSense radnja koja primjenjuje promijenjene postavke" to="/docs/reference/terminology#service-reload">ponovno učitavanje usluge</Terminology> ne uspije nakon čuvanja, nove vrijednosti ostaju sačuvane i ništa se ne vraća. <Terminology title="početni prefiks zabilježen bez promjene konfiguracije" to="/docs/reference/terminology#baseline">Početno stanje</Terminology> ostaje na starom prefiksu, kako objašnjava uputstvo [Ishodi pokretanja](/docs/operate/run-outcomes#failures-after-the-save).
+- **Vrijednosti koje vas čekaju**: mrežni prolazi, statičke rute, nadjačavanja DNS domena i ostale vrijednosti u grupi [Ostale postavke](/docs/configure/configuration-scopes#other-settings) zadržavaju stari prefiks dok ih ne označite, kao i polja u isključenoj grupi.
+
+## Put oporavka \{#recovery-path}
+
+Svaki upis ima <Terminology title="kopija konfiguracije napravljena prije upisa" to="/docs/reference/terminology#configuration-backup">sigurnosnu kopiju konfiguracije</Terminology> od prije upisa u <Terminology title="pfSense lista sačuvanih revizija konfiguracije" to="/docs/reference/terminology#config-history">Config History</Terminology>. Revizija nazvana po paketu sadrži ažuriranu konfiguraciju, pa uputstvo [Sigurnosne kopije i oporavak](/docs/operate/backups-and-recovery) pokazuje koju reviziju treba vratiti.
+
+Preporučuje se da zadržite i uobičajene pfSense sigurnosne kopije izvan uređaja.
+
+## Šta možete provjeriti \{#what-you-can-verify}
+
+Kartica Status prikazuje <Terminology title="globalna adresa koju pfSense prijavljuje za nadzirano sučelje" to="/docs/reference/terminology#source-address">izvornu adresu</Terminology>, <Terminology title="izvorna adresa maskirana na dužinu prefiksa" to="/docs/reference/terminology#observed-prefix">uočeni prefiks</Terminology>, ishod, broj promijenjenih polja, rezultat sigurnosne kopije, <Terminology title="pfSense radnja koja primjenjuje promijenjene postavke" to="/docs/reference/terminology#service-reload">ponovo učitane usluge</Terminology>, vrijeme i sažetak posljednjeg pokretanja. <Terminology title="rezultati samo za čitanje nakon Pokreni sada ili Probnog pokretanja" to="/docs/reference/terminology#command-output">Izlaz naredbe</Terminology> prikazuje iste detalje odmah nakon <Terminology title="provjera pokrenuta s kartice Status" to="/docs/reference/terminology#manual-run">ručnog pokretanja</Terminology>.
+
+## Saznajte više \{#learn-more}
+
+- **[Kako rade ažuriranja](/docs/safety/how-updates-work)**: svaka faza pokretanja i mjesta na kojima se može zaustaviti.
+- **[Provjera prije automatizacije](/docs/safety/testing-and-verification)**: kontrolna lista koju treba proći na vatrozidu prije uključivanja rasporeda.

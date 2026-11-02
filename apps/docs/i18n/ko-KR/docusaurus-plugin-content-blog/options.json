@@ -1,0 +1,11 @@
+{
+  "title": {
+    "message": "블로그"
+  },
+  "description": {
+    "message": "릴리스 노트, 구성 가이드, 그리고 IPv6 접두사가 바뀔 때 pfSense 주소를 최신 상태로 유지하는 방법에 관한 글을 소개합니다."
+  },
+  "sidebar.title": {
+    "message": "최근 게시물"
+  }
+}

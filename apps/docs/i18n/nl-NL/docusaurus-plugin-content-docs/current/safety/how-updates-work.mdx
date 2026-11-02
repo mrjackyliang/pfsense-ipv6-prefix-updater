@@ -1,0 +1,79 @@
+---
+id: how-updates-work
+title: Zo werken updates
+description: Volg één uitvoering fase voor fase, van het lezen van de interfaceadressen via planning, back-up, de enkele schrijfactie en het herladen van services tot het vastgelegde resultaat.
+keywords:
+  - pfsense ipv6 prefix updater
+  - updateproces
+  - wijzigingsplan
+  - herladen van services
+  - verificatie
+tags:
+  - safety
+  - update process
+  - service reload
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Volg één uitvoering van het lezen van de interfaceadressen tot het vastleggen van het resultaat, inclusief elk punt waarop ze kan stoppen.
+
+## 1. Lezen en valideren \{#1-read-and-validate}
+
+- Een geplande controle stopt meteen met <Terminology title="resultaat: geplande controle overgeslagen omdat updates uit staan" to="/docs/reference/terminology#disabled">Uitgeschakeld</Terminology> als **<Terminology title="automatische controles via een door pfSense beheerde cronjob" to="/docs/reference/terminology#scheduled-updates">Geplande updates inschakelen</Terminology>** uit staat. Een <Terminology title="controle die je start vanaf het tabblad Status" to="/docs/reference/terminology#manual-run">handmatige uitvoering</Terminology> gaat door.
+- De uitvoering controleert de opgeslagen instellingen opnieuw, omdat die sinds het opslaan van het formulier gewijzigd kunnen zijn.
+- Ze leest het <Terminology title="openbaar IPv6-adres binnen 2000::/3" to="/docs/reference/terminology#global-unicast-address">globale adres</Terminology> van elke <Terminology title="interface waarvan het adres de huidige prefix verraadt" to="/docs/reference/terminology#monitored-interface">bewaakte interface</Terminology> opnieuw, zonder terug te vallen op een <Terminology title="fe80::-adres dat alleen op één link werkt" to="/docs/reference/terminology#link-local-address">link-local-adres</Terminology>, en zet het om naar de <Terminology title="kortste standaardnotatie van een adres, in kleine letters" to="/docs/reference/terminology#canonical-form">canonieke vorm</Terminology>.
+- Ze maskeert elk adres met de <Terminology title="instelling voor de prefixgrootte van de ISP, /48 tot /64" to="/docs/reference/terminology#delegated-prefix-length">lengte van de gedelegeerde prefix</Terminology> uit de bijbehorende rij om de <Terminology title="bronadres, gemaskeerd op de prefixlengte" to="/docs/reference/terminology#observed-prefix">waargenomen prefix</Terminology> te krijgen.
+
+## 2. Vergelijken \{#2-compare}
+
+- Zonder <Terminology title="startprefix, vastgelegd zonder de configuratie te wijzigen" to="/docs/reference/terminology#baseline">baseline</Terminology> voor de interface legt de uitvoering er een vast en eindigt ze met <Terminology title="resultaat: baseline vastgelegd, configuratie ongewijzigd" to="/docs/reference/terminology#initialized">Geïnitialiseerd</Terminology>.
+- Komen de prefix en de lengte ervan overeen met de <Terminology title="prefix waarmee de volgende controle vergelijkt" to="/docs/reference/terminology#last-successful-prefix">laatste geslaagde prefix</Terminology>, dan eindigt de uitvoering met <Terminology title="resultaat: prefix ongewijzigd, niets gescand of geschreven" to="/docs/reference/terminology#no-change">Geen wijziging</Terminology> zonder de configuratie te scannen.
+- Een andere prefix of lengte is een <Terminology title="afwijking van de laatste geslaagde prefix of lengte" to="/docs/reference/terminology#prefix-transition">prefixwissel</Terminology>, en de uitvoering gaat verder.
+
+## 3. Plannen \{#3-plan}
+
+- De uitvoering leest de configuratie via de configuratiefuncties van pfSense en houdt alleen de velden over die op het tabblad Velden zijn geselecteerd. Geselecteerde velden die niet meer bestaan, worden overgeslagen en onder **Overgeslagen velden** vermeld.
+- Elk adres in een <Terminology title="exact configuratieveld dat het pakket mag herschrijven" to="/docs/reference/terminology#approved-field">goedgekeurd veld</Terminology> dat met de opgeslagen lengte bij de oude prefix hoort, krijgt de nieuwe prefixbits met de huidige lengte en behoudt zijn <Terminology title="adresbits na de gedelegeerde prefix" to="/docs/reference/terminology#host-portion">hostgedeelte</Terminology>. Samen vormen die wijzigingen het volledige <Terminology title="volledige lijst met veldwijzigingen, opgesteld vóór het schrijven" to="/docs/reference/terminology#change-plan">wijzigingsplan</Terminology>.
+- Is er niets te wijzigen, dan eindigt de uitvoering met <Terminology title="resultaat: prefix gewijzigd, maar geen goedgekeurd veld kwam overeen" to="/docs/reference/terminology#warning">Waarschuwing</Terminology>. Een <Terminology title="voorbeeld dat nooit een back-up maakt of schrijft" to="/docs/reference/terminology#dry-run">testuitvoering</Terminology> met wijzigingen eindigt hier met <Terminology title="voorbeeld dat nooit een back-up maakt of schrijft" to="/docs/reference/terminology#dry-run">Testuitvoering</Terminology>.
+
+## 4. Voorcontrole \{#4-preflight}
+
+- De uitvoering bevestigt dat pfSense elke service in het plan kan herladen. <Terminology title="adres van een WireGuard-tunnel in pfSense" to="/docs/reference/terminology#wireguard-tunnel-address">WireGuard-tunneladressen</Terminology> hebben daarvoor het WireGuard-pakket nodig.
+- Ze bevestigt dat elk gepland veld nog de waarde heeft die het had toen het plan werd opgesteld.
+
+## 5. Back-up maken en één keer schrijven \{#5-back-up-and-write-once}
+
+- pfSense maakt een <Terminology title="kopie van de configuratie van vóór een schrijfactie" to="/docs/reference/terminology#configuration-backup">configuratieback-up</Terminology>, en de uitvoering stopt als pfSense die niet bevestigt.
+- De uitvoering past alle wijzigingen toe en slaat één keer op, met de beschrijving `IPv6-prefixupdater wijzigde <count> goedgekeurde veld(en) voor interface <interface>`.
+- Meldt pfSense dat het opslaan is mislukt, dan zet de uitvoering de oorspronkelijke waarden in het geheugen terug en stopt ze.
+
+## 6. Verifiëren, herladen, verifiëren \{#6-verify-reload-verify}
+
+- De uitvoering controleert of de opgeslagen waarden overeenkomen met het plan, herlaadt de betrokken services en controleert de waarden opnieuw.
+- Services worden herladen in de vaste volgorde die [Herlaadacties](/docs/reference/approved-fields#reload-actions) toont, van Interfaces tot WireGuard. Op het herladen van de interfaces volgt het herladen van het firewallfilter, dat daarna niet wordt herhaald.
+- De herlaadacties voor het firewallfilter, de DNS Resolver en de DNS Forwarder laten de uitvoering mislukken als hun retourwaarde een fout meldt. De andere herlaadacties laten haar alleen mislukken als ze een fout geven.
+- De instellingen van andere pakketten worden als laatste opnieuw toegepast, na het herladen en de verificatie daarvan. Een pakket waarvan de instellingen niet kunnen worden toegepast, wordt gemeld, en de opgeslagen waarden blijven staan.
+- Een fout in deze fase laat de nieuwe waarden opgeslagen.
+
+## 7. Vastleggen en melden \{#7-record-and-notify}
+
+- De <Terminology title="startprefix, vastgelegd zonder de configuratie te wijzigen" to="/docs/reference/terminology#baseline">baseline</Terminology> verschuift naar de nieuwe prefix, en **Laatste uitvoering** legt het resultaat <Terminology title="resultaat: velden bijgewerkt, opgeslagen, herladen en geverifieerd" to="/docs/reference/terminology#success">Geslaagd</Terminology> vast met het aantal gewijzigde velden en de <Terminology title="pfSense-actie die gewijzigde instellingen toepast" to="/docs/reference/terminology#service-reload">opnieuw geladen services</Terminology>.
+- De uitvoering schrijft een regel naar het <Terminology title="algemeen pfSense-logboek waarin het pakket schrijft" to="/docs/reference/terminology#system-log">systeemlogboek</Terminology> en verstuurt een <Terminology title="melding na een geverifieerde, geslaagde update" to="/docs/reference/terminology#change-notification">wijzigingsmelding</Terminology> als die aan staat. Een mislukte melding verandert het resultaat niet.
+
+## Waar een uitvoering kan stoppen \{#where-a-run-can-stop}
+
+| Waar ze stopt                                                                                                                                                                                                                                                                                                       | Configuratie geschreven | Back-up gemaakt | Laatste uitvoering bijgewerkt                                                                                                                                   |
+|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------|-----------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Geplande controle met resultaat <Terminology title="resultaat: geplande controle overgeslagen omdat updates uit staan" to="/docs/reference/terminology#disabled">Uitgeschakeld</Terminology>                                                                                                                        | Nee                     | Nee             | Nee                                                                                                                                                             |
+| Instellingen, adres of onleesbare <Terminology title="pakketbestand met de baseline en de laatste uitvoering" to="/docs/reference/terminology#package-state">pakketstatus</Terminology>                                                                                                                             | Nee                     | Nee             | Nee                                                                                                                                                             |
+| <Terminology title="resultaat: baseline vastgelegd, configuratie ongewijzigd" to="/docs/reference/terminology#initialized">Geïnitialiseerd</Terminology> of <Terminology title="resultaat: prefix ongewijzigd, niets gescand of geschreven" to="/docs/reference/terminology#no-change">Geen wijziging</Terminology> | Nee                     | Nee             | Ja                                                                                                                                                              |
+| <Terminology title="resultaat: prefix gewijzigd, maar geen goedgekeurd veld kwam overeen" to="/docs/reference/terminology#warning">Waarschuwing</Terminology> of <Terminology title="voorbeeld dat nooit een back-up maakt of schrijft" to="/docs/reference/terminology#dry-run">Testuitvoering</Terminology>       | Nee                     | Nee             | Ja                                                                                                                                                              |
+| Fout bij de voorcontrole                                                                                                                                                                                                                                                                                            | Nee                     | Nee             | Ja                                                                                                                                                              |
+| Fout bij de back-up                                                                                                                                                                                                                                                                                                 | Nee                     | Nee             | Ja                                                                                                                                                              |
+| Fout bij het schrijven                                                                                                                                                                                                                                                                                              | Nee, volgens pfSense    | Ja              | Ja                                                                                                                                                              |
+| Fout bij verificatie of herladen                                                                                                                                                                                                                                                                                    | Ja                      | Ja              | Ja                                                                                                                                                              |
+| Fout bij de melding                                                                                                                                                                                                                                                                                                 | Ja                      | Ja              | Ja, als <Terminology title="resultaat: velden bijgewerkt, opgeslagen, herladen en geverifieerd" to="/docs/reference/terminology#success">Geslaagd</Terminology> |
+
+[Goedgekeurde velden](/docs/reference/approved-fields) noemt de pfSense-functie achter elke herlaadactie, en [Back-ups en herstel](/docs/operate/backups-and-recovery) behandelt het herstel na een fout.

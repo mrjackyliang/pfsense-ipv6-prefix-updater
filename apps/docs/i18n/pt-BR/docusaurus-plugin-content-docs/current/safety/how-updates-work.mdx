@@ -1,0 +1,79 @@
+---
+id: how-updates-work
+title: Como as atualizações funcionam
+description: Acompanhe uma execução por etapas, da leitura dos endereços das interfaces ao planejamento, ao backup, à gravação única, aos recarregamentos e ao registro do resultado.
+keywords:
+  - pfsense ipv6 prefix updater
+  - processo de atualização
+  - plano de alterações
+  - recarregamento de serviços
+  - verificação
+tags:
+  - safety
+  - update process
+  - service reload
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Acompanhe uma execução desde a leitura dos endereços das interfaces até o registro do resultado, incluindo cada ponto em que ela pode parar.
+
+## 1. Ler e validar \{#1-read-and-validate}
+
+- Uma verificação agendada para imediatamente como <Terminology title="resultado: verificação agendada ignorada com atualizações desativadas" to="/docs/reference/terminology#disabled">Desativado</Terminology> quando **<Terminology title="verificações automáticas por entrada cron gerenciada pelo pfSense" to="/docs/reference/terminology#scheduled-updates">Ativar atualizações agendadas</Terminology>** está desmarcada. Uma <Terminology title="verificação iniciada na guia Status" to="/docs/reference/terminology#manual-run">execução manual</Terminology> continua.
+- A execução confere as configurações salvas de novo, porque elas podem ter mudado desde que o formulário foi salvo.
+- Ela lê novamente o <Terminology title="endereço IPv6 público dentro de 2000::/3" to="/docs/reference/terminology#global-unicast-address">endereço global</Terminology> de cada <Terminology title="interface cujo endereço revela o prefixo atual" to="/docs/reference/terminology#monitored-interface">Interface monitorada</Terminology>, sem recorrer a um <Terminology title="endereço fe80:: que só funciona em um link" to="/docs/reference/terminology#link-local-address">endereço link-local</Terminology>, e o converte para a <Terminology title="grafia padrão mais curta de um endereço, em minúsculas" to="/docs/reference/terminology#canonical-form">forma canônica</Terminology>.
+- Ela aplica a cada endereço a máscara do <Terminology title="configuração do tamanho do prefixo do provedor (/48 a /64)" to="/docs/reference/terminology#delegated-prefix-length">Comprimento do prefixo delegado</Terminology> da linha dele para obter o <Terminology title="endereço de origem com máscara no comprimento do prefixo" to="/docs/reference/terminology#observed-prefix">prefixo observado</Terminology>.
+
+## 2. Comparar \{#2-compare}
+
+- Sem <Terminology title="prefixo inicial registrado sem alterar a configuração" to="/docs/reference/terminology#baseline">referência</Terminology> para a interface, a execução registra uma e termina como <Terminology title="resultado: referência registrada, configuração inalterada" to="/docs/reference/terminology#initialized">Inicializado</Terminology>.
+- Quando o prefixo e o comprimento dele correspondem ao <Terminology title="prefixo usado na comparação da próxima verificação" to="/docs/reference/terminology#last-successful-prefix">último prefixo bem-sucedido</Terminology>, a execução termina como <Terminology title="resultado: prefixo inalterado, nada analisado nem gravado" to="/docs/reference/terminology#no-change">Sem alteração</Terminology> sem analisar a configuração.
+- Um prefixo ou comprimento diferente é uma <Terminology title="mudança em relação ao último prefixo ou comprimento bem-sucedido" to="/docs/reference/terminology#prefix-transition">transição de prefixo</Terminology>, e a execução continua.
+
+## 3. Planejar \{#3-plan}
+
+- A execução lê a configuração pelas funções de configuração do pfSense e mantém apenas os campos selecionados na guia Campos. Campos selecionados que não existem mais são ignorados e listados em **Campos ignorados**.
+- Cada endereço de um <Terminology title="campo de configuração exato que o pacote pode reescrever" to="/docs/reference/terminology#approved-field">campo aprovado</Terminology> que pertence ao prefixo antigo, no comprimento armazenado, recebe os bits do novo prefixo no comprimento atual e preserva a <Terminology title="bits do endereço após o prefixo delegado" to="/docs/reference/terminology#host-portion">parte de host</Terminology>. Juntas, essas alterações formam o <Terminology title="lista completa das alterações, montada antes de gravar" to="/docs/reference/terminology#change-plan">plano de alterações</Terminology> completo.
+- Sem nada para alterar, a execução termina como <Terminology title="resultado: o prefixo mudou, mas nenhum campo aprovado correspondeu" to="/docs/reference/terminology#warning">Aviso</Terminology>. Uma <Terminology title="prévia que nunca faz backup nem grava" to="/docs/reference/terminology#dry-run">simulação</Terminology> com alterações termina aqui como <Terminology title="prévia que nunca faz backup nem grava" to="/docs/reference/terminology#dry-run">Simulação</Terminology>.
+
+## 4. Verificação prévia \{#4-preflight}
+
+- A execução confirma que o pfSense consegue recarregar todos os serviços do plano. Os <Terminology title="endereço atribuído a um túnel WireGuard do pfSense" to="/docs/reference/terminology#wireguard-tunnel-address">endereços de túnel WireGuard</Terminology> precisam do pacote WireGuard para isso.
+- Ela confirma que cada campo planejado ainda tem o valor que tinha quando o plano foi montado.
+
+## 5. Fazer backup e gravar uma vez \{#5-back-up-and-write-once}
+
+- O pfSense cria um <Terminology title="cópia da configuração salva antes de uma gravação" to="/docs/reference/terminology#configuration-backup">backup da configuração</Terminology>, e a execução para se o pfSense não confirmá-lo.
+- A execução aplica todas as alterações e salva uma única vez, com a descrição `O Atualizador de prefixo IPv6 alterou <count> campo(s) aprovado(s) para a interface <interface>`.
+- Se o pfSense informar que a gravação falhou, a execução restaura os valores originais na memória e para.
+
+## 6. Conferir, recarregar, conferir \{#6-verify-reload-verify}
+
+- A execução confere se os valores salvos correspondem ao plano, recarrega os serviços afetados e confere os valores de novo.
+- Os serviços são recarregados na ordem fixa que [Ações de recarregamento](/docs/reference/approved-fields#reload-actions) lista, de Interfaces a WireGuard. Um recarregamento de Interfaces é seguido por um recarregamento do filtro do firewall, que depois não se repete.
+- Os recarregamentos do filtro do firewall, do DNS Resolver e do DNS Forwarder fazem a execução falhar quando retornam uma falha. Os outros recarregamentos só a fazem falhar quando geram um erro.
+- As configurações de outros pacotes são aplicadas novamente por último, depois dos recarregamentos e da verificação deles. Um pacote cujas configurações não podem ser aplicadas é informado, e os valores salvos continuam.
+- Uma falha nesta etapa deixa os novos valores salvos.
+
+## 7. Registrar e notificar \{#7-record-and-notify}
+
+- A <Terminology title="prefixo inicial registrado sem alterar a configuração" to="/docs/reference/terminology#baseline">referência</Terminology> passa para o novo prefixo, e a **Última execução** registra o <Terminology title="resultado: campos atualizados, salvos, recarregados e verificados" to="/docs/reference/terminology#success">Sucesso</Terminology> com a quantidade de campos alterados e os <Terminology title="ação do pfSense que aplica configurações alteradas" to="/docs/reference/terminology#service-reload">serviços recarregados</Terminology>.
+- A execução grava uma linha no <Terminology title="log geral do pfSense em que o pacote escreve" to="/docs/reference/terminology#system-log">log do sistema</Terminology> e envia uma <Terminology title="alerta enviado após uma atualização verificada com sucesso" to="/docs/reference/terminology#change-notification">notificação de alteração</Terminology>, se ela estiver ativada. Uma notificação que falha não muda o resultado.
+
+## Onde uma execução pode parar \{#where-a-run-can-stop}
+
+| Onde para                                                                                                                                                                                                                                                                                                       | Configuração gravada   | Backup criado | Última execução atualizada                                                                                                                                      |
+|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------|---------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Verificação agendada com <Terminology title="resultado: verificação agendada ignorada com atualizações desativadas" to="/docs/reference/terminology#disabled">Desativado</Terminology>                                                                                                                          | Não                    | Não           | Não                                                                                                                                                             |
+| Configurações, endereço ou <Terminology title="arquivo do pacote com referência e última execução" to="/docs/reference/terminology#package-state">estado do pacote</Terminology> ilegível                                                                                                                       | Não                    | Não           | Não                                                                                                                                                             |
+| <Terminology title="resultado: referência registrada, configuração inalterada" to="/docs/reference/terminology#initialized">Inicializado</Terminology> ou <Terminology title="resultado: prefixo inalterado, nada analisado nem gravado" to="/docs/reference/terminology#no-change">Sem alteração</Terminology> | Não                    | Não           | Sim                                                                                                                                                             |
+| <Terminology title="resultado: o prefixo mudou, mas nenhum campo aprovado correspondeu" to="/docs/reference/terminology#warning">Aviso</Terminology> ou <Terminology title="prévia que nunca faz backup nem grava" to="/docs/reference/terminology#dry-run">Simulação</Terminology>                             | Não                    | Não           | Sim                                                                                                                                                             |
+| Falha na verificação prévia                                                                                                                                                                                                                                                                                     | Não                    | Não           | Sim                                                                                                                                                             |
+| Falha no backup                                                                                                                                                                                                                                                                                                 | Não                    | Não           | Sim                                                                                                                                                             |
+| Falha na gravação                                                                                                                                                                                                                                                                                               | Não, segundo o pfSense | Sim           | Sim                                                                                                                                                             |
+| Falha na conferência ou no recarregamento                                                                                                                                                                                                                                                                       | Sim                    | Sim           | Sim                                                                                                                                                             |
+| Falha na notificação                                                                                                                                                                                                                                                                                            | Sim                    | Sim           | Sim, como <Terminology title="resultado: campos atualizados, salvos, recarregados e verificados" to="/docs/reference/terminology#success">Sucesso</Terminology> |
+
+A página [Campos aprovados](/docs/reference/approved-fields) lista a função do pfSense por trás de cada recarregamento, e [Backups e recuperação](/docs/operate/backups-and-recovery) trata da recuperação depois de uma falha.

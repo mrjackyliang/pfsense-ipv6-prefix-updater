@@ -1,0 +1,11 @@
+{
+  "title": {
+    "message": "Blogue"
+  },
+  "description": {
+    "message": "Notas de versão, guias de configuração e artigos sobre como manter atualizados os endereços do pfSense quando o prefixo IPv6 muda."
+  },
+  "sidebar.title": {
+    "message": "Publicações recentes"
+  }
+}

@@ -1,0 +1,71 @@
+---
+id: build-and-release
+title: 构建与发布
+description: 检查、暂存并在 FreeBSD 上构建 pfSense 软件包，然后通过发布工作流将 .pkg 和校验和文件附加到 GitHub 发布版本。
+keywords:
+  - pfsense ipv6 prefix updater
+  - 构建
+  - 发布工作流
+  - FreeBSD ports
+  - PHP 测试
+tags:
+  - contributing
+  - build
+  - release
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+检查、暂存并打包 pfSense IPv6 Prefix Updater，然后将软件包发布到 GitHub 发布版本。
+
+## 前提条件 \{#requirements}
+
+- **Node.js 22 或 24** — 根目录和工作区的清单文件都接受 `^22 || ^24`。
+- **PHP 或 Docker** — PHP 测试套件在本地有 `php` 时直接使用它，否则通过 Docker 使用 `php:8.3-cli-alpine` 镜像。`PHP_TEST_IMAGE` 可覆盖所用的镜像。
+- **用于打包的 FreeBSD** — `npm run deploy` 只能在 FreeBSD 上运行，并且需要将 `PFSENSE_PORTS_DIR` 指向 pfSense FreeBSD-ports 仓库的本地检出副本。
+
+## 检查、暂存与打包 \{#check-stage-and-package}
+
+在仓库根目录中运行以下命令：
+
+```bash
+# Lint and type-check the scripts, run the PHP and Vitest suites, and validate the port.
+npm run check --workspace pfsense-pkg-ipv6-prefix-updater
+
+# Copy the port into packages/ipv6-prefix-updater/build/port with the workspace version.
+npm run build --workspace pfsense-pkg-ipv6-prefix-updater
+
+# Build the package on FreeBSD into packages/ipv6-prefix-updater/build/release.
+PFSENSE_PORTS_DIR=/path/to/FreeBSD-ports npm run deploy --workspace pfsense-pkg-ipv6-prefix-updater
+```
+
+- 暂存步骤会将 `port/Makefile.template` 转换为 `build/port/Makefile`，并写入 `packages/ipv6-prefix-updater/package.json` 中的 `version`。
+- 打包步骤会将暂存好的 port 复制到 ports 检出副本中的 `sysutils/pfSense-pkg-Ipv6PrefixUpdater`，运行 `make package`，然后再删除该副本。如果目标位置已存在，它会停止。
+- 之后，`build/release` 中会包含带版本号的 `.pkg`、一个名为 `pfSense-pkg-Ipv6PrefixUpdater.pkg` 的副本，以及分别对应二者、只包含哈希值的 `.sha256` 文件。
+
+## 发布工作流 \{#release-workflow}
+
+`.github/workflows/pfsense-ipv6-prefix-updater.yml` 会在 GitHub 发布版本发布时运行，也可以使用现有发布版本的标签手动运行：
+
+1. 在 Ubuntu 运行器上验证并暂存 port。
+2. 启动一台 FreeBSD 虚拟机，其版本取自仓库变量 `PFSENSE_FREEBSD_VERSION`，未设置时为 `15`。
+3. 检出 pfSense FreeBSD-ports 仓库的 `devel` 分支，并运行软件包构建。
+4. 将 `build/release` 上传为保留 7 天的工作流工件，并将同样的文件附加到该发布版本，替换已有的资源。
+
+建议将 `PFSENSE_FREEBSD_VERSION` 设置为目标 pfSense 版本所对应的 FreeBSD 主版本号，并且不要发布针对其他主版本构建的软件包。安装指南中的 `pkg add` 命令会从 GitHub 标记为最新（latest）的发布版本获取 `pfSense-pkg-Ipv6PrefixUpdater.pkg`。
+
+## PHP 测试套件 \{#php-test-suites}
+
+- **`tests/domain.php`**：<Terminology title="地址的小写、最短标准写法" to="/docs/reference/terminology#canonical-form">规范形式</Terminology>、`/48` 和 `/64` 边界、掩码、`/53` 处的<Terminology title="委派前缀之后的地址位" to="/docs/reference/terminology#host-portion">主机位</Terminology>、被拒绝的地址、空操作规划、旧前缀过滤，以及长度更改被视为<Terminology title="与上次成功前缀或长度不同" to="/docs/reference/terminology#prefix-transition">前缀变化</Terminology>的情况。
+- **`tests/runtime.php`**：扫描每个<Terminology title="“字段”选项卡上由一个开关控制的一组字段" to="/docs/reference/terminology#field-group">字段组</Terminology>、单个字段的例外、重新应用其他软件包的设置、原子化的<Terminology title="保存基线和上次运行的软件包文件" to="/docs/reference/terminology#package-state">软件包状态</Terminology>、<Terminology title="防止两个检查同时运行的保护机制" to="/docs/reference/terminology#run-lock">运行锁</Terminology>、不受支持的平台以及已禁用的计划检查。它还涵盖事务顺序，写入、备份、重新加载预检、重新加载和通知各环节的失败，以及零匹配时的<Terminology title="结果：前缀已变化，但没有匹配的已批准字段" to="/docs/reference/terminology#warning">警告</Terminology>。
+- **`tests/pfsense-adapter.php`**：不回退到<Terminology title="仅在单条链路上有效的 fe80:: 地址" to="/docs/reference/terminology#link-local-address">链路本地</Terminology>地址的强制地址刷新、仅写入式保存之前的备份，以及在写入之前就停止的备份失败。
+- **`tests/translations.php`** 和 **`tests/webgui-localization.php`**：每个 pfSense 语言标识符的完整目录，以及本地化后的“设置”表单和验证消息。
+
+## 文档站点 \{#documentation-site}
+
+在 `apps/docs` 中，`npm run check` 会运行 ESLint、翻译树检查、三项类型检查，以及针对 `.env` 文件、frontmatter、链接、表格、术语链接和类型声明的 Vitest 测试套件。`npm run build` 会构建所有语言版本。
+
+各语言的已翻译文档页面位于 `apps/docs/i18n/<locale>/docusaurus-plugin-content-docs/current/`，与英文页面一一对应，因此英文页面有更改时，也需要同步更新这些页面。界面文本（首页、导航栏、页脚、博客和侧边栏标签）来自 `scripts/generate-locales.mjs`，它读取 `scripts/locale-copies.json` 和软件包翻译。`npm run i18n` 会先运行该生成器，并且会保留已翻译的文档页面。
+
+`.github/workflows/nova-publish-project.yml` 会在发布版本发布时构建站点，并将其部署到 GitHub Pages。

@@ -1,0 +1,60 @@
+---
+title: "Møt pfSense IPv6 Prefix Updater: en tryggere etterfølger"
+description: pfSense IPv6 Prefix Updater, etterfølgeren til update.php-skriptet, følger et nytt IPv6-prefiks, beholder hver vertsdel og tar sikkerhetskopi før hver endring.
+slug: introducing-pfsense-ipv6-prefix-updater
+authors:
+  - mrjackyliang
+keywords:
+  - pfsense ipv6 prefix updater
+  - pfsense-pakke
+  - dynamisk ipv6-prefiks
+  - ipv6-prefiksdelegering
+  - eldre oppdateringsskript
+tags:
+  - release
+  - ipv6
+  - pfsense
+---
+
+Mange internettleverandører delegerer et IPv6-prefiks som kan endres uten forvarsel. Når det skjer, blir adressene fra det gamle prefikset i aliaser, grensesnitt og VPN-innstillinger i pfSense utdaterte på én gang, og tjenester kan feile på måter som er vanskelige å spore.
+
+pfSense IPv6 Prefix Updater er mitt svar på dette: en ekte pfSense-pakke som følger det nye prefikset og oppdaterer adresser i innstillingsområdene du godkjenner.
+
+{/* truncate */}
+
+## Hvorfor jeg laget den \{#why-i-built-it}
+
+Dette prosjektet startet som `update.php`, et skript som ble installert i `/root` og kjørt av en oppføring i Cron-pakken. Det beviste at pfSense kunne oppdage et nytt prefiks, sikkerhetskopiere konfigurasjonen og skrive om gamle adresser.
+
+Men installasjoner og oppgraderinger var feilutsatte, og skriptet erstattet den gamle prefiksteksten hvor som helst i konfigurasjonen. Jeg ville ha en etterfølger som bare endrer feltene den forstår, og som viser hva den har gjort, uten manuell installasjon og uten en Cron-oppføring som må lages for hånd.
+
+## Hva den gjør \{#what-it-does}
+
+Pakken overvåker grensesnittene du velger. Når et prefiks endres, gjør den følgende:
+
+- **Beholder vertsdelen** — Bare prefiksbitene endres, så hver enhet beholder det samme adressesuffikset.
+- **Endrer bare godkjente felt** — Elleve pfSense-grupper, for eksempel Aliaser, Brannmurregler, DHCPv6-server og WireGuard, er slått på fra start, og i fanen Felt kan du slå av en gruppe eller fjerne haken fra et enkeltfelt.
+- **Tar sikkerhetskopi før den skriver** — En konfigurasjonssikkerhetskopi legges i Config History, og deretter lagres alle endringene i én skriving.
+- **Verifiserer resultatet** — Den kontrollerer de lagrede verdiene, laster bare de berørte tjenestene inn på nytt og kontrollerer verdiene igjen.
+
+Eksterne VPN-nettverk og noder endres bare når du krysser dem av under [Andre innstillinger](/docs/configure/configuration-scopes#other-settings), og et valgfritt endringsvarsel sendes etter hver vellykket oppdatering.
+
+## Slik setter du den opp \{#how-you-set-it-up}
+
+I fanen Innstillinger under **Services → IPv6 Prefix Updater** legger du til en rad i Overvåkede grensesnitt med lengden på det delegerte prefikset fra internettleverandøren for hvert grensesnitt som skal overvåkes, og lagrer.
+
+Velg deretter **Kjør nå** i fanen Status. Den første kjøringen registrerer bare en grunnlinje, så du kan kontrollere adressen og prefikset og gå gjennom fanen Felt før du slår på planlagte oppdateringer, som kjører hver time som standard fra en cron-oppføring som pfSense styrer.
+
+En kontroll som finner det samme prefikset, skriver ingenting, og **Testkjøring** kjører en kontroll uten sikkerhetskopi eller skriving.
+
+:::info
+
+Denne uoffisielle pakken installeres fra en GitHub-utgivelse med `pkg`, og Netgate verken gjennomgår eller støtter den. Utgivelser av versjon 1.x inneholder bare skriptet, så hvis den nyeste utgivelsen ikke har noen `.pkg`-fil, feiler `pkg add` med feilen «not found» (404).
+
+:::
+
+## Overgang fra skriptet \{#moving-from-the-script}
+
+Hvis `update.php` fortsatt kjøres fra Cron-pakken, lar du det stå og installerer pakken. Den flytter Cron-oppføringene, de lagrede prefiksene og sikkerhetskopiene fra skriptet inn i pakken og sletter de gamle filene, slik [Migrer fra skriptet](/docs/migrate-from-legacy) forklarer.
+
+Er prosjektet nytt for deg? Begynn med [Installer pakken](/docs/installation).

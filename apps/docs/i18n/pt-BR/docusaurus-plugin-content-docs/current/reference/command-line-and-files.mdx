@@ -1,0 +1,174 @@
+---
+id: command-line-and-files
+title: Linha de comando e arquivos
+description: Execute /usr/local/sbin/ipv6-prefix-updater em um shell e consulte opções, códigos de saída, linhas de saída, arquivos, logs e alertas da WebGUI.
+keywords:
+  - pfsense ipv6 prefix updater
+  - linha de comando
+  - códigos de saída
+  - arquivo de estado
+  - file_notice
+tags:
+  - reference
+  - command line
+  - files
+sidebar_position: 4
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Execute o comando do pacote em um shell e encontre os arquivos, os logs e os alertas que ele usa.
+
+## Uso \{#usage}
+
+```shell
+/usr/local/sbin/ipv6-prefix-updater [--manual] [--dry-run] [--accept-current-prefix [--interface=NAME]] [--migrate-legacy] [--help]
+```
+
+A entrada cron gerenciada pelo pfSense executa o comando como `root` sem opções. Antes de cada verificação, o comando também move para o pacote quaisquer restos do <Terminology title="script update.php original executado pelo pacote Cron" to="/docs/reference/terminology#legacy-updater">atualizador legado</Terminology>. A guia Status usa `--manual` para **Executar agora**, `--dry-run` para **<Terminology title="prévia que nunca faz backup nem grava" to="/docs/reference/terminology#dry-run">Simulação</Terminology>** e `--accept-current-prefix` para a recuperação da referência, e a guia Limpeza usa `--migrate-legacy`.
+
+Sem opções, o comando se comporta como uma verificação agendada e informa <Terminology title="resultado: verificação agendada ignorada com atualizações desativadas" to="/docs/reference/terminology#disabled">Desativado</Terminology> quando **<Terminology title="verificações automáticas por entrada cron gerenciada pelo pfSense" to="/docs/reference/terminology#scheduled-updates">Ativar atualizações agendadas</Terminology>** está desmarcada.
+
+## Opções \{#options}
+
+| Opção                     | Descrição                                                                                                                                                                                                                                                                                              |
+|---------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `--manual`                | Executa mesmo com as <Terminology title="verificações automáticas por entrada cron gerenciada pelo pfSense" to="/docs/reference/terminology#scheduled-updates">atualizações agendadas</Terminology> desativadas.                                                                                       |
+| `--dry-run`               | Gera uma prévia sem backup nem gravação e implica `--manual`.                                                                                                                                                                                                                                          |
+| `--accept-current-prefix` | Registra o endereço de origem, o prefixo e o comprimento ativos como referência, sem analisar campos aprovados, criar backup, gravar a configuração nem recarregar serviços. Implica `--manual` e não pode ser combinada com `--dry-run`.                                                              |
+| `--interface=NAME`        | Limita `--accept-current-prefix` a uma interface monitorada, indicada pelo nome interno, como `lan`. Sem essa opção, todas as interfaces monitoradas que têm um endereço são aceitas.                                                                                                                  |
+| `--migrate-legacy`        | Move o <Terminology title="script update.php original executado pelo pacote Cron" to="/docs/reference/terminology#legacy-updater">atualizador legado</Terminology> para o pacote na hora e exibe cada etapa, sem executar uma verificação do prefixo. Sai com `2` quando a migração informou um aviso. |
+| `--help`                  | Exibe a linha de uso e sai com `0`. A linha de uso não lista o próprio `--help`.                                                                                                                                                                                                                       |
+
+Qualquer outra opção escreve `Opção desconhecida: <option>` na saída de erro padrão e sai com `64`. Combinar `--accept-current-prefix` com `--dry-run` também sai com `64`.
+
+## Códigos de saída \{#exit-codes}
+
+| Código | Significado                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+|--------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `0`    | <Terminology title="resultado: referência registrada, configuração inalterada" to="/docs/reference/terminology#initialized">Inicializado</Terminology>, <Terminology title="resultado: simulação feita antes de existir uma referência" to="/docs/reference/terminology#initialization-preview">Pré-visualização da inicialização</Terminology>, <Terminology title="resultado: prefixo inalterado, nada analisado nem gravado" to="/docs/reference/terminology#no-change">Sem alteração</Terminology>, <Terminology title="prévia que nunca faz backup nem grava" to="/docs/reference/terminology#dry-run">Simulação</Terminology>, **Aceito**, <Terminology title="resultado: campos atualizados, salvos, recarregados e verificados" to="/docs/reference/terminology#success">Sucesso</Terminology> ou <Terminology title="resultado: verificação agendada ignorada com atualizações desativadas" to="/docs/reference/terminology#disabled">Desativado</Terminology>. Também é retornado quando outra verificação detém o <Terminology title="proteção que impede duas verificações ao mesmo tempo" to="/docs/reference/terminology#run-lock">bloqueio de execução</Terminology> e depois de `--help`. |
+| `1`    | <Terminology title="resultado: verificação ou etapa de segurança interrompeu a execução" to="/docs/reference/terminology#failure">Falha</Terminology>. A saída de erro padrão recebe uma linha, `O Atualizador de prefixo IPv6 falhou: <reason>`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `2`    | <Terminology title="resultado: o prefixo mudou, mas nenhum campo aprovado correspondeu" to="/docs/reference/terminology#warning">Aviso</Terminology>.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `64`   | Opção desconhecida.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+
+## Saída \{#output}
+
+Uma execução concluída que monitora uma só interface imprime nove linhas na saída padrão, seguidas das alterações de campos depois de uma <Terminology title="prévia que nunca faz backup nem grava" to="/docs/reference/terminology#dry-run">simulação</Terminology> ou de um <Terminology title="resultado: campos atualizados, salvos, recarregados e verificados" to="/docs/reference/terminology#success">Sucesso</Terminology>:
+
+```text
+Estado: Sucesso
+Interface: lan
+Endereço de origem observado: 2001:db8:abcd:88aa::1
+Prefixo anterior: 2001:db8:abcd:7800::
+Prefixo atual: 2001:db8:abcd:8800::/56
+Campos planejados ou alterados: 1
+Cópia de segurança da configuração: Criada
+Serviços recarregados: Filtro da firewall
+Resumo: Foram atualizados 1 campo(s) aprovado(s) de 2001:db8:abcd:7800::/56 para 2001:db8:abcd:8800::/56 na interface lan.
+Alterações de campos:
+- aliases/alias/0/address: 2001:db8:abcd:78aa::10 → 2001:db8:abcd:88aa::10
+```
+
+- `Prefixo anterior` não tem comprimento e mostra `Indisponível` depois de <Terminology title="resultado: referência registrada, configuração inalterada" to="/docs/reference/terminology#initialized">Inicializado</Terminology> ou <Terminology title="resultado: simulação feita antes de existir uma referência" to="/docs/reference/terminology#initialization-preview">Pré-visualização da inicialização</Terminology>.
+- `Serviços recarregados` lista os rótulos da guia Status ou `Nenhum`. Depois de uma <Terminology title="prévia que nunca faz backup nem grava" to="/docs/reference/terminology#dry-run">simulação</Terminology>, lista os serviços que seriam recarregados.
+- `Alterações de campos` tem uma linha por endereço substituído, escrita como `- <path>: <old> → <new>`, para até 200 campos.
+- Quando a execução aplicou novamente as configurações de outro pacote ou ignorou um campo marcado que não existe mais, vem em seguida uma linha para cada caso, com o mesmo texto da guia Status.
+- Quando outra verificação detém o <Terminology title="proteção que impede duas verificações ao mesmo tempo" to="/docs/reference/terminology#run-lock">bloqueio de execução</Terminology>, a única saída é `Outra execução detém o bloqueio do pacote; esta invocação terminou sem ler a configuração.`
+- Com várias interfaces monitoradas, a saída começa com as linhas gerais de `Estado`, `Resumo`, pacotes e campos ignorados, seguidas das linhas de cada interface, separadas por linhas em branco.
+- Quando houve uma migração do <Terminology title="script update.php original executado pelo pacote Cron" to="/docs/reference/terminology#legacy-updater">atualizador legado</Terminology> antes da verificação, as etapas dela são impressas primeiro.
+- Rótulos e mensagens seguem a configuração de idioma do pfSense.
+
+## Arquivos e caminhos \{#files-and-paths}
+
+| Caminho                                                   | Descrição                                                                                                                                                                                                                                                                                                                                    |
+|-----------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `/usr/local/sbin/ipv6-prefix-updater`                     | O comando, um script PHP.                                                                                                                                                                                                                                                                                                                    |
+| `/usr/local/pkg/ipv6-prefix-updater.xml`                  | A definição da página Configurações e os hooks de ciclo de vida dela.                                                                                                                                                                                                                                                                        |
+| `/usr/local/pkg/ipv6-prefix-updater.inc`                  | Funções de instalação, sincronização das configurações, remoção e validação do formulário.                                                                                                                                                                                                                                                   |
+| `/usr/local/pkg/ipv6-prefix-updater/`                     | Classes de runtime e traduções.                                                                                                                                                                                                                                                                                                              |
+| `/usr/local/www/ipv6-prefix-updater-status.php`           | A guia Status.                                                                                                                                                                                                                                                                                                                               |
+| `/usr/local/www/ipv6-prefix-updater-fields.php`           | A guia Campos.                                                                                                                                                                                                                                                                                                                               |
+| `/usr/local/www/ipv6-prefix-updater-backups.php`          | A guia Backups.                                                                                                                                                                                                                                                                                                                              |
+| `/usr/local/www/ipv6-prefix-updater-cleanup.php`          | A guia Limpeza.                                                                                                                                                                                                                                                                                                                              |
+| `/usr/local/share/pfSense-pkg-Ipv6PrefixUpdater/info.xml` | O manifesto do pacote.                                                                                                                                                                                                                                                                                                                       |
+| `/cf/conf/ipv6-prefix-updater/state.json`                 | O <Terminology title="arquivo do pacote com referência e última execução" to="/docs/reference/terminology#package-state">estado do pacote</Terminology>. O diretório tem permissão `0700`, o arquivo tem `0600`, cada gravação substitui o arquivo de forma atômica, e ele sobrevive a reinicializações, a discos RAM e à remoção do pacote. |
+| `/cf/conf/ipv6-prefix-updater/backups/`                   | As cópias da guia **Backups**, cada uma com uma configuração `<id>.xml` e uma descrição `<id>.json`, todas com `0600`.                                                                                                                                                                                                                       |
+| `/var/run/ipv6-prefix-updater.lock`                       | O <Terminology title="proteção que impede duas verificações ao mesmo tempo" to="/docs/reference/terminology#run-lock">bloqueio de execução</Terminology>, obtido com um `flock` não bloqueante e que contém o ID do processo em execução. Ele permanece no disco entre as execuções.                                                         |
+
+## Formato do estado do pacote \{#package-state-format}
+
+| Chave                 | Descrição                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+|-----------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `schema_version`      | Sempre `1`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `targets.<interface>` | Uma <Terminology title="prefixo inicial registrado sem alterar a configuração" to="/docs/reference/terminology#baseline">referência</Terminology> por interface monitorada, identificada pelo nome interno, com `interface`, `source_address`, `prefix`, `prefix_length` e `updated_at`. Uma referência obtida do <Terminology title="script update.php original executado pelo pacote Cron" to="/docs/reference/terminology#legacy-updater">atualizador legado</Terminology> também tem `source` definido como `legacy_cache`. |
+| `last_run`            | A execução registrada mais recente, com `status`, `timestamp`, `interface`, `observed_address`, `previous_prefix`, `current_prefix`, `current_prefix_length`, `change_count`, `backup_created`, `services`, `message`, `message_key` e `message_arguments`.                                                                                                                                                                                                                                                                     |
+| `legacy_migration`    | Presente depois de uma migração do <Terminology title="script update.php original executado pelo pacote Cron" to="/docs/reference/terminology#legacy-updater">atualizador legado</Terminology>, com `status`, `steps`, `warnings` e `recorded_at`. A guia Limpeza o exibe.                                                                                                                                                                                                                                                      |
+
+- `status` é um destes valores: `initialized`, `initialization_preview`, `no_change`, `dry_run`, `warning`, `accepted`, `success` ou `failure`.
+- Depois de um <Terminology title="resultado: campos atualizados, salvos, recarregados e verificados" to="/docs/reference/terminology#success">Sucesso</Terminology>, `last_run.notification` é `disabled` quando as notificações estão desativadas, ou `sent` ou `failed` depois de uma tentativa de entrega.
+- Depois de uma <Terminology title="prévia que nunca faz backup nem grava" to="/docs/reference/terminology#dry-run">simulação</Terminology> ou de um <Terminology title="resultado: campos atualizados, salvos, recarregados e verificados" to="/docs/reference/terminology#success">Sucesso</Terminology>, cada resultado também tem `changes`, com o `path` e as `replacements` de até 200 campos, em que cada substituição é um endereço antigo e um endereço novo.
+- `package_reapply` informa `section`, `package`, `status` e `error` de cada pacote cujas configurações a execução aplicou novamente, e `skipped_fields` lista os campos marcados que não existem mais. Cada um só aparece quando não está vazio.
+- Com várias interfaces monitoradas, `last_run` contém os totais e uma lista `targets` com um resultado por interface.
+- Os timestamps usam ISO 8601 em UTC. Um arquivo que não pode ser interpretado, ou que tem outra versão de schema, interrompe todas as execuções com `O estado do Atualizador de Prefixo IPv6 é inválido ou não suportado.`
+
+## Armazenamento das configurações \{#settings-storage}
+
+As configurações do pacote ficam armazenadas na configuração do pfSense, em `installedpackages/ipv6prefixupdater/config/0`.
+
+| Chave              | Descrição                                                                                                                                                                                                       |
+|--------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `enabled`          | **<Terminology title="verificações automáticas por entrada cron gerenciada pelo pfSense" to="/docs/reference/terminology#scheduled-updates">Ativar atualizações agendadas</Terminology>**, `on` quando marcada. |
+| `row`              | **Interfaces monitoradas**, uma lista com um `interface` (uma chave de interface, como `lan`) e um `prefix_length` (de `48` a `64`) por linha.                                                                  |
+| `update_frequency` | **Agendamento**, um entre `every_fifteen_minutes`, `hourly`, `every_six_hours` ou `daily`.                                                                                                                      |
+| `notifications`    | **<Terminology title="alerta enviado após uma atualização verificada com sucesso" to="/docs/reference/terminology#change-notification">Enviar notificações de alteração</Terminology>**, `on` quando marcada.   |
+
+### Seleção de campos \{#field-selection}
+
+As escolhas da guia Campos ficam ao lado do registro de configurações, em `installedpackages/ipv6prefixupdater/fields`, então salvar a guia Configurações, que substitui `config/0`, nunca as apaga.
+
+| Chave                  | Descrição                                                                                                                                       |
+|------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|
+| `schema`               | Sempre `1`. Indica uma seleção salva a partir da guia Campos, mesmo que vazia.                                                                  |
+| `enabled_groups/item`  | Grupos ativados, como `firewall_rules`, `dhcpv6` ou `package:<section>` para as configurações de outro pacote.                                  |
+| `disabled_groups/item` | Grupos do pfSense desativados. Um grupo do pfSense que não está em nenhuma das listas está ativado, e um grupo de outro pacote está desativado. |
+| `include/item`         | Identidades dos campos marcados em um grupo desativado.                                                                                         |
+| `exclude/item`         | Identidades dos campos desmarcados em um grupo ativado.                                                                                         |
+
+- As chaves dos grupos do pfSense são `interfaces`, `virtual_ips`, `aliases`, `firewall_rules`, `nat`, `dhcpv6`, `router_advertisements`, `dns_host_overrides`, `ipsec`, `openvpn` e `wireguard`.
+- `include` e `exclude` guardam no máximo 1.000 identidades cada, e cada identidade segue as [Identidades dos campos](/docs/reference/approved-fields#field-identities).
+
+## Entrada cron \{#cron-entry}
+
+Salvar as Configurações remove qualquer entrada existente do comando e, quando `enabled` é `on`, instala uma nova para `root` com a função `install_cron_job()` do pfSense.
+
+| Valor do agendamento    | Campos do cron |
+|-------------------------|----------------|
+| `every_fifteen_minutes` | `*/15 * * * *` |
+| `hourly`                | `0 * * * *`    |
+| `every_six_hours`       | `0 */6 * * *`  |
+| `daily`                 | `0 0 * * *`    |
+
+Um valor desconhecido usa os campos do agendamento a cada hora. Enquanto uma migração do <Terminology title="script update.php original executado pelo pacote Cron" to="/docs/reference/terminology#legacy-updater">atualizador legado</Terminology> aguarda o término do script legado, o pacote mantém uma entrada `*/15 * * * *` para que a migração seja tentada de novo mesmo com as atualizações agendadas desativadas.
+
+## Logs e alertas \{#logs-and-notices}
+
+Cada linha do <Terminology title="log geral do pfSense em que o pacote escreve" to="/docs/reference/terminology#system-log">log do sistema</Terminology> é gravada com a função `log_error()` do pfSense e começa com `IPv6 Prefix Updater:`. Os alertas são criados com `file_notice()` e levam a `/ipv6-prefix-updater-status.php`, exceto o alerta da migração, que leva a `/ipv6-prefix-updater-cleanup.php`.
+
+| ID do alerta                            | Criado quando                                                                                                                                                                                                                                                  | Entrega                                                                                                                                                                     |
+|-----------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `ipv6-prefix-updater-success`           | <Terminology title="resultado: campos atualizados, salvos, recarregados e verificados" to="/docs/reference/terminology#success">Sucesso</Terminology> com `notifications` definido como `on`                                                                   | WebGUI e <Terminology title="serviços de alerta remotos configurados no pfSense" to="/docs/reference/terminology#notification-channels">canais de notificação</Terminology> |
+| `ipv6-prefix-updater-no-matches`        | <Terminology title="resultado: o prefixo mudou, mas nenhum campo aprovado correspondeu" to="/docs/reference/terminology#warning">Aviso</Terminology>                                                                                                           | Somente WebGUI                                                                                                                                                              |
+| `ipv6-prefix-updater-failure`           | <Terminology title="resultado: verificação ou etapa de segurança interrompeu a execução" to="/docs/reference/terminology#failure">Falha</Terminology>                                                                                                          | Somente WebGUI                                                                                                                                                              |
+| `ipv6-prefix-updater-package-<section>` | Uma execução alterou as configurações de outro pacote, e nenhum pacote instalado é dono da seção ou a nova aplicação das configurações falhou                                                                                                                  | Somente WebGUI                                                                                                                                                              |
+| `ipv6-prefix-updater-legacy-migration`  | Uma migração do <Terminology title="script update.php original executado pelo pacote Cron" to="/docs/reference/terminology#legacy-updater">atualizador legado</Terminology> que executou pelo menos uma etapa, ou uma migração que falhou durante a instalação | Somente WebGUI                                                                                                                                                              |
+
+Se a verificação de ambiente do próprio comando falhar, ou se o arquivo de bloqueio não puder ser aberto, o motivo vai apenas para a saída de erro padrão. Cada execução que grava também salva uma revisão da configuração com a descrição `O Atualizador de prefixo IPv6 alterou <count> campo(s) aprovado(s) para a interface <interface>`.
+
+## Privilégios das páginas \{#page-privileges}
+
+Cada página do pacote declara o próprio privilégio do pfSense, então o acesso pode ser concedido por página:
+
+- **Status**: `page-services-ipv6-prefix-updater-status`, chamado `Services: IPv6 Prefix Updater: Status`.
+- **Campos**: `page-services-ipv6-prefix-updater-fields`, chamado `Services: IPv6 Prefix Updater: Fields`. Ele permite alterar quais campos uma execução reescreve, então é recomendável concedê-lo somente a administradores.
+- **Backups**: `page-services-ipv6-prefix-updater-backups`, chamado `Services: IPv6 Prefix Updater: Backups`. Ele permite baixar cópias completas da configuração, então é recomendável concedê-lo somente a administradores.
+- **Limpeza**: `page-services-ipv6-prefix-updater-cleanup`, chamado `Services: IPv6 Prefix Updater: Cleanup`.

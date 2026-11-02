@@ -1,0 +1,203 @@
+---
+id: terminology
+title: Terminologia
+description: Poznaj definicje terminów dotyczących adresów, prefiksów, ustawień, wyników uruchomień i pfSense używanych na kartach Ustawienia, Stan i Pola oraz w całej dokumentacji.
+keywords:
+  - pfsense ipv6 prefix updater
+  - terminologia
+  - słowniczek
+  - delegowany prefiks
+  - wartość bazowa
+  - wyniki uruchomień
+tags:
+  - reference
+  - terminology
+  - glossary
+sidebar_position: 1
+---
+
+Poznaj terminy dotyczące adresów, prefiksów, uruchomień i funkcji pfSense, których używają karty Ustawienia, Stan i Pola oraz te przewodniki.
+
+## Delegowany prefiks \{#delegated-prefix}
+
+Sieć IPv6, którą dostawca internetu kieruje do zapory, zwykle przez DHCPv6 Prefix Delegation. Pakiet podąża za tym prefiksem, ale nigdy go nie żąda, nie odnawia ani nie zmienia.
+
+## Długość prefiksu \{#prefix-length}
+
+Liczba początkowych bitów identyfikujących sieć, zapisywana jako ukośnik i liczba, na przykład `/56`. Sufiks CIDR w skonfigurowanej wartości, na przykład `/64`, pozostaje bez zmian, gdy pakiet przepisuje adres.
+
+## Długość delegowanego prefiksu \{#delegated-prefix-length}
+
+Ustawienie **Długość delegowanego prefiksu**, które przechowuje rozmiar prefiksu delegowanego przez dostawcę internetu, od `/48` do `/64`. Domyślnie ma wartość `/56`, pakiet nigdy nie wykrywa go sam, a jego zmiana po ustaleniu wartości bazowej liczy się jako zmiana prefiksu.
+
+## Globalny adres unicast \{#global-unicast-address}
+
+Adres IPv6 z zakresu `2000::/3`, jedyny rodzaj adresu, który pakiet odczytuje jako źródło lub przepisuje. Adresy link-local, unique local (`fc00::/7`), multicast, loopback, nieokreślone i mapowane z IPv4 są odrzucane jako źródło i pozostają w konfiguracji bez zmian.
+
+## Adres link-local \{#link-local-address}
+
+Adres, który działa tylko w obrębie jednego łącza sieciowego i zaczyna się od `fe80`. Pakiet nigdy nie używa go zastępczo, więc interfejs bez globalnego adresu powoduje niepowodzenie uruchomienia.
+
+## Część hosta \{#host-portion}
+
+Wszystkie bity adresu po długości delegowanego prefiksu, nazywane też bitami hosta. Pakiet kopiuje te bity bez zmian do nowego adresu, nawet gdy granica przypada wewnątrz cyfry szesnastkowej.
+
+## Postać kanoniczna \{#canonical-form}
+
+Standardowy, najkrótszy zapis adresu IPv6 małymi literami, na przykład `2001:db8::1` zamiast `2001:0DB8:0:0::1`. Pakiet porównuje adresy w tej postaci i w niej zapisuje przepisane wartości, więc wartość może wyglądać inaczej, choć oznacza ten sam adres.
+
+## Śledzony interfejs \{#tracked-interface}
+
+Interfejs pfSense, którego adres IPv6 pochodzi z delegowanego prefiksu innego interfejsu dzięki typowi konfiguracji **Track Interface**. Często jest właściwym monitorowanym interfejsem, gdy WAN nie ma globalnego adresu, a pakiet nigdy nie przepisuje jego adresu, ponieważ generuje go pfSense.
+
+## Monitorowany interfejs \{#monitored-interface}
+
+Jeden wiersz ustawienia **Monitorowane interfejsy**, który wskazuje interfejs, którego globalny adres ujawnia bieżący prefiks. Karta Stan pokazuje opis interfejsu, a po nim jego wewnętrzną nazwę w pfSense, na przykład `LAN (lan)`.
+
+Dodanie interfejsu sprawia, że następne uruchomienie zapisuje dla niego nową wartość bazową zamiast porównywać prefiksy.
+
+## Adres źródłowy \{#source-address}
+
+Podstawowy globalny adres, który pfSense zgłasza dla monitorowanego interfejsu, odczytywany na nowo przy każdym uruchomieniu. Karta Stan pokazuje go w postaci kanonicznej jako **Zaobserwowany adres źródłowy** i **Ostatni pomyślny adres źródłowy**.
+
+## Zaobserwowany prefiks \{#observed-prefix}
+
+Sieć obliczona z adresu źródłowego i długości delegowanego prefiksu, pokazywana na karcie Stan razem z długością. Każde uruchomienie porównuje ją z ostatnim pomyślnym prefiksem.
+
+## Wartość bazowa \{#baseline}
+
+Prefiks i adres źródłowy, które pakiet zapisuje jako punkt wyjścia, bez zmiany konfiguracji. Wartość bazowa jest zapisywana przy pierwszym uruchomieniu dla każdego monitorowanego interfejsu, zawsze gdy brakuje stanu pakietu, gdy operator jawnie zaakceptuje aktywny prefiks oraz podczas migracji na podstawie prefiksu zapisanego przez starszy aktualizator.
+
+## Ostatni pomyślny prefiks \{#last-successful-prefix}
+
+Zapisany prefiks i długość, z którymi porównuje następne sprawdzenie. Zmieniają go tylko wyniki Zainicjowano, Zaakceptowano i Sukces, a każdy inny wynik pozostawia go bez zmian.
+
+## Zmiana prefiksu \{#prefix-transition}
+
+Różnica między ostatnim pomyślnym prefiksem a zaobserwowanym prefiksem, także wtedy, gdy sieć jest ta sama, a różni się długość prefiksu. Tylko zmiana prefiksu sprawia, że pakiet skanuje konfigurację, planuje zmiany i wykonuje zapis.
+
+## Grupa pól \{#field-group}
+
+Grupa pól z jednym przełącznikiem na karcie Pola. Jedenaście grup pfSense to Interfejsy statyczne, Wirtualne adresy IP, Aliasy, Reguły zapory, NAT i NPt, Serwer DHCPv6, Ogłoszenia routera, Nadpisania hostów DNS, IPsec, OpenVPN i WireGuard; są one początkowo włączone. Ustawienia każdego innego pakietu otrzymują własną grupę, która jest początkowo wyłączona, a każda inna wartość należy do grupy Inne ustawienia, która również jest początkowo wyłączona. Włączona grupa obejmuje każde pole swojego rodzaju, także pola dodane później.
+
+## Zatwierdzone pole \{#approved-field}
+
+Konkretne pole konfiguracji, które pakiet może przepisać: pole we włączonej grupie, które nie zostało odznaczone, albo zaznaczone pole w wyłączonej grupie. Wartości poza zatwierdzonymi polami nigdy nie są zmieniane.
+
+## Wyjątek pola \{#field-exception}
+
+Pojedyncze pole, którego zaznaczenie na karcie Pola różni się od przełącznika jego grupy: odznaczone pole we włączonej grupie albo zaznaczone pole w wyłączonej grupie. Każdy wyjątek wskazuje swój wpis, na przykład przez identyfikator śledzenia reguły zapory, a nie przez pozycję na liście.
+
+## Plan zmian \{#change-plan}
+
+Pełna lista zatwierdzonych pól, które się zmienią, z każdą starą wartością, nową wartością i usługą do ponownego załadowania. Pakiet tworzy cały plan, zanim cokolwiek zmieni.
+
+## Zaplanowane aktualizacje \{#scheduled-updates}
+
+Automatyczne sprawdzenia sterowane opcją **Włącz zaplanowane aktualizacje**, domyślnie wyłączoną, oraz ustawieniem **Harmonogram**, domyślnie Co godzinę. Zapisanie ustawień dodaje lub usuwa wpis cron zarządzany przez pfSense, więc pakiet Cron nie jest potrzebny.
+
+## Ręczne uruchomienie \{#manual-run}
+
+Sprawdzenie uruchomione przyciskiem **Uruchom teraz** lub **Próba** na karcie Stan. Działa nawet wtedy, gdy zaplanowane aktualizacje są wyłączone.
+
+## Próba \{#dry-run}
+
+Podgląd uruchamiany przyciskiem **Próba**, który nigdy nie tworzy kopii zapasowej ani nie zapisuje konfiguracji. Gdy wykryje zmianę prefiksu z polami do zmiany, kończy się wynikiem **Próba** i podaje liczbę zaplanowanych pól.
+
+Przy niezmienionym prefiksie próba zgłasza wynik Brak zmian bez skanowania konfiguracji.
+
+## Wynik polecenia \{#command-output}
+
+Pole tylko do odczytu **Najnowsze uruchomienie** w sekcji **Wynik polecenia**, które pojawia się po użyciu Uruchom teraz, Próba lub Zaakceptuj bieżący prefiks. Pokazuje wiersze uruchomienia od `Stan` do `Podsumowanie`, a po próbie lub wyniku Sukces także `Zmiany pól`, albo jeden wiersz, gdy działanie się nie powiedzie lub blokadę trzyma inne uruchomienie.
+
+## Blokada uruchomienia \{#run-lock}
+
+Blokada, dzięki której naraz może działać tylko jedno sprawdzenie. Drugie sprawdzenie kończy się bez odczytu konfiguracji, a blokada jest zwalniana, gdy tylko trwające sprawdzenie się zakończy.
+
+## Stan pakietu \{#package-state}
+
+Plik `/cf/conf/ipv6-prefix-updater/state.json`, w którym pakiet przechowuje każdą wartość bazową i ostatnie uruchomienie poza konfiguracją pfSense. Odczytać go może tylko root, a plik przetrwa ponowne uruchomienia, dyski RAM i usunięcie pakietu, dzięki czemu ponowna instalacja zachowuje każdą wartość bazową.
+
+## Zainicjowano \{#initialized}
+
+Wynik uruchomienia, które zapisuje nową wartość bazową. Nie tworzy kopii zapasowej, nie zmienia konfiguracji i nie wysyła powiadomienia.
+
+## Podgląd inicjalizacji \{#initialization-preview}
+
+Wynik próby wykonanej, gdy nie istnieje jeszcze wartość bazowa. Pokazuje wartość bazową, którą zapisałoby normalne uruchomienie, ale jej nie zapisuje.
+
+## Brak zmian \{#no-change}
+
+Wynik, gdy zaobserwowany prefiks i jego długość są zgodne z ostatnim pomyślnym prefiksem; nazywany też uruchomieniem bez operacji (no-op). Takie uruchomienie nie skanuje konfiguracji, nie tworzy kopii zapasowej, nie ładuje ponownie usług i nie wysyła powiadomienia.
+
+## Ostrzeżenie \{#warning}
+
+Wynik, gdy wykryto zmianę prefiksu, ale żadne zatwierdzone pole nie należy do starego prefiksu. Nic nie jest zapisywane, wartość bazowa się nie zmienia, a każde Ostrzeżenie dodaje komunikat WebGUI.
+
+## Zaakceptowano \{#accepted}
+
+Wynik po tym, jak operator wybierze **Zaakceptuj bieżący prefiks** i potwierdzi, że zapisane adresy już używają aktywnego prefiksu. Pakiet przenosi wartość bazową bez skanowania zatwierdzonych pól, tworzenia kopii zapasowej, zapisu konfiguracji i ponownego ładowania usług.
+
+## Sukces \{#success}
+
+Wynik po zakończeniu kopii zapasowej, jednokrotnego zapisu konfiguracji, ponownego załadowania usług i kontroli wartości. Wartość bazowa przechodzi na nowy prefiks, a powiadomienie o zmianie jest wysyłane, jeśli je włączono.
+
+## Błąd \{#failure}
+
+Wynik, gdy uruchomienie zatrzyma kontrola lub etap bezpieczeństwa. Jeśli zatrzymanie nastąpi po zapisaniu konfiguracji, nowe wartości pozostają zapisane, a wartość bazowa pozostaje na starym prefiksie.
+
+## Wyłączone \{#disabled}
+
+Wynik zaplanowanego sprawdzenia, które działa, gdy opcja **Włącz zaplanowane aktualizacje** jest wyłączona. Zatrzymuje się przed odczytem jakiegokolwiek interfejsu i stanu pakietu, a pojawia się tylko w danych wyjściowych samego polecenia.
+
+## Powiadomienie o zmianie \{#change-notification}
+
+Wiadomość wysyłana po wyniku Sukces, gdy zaznaczona jest opcja **Wysyłaj powiadomienia o zmianach**, co jest ustawieniem domyślnym. Trafia do kanałów powiadomień skonfigurowanych w pfSense i pojawia się też jako komunikat WebGUI.
+
+## Kanały powiadomień \{#notification-channels}
+
+Zdalne usługi alertów skonfigurowane w **System → Advanced → Notifications**, na przykład e-mail. Powiadomienia o zmianach korzystają z tych kanałów, a komunikaty o wynikach Ostrzeżenie i Błąd pozostają lokalne.
+
+## Komunikat WebGUI \{#webgui-notice}
+
+Alert na liście komunikatów WebGUI pfSense, który prowadzi do karty Stan pakietu, a po przeniesieniu starszego aktualizatora do karty Porządkowanie. Wyniki Ostrzeżenie i Błąd zawsze go dodają, nawet gdy opcja **Wysyłaj powiadomienia o zmianach** jest odznaczona.
+
+## Dziennik systemowy \{#system-log}
+
+Ogólny dziennik pfSense w **Status → System Logs → System → General**. Każdy wiersz zapisany przez pakiet zaczyna się od `IPv6 Prefix Updater:`.
+
+## Kopia zapasowa konfiguracji \{#configuration-backup}
+
+Kopia konfiguracji w stanie sprzed zapisu, wykonana funkcją kopii zapasowej pfSense i przechowywana także na karcie **Kopie zapasowe**. Pakiet tworzy ją przy każdym uruchomieniu, które zapisuje, przed zmianą jakiegokolwiek pola, a przy uruchomieniach bez zapisu nie tworzy żadnej.
+
+## Config History (historia konfiguracji) \{#config-history}
+
+Lista zapisanych rewizji konfiguracji w **Diagnostics → Backup & Restore → Config History**. Rewizja z opisem `Aktualizator prefiksu IPv6 zmienił ...` zawiera zaktualizowaną konfigurację, więc do przywrócenia służy rewizja zapisana przed nią.
+
+## Ponowne załadowanie usługi \{#service-reload}
+
+Akcja pfSense, która stosuje zmienione ustawienia w działającej usłudze. Pakiet ponownie ładuje tylko usługi, których pola się zmieniły, i wymienia je w polu **Ponownie załadowane usługi**.
+
+## Wirtualny adres IP \{#virtual-ip}
+
+Dodatkowy adres przypisany do interfejsu w **Firewall → Virtual IPs**. Grupa Wirtualne adresy IP aktualizuje tylko wpisy CARP i IP Alias.
+
+## Faza 2 IPsec \{#ipsec-phase-2}
+
+Wpis IPsec, który określa sieci lokalne i zdalne tunelu. Grupa IPsec obejmuje stronę lokalną wpisów typu Tunnel IPv6 i Routed (VTI), a strona zdalna należy do grupy Inne ustawienia.
+
+## Nadpisanie specyficzne dla klienta \{#client-specific-override}
+
+Wpis OpenVPN w **VPN → OpenVPN → Client Specific Overrides**, który ustawia opcje dla jednego klienta. Pakiet może aktualizować jego sieć tunelu IPv6 i lokalne sieci IPv6.
+
+## Adres tunelu WireGuard \{#wireguard-tunnel-address}
+
+Adres interfejsu przypisany do tunelu WireGuard w pfSense. Jego aktualizacja wymaga pakietu WireGuard, a dozwolone adresy IP i punkty końcowe peerów należą do grupy Inne ustawienia.
+
+## Starszy aktualizator \{#legacy-updater}
+
+Wersja 1.x tego projektu: skrypt `update.php` instalowany w `/root` i uruchamiany przez wpis pakietu Cron. Zastępował tekst starego prefiksu w dowolnym miejscu konfiguracji.
+
+## Nieoficjalny pakiet \{#unofficial-package}
+
+Pakiet instalowany poleceniem `pkg add` z serwisu GitHub zamiast z repozytorium pakietów Netgate. Netgate go nie weryfikuje ani nie wspiera, a jego aktualizacje instalujesz samodzielnie.

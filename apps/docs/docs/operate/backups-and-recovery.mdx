@@ -1,0 +1,120 @@
+---
+id: backups-and-recovery
+title: Backups and Recovery
+description: Find the configuration from before a package update on the Backups tab or in Config History, restore it with pfSense, and recover from a run that failed after saving.
+keywords:
+  - pfsense ipv6 prefix updater
+  - configuration backup
+  - config history
+  - restore
+  - recovery
+tags:
+  - operations
+  - backup
+  - recovery
+  - config history
+sidebar_position: 3
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import backupList from './_assets_/backups-and-recovery-1.png';
+
+Find the configuration from before an update on the **Backups** tab or in pfSense's <Terminology title="pfSense list of saved configuration revisions" to="/docs/reference/terminology#config-history">Config History</Terminology> and restore it with pfSense's own tools.
+
+## When a Backup Is Created
+
+The package creates a <Terminology title="copy of the configuration saved before a write" to="/docs/reference/terminology#configuration-backup">configuration backup</Terminology> only on a run that writes, right before it changes any field. **<Terminology title="copy of the configuration saved before a write" to="/docs/reference/terminology#configuration-backup">Configuration Backup Created</Terminology>** on the Status tab shows whether the latest run made one.
+
+No backup is created when a run ends as:
+
+- <Terminology title="outcome: baseline recorded, configuration unchanged" to="/docs/reference/terminology#initialized">Initialized</Terminology> or <Terminology title="outcome: dry run before a baseline exists" to="/docs/reference/terminology#initialization-preview">Initialization preview</Terminology>.
+- <Terminology title="outcome: prefix unchanged, nothing scanned or written" to="/docs/reference/terminology#no-change">No change</Terminology>.
+- <Terminology title="preview that never backs up or writes" to="/docs/reference/terminology#dry-run">Dry run</Terminology>.
+- **Accepted**, because accepting the current prefix changes only the package's <Terminology title="package file holding the baseline and last run" to="/docs/reference/terminology#package-state">package state</Terminology>.
+- <Terminology title="outcome: prefix changed, but no approved field matched" to="/docs/reference/terminology#warning">Warning</Terminology>.
+- <Terminology title="outcome: a check or safety stage stopped the run" to="/docs/reference/terminology#failure">Failure</Terminology> before the backup stage, such as a settings, address, or reload capability problem.
+
+## Backups Tab
+
+**Services → IPv6 Prefix Updater → Backups** lists the package's own copies of `config.xml`, newest first. They stay available after pfSense rotates older revisions out of <Terminology title="pfSense list of saved configuration revisions" to="/docs/reference/terminology#config-history">Config History</Terminology>.
+
+<img src={backupList} alt="IPv6 Prefix Updater Backups tab listing package backups taken before prefix updates and before a legacy migration, plus backups imported from the legacy updater, each with Download and Delete actions" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+- **Before prefix update**: taken right before a run writes. **Details** names each interface's old and new prefix.
+- **Before 1.x move**: taken before the package [moved the legacy updater](/docs/migrate-from-legacy) into its settings.
+- **1.x script**: a backup the <Terminology title="original update.php script run by the Cron package" to="/docs/reference/terminology#legacy-updater">legacy updater</Terminology> made, imported with its original name and time.
+
+Only the newest 10 package backups are kept, while imported legacy backups stay until you delete them. Every backup is stored in `/cf/conf/ipv6-prefix-updater/backups`, readable by root only, and survives reboots and package removal.
+
+To restore one, select **Download**, then upload the file under **Diagnostics → Backup & Restore → Restore Backup**. Restoring replaces the whole configuration, so the warnings below apply to these files too.
+
+## How the Revisions Are Labelled
+
+Each update leaves two revisions in <Terminology title="pfSense list of saved configuration revisions" to="/docs/reference/terminology#config-history">Config History</Terminology>, and only the older one undoes the update:
+
+- **The configuration before the update**: the <Terminology title="copy of the configuration saved before a write" to="/docs/reference/terminology#configuration-backup">configuration backup</Terminology> is a copy of this revision. It keeps the description of whatever change was saved before the update.
+- **The updated configuration**: the package saves its change as a new revision described as `IPv6 Prefix Updater changed <count> approved field(s) for interface <interface>`.
+
+:::warning
+
+The revision with the package's description holds the updated configuration. Restoring it doesn't undo the update.
+
+:::
+
+## Find the Right Revision
+
+1. Open **Diagnostics → Backup & Restore → Config History**.
+2. Find the newest revision described as `IPv6 Prefix Updater changed ... for interface ...`. If nothing was saved after the update, it is the current configuration.
+3. Pick the revision saved directly before it, which is the configuration from before the update.
+4. Compare the two revisions with the diff view. Apart from the revision details, only the fields counted in **Changed Fields** should differ.
+5. Check whether other changes were saved after the update, because restoring an older revision removes them too.
+
+## Restore the Revision
+
+1. Use pfSense's restore action on the revision from before the update and follow its prompts.
+2. Open **Services → IPv6 Prefix Updater → Settings** and check **<Terminology title="automatic checks run from a pfSense-managed cron entry" to="/docs/reference/terminology#scheduled-updates">Enable Scheduled Updates</Terminology>**, because the restored revision brings back the package settings from that time.
+3. On the Status tab, select **<Terminology title="preview that never backs up or writes" to="/docs/reference/terminology#dry-run">Dry Run</Terminology>** to see what the next run would do.
+
+What the next run does depends on the outcome you are undoing:
+
+- **After a <Terminology title="outcome: a check or safety stage stopped the run" to="/docs/reference/terminology#failure">Failure</Terminology>**: the <Terminology title="starting prefix recorded without changing configuration" to="/docs/reference/terminology#baseline">baseline</Terminology> still holds the old prefix, so the next run plans the same update again.
+- **After a <Terminology title="outcome: fields updated, saved, reloaded, and verified" to="/docs/reference/terminology#success">Success</Terminology>**: the <Terminology title="starting prefix recorded without changing configuration" to="/docs/reference/terminology#baseline">baseline</Terminology> already holds the new prefix, so later runs report <Terminology title="outcome: prefix unchanged, nothing scanned or written" to="/docs/reference/terminology#no-change">No change</Terminology> and don't apply the update again. The restored addresses keep the old prefix until you change them.
+
+:::warning
+
+Restoring a revision replaces the whole configuration, including every change saved after that revision.
+
+:::
+
+## After a Failed Run
+
+Start with **<Terminology title="copy of the configuration saved before a write" to="/docs/reference/terminology#configuration-backup">Configuration Backup Created</Terminology>** and **Summary** in the **Last Run** panel. A <Terminology title="outcome: a check or safety stage stopped the run" to="/docs/reference/terminology#failure">Failure</Terminology> always shows `0` under **Changed Fields**, even when fields were already written.
+
+- **<Terminology title="copy of the configuration saved before a write" to="/docs/reference/terminology#configuration-backup">Configuration Backup Created</Terminology> shows No**: the run stopped before writing, so the configuration is unchanged. [Troubleshooting](/docs/operate/troubleshooting#run-failed) lists the causes.
+- **Summary reads `Run failed: pfSense could not write the planned configuration.`**: pfSense reported the write as failed. The package put the original values back in memory before it stopped.
+- **Any other failure with a backup**: the new values are already saved, and nothing was rolled back. The <Terminology title="starting prefix recorded without changing configuration" to="/docs/reference/terminology#baseline">baseline</Terminology> still holds the old prefix, so later runs report <Terminology title="outcome: prefix changed, but no approved field matched" to="/docs/reference/terminology#warning">Warning</Terminology> because the saved values no longer belong to it.
+
+In the last case, choose the recovery that matches the saved configuration:
+
+- **Apply the update again**: fix the failed check or reload, restore the revision from before the update, run a <Terminology title="preview that never backs up or writes" to="/docs/reference/terminology#dry-run">Dry Run</Terminology>, and then select **Run Now**.
+- **Keep the saved new-prefix values**: first verify the approved addresses and affected services yourself. Then open **Status → Actions → Baseline Recovery**, select **Accept Current Prefix**, and confirm the action.
+
+**Accept Current Prefix** records the active source address, prefix, and prefix length as the new <Terminology title="starting prefix recorded without changing configuration" to="/docs/reference/terminology#baseline">baseline</Terminology>. It does not scan the firewall configuration, create a backup, write configuration, or reload a service; the outcome is **Accepted**, and the next ordinary check should report <Terminology title="outcome: prefix unchanged, nothing scanned or written" to="/docs/reference/terminology#no-change">No change</Terminology>.
+
+:::warning
+
+Do not accept the current prefix only to clear a warning. Accept it only after confirming every address that should use the new prefix is already correct and, after a reload failure, the affected service is operating with the saved configuration.
+
+:::
+
+If **Last Run** didn't change at all, the run stopped before it read its <Terminology title="package file holding the baseline and last run" to="/docs/reference/terminology#package-state">package state</Terminology>. Its reason is in the <Terminology title="read-only results shown after Run Now or Dry Run" to="/docs/reference/terminology#command-output">Command Output</Terminology> and the <Terminology title="pfSense general log the package writes to" to="/docs/reference/terminology#system-log">system log</Terminology>.
+
+## Keep Off-Device Backups
+
+<Terminology title="pfSense list of saved configuration revisions" to="/docs/reference/terminology#config-history">Config History</Terminology> is stored on the firewall itself. It is recommended to also download a backup from **Diagnostics → Backup & Restore** before you install or update the package or turn on <Terminology title="automatic checks run from a pfSense-managed cron entry" to="/docs/reference/terminology#scheduled-updates">scheduled updates</Terminology>.
+
+## Preserve Evidence
+
+Before restoring, it is recommended to copy the **Last Run** panel, the <Terminology title="read-only results shown after Run Now or Dry Run" to="/docs/reference/terminology#command-output">Command Output</Terminology>, and the <Terminology title="pfSense general log the package writes to" to="/docs/reference/terminology#system-log">system log</Terminology> lines that start with `IPv6 Prefix Updater:`. Together they show which stage stopped and whether the configuration was written.
+
+Review [Troubleshooting](/docs/operate/troubleshooting) for failure messages and [Check Before Automation](/docs/safety/testing-and-verification) before you turn the schedule back on.

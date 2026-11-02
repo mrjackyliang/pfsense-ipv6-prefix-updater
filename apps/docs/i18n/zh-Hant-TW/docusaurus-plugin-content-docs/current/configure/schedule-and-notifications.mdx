@@ -1,0 +1,71 @@
+---
+id: schedule-and-notifications
+title: 排程與通知
+description: 選擇 pfSense 檢查前綴的頻率，開啟排程更新，並決定每次成功更新後是否傳送變更通知。
+keywords:
+  - pfsense ipv6 prefix updater
+  - 排程
+  - cron
+  - 變更通知
+  - WebGUI 通知
+tags:
+  - configuration
+  - scheduling
+  - notifications
+sidebar_position: 3
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+選擇 pfSense 檢查前綴的頻率，以及成功更新後是否要收到<Terminology title="更新驗證成功後傳送的警示" to="/docs/reference/terminology#change-notification">變更通知</Terminology>。
+
+## 選擇排程 \{#choose-a-schedule}
+
+| 排程      | 執行時間                      |
+|---------|---------------------------|
+| 每 15 分鐘 | 每小時的第 0、15、30 與 45 分      |
+| 每小時     | 每小時的第 0 分（預設值）            |
+| 每 6 小時  | 00:00、06:00、12:00 與 18:00 |
+| 每天午夜    | 00:00                     |
+
+這些時間以防火牆的時區為準，而「狀態」分頁顯示的是 UTC 時間。
+
+## 開啟排程更新 \{#turn-on-scheduled-updates}
+
+安裝後 **<Terminology title="由 pfSense 管理的 cron 項目執行的自動檢查" to="/docs/reference/terminology#scheduled-updates">啟用排程更新</Terminology>** 預設為關閉。儲存設定時會新增或移除一個由 pfSense 管理的 cron 項目，因此不需要 Cron 套件，也不需要手動撰寫 cron 工作。
+
+未勾選時不會自動執行任何檢查，但 **立即執行** 與 **<Terminology title="不備份也不寫入的預覽" to="/docs/reference/terminology#dry-run">試執行</Terminology>** 仍可正常使用。建議等[第一次執行](/docs/first-run)記錄並核對<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>後再開啟。
+
+## 例行檢查的成本 \{#what-a-routine-check-costs}
+
+結果為<Terminology title="結果：前綴未變更，未掃描或寫入任何內容" to="/docs/reference/terminology#no-change">無變更</Terminology>的檢查只會讀取自身的設定、各介面位址與<Terminology title="保存基準與上次執行的套件檔案" to="/docs/reference/terminology#package-state">套件狀態</Terminology>。它不會掃描設定、建立備份、重新載入服務或傳送通知。
+
+它仍會在<Terminology title="套件寫入的 pfSense 一般記錄" to="/docs/reference/terminology#system-log">系統記錄</Terminology>中寫入一行。
+
+## 執行重疊 \{#overlapping-runs}
+
+<Terminology title="防止兩個檢查同時執行的保護機制" to="/docs/reference/terminology#run-lock">執行鎖定</Terminology>確保同一時間只有一個檢查在執行。在另一個檢查執行期間啟動的檢查會直接結束，不讀取設定，**上次執行** 也維持不變。
+
+該檢查會在<Terminology title="套件寫入的 pfSense 一般記錄" to="/docs/reference/terminology#system-log">系統記錄</Terminology>中寫入 `另一個執行程序持有套件鎖定；此次呼叫未讀取設定便已結束。`
+
+## 變更通知 \{#change-notifications}
+
+**<Terminology title="更新驗證成功後傳送的警示" to="/docs/reference/terminology#change-notification">傳送變更通知</Terminology>** 預設為開啟。每次<Terminology title="結果：欄位已更新、儲存、重新載入並驗證" to="/docs/reference/terminology#success">成功</Terminology>後，它會透過 pfSense 的<Terminology title="在 pfSense 中設定的遠端警示服務" to="/docs/reference/terminology#notification-channels">通知管道</Terminology>傳送訊息，並新增一則 <Terminology title="顯示在 pfSense 通知清單中的警示" to="/docs/reference/terminology#webgui-notice">WebGUI 通知</Terminology>。
+
+訊息內容類似 `已在介面 lan 將 1 個已核准欄位從 2001:db8:abcd:7800::/56 更新為 2001:db8:abcd:8800::/56。` 其他結果都不會傳送<Terminology title="更新驗證成功後傳送的警示" to="/docs/reference/terminology#change-notification">變更通知</Terminology>。
+
+即使傳送失敗，這次更新仍算作<Terminology title="結果：欄位已更新、儲存、重新載入並驗證" to="/docs/reference/terminology#success">成功</Terminology>。「狀態」分頁不會顯示傳送狀態，<Terminology title="套件寫入的 pfSense 一般記錄" to="/docs/reference/terminology#system-log">系統記錄</Terminology>則會記錄 `設定已成功更新，但變更通知失敗。`
+
+## 警告與失敗通知 \{#warning-and-failure-notices}
+
+即使未勾選 **<Terminology title="更新驗證成功後傳送的警示" to="/docs/reference/terminology#change-notification">傳送變更通知</Terminology>**，<Terminology title="結果：前綴已變更，但沒有符合的已核准欄位" to="/docs/reference/terminology#warning">警告</Terminology>與<Terminology title="結果：檢查或安全階段中止了執行" to="/docs/reference/terminology#failure">失敗</Terminology>結果也一定會新增一則本機 <Terminology title="顯示在 pfSense 通知清單中的警示" to="/docs/reference/terminology#webgui-notice">WebGUI 通知</Terminology>。這些通知不會傳送到<Terminology title="在 pfSense 中設定的遠端警示服務" to="/docs/reference/terminology#notification-channels">通知管道</Terminology>；如果原因沒有排除，每次排程執行都會再新增一則通知。
+
+## 驗證排程 \{#validate-the-schedule}
+
+1. 儲存設定並確認出現 `設定已儲存。` 訊息。
+2. 在「狀態」分頁中選取 **立即執行**，確認結果為<Terminology title="結果：前綴未變更，未掃描或寫入任何內容" to="/docs/reference/terminology#no-change">無變更</Terminology>，且 **時間戳記 (UTC)** 為目前時間。
+3. 確認 **<Terminology title="寫入前儲存的設定副本" to="/docs/reference/terminology#configuration-backup">已建立設定備份</Terminology>** 顯示「否」，**已變更欄位** 顯示 `0`。
+4. 到了下一個排程時間後，重新整理「狀態」分頁，確認時間戳記已更新。
+5. 若要測試通知傳送，請使用 pfSense 在 **System → Advanced → Notifications**（系統 → 進階 → 通知）中內建的測試按鈕。
+
+排程檢查與<Terminology title="從「狀態」分頁啟動的檢查" to="/docs/reference/terminology#manual-run">手動執行</Terminology>會記錄哪些欄位，請繼續閱讀[狀態與動作](/docs/operate/status-and-actions)。

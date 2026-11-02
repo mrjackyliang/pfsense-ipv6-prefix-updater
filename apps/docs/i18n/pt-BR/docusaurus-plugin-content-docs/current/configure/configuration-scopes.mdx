@@ -1,0 +1,153 @@
+---
+id: configuration-scopes
+title: Campos
+description: Escolha na guia Campos quais campos da configuração mudam com o prefixo delegado, defina exceções, revise as configurações de outros pacotes e inclua, se quiser, qualquer outro valor.
+keywords:
+  - pfsense ipv6 prefix updater
+  - guia campos
+  - grupos de campos
+  - regras do firewall
+  - dhcpv6
+  - configurações de pacotes
+tags:
+  - configuration
+  - fields
+  - safety
+sidebar_position: 2
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import fieldsTab from './_assets_/configuration-scopes-1.png';
+import fieldException from './_assets_/configuration-scopes-2.png';
+import otherSettings from './_assets_/configuration-scopes-3.png';
+
+Escolha quais campos da configuração mudam quando o seu prefixo mudar.
+
+## A guia Campos \{#the-fields-tab}
+
+A guia **Campos** em **Services → IPv6 Prefix Updater** lista todos os endereços dentro do prefixo de cada <Terminology title="prefixo inicial registrado sem alterar a configuração" to="/docs/reference/terminology#baseline">referência</Terminology>, agrupados por tipo. A linha **Referências** indica os prefixos com que a guia compara. Antes que a primeira verificação registre uma referência, a guia mostra apenas as chaves dos grupos.
+
+<img src={fieldsTab} alt="Guia Campos do IPv6 Prefix Updater com os botões Seleção automática e Limpar tudo, uma caixa de pesquisa, um filtro e o grupo Interfaces estáticas com os endereços da LAN e da LAB e a parte do prefixo destacada" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+Cada linha mostra:
+
+- **Caixa de seleção**: marcada quando a próxima <Terminology title="mudança em relação ao último prefixo ou comprimento bem-sucedido" to="/docs/reference/terminology#prefix-transition">transição de prefixo</Terminology> atualiza o campo.
+- **Campo**: a entrada, como a descrição de uma regra ou o nome de um alias, seguida do rótulo do campo e do caminho de configuração dele.
+- **Valor atual**: o valor, com a parte do prefixo de cada endereço destacada. Só a parte destacada muda, e a <Terminology title="bits do endereço após o prefixo delegado" to="/docs/reference/terminology#host-portion">parte de host</Terminology> é preservada.
+
+## Chaves dos grupos e exceções \{#group-switches-and-exceptions}
+
+Cada <Terminology title="grupo de campos com uma única chave na guia Campos" to="/docs/reference/terminology#field-group">grupo de campos</Terminology> tem uma chave no cabeçalho:
+
+- **Ativado**: todos os campos desse tipo mudam com o prefixo, inclusive os adicionados depois, exceto os que você desmarcar.
+- **Desativado**: só mudam os campos que você marcar.
+
+Um campo cuja marcação não corresponde à chave do grupo é uma <Terminology title="campo marcado ou desmarcado ao contrário da chave do grupo" to="/docs/reference/terminology#field-exception">exceção de campo</Terminology>. Enquanto um grupo tiver exceções, o cabeçalho mostra um traço, e **N de M selecionados** conta os campos marcados. Clicar no cabeçalho ativa ou desativa o grupo e redefine todas as marcações dele de acordo. Clique em **Salvar** para manter as alterações.
+
+<img src={fieldException} alt="Guia Campos com o grupo Regras do firewall ativado, uma regra desmarcada, então o cabeçalho mostra um traço e 2 de 3 selecionados, e uma regra sem ID de rastreamento que segue a chave do grupo" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+Uma escolha acompanha a entrada, e não a posição dela em uma lista, então mover ou excluir outras entradas não a desvia para outra entrada. O pacote reconhece cada entrada por:
+
+- **Regras do firewall**: o ID de rastreamento (tracker) da regra.
+- **Aliases**: o nome do alias.
+- **Mapeamentos estáticos DHCPv6**: o DUID, porque o pfSense identifica os mapeamentos DHCPv6 pelo DUID, e não pelo endereço MAC.
+- **Encaminhamentos de portas e NAT de saída**: o horário em que a regra foi criada.
+- **Entradas de NAT 1:1 e NPt e pools DHCPv6**: a descrição.
+- **Substituições de host DNS**: o host, o domínio e se a entrada contém endereços IPv4, IPv6 ou ambos.
+- **Configurações de outros pacotes**: um campo que identifica de forma única cada entrada da lista, como o nome ou a descrição.
+- **Outras configurações**: um campo que identifica de forma única cada entrada da lista e não contém nenhum endereço, como o nome de um gateway. Uma escolha cobre todas as entradas de uma lista simples, como os servidores DNS em **System → General Setup**.
+- **Outras entradas**: a interface, o nome ou o ID do pfSense. Uma única escolha cobre todos os servidores DNS, servidores NTP ou sub-redes RA de uma interface.
+
+Uma linha cuja entrada não tem esse identificador, ou o compartilha com outra entrada, não tem caixa de seleção e mostra `Sem identificador estável, então este campo segue a chave do grupo.` As escolhas são salvas separadamente das configurações, então salvar a guia Configurações não as apaga.
+
+## Grupos do pfSense \{#pfsense-groups}
+
+Onze grupos cobrem as configurações do próprio pfSense. Uma instalação nova e uma migração do <Terminology title="script update.php original executado pelo pacote Cron" to="/docs/reference/terminology#legacy-updater">atualizador legado</Terminology> começam com todos eles ativados.
+
+| Grupo                                                                                                                                                       | O que cobre                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+|-------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Interfaces estáticas                                                                                                                                        | Endereços de interfaces configuradas como Static IPv6. DHCPv6, SLAAC, <Terminology title="interface endereçada pelo prefixo delegado de outra interface" to="/docs/reference/terminology#tracked-interface">Track Interface</Terminology> e outros modos são ignorados.                                                                                                                                                                         |
+| <Terminology title="endereço adicional de interface, como CARP ou IP Alias" to="/docs/reference/terminology#virtual-ip">Endereços IP virtuais</Terminology> | <Terminology title="endereço adicional de interface, como CARP ou IP Alias" to="/docs/reference/terminology#virtual-ip">IPs virtuais</Terminology> do tipo CARP e IP Alias. Os tipos Proxy ARP e Other estão no grupo Outras configurações, e a máscara CIDR é mantida.                                                                                                                                                                         |
+| Aliases                                                                                                                                                     | Endereços e redes em aliases do tipo Host e Network. Os tipos Port, URL, URL Table e outros tipos de alias estão no grupo Outras configurações.                                                                                                                                                                                                                                                                                                 |
+| Regras do firewall                                                                                                                                          | Endereços de origem e de destino digitados nas regras do firewall, inclusive nas regras flutuantes. Aliases, redes de interface, como **LAN subnets**, e **any** são ignorados.                                                                                                                                                                                                                                                                 |
+| NAT e NPt                                                                                                                                                   | Endereços digitados em encaminhamentos de portas, NAT de saída e NAT 1:1, além dos prefixos das entradas NPt. Entradas NPt que rastreiam uma interface são ignoradas.                                                                                                                                                                                                                                                                           |
+| Servidor DHCPv6                                                                                                                                             | Faixas de endereços, de delegação de prefixos e de pools adicionais, endereços de mapeamentos estáticos e os servidores DNS e NTP entregues aos clientes.                                                                                                                                                                                                                                                                                       |
+| Anúncios de roteador                                                                                                                                        | Os servidores DNS e as sub-redes RA que cada interface anuncia.                                                                                                                                                                                                                                                                                                                                                                                 |
+| Substituições de host DNS                                                                                                                                   | Endereços das substituições de host no DNS Resolver e no DNS Forwarder, inclusive cada endereço de uma lista separada por vírgulas. As substituições de domínio estão no grupo Outras configurações.                                                                                                                                                                                                                                            |
+| IPsec                                                                                                                                                       | A rede local (Local Network) e a tradução NAT/BINAT das entradas de <Terminology title="entrada IPsec que descreve as redes local e remota" to="/docs/reference/terminology#ipsec-phase-2">fase 2</Terminology> nos modos Tunnel IPv6 e Routed (VTI), quando o tipo é Address ou Network. Redes remotas estão no grupo Outras configurações.                                                                                                    |
+| OpenVPN                                                                                                                                                     | Redes de túnel e redes locais IPv6 em servidores, redes de túnel IPv6 em clientes e redes de túnel e redes locais IPv6 em <Terminology title="configurações do OpenVPN para um cliente em um servidor" to="/docs/reference/terminology#client-specific-override">substituições específicas do cliente</Terminology>. Redes remotas estão no grupo Outras configurações, e redes de túnel de servidor que rastreiam uma interface são ignoradas. |
+| WireGuard                                                                                                                                                   | <Terminology title="endereço atribuído a um túnel WireGuard do pfSense" to="/docs/reference/terminology#wireguard-tunnel-address">Endereços de túnel</Terminology> nos túneis WireGuard do pfSense. Peers, IPs permitidos e endpoints estão no grupo Outras configurações.                                                                                                                                                                      |
+
+Desativar os grupos que o firewall não usa evita valores inesperados em um <Terminology title="lista completa das alterações, montada antes de gravar" to="/docs/reference/terminology#change-plan">plano de alterações</Terminology>.
+
+## Botões, pesquisa e filtros \{#buttons-search-and-filters}
+
+- **Seleção automática**: ativa todos os grupos do pfSense e marca todos os campos deles. O grupo Outras configurações e as configurações de outros pacotes continuam como estão.
+- **Limpar tudo**: desativa todos os grupos e desmarca todos os campos.
+- **Pesquisar campos**: mostra apenas as linhas cujo grupo, entrada, rótulo, valor ou caminho contém o texto.
+- **Filtro**: mostra todas as linhas, só as linhas selecionadas ou só as linhas de outros pacotes.
+
+**Seleção automática** e **Limpar tudo** só alteram a página até você clicar em **Salvar**. Depois que uma seleção sem nada selecionado é salva, a guia mostra um aviso, e as execuções param com `Nenhum campo da configuração está selecionado. Selecione campos na guia Campos.` até você selecionar campos novamente.
+
+Quando a guia lista mais de 40 campos, os grupos começam recolhidos. Clique no nome de um grupo para expandi-lo.
+
+## Configurações de outros pacotes \{#other-packages-settings}
+
+As configurações que outros pacotes guardam em `installedpackages` ganham um grupo próprio, com o nome do pacote instalado a que pertencem, ou com o nome da seção delas quando nenhum pacote instalado é dono dessas configurações. O pacote não tem como saber o que esses campos significam, então eles começam desmarcados, e **Seleção automática** nunca os seleciona. Marque um campo somente depois de verificar o que ele faz nesse pacote.
+
+Depois que uma execução altera um desses campos, ela aplica novamente as configurações desse pacote, como faz o botão **Save** do próprio pacote. A **Última execução** na guia Status lista cada resultado em **Pacotes**:
+
+- `As configurações do pacote <package> foram aplicadas novamente.`
+- `Nenhum pacote instalado é dono das configurações <section>. Reinicie manualmente o serviço que as usa.` Os valores são salvos mesmo assim. Isso também acontece quando um pacote guarda parte das configurações dele em uma seção com outro nome.
+- `Não foi possível aplicar novamente as configurações do pacote <package>: <reason>` Os novos valores continuam salvos, e nada é revertido.
+
+Os dois problemas também adicionam um <Terminology title="alerta exibido na lista de avisos do pfSense" to="/docs/reference/terminology#webgui-notice">alerta da WebGUI</Terminology>.
+
+## Campos que não existem mais \{#fields-that-no-longer-exist}
+
+Quando a entrada de um campo marcado é excluída, o campo aparece em **Campos ausentes**, no topo da guia. As execuções o ignoram e o listam em **Campos ignorados** na guia Status. **Esquecer campos ausentes** remove esses campos da seleção.
+
+## Outras configurações \{#other-settings}
+
+O grupo **Outras configurações** lista todos os outros endereços dentro de um prefixo de referência. Ele começa desativado, então um valor nele só muda quando você o marca ou quando ativa o grupo, o que também cobre os valores adicionados depois. Cada linha indica o seu tipo:
+
+- O lado remoto de qualquer VPN: as redes remotas e os gateways remotos do IPsec, e as redes remotas e os endereços de servidor do OpenVPN.
+- Peers do WireGuard, inclusive os IPs permitidos e os endpoints deles.
+- Gateways e rotas estáticas.
+- Certificados, chaves privadas, senhas e chaves pré-compartilhadas, cujos valores aparecem como `Valor oculto`.
+- Valores armazenados em Base64, como as opções personalizadas do DNS Resolver. Eles são decodificados, reescritos e codificados novamente.
+- Descrições.
+- Qualquer outra configuração, que mostra, em vez disso, o nome da configuração, como as substituições de domínio do DNS Resolver e os servidores DNS em **System → General Setup**.
+
+<img src={otherSettings} alt="Grupo Outras configurações na guia Campos com uma rota estática, a descrição de um alias, opções personalizadas do DNS Resolver codificadas em Base64, uma substituição de domínio e um gateway, cada um com o seu tipo" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+Depois que uma execução altera um desses valores, ela recarrega o que o pfSense recarrega quando você salva essa configuração:
+
+- **Gateways e rotas estáticas**: o roteamento e depois o filtro do firewall.
+- **Servidores DNS em System → General Setup**: as configurações de DNS do sistema e depois o DNS Resolver ou o DNS Forwarder.
+- **Valores do DNS Resolver, do DNS Forwarder, do IPsec, do OpenVPN e do WireGuard**: esse serviço.
+- **Valores de outro pacote**: as configurações desse pacote, como descrito em [Configurações de outros pacotes](#other-packages-settings).
+- **Descrições, certificados e valores sem um serviço conhecido**: nada. O novo valor é apenas salvo.
+
+É recomendável marcar esses campos enquanto a referência ainda é o prefixo antigo, já que, depois de uma mudança, a guia compara com o novo prefixo. Os peers VPN remotos têm a própria configuração, então um peer que aponta para um endereço alterado precisa ser atualizado do lado dele.
+
+## Como os valores são comparados \{#how-values-are-matched}
+
+- Um endereço só muda quando pertence ao <Terminology title="prefixo usado na comparação da próxima verificação" to="/docs/reference/terminology#last-successful-prefix">último prefixo bem-sucedido</Terminology>, no comprimento armazenado na <Terminology title="prefixo inicial registrado sem alterar a configuração" to="/docs/reference/terminology#baseline">referência</Terminology>. Endereços de outras redes, endereços IPv4, nomes de host e nomes de alias continuam como estão, e a guia não os lista.
+- Em listas, como entradas de alias, redes locais do OpenVPN e substituições de host do DNS Resolver, cada item é verificado separadamente e os separadores continuam como foram escritos.
+- Nas configurações de outros pacotes e no grupo Outras configurações, cada endereço do texto é verificado separadamente e o restante do texto continua como foi escrito.
+- Um sufixo CIDR como `/64` continua como foi escrito, e a <Terminology title="bits do endereço após o prefixo delegado" to="/docs/reference/terminology#host-portion">parte de host</Terminology> de cada endereço é preservada.
+- Em uma <Terminology title="interface endereçada pelo prefixo delegado de outra interface" to="/docs/reference/terminology#tracked-interface">interface rastreada</Terminology>, as faixas e os mapeamentos estáticos DHCPv6 contêm sufixos de host, como `::1000`, que continuam como estão.
+- Os endereços reescritos são salvos na <Terminology title="grafia padrão mais curta de um endereço, em minúsculas" to="/docs/reference/terminology#canonical-form">forma canônica</Terminology>, então a grafia pode ficar diferente do que foi digitado.
+
+## Prévia de alterações \{#previewing-changes}
+
+Uma <Terminology title="prévia que nunca faz backup nem grava" to="/docs/reference/terminology#dry-run">simulação</Terminology> só lê os campos selecionados depois de uma <Terminology title="mudança em relação ao último prefixo ou comprimento bem-sucedido" to="/docs/reference/terminology#prefix-transition">transição de prefixo</Terminology>. Enquanto o prefixo não muda, ela informa <Terminology title="resultado: prefixo inalterado, nada analisado nem gravado" to="/docs/reference/terminology#no-change">Sem alteração</Terminology>, então a guia Campos é a forma de ver a prévia de uma nova seleção. Depois de uma transição, a <Terminology title="resultados somente leitura após Executar agora ou Simulação" to="/docs/reference/terminology#command-output">Saída do comando</Terminology> da simulação lista cada endereço que seria substituído em `Alterações de campos`.
+
+Uma <Terminology title="prévia que nunca faz backup nem grava" to="/docs/reference/terminology#dry-run">simulação</Terminology> também pula a verificação de que o pfSense consegue recarregar os serviços afetados. Por isso, a falta do pacote WireGuard só aparece em uma execução real.
+
+## Pacote WireGuard \{#wireguard-package}
+
+Atualizar <Terminology title="endereço atribuído a um túnel WireGuard do pfSense" to="/docs/reference/terminology#wireguard-tunnel-address">endereços de túnel WireGuard</Terminology> exige o pacote WireGuard. Se esses endereços precisarem mudar e o pacote não estiver instalado, uma execução real para antes do backup com `A dependência necessária do pfSense "/usr/local/pkg/wireguard/includes/wg.inc" não está disponível.`
+
+A página [Campos aprovados](/docs/reference/approved-fields) lista os caminhos de configuração exatos por trás de cada grupo e a identidade com que cada escolha é salva.

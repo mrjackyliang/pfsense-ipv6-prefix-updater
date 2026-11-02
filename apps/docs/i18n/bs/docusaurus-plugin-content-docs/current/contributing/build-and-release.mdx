@@ -1,0 +1,71 @@
+---
+id: build-and-release
+title: Izgradnja i objavljivanje
+description: Provjerite, pripremite i izgradite pfSense paket na FreeBSD-u, a zatim pomoću radnog toka za objavljivanje priložite .pkg datoteke i kontrolne zbirove izdanju na GitHubu.
+keywords:
+  - pfsense ipv6 prefix updater
+  - izgradnja
+  - radni tok izdanja
+  - freebsd portovi
+  - php testovi
+tags:
+  - contributing
+  - build
+  - release
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Provjerite, pripremite i zapakujte pfSense IPv6 Prefix Updater, a zatim objavite paket u izdanju na GitHubu.
+
+## Zahtjevi \{#requirements}
+
+- **Node.js 22 ili 24** — glavni manifest i manifesti radnog prostora prihvataju `^22 || ^24`.
+- **PHP ili Docker** — PHP skupovi testova koriste lokalni `php` kada postoji, ili sliku `php:8.3-cli-alpine` putem Dockera. `PHP_TEST_IMAGE` zamjenjuje tu sliku.
+- **FreeBSD za pakovanje** — `npm run deploy` radi samo na FreeBSD-u, uz `PFSENSE_PORTS_DIR` koji pokazuje na radnu kopiju pfSense FreeBSD-ports repozitorija.
+
+## Provjera, priprema i pakovanje \{#check-stage-and-package}
+
+Pokrenite ove naredbe iz korijena repozitorija:
+
+```bash
+# Lint and type-check the scripts, run the PHP and Vitest suites, and validate the port.
+npm run check --workspace pfsense-pkg-ipv6-prefix-updater
+
+# Copy the port into packages/ipv6-prefix-updater/build/port with the workspace version.
+npm run build --workspace pfsense-pkg-ipv6-prefix-updater
+
+# Build the package on FreeBSD into packages/ipv6-prefix-updater/build/release.
+PFSENSE_PORTS_DIR=/path/to/FreeBSD-ports npm run deploy --workspace pfsense-pkg-ipv6-prefix-updater
+```
+
+- Priprema pretvara `port/Makefile.template` u `build/port/Makefile` i označava ga vrijednošću `version` iz `packages/ipv6-prefix-updater/package.json`.
+- Pakovanje kopira pripremljeni port u `sysutils/pfSense-pkg-Ipv6PrefixUpdater` u radnoj kopiji portova, pokreće `make package` i ponovo uklanja tu kopiju. Zaustavlja se ako odredište već postoji.
+- `build/release` tada sadrži `.pkg` s verzijom, kopiju nazvanu `pfSense-pkg-Ipv6PrefixUpdater.pkg` i za svaku od njih `.sha256` datoteku koja sadrži samo hash vrijednost.
+
+## Radni tok izdanja \{#release-workflow}
+
+`.github/workflows/pfsense-ipv6-prefix-updater.yml` pokreće se kada se objavi izdanje na GitHubu ili ručno, s oznakom postojećeg izdanja:
+
+1. Provjerava i priprema port na Ubuntu runneru.
+2. Pokreće FreeBSD VM čije izdanje dolazi iz varijable repozitorija `PFSENSE_FREEBSD_VERSION`, odnosno `15` ako nije postavljena.
+3. Preuzima granu `devel` pfSense repozitorija FreeBSD-ports i pokreće izgradnju paketa.
+4. Otprema `build/release` kao artefakt radnog toka koji se čuva 7 dana i prilaže iste datoteke izdanju, zamjenjujući postojeće resurse.
+
+Preporučuje se da `PFSENSE_FREEBSD_VERSION` postavite na glavnu verziju FreeBSD-a ciljanog pfSense izdanja i da ne objavljujete paket izgrađen za drugu glavnu verziju. Naredba `pkg add` iz uputstva za instalaciju preuzima `pfSense-pkg-Ipv6PrefixUpdater.pkg` iz izdanja koje GitHub označi kao najnovije.
+
+## PHP skupovi testova \{#php-test-suites}
+
+- **`tests/domain.php`**: <Terminology title="najkraći standardni zapis adrese malim slovima" to="/docs/reference/terminology#canonical-form">kanonski oblik</Terminology>, granice `/48` i `/64`, maskiranje, <Terminology title="bitovi adrese nakon dodijeljenog prefiksa" to="/docs/reference/terminology#host-portion">bitovi hosta</Terminology> na `/53`, odbačene adrese, planiranje bez promjena, filtriranje prema prethodnom prefiksu i promjena dužine koja se tretira kao <Terminology title="razlika u odnosu na posljednji uspješni prefiks ili dužinu" to="/docs/reference/terminology#prefix-transition">promjena prefiksa</Terminology>.
+- **`tests/runtime.php`**: skeniranje svake <Terminology title="grupa polja s jednim prekidačem na kartici Polja" to="/docs/reference/terminology#field-group">grupe polja</Terminology>, izuzeci za pojedinačna polja, ponovna primjena postavki drugih paketa, atomsko <Terminology title="datoteka paketa s početnim stanjem i posljednjim pokretanjem" to="/docs/reference/terminology#package-state">stanje paketa</Terminology>, <Terminology title="zaštita koja sprječava dvije istovremene provjere" to="/docs/reference/terminology#run-lock">zaključavanje pokretanja</Terminology>, nepodržane platforme i onemogućene zakazane provjere. Pokriva i redoslijed transakcije te greške pri upisu, sigurnosnoj kopiji, prethodnoj provjeri ponovnog učitavanja, ponovnom učitavanju i obavještenju, kao i <Terminology title="ishod: prefiks promijenjen, ali nijedno odobreno polje nije odgovaralo" to="/docs/reference/terminology#warning">Upozorenje</Terminology> bez podudaranja.
+- **`tests/pfsense-adapter.php`**: prisilno osvježavanje adrese bez zamjene <Terminology title="fe80:: adresa koja radi samo na jednoj vezi" to="/docs/reference/terminology#link-local-address">link-local</Terminology> adresom, sigurnosna kopija prije čuvanja koje samo upisuje i neuspjela sigurnosna kopija koja zaustavlja pokretanje prije upisa.
+- **`tests/translations.php`** i **`tests/webgui-localization.php`**: potpuni katalozi za svaki identifikator jezika pfSense-a te lokalizirani obrazac Postavke i poruke validacije.
+
+## Stranica dokumentacije \{#documentation-site}
+
+U `apps/docs`, `npm run check` pokreće ESLint, provjeru stabla prijevoda, tri provjere tipova i Vitest skupove testova za `.env` datoteke, frontmatter, linkove, tabele, linkove na pojmovnik i deklaracije tipova. `npm run build` gradi svaku jezičku verziju.
+
+Prevedene stranice dokumentacije za svaku jezičku verziju nalaze se u `apps/docs/i18n/<locale>/docusaurus-plugin-content-docs/current/` i prate engleske stranice, pa se preporučuje da ih ažurirate kada se engleska stranica promijeni. Tekst korisničkog interfejsa (početna stranica, navigaciona traka, podnožje, blog i oznake bočne trake) dolazi iz `scripts/generate-locales.mjs`, koji čita `scripts/locale-copies.json` i prijevode paketa. `npm run i18n` prvo pokreće taj generator, koji prevedene stranice dokumentacije ostavlja netaknute.
+
+`.github/workflows/nova-publish-project.yml` gradi stranicu i postavlja je na GitHub Pages kada se objavi izdanje.

@@ -1,0 +1,90 @@
+---
+id: intro
+title: Обзор
+description: Поддерживает адреса псевдонимов, интерфейсов и VPN в pfSense в соответствии с текущим префиксом IPv6, когда провайдер делегирует новый, и создаёт резервную копию перед каждым изменением.
+keywords:
+  - pfsense ipv6 prefix updater
+  - обзор
+  - делегирование префикса ipv6
+  - динамический префикс
+  - пакет pfsense
+tags:
+  - setup
+  - overview
+  - ipv6
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Поддерживайте IPv6-адреса, сохранённые в pfSense, в соответствии с текущим префиксом, когда провайдер назначает новый <Terminology title="сеть IPv6, которую провайдер направляет на межсетевой экран" to="/docs/reference/terminology#delegated-prefix">делегированный префикс</Terminology>.
+
+## Что делает пакет \{#what-it-does}
+
+pfSense IPv6 Prefix Updater — пакет pfSense, который следит за появлением нового префикса на выбранных вами интерфейсах. Когда префикс меняется, пакет перезаписывает соответствующие адреса в выбранных вами полях и сохраняет <Terminology title="биты адреса после делегированного префикса" to="/docs/reference/terminology#host-portion">узловую часть</Terminology> каждого адреса.
+
+## Зачем нужен этот пакет \{#why-use-this-package}
+
+1. Сохраняет <Terminology title="биты адреса после делегированного префикса" to="/docs/reference/terminology#host-portion">узловую часть</Terminology> каждого адреса, поэтому после смены префикса у каждого устройства остаётся прежний суффикс.
+2. Изменяет только <Terminology title="конкретное поле конфигурации, которое пакет может перезаписать" to="/docs/reference/terminology#approved-field">разрешённые поля</Terminology>, выбранные вами на вкладке «Поля», поэтому удалённые сети VPN, пиры, шлюзы и маршруты остаются такими, как вы их настроили.
+3. Сохраняет <Terminology title="копия конфигурации, сохранённая перед записью" to="/docs/reference/terminology#configuration-backup">резервную копию конфигурации</Terminology> перед каждой записью, поэтому предыдущая конфигурация всегда доступна в <Terminology title="список сохранённых ревизий конфигурации pfSense" to="/docs/reference/terminology#config-history">Config History</Terminology>.
+4. Работает по расписанию под управлением pfSense, поэтому не нужны ни пакет Cron, ни скрипт в домашнем каталоге.
+5. Показывает каждый результат на вкладке «Состояние», чтобы вы видели, что изменилось, какие службы перезагрузились и была ли создана резервная копия.
+
+## Что обновляет пакет \{#what-it-updates}
+
+- **Псевдонимы**: адреса и сети в псевдонимах узлов и сетей.
+- **Статические интерфейсы**: адреса интерфейсов с типом Static IPv6.
+- **<Terminology title="дополнительный адрес интерфейса, например CARP или IP Alias" to="/docs/reference/terminology#virtual-ip">Виртуальные IP-адреса</Terminology>**: <Terminology title="дополнительный адрес интерфейса, например CARP или IP Alias" to="/docs/reference/terminology#virtual-ip">виртуальные IP-адреса</Terminology> CARP и IP Alias.
+- **IPsec**: локальная сторона записей <Terminology title="запись IPsec с локальной и удалённой сетями" to="/docs/reference/terminology#ipsec-phase-2">фазы 2</Terminology> типов Tunnel IPv6 и Routed (VTI).
+- **OpenVPN**: туннельные и локальные сети IPv6 на серверах и в <Terminology title="настройки OpenVPN для отдельного клиента на сервере" to="/docs/reference/terminology#client-specific-override">переопределениях для клиентов</Terminology>, а также туннельные сети IPv6 на клиентах.
+- **WireGuard**: <Terminology title="адрес, назначенный туннелю WireGuard в pfSense" to="/docs/reference/terminology#wireguard-tunnel-address">адреса туннелей</Terminology>, если установлен пакет WireGuard.
+- **DHCPv6-сервер**: диапазоны адресов, делегирования префиксов и пулов, статические сопоставления, а также DNS- и NTP-серверы, выдаваемые клиентам.
+- **Объявления маршрутизатора**: объявляемые DNS-серверы и подсети RA.
+- **Переопределения узлов DNS**: переопределения узлов в DNS Resolver и DNS Forwarder.
+- **Правила межсетевого экрана**: адреса источника и назначения, введённые в правилах вручную.
+- **NAT и NPt**: введённые вручную адреса в пробросах портов, исходящем NAT и NAT 1:1, а также префиксы NPt.
+- **Настройки других пакетов**: только отмеченные вами поля, после изменения которых пакет повторно применяет настройки соответствующего пакета.
+
+Вкладка **Поля** перечисляет все адреса внутри вашего префикса и показывает переключатель для каждой <Terminology title="группа полей с одним переключателем на вкладке «Поля»" to="/docs/reference/terminology#field-group">группы полей</Terminology> и флажок для каждого поля.
+
+## Что вас ждёт \{#what-waits-for-you}
+
+Группа **Другие настройки** изначально выключена, поэтому эти значения меняются, только когда вы их отмечаете:
+
+- Удалённая сторона VPN, например удалённые сети IPsec и OpenVPN, а также пиры WireGuard, разрешённые IP-адреса и конечные точки.
+- Шлюзы, статические маршруты, переопределения доменов DNS, сертификаты, секреты, значения в кодировке Base64 и описания.
+- Псевдонимы портов, URL и других типов.
+
+Интерфейсы, которые получают адрес через DHCPv6, SLAAC или <Terminology title="интерфейс с адресом из делегированного префикса другого интерфейса" to="/docs/reference/terminology#tracked-interface">Track Interface</Terminology>, никогда не изменяются, потому что эти адреса формирует pfSense. Не изменяются и IPv4-адреса, имена узлов и IPv6-адреса вне прежнего префикса. Полный список приведён в разделе [Другие настройки](/docs/configure/configuration-scopes#other-settings).
+
+## Как работает проверка \{#how-a-check-works}
+
+1. Считывает <Terminology title="публичный IPv6-адрес из диапазона 2000::/3" to="/docs/reference/terminology#global-unicast-address">глобальный адрес</Terminology> каждого <Terminology title="интерфейс, по адресу которого определяется текущий префикс" to="/docs/reference/terminology#monitored-interface">контролируемого интерфейса</Terminology> и вычисляет его префикс.
+2. Сравнивает его с <Terminology title="префикс, с которым сравнивает следующая проверка" to="/docs/reference/terminology#last-successful-prefix">последним успешным префиксом</Terminology> и при совпадении завершается с результатом «<Terminology title="результат: префикс прежний, ничего не просмотрено и не записано" to="/docs/reference/terminology#no-change">Без изменений</Terminology>».
+3. При <Terminology title="отличие от последнего успешного префикса или длины" to="/docs/reference/terminology#prefix-transition">смене префикса</Terminology> составляет <Terminology title="полный список изменений полей, составленный до записи" to="/docs/reference/terminology#change-plan">план изменений</Terminology> для <Terminology title="конкретное поле конфигурации, которое пакет может перезаписать" to="/docs/reference/terminology#approved-field">разрешённых полей</Terminology>, которые всё ещё используют прежний префикс.
+4. Сохраняет <Terminology title="копия конфигурации, сохранённая перед записью" to="/docs/reference/terminology#configuration-backup">резервную копию конфигурации</Terminology>, записывает все изменения за одно сохранение, перезагружает только затронутые службы и снова проверяет значения.
+5. Записывает результат на вкладке «Состояние» и, если включено, отправляет <Terminology title="оповещение после проверенного успешного обновления" to="/docs/reference/terminology#change-notification">уведомление об изменении</Terminology>.
+
+Защита на каждом шаге описана на странице [Модель безопасности](/docs/operations).
+
+## Перед началом \{#before-you-start}
+
+:::warning
+
+pfSense IPv6 Prefix Updater — <Terminology title="пакет из GitHub, а не из репозитория Netgate" to="/docs/reference/terminology#unofficial-package">неофициальный пакет</Terminology>. Он устанавливается с GitHub командой `pkg`, а Netgate его не проверяет и не поддерживает.
+
+:::
+
+Выпуски пакета публикуются на странице GitHub Releases проекта. Выпуски версии 1.x содержат только <Terminology title="исходный скрипт update.php, запускаемый пакетом Cron" to="/docs/reference/terminology#legacy-updater">устаревший скрипт обновления</Terminology>, а не этот пакет.
+
+## Языки \{#languages}
+
+Все вкладки пакета, «<Terminology title="результаты только для чтения после ручного или пробного запуска" to="/docs/reference/terminology#command-output">Вывод команды</Terminology>» и сообщения пакета используют язык, выбранный в pfSense. Пакет содержит переводы для 18 языков pfSense, а для остальных языков использует английский.
+
+## Дальнейшие шаги \{#next-steps}
+
+- **[Установка пакета](/docs/installation)**: добавьте пакет из выпуска на GitHub.
+- **[Создание базового значения](/docs/first-run)**: запишите и проверьте текущий префикс до включения расписания.
+- **[Переход со скрипта](/docs/migrate-from-legacy)**: перейдите со скрипта версии 1.x.
+- **[Модель безопасности](/docs/operations)**: узнайте, что пакет защищает и на что он всё же может повлиять.

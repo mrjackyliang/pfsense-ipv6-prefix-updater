@@ -1,0 +1,63 @@
+---
+id: testing-and-verification
+title: Kontroller før automatisering
+description: Kontroller grensesnittet, prefikset, gjenopprettingsveien og varslene på din egen brannmur før du lar pakken kjøre etter en tidsplan uten tilsyn.
+keywords:
+  - pfsense ipv6 prefix updater
+  - sjekkliste
+  - testkjøring
+  - config history
+  - planlagte oppdateringer
+tags:
+  - safety
+  - checklist
+  - scheduled updates
+sidebar_position: 2
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Kontroller grensesnittet, prefikset, gjenopprettingsveien og varslene på brannmuren før du lar pakken kjøre etter en tidsplan.
+
+## 1. Bekreft kilden \{#1-confirm-the-source}
+
+Lagre innstillingene med **<Terminology title="automatiske kontroller fra en cron-oppføring styrt av pfSense" to="/docs/reference/terminology#scheduled-updates">Aktiver planlagte oppdateringer</Terminology>** umerket, og velg **Kjør nå** én gang. Kontroller deretter fanen Status:
+
+- **<Terminology title="grensesnittet der adressen avslører gjeldende prefiks" to="/docs/reference/terminology#monitored-interface">Overvåket grensesnitt</Terminology>** er det WAN-grensesnittet eller <Terminology title="grensesnitt adressert fra et annet grensesnitts delegerte prefiks" to="/docs/reference/terminology#tracked-interface">sporede grensesnittet</Terminology> du har tenkt å bruke.
+- **<Terminology title="global adresse pfSense rapporterer for det overvåkede grensesnittet" to="/docs/reference/terminology#source-address">Siste vellykkede kildeadresse</Terminology>** samsvarer med adressen under **Status → Interfaces**.
+- **<Terminology title="prefikset neste kontroll sammenligner med" to="/docs/reference/terminology#last-successful-prefix">Siste vellykkede prefiks</Terminology>** samsvarer med prefikset internettleverandøren delegerer.
+- **Resultat** under **Siste kjøring** er <Terminology title="resultat: grunnlinje registrert, konfigurasjon uendret" to="/docs/reference/terminology#initialized">Initialisert</Terminology>, og **Endrede felt** er `0`.
+
+Hvis en verdi er uventet, anbefales det å rette den før du fortsetter. [Grensesnitt og prefiks](/docs/configure/interface-and-prefix#changing-the-interfaces) forklarer hva det betyr å endre grensesnittet eller lengden når det finnes en <Terminology title="startprefiks registrert uten å endre konfigurasjonen" to="/docs/reference/terminology#baseline">grunnlinje</Terminology>.
+
+## 2. Kjør en forhåndsvisning \{#2-run-a-preview}
+
+Velg **<Terminology title="forhåndsvisning som aldri sikkerhetskopierer eller skriver" to="/docs/reference/terminology#dry-run">Testkjøring</Terminology>**. Når prefikset er uendret, rapporterer den <Terminology title="resultat: prefiks uendret, ingenting gjennomsøkt eller skrevet" to="/docs/reference/terminology#no-change">Ingen endring</Terminology>, og **<Terminology title="kopi av konfigurasjonen lagret før en skriving" to="/docs/reference/terminology#configuration-backup">Konfigurasjonssikkerhetskopi opprettet</Terminology>** viser Nei.
+
+En <Terminology title="forhåndsvisning som aldri sikkerhetskopierer eller skriver" to="/docs/reference/terminology#dry-run">testkjøring</Terminology> kan ikke simulere en prefiksendring, så den viser planlagte felt først etter en reell <Terminology title="endring fra siste vellykkede prefiks eller lengde" to="/docs/reference/terminology#prefix-transition">prefiksovergang</Terminology>.
+
+## 3. Kontroller gjenopprettingen \{#3-check-recovery}
+
+Åpne **Diagnostics → Backup & Restore → Config History**, og bekreft at pfSense tar vare på konfigurasjonshistorikken. En kjøring som skriver, lagrer <Terminology title="kopi av konfigurasjonen lagret før en skriving" to="/docs/reference/terminology#configuration-backup">konfigurasjonssikkerhetskopien</Terminology> sin der før den første endringen.
+
+Det anbefales å lese [Finn riktig revisjon](/docs/operate/backups-and-recovery#find-the-right-revision) nå, fordi revisjonen som er oppkalt etter pakken, inneholder den oppdaterte konfigurasjonen. Det er også verdt å laste ned en sikkerhetskopi som oppbevares utenfor enheten, fordi <Terminology title="pfSense-liste over lagrede konfigurasjonsrevisjoner" to="/docs/reference/terminology#config-history">Config History</Terminology> ligger på brannmuren.
+
+## 4. Test varslene \{#4-test-notifications}
+
+Hvis **<Terminology title="varsel sendt etter en verifisert vellykket oppdatering" to="/docs/reference/terminology#change-notification">Send endringsvarsler</Terminology>** er avmerket, anbefales det å sende en test med de innebygde knappene i pfSense under **System → Advanced → Notifications**. Pakken bruker <Terminology title="eksterne varslingstjenester konfigurert i pfSense" to="/docs/reference/terminology#notification-channels">varslingskanalene</Terminology> som allerede er satt opp der.
+
+Varsler ved <Terminology title="resultat: prefiks endret, men ingen godkjente felt samsvarte" to="/docs/reference/terminology#warning">Advarsel</Terminology> og <Terminology title="resultat: en kontroll eller et sikkerhetstrinn stoppet kjøringen" to="/docs/reference/terminology#failure">Feil</Terminology> blir værende i WebGUI og bruker ikke disse kanalene.
+
+## 5. Slå på tidsplanen \{#5-turn-on-the-schedule}
+
+Merk av for **<Terminology title="automatiske kontroller fra en cron-oppføring styrt av pfSense" to="/docs/reference/terminology#scheduled-updates">Aktiver planlagte oppdateringer</Terminology>** når trinnene ovenfor viser forventet adresse og prefiks. **Hver time** er standardvalget for **Tidsplan**.
+
+Etter det første planlagte tidspunktet anbefales det å kontrollere **Tidsstempel (UTC)** og **Resultat** under **Siste kjøring**.
+
+## Hva som krever en reell prefiksendring \{#what-needs-a-real-prefix-change}
+
+<Terminology title="fullstendig liste over feltendringer, bygget før skriving" to="/docs/reference/terminology#change-plan">Endringsplanen</Terminology>, <Terminology title="kopi av konfigurasjonen lagret før en skriving" to="/docs/reference/terminology#configuration-backup">konfigurasjonssikkerhetskopien</Terminology>, <Terminology title="pfSense-handling som tar i bruk endrede innstillinger" to="/docs/reference/terminology#service-reload">de nye innlastingene av tjenester</Terminology> og <Terminology title="varsel sendt etter en verifisert vellykket oppdatering" to="/docs/reference/terminology#change-notification">endringsvarselet</Terminology> skjer bare etter en reell <Terminology title="endring fra siste vellykkede prefiks eller lengde" to="/docs/reference/terminology#prefix-transition">prefiksovergang</Terminology>. En testbrannmur der prefikset kan endres, er det tryggeste stedet å følge en full kjøring.
+
+På din egen brannmur anbefales det å gå gjennom den første reelle endringen i fanen Status, og begynne med **Endrede felt**, **<Terminology title="pfSense-handling som tar i bruk endrede innstillinger" to="/docs/reference/terminology#service-reload">Tjenester lastet inn på nytt</Terminology>** og **Sammendrag**.
+
+Se [Status og handlinger](/docs/operate/status-and-actions) for alle feltene som vises etter en kjøring.

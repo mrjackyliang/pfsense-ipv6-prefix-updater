@@ -1,0 +1,60 @@
+---
+id: compatibility
+title: Compatibility
+description: Check the pfSense, PHP, address, and prefix length requirements, the optional WireGuard dependency, and the known limits before relying on the package.
+keywords:
+  - pfsense ipv6 prefix updater
+  - compatibility
+  - requirements
+  - global ipv6 address
+  - known limits
+tags:
+  - setup
+  - compatibility
+  - ipv6
+sidebar_position: 4
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Check that your firewall, interface, and ISP delegation meet the package's requirements before you rely on <Terminology title="automatic checks run from a pfSense-managed cron entry" to="/docs/reference/terminology#scheduled-updates">scheduled updates</Terminology>.
+
+## Supported Releases
+
+- The project hasn't published a list of tested pfSense releases yet.
+- The package doesn't check the pfSense version. Each run checks that it is running on pfSense with the files and functions it uses, and stops before reading settings when they are missing.
+- The package code needs PHP 8.1 or later.
+- The `.pkg` file has to be built for the FreeBSD version that your pfSense release runs on, or `pkg` reports an ABI mismatch.
+
+## Address Requirements
+
+- Each <Terminology title="interface whose address reveals the current prefix" to="/docs/reference/terminology#monitored-interface">Monitored Interface</Terminology> needs an active <Terminology title="public IPv6 address inside 2000::/3" to="/docs/reference/terminology#global-unicast-address">global unicast address</Terminology>. The package never falls back to a <Terminology title="fe80:: address that works only on one link" to="/docs/reference/terminology#link-local-address">link-local address</Terminology>.
+- Unique local (`fc00::/7`), multicast, loopback, unspecified, IPv4-mapped, and zone-qualified addresses can't be the <Terminology title="global address pfSense reports for the monitored interface" to="/docs/reference/terminology#source-address">source address</Terminology>.
+- The <Terminology title="setting for the ISP prefix size, /48 to /64" to="/docs/reference/terminology#delegated-prefix-length">Delegated Prefix Length</Terminology> has to be from `/48` through `/64`. Lengths that end inside a hexadecimal digit, such as `/57`, work too.
+
+When an address doesn't qualify, that interface ends in <Terminology title="outcome: a check or safety stage stopped the run" to="/docs/reference/terminology#failure">Failure</Terminology> with a reason such as `Interface "lan" has no active global IPv6 address.` [Troubleshooting](/docs/operate/troubleshooting#run-failed) lists the messages.
+
+## When WAN Has No Global Address
+
+Some ISPs delegate a prefix without giving WAN a <Terminology title="public IPv6 address inside 2000::/3" to="/docs/reference/terminology#global-unicast-address">global address</Terminology> of its own. A <Terminology title="interface addressed from another interface's delegated prefix" to="/docs/reference/terminology#tracked-interface">tracked interface</Terminology> such as LAN then carries an address from the <Terminology title="IPv6 network your ISP routes to the firewall" to="/docs/reference/terminology#delegated-prefix">delegated prefix</Terminology> and is the one to monitor.
+
+**Status → Interfaces** shows which interfaces have a <Terminology title="public IPv6 address inside 2000::/3" to="/docs/reference/terminology#global-unicast-address">global address</Terminology>.
+
+## What the Package Recognizes
+
+The package updates literal IPv6 addresses and networks in <Terminology title="exact configuration field the package may rewrite" to="/docs/reference/terminology#approved-field">approved fields</Terminology>. Host names, URLs, IPv4 values, and other text stay as they are.
+
+Addresses that pfSense generates, such as those on <Terminology title="interface addressed from another interface's delegated prefix" to="/docs/reference/terminology#tracked-interface">tracked interfaces</Terminology>, are never changed. Addresses that describe other devices, such as remote VPN networks and WireGuard peers, change only when you tick them under [Other Settings](/docs/configure/configuration-scopes#other-settings).
+
+## Optional Dependencies
+
+- **WireGuard package**: needed only when <Terminology title="address assigned to a pfSense WireGuard tunnel" to="/docs/reference/terminology#wireguard-tunnel-address">WireGuard tunnel addresses</Terminology> have to change. Without it, a real run with WireGuard changes stops before the backup.
+
+## Known Limits
+
+- Adding a <Terminology title="interface whose address reveals the current prefix" to="/docs/reference/terminology#monitored-interface">Monitored Interface</Terminology>, or switching a row to a different one, records a new <Terminology title="starting prefix recorded without changing configuration" to="/docs/reference/terminology#baseline">baseline</Terminology> for it, and changing a row's <Terminology title="setting for the ISP prefix size, /48 to /64" to="/docs/reference/terminology#delegated-prefix-length">Delegated Prefix Length</Terminology> counts as a <Terminology title="change from the last successful prefix or length" to="/docs/reference/terminology#prefix-transition">prefix transition</Terminology>.
+- A <Terminology title="preview that never backs up or writes" to="/docs/reference/terminology#dry-run">dry run</Terminology> can't simulate a prefix change, so planned changes appear only after a real one.
+- High-availability (CARP) pairs get no special handling.
+- As an <Terminology title="package installed from GitHub, not Netgate's repository" to="/docs/reference/terminology#unofficial-package">unofficial package</Terminology>, newer releases are installed with `pkg`, as described in [Update or Remove](/docs/reference/package-lifecycle).
+
+Review [Interface and Prefix](/docs/configure/interface-and-prefix) for choosing the source and [Fields](/docs/configure/configuration-scopes) for the fields the package can change.

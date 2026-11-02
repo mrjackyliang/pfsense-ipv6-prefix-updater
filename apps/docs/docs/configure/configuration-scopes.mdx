@@ -1,0 +1,153 @@
+---
+id: configuration-scopes
+title: Fields
+description: Choose on the Fields tab which configuration fields change with the delegated prefix, set exceptions, review other packages' settings, and opt in to every other value.
+keywords:
+  - pfsense ipv6 prefix updater
+  - fields tab
+  - field groups
+  - firewall rules
+  - dhcpv6
+  - package settings
+tags:
+  - configuration
+  - fields
+  - safety
+sidebar_position: 2
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import fieldsTab from './_assets_/configuration-scopes-1.png';
+import fieldException from './_assets_/configuration-scopes-2.png';
+import otherSettings from './_assets_/configuration-scopes-3.png';
+
+Choose which configuration fields change when your prefix changes.
+
+## The Fields Tab
+
+The **Fields** tab under **Services → IPv6 Prefix Updater** lists every address inside each <Terminology title="starting prefix recorded without changing configuration" to="/docs/reference/terminology#baseline">baseline</Terminology> prefix, grouped by kind. The **Baselines** line names the prefixes it compares against. Before the first check records a baseline, the tab shows only the group switches.
+
+<img src={fieldsTab} alt="IPv6 Prefix Updater Fields tab with the Auto-select and Clear All buttons, a search box, a filter, and the Static Interfaces group listing the LAN and LAB addresses with their prefix part highlighted" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+Each row shows:
+
+- **Checkbox**: ticked when the next <Terminology title="change from the last successful prefix or length" to="/docs/reference/terminology#prefix-transition">prefix transition</Terminology> updates the field.
+- **Field**: the entry, such as a rule description or alias name, then the field label and its configuration path.
+- **Current value**: the value with the prefix part of each address highlighted. Only the highlighted part changes, and the <Terminology title="address bits after the delegated prefix" to="/docs/reference/terminology#host-portion">host portion</Terminology> stays.
+
+## Group Switches and Exceptions
+
+Each <Terminology title="group of fields with one switch on the Fields tab" to="/docs/reference/terminology#field-group">field group</Terminology> has a switch in its header:
+
+- **On**: every field of that kind changes with the prefix, including fields added later, except the ones you untick.
+- **Off**: only the fields you tick change.
+
+A tick that differs from its group switch is a <Terminology title="single field ticked or unticked against its group switch" to="/docs/reference/terminology#field-exception">field exception</Terminology>. While a group has exceptions, its header shows a dash, and **N of M selected** counts the ticked fields. Clicking the header turns the group on or off and resets every tick in it to match. Select **Save** to keep the changes.
+
+<img src={fieldException} alt="Fields tab with the Firewall Rules group on, one rule unticked so the header shows a dash and 2 of 3 selected, and a rule without a tracker ID that follows the group switch" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+A choice follows the entry, not its position in a list, so moving or deleting other entries doesn't redirect it. The package recognizes each entry by:
+
+- **Firewall rules**: the rule's tracker ID.
+- **Aliases**: the alias name.
+- **DHCPv6 static mappings**: the DUID, because pfSense identifies DHCPv6 mappings by DUID instead of MAC address.
+- **Port forwards and outbound NAT**: the time the rule was created.
+- **1:1 NAT and NPt entries and DHCPv6 pools**: the description.
+- **DNS host overrides**: the host, domain, and whether the entry holds IPv4, IPv6, or both addresses.
+- **Other packages' settings**: a field that names each list entry uniquely, such as its name or description.
+- **Other Settings**: a field that names each list entry uniquely and holds no address, such as a gateway's name. One choice covers every entry of a plain list, such as the DNS servers under **System → General Setup**.
+- **Other entries**: their interface, name, or pfSense ID. One choice covers every DNS server, NTP server, or RA subnet of an interface.
+
+A row whose entry has no such identifier, or shares it with another entry, has no checkbox and shows `No stable identifier, so this field follows the group switch.` Choices are kept apart from the settings, so saving the Settings tab doesn't clear them.
+
+## pfSense Groups
+
+Eleven groups cover pfSense's own settings. A fresh install and a move from the <Terminology title="original update.php script run by the Cron package" to="/docs/reference/terminology#legacy-updater">legacy updater</Terminology> start with all of them on.
+
+| Group                                                                                                                                                | What it covers                                                                                                                                                                                                                                                                                                                                                                           |
+|------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Static Interfaces                                                                                                                                    | Addresses of interfaces set to Static IPv6. DHCPv6, SLAAC, <Terminology title="interface addressed from another interface's delegated prefix" to="/docs/reference/terminology#tracked-interface">Track Interface</Terminology>, and other modes are skipped.                                                                                                                             |
+| <Terminology title="extra interface address such as CARP or IP Alias" to="/docs/reference/terminology#virtual-ip">Virtual IP Addresses</Terminology> | CARP and IP Alias <Terminology title="extra interface address such as CARP or IP Alias" to="/docs/reference/terminology#virtual-ip">virtual IPs</Terminology>. Proxy ARP and Other types are in Other Settings, and the CIDR mask stays as it is.                                                                                                                                        |
+| Aliases                                                                                                                                              | Addresses and networks in Host and Network aliases. Port, URL, URL table, and other alias types are in Other Settings.                                                                                                                                                                                                                                                                   |
+| Firewall Rules                                                                                                                                       | Source and destination addresses typed into firewall rules, including floating rules. Aliases, interface networks such as **LAN subnets**, and **any** are skipped.                                                                                                                                                                                                                      |
+| NAT and NPt                                                                                                                                          | Typed addresses in port forwards, outbound NAT, and 1:1 NAT, and the prefixes of NPt entries. NPt entries that track an interface are skipped.                                                                                                                                                                                                                                           |
+| DHCPv6 Server                                                                                                                                        | Address, prefix delegation, and additional pool ranges, static mapping addresses, and the DNS and NTP servers handed to clients.                                                                                                                                                                                                                                                         |
+| Router Advertisements                                                                                                                                | The DNS servers and RA subnets each interface advertises.                                                                                                                                                                                                                                                                                                                                |
+| DNS Host Overrides                                                                                                                                   | Host override addresses in the DNS Resolver and the DNS Forwarder, including each address in a comma-separated list. Domain overrides are in Other Settings.                                                                                                                                                                                                                             |
+| IPsec                                                                                                                                                | The Local Network and NAT/BINAT translation of Tunnel IPv6 and Routed (VTI) <Terminology title="IPsec entry describing local and remote networks" to="/docs/reference/terminology#ipsec-phase-2">Phase 2</Terminology> entries, when their type is Address or Network. Remote networks are in Other Settings.                                                                            |
+| OpenVPN                                                                                                                                              | IPv6 tunnel and local networks on servers, IPv6 tunnel networks on clients, and IPv6 tunnel and local networks on <Terminology title="per-client OpenVPN settings on a server" to="/docs/reference/terminology#client-specific-override">client specific overrides</Terminology>. Remote networks are in Other Settings, and server tunnel networks that track an interface are skipped. |
+| WireGuard                                                                                                                                            | <Terminology title="address assigned to a pfSense WireGuard tunnel" to="/docs/reference/terminology#wireguard-tunnel-address">Tunnel addresses</Terminology> on pfSense WireGuard tunnels. Peers, allowed IPs, and endpoints are in Other Settings.                                                                                                                                      |
+
+Turning off the groups the firewall doesn't use keeps unexpected values out of a <Terminology title="full list of field changes, built before writing" to="/docs/reference/terminology#change-plan">change plan</Terminology>.
+
+## Buttons, Search, and Filters
+
+- **Auto-select**: turns every pfSense group on and ticks every field in them. Other Settings and other packages' settings stay as they are.
+- **Clear All**: turns every group off and unticks every field.
+- **Search fields**: shows only the rows whose group, entry, label, value, or path contains the text.
+- **Filter**: shows all rows, only selected rows, or only rows from other packages.
+
+**Auto-select** and **Clear All** change only the page until you select **Save**. When the saved selection has nothing selected, the tab shows a warning, and runs stop with `No configuration fields are selected. Select fields on the Fields tab.` until you select fields again.
+
+When the tab lists more than 40 fields, the groups start collapsed. Select a group's name to open it.
+
+## Other Packages' Settings
+
+Settings that other packages keep under `installedpackages` get a group of their own, named after the installed package that owns them, or after their section when none does. The package can't know what these fields mean, so they start unticked, and **Auto-select** never selects them. Tick a field only after checking what it does in that package.
+
+After a run changes one of these fields, it applies that package's settings again, as the package's own **Save** button does. **Last Run** on the Status tab lists each result under **Packages**:
+
+- `Applied the <package> package settings again.`
+- `No installed package owns the <section> settings. Restart the service that uses them by hand.` The values are saved anyway. This also happens when a package keeps some of its settings under a section with a different name.
+- `Could not apply the <package> package settings again: <reason>` The new values stay saved, and nothing is rolled back.
+
+Both problems also add a <Terminology title="alert shown in the pfSense notices list" to="/docs/reference/terminology#webgui-notice">WebGUI notice</Terminology>.
+
+## Fields That No Longer Exist
+
+When the entry behind a ticked field is deleted, the field appears under **Missing Fields** at the top of the tab. Runs skip it and list it under **Skipped Fields** on the Status tab. **Forget Missing Fields** removes those ticks.
+
+## Other Settings
+
+The **Other Settings** group lists every other address inside a baseline prefix. It starts off, so a value in it changes only when you tick it, or when you turn the group on, which also covers values added later. Each row names its kind:
+
+- The remote side of any VPN: IPsec remote networks and remote gateways, and OpenVPN remote networks and server addresses.
+- WireGuard peers, including their allowed IPs and endpoints.
+- Gateways and static routes.
+- Certificates, private keys, passwords, and pre-shared keys, whose values show as `Value hidden`.
+- Values stored in Base64, such as the DNS Resolver's custom options. They are decoded, rewritten, and encoded again.
+- Descriptions.
+- Any other setting, which shows its setting name instead, such as DNS Resolver domain overrides and the DNS servers under **System → General Setup**.
+
+<img src={otherSettings} alt="Other Settings group on the Fields tab listing a static route, an alias description, Base64-encoded DNS Resolver custom options, a domain override, and a gateway, each with its kind" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+After a run changes one of these values, it reloads what pfSense reloads when you save that setting:
+
+- **Gateways and static routes**: routing, then the firewall filter.
+- **DNS servers under System → General Setup**: the system's DNS settings, then the DNS Resolver or DNS Forwarder.
+- **DNS Resolver, DNS Forwarder, IPsec, OpenVPN, and WireGuard values**: that service.
+- **Another package's values**: that package's settings, as [Other Packages' Settings](#other-packages-settings) describes.
+- **Descriptions, certificates, and values without a known service**: nothing. The new value is only saved.
+
+It is recommended to tick these fields while the baseline is still the old prefix, since the tab compares against the new prefix after a change. Remote VPN peers keep their own configuration, so a peer that points at a changed address needs updating on its side.
+
+## How Values Are Matched
+
+- An address changes only when it belongs to the <Terminology title="prefix the next check compares against" to="/docs/reference/terminology#last-successful-prefix">last successful prefix</Terminology>, at the length stored in the <Terminology title="starting prefix recorded without changing configuration" to="/docs/reference/terminology#baseline">baseline</Terminology>. Addresses from other networks, IPv4 addresses, host names, and alias names stay as they are, and the tab doesn't list them.
+- In lists, such as alias entries, OpenVPN local networks, and DNS Resolver host overrides, each item is checked on its own and the separators stay as written.
+- In other packages' settings and Other Settings, every address in the text is checked on its own and the rest of the text stays as written.
+- A CIDR suffix such as `/64` stays as written, and the <Terminology title="address bits after the delegated prefix" to="/docs/reference/terminology#host-portion">host portion</Terminology> of each address is kept.
+- On a <Terminology title="interface addressed from another interface's delegated prefix" to="/docs/reference/terminology#tracked-interface">Track Interface</Terminology>, DHCPv6 ranges and static mappings hold host suffixes such as `::1000`, which stay as they are.
+- Rewritten addresses are saved in <Terminology title="lowercase, shortest standard spelling of an address" to="/docs/reference/terminology#canonical-form">canonical form</Terminology>, so their spelling can differ from what was typed.
+
+## Previewing Changes
+
+A <Terminology title="preview that never backs up or writes" to="/docs/reference/terminology#dry-run">dry run</Terminology> reads the selected fields only after a <Terminology title="change from the last successful prefix or length" to="/docs/reference/terminology#prefix-transition">prefix transition</Terminology>. While the prefix is unchanged it reports <Terminology title="outcome: prefix unchanged, nothing scanned or written" to="/docs/reference/terminology#no-change">No change</Terminology>, so the Fields tab is the way to preview a new selection. After a transition, its <Terminology title="read-only results shown after Run Now or Dry Run" to="/docs/reference/terminology#command-output">Command Output</Terminology> lists each address it would replace under `Field changes`.
+
+A <Terminology title="preview that never backs up or writes" to="/docs/reference/terminology#dry-run">dry run</Terminology> also skips the check that pfSense can reload the affected services. A missing WireGuard package therefore shows up only in a real run.
+
+## WireGuard Package
+
+Updating <Terminology title="address assigned to a pfSense WireGuard tunnel" to="/docs/reference/terminology#wireguard-tunnel-address">WireGuard tunnel addresses</Terminology> needs the WireGuard package. If those addresses need to change and the package isn't installed, a real run stops before the backup with `Required pfSense dependency "/usr/local/pkg/wireguard/includes/wg.inc" is unavailable.`
+
+[Approved Fields](/docs/reference/approved-fields) lists the exact configuration paths behind each group and the identity each choice is saved under.

@@ -1,0 +1,61 @@
+name: "Publish Ipv6 Prefix Updater pfSense Package"
+
+on:
+  release:
+    types:
+      - "published"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing GitHub release tag that receives the package"
+        required: true
+        type: "string"
+
+permissions:
+  contents: "write"
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.event.release.tag_name || inputs.tag }}"
+  cancel-in-progress: false
+
+jobs:
+  package:
+    name: "Build pfSense Package"
+    runs-on: "ubuntu-latest"
+    env:
+      RELEASE_TAG: "${{ github.event.release.tag_name || inputs.tag }}"
+
+    steps:
+      - name: "Checkout"
+        uses: "actions/checkout@v7"
+
+      - name: "Validate and Stage Port"
+        run: |
+          node "./packages/ipv6-prefix-updater/scripts/check-package.mjs"
+          node "./packages/ipv6-prefix-updater/scripts/stage-package.mjs"
+
+      - name: "Build on FreeBSD"
+        uses: "vmactions/freebsd-vm@v1"
+        with:
+          release: "${{ vars.PFSENSE_FREEBSD_VERSION || '15' }}"
+          copyback: true
+          prepare: |
+            pkg install -y ca_root_nss git
+          run: |
+            git clone --depth 1 --single-branch --branch devel --filter=blob:none --sparse https://github.com/pfsense/FreeBSD-ports.git /usr/ports
+            git -C /usr/ports sparse-checkout set Mk Templates Keywords
+            PFSENSE_PORTS_DIR=/usr/ports sh "./packages/ipv6-prefix-updater/scripts/build-package.sh"
+
+      - name: "Upload Workflow Artifact"
+        uses: "actions/upload-artifact@v7"
+        with:
+          name: "pfsense-ipv6-prefix-updater"
+          path: "./packages/ipv6-prefix-updater/build/release/*"
+          if-no-files-found: "error"
+          retention-days: 7
+
+      - name: "Upload GitHub Release Assets"
+        env:
+          GH_TOKEN: "${{ github.token }}"
+        run: |
+          gh release upload "${RELEASE_TAG}" "./packages/ipv6-prefix-updater/build/release/"* --clobber

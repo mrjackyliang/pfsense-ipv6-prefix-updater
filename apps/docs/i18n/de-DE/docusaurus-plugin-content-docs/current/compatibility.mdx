@@ -1,0 +1,60 @@
+---
+id: compatibility
+title: Kompatibilität
+description: Prüfen Sie die Anforderungen an pfSense, PHP, Adresse und Präfixlänge, die optionale WireGuard-Abhängigkeit und die bekannten Einschränkungen, bevor Sie sich auf das Paket verlassen.
+keywords:
+  - pfsense ipv6 prefix updater
+  - kompatibilität
+  - anforderungen
+  - globale ipv6-adresse
+  - bekannte einschränkungen
+tags:
+  - setup
+  - compatibility
+  - ipv6
+sidebar_position: 4
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Prüfen Sie, ob Ihre Firewall, Ihre Schnittstelle und die Delegierung Ihres Internetanbieters die Anforderungen des Pakets erfüllen, bevor Sie sich auf <Terminology title="automatische Prüfungen über einen von pfSense verwalteten Cron-Eintrag" to="/docs/reference/terminology#scheduled-updates">geplante Aktualisierungen</Terminology> verlassen.
+
+## Unterstützte Versionen \{#supported-releases}
+
+- Das Projekt hat noch keine Liste getesteter pfSense-Versionen veröffentlicht.
+- Das Paket prüft die pfSense-Version nicht. Jeder Lauf prüft, ob er auf pfSense mit den benötigten Dateien und Funktionen läuft, und stoppt vor dem Lesen der Einstellungen, wenn sie fehlen.
+- Der Paketcode benötigt PHP 8.1 oder neuer.
+- Die `.pkg`-Datei muss für die FreeBSD-Version gebaut sein, auf der Ihre pfSense-Version läuft, sonst meldet `pkg` einen ABI-Konflikt.
+
+## Anforderungen an die Adresse \{#address-requirements}
+
+- Jede <Terminology title="Schnittstelle, deren Adresse das aktuelle Präfix verrät" to="/docs/reference/terminology#monitored-interface">überwachte Schnittstelle</Terminology> braucht eine aktive <Terminology title="öffentliche IPv6-Adresse innerhalb von 2000::/3" to="/docs/reference/terminology#global-unicast-address">globale Unicast-Adresse</Terminology>. Das Paket greift nie auf eine <Terminology title="fe80::-Adresse, die nur auf einem Link funktioniert" to="/docs/reference/terminology#link-local-address">Link-Local-Adresse</Terminology> zurück.
+- Unique-Local-Adressen (`fc00::/7`), Multicast-, Loopback-, unspezifizierte und IPv4-gemappte Adressen sowie Adressen mit Zonenkennung können nicht als <Terminology title="globale Adresse, die pfSense für die überwachte Schnittstelle meldet" to="/docs/reference/terminology#source-address">Quelladresse</Terminology> dienen.
+- Die <Terminology title="Einstellung für die Präfixgröße des Anbieters, /48 bis /64" to="/docs/reference/terminology#delegated-prefix-length">Länge des delegierten Präfixes</Terminology> muss zwischen `/48` und `/64` liegen. Längen, die innerhalb einer Hexadezimalziffer enden, etwa `/57`, funktionieren ebenfalls.
+
+Wenn eine Adresse nicht geeignet ist, endet diese Schnittstelle mit <Terminology title="Ergebnis: eine Prüf- oder Sicherheitsstufe hat den Lauf gestoppt" to="/docs/reference/terminology#failure">Fehler</Terminology> und einem Grund wie `Die Schnittstelle „lan“ hat keine aktive globale IPv6-Adresse.` [Fehlerbehebung](/docs/operate/troubleshooting#run-failed) listet die Meldungen auf.
+
+## Wenn WAN keine globale Adresse hat \{#when-wan-has-no-global-address}
+
+Manche Internetanbieter delegieren ein Präfix, ohne WAN eine eigene <Terminology title="öffentliche IPv6-Adresse innerhalb von 2000::/3" to="/docs/reference/terminology#global-unicast-address">globale Adresse</Terminology> zu geben. Eine <Terminology title="Schnittstelle mit Adresse aus dem delegierten Präfix einer anderen" to="/docs/reference/terminology#tracked-interface">Track-Schnittstelle</Terminology> wie LAN trägt dann eine Adresse aus dem <Terminology title="IPv6-Netz, das Ihr Internetanbieter zur Firewall routet" to="/docs/reference/terminology#delegated-prefix">delegierten Präfix</Terminology> und ist die Schnittstelle, die Sie überwachen sollten.
+
+**Status → Interfaces** zeigt, welche Schnittstellen eine <Terminology title="öffentliche IPv6-Adresse innerhalb von 2000::/3" to="/docs/reference/terminology#global-unicast-address">globale Adresse</Terminology> haben.
+
+## Was das Paket erkennt \{#what-the-package-recognizes}
+
+Das Paket aktualisiert literale IPv6-Adressen und -Netze in <Terminology title="exaktes Konfigurationsfeld, das das Paket umschreiben darf" to="/docs/reference/terminology#approved-field">genehmigten Feldern</Terminology>. Hostnamen, URLs, IPv4-Werte und anderer Text bleiben unverändert.
+
+Adressen, die pfSense erzeugt, etwa auf <Terminology title="Schnittstelle mit Adresse aus dem delegierten Präfix einer anderen" to="/docs/reference/terminology#tracked-interface">Track-Schnittstellen</Terminology>, werden nie geändert. Adressen, die andere Geräte beschreiben, etwa entfernte VPN-Netze und WireGuard-Peers, ändern sich nur, wenn Sie sie unter [Weitere Einstellungen](/docs/configure/configuration-scopes#other-settings) ankreuzen.
+
+## Optionale Abhängigkeiten \{#optional-dependencies}
+
+- **WireGuard-Paket**: nur nötig, wenn sich <Terminology title="Adresse eines WireGuard-Tunnels in pfSense" to="/docs/reference/terminology#wireguard-tunnel-address">WireGuard-Tunneladressen</Terminology> ändern müssen. Ohne das Paket stoppt ein echter Lauf mit WireGuard-Änderungen vor der Sicherung.
+
+## Bekannte Einschränkungen \{#known-limits}
+
+- Wenn Sie eine <Terminology title="Schnittstelle, deren Adresse das aktuelle Präfix verrät" to="/docs/reference/terminology#monitored-interface">überwachte Schnittstelle</Terminology> hinzufügen oder eine Zeile auf eine andere umstellen, wird für sie eine neue <Terminology title="Ausgangspräfix, aufgezeichnet ohne Konfigurationsänderung" to="/docs/reference/terminology#baseline">Basislinie</Terminology> aufgezeichnet, und eine Änderung der <Terminology title="Einstellung für die Präfixgröße des Anbieters, /48 bis /64" to="/docs/reference/terminology#delegated-prefix-length">Länge des delegierten Präfixes</Terminology> einer Zeile zählt als <Terminology title="Abweichung vom letzten erfolgreichen Präfix oder dessen Länge" to="/docs/reference/terminology#prefix-transition">Präfixwechsel</Terminology>.
+- Ein <Terminology title="Vorschau, die nie sichert oder schreibt" to="/docs/reference/terminology#dry-run">Testlauf</Terminology> kann keine Präfixänderung simulieren, daher erscheinen geplante Änderungen erst nach einer echten.
+- Hochverfügbarkeitspaare (CARP) werden nicht gesondert behandelt.
+- Da es sich um ein <Terminology title="Paket von GitHub, nicht aus dem Netgate-Repository" to="/docs/reference/terminology#unofficial-package">inoffizielles Paket</Terminology> handelt, werden neuere Releases mit `pkg` installiert, wie unter [Aktualisieren oder entfernen](/docs/reference/package-lifecycle) beschrieben.
+
+Lesen Sie [Schnittstelle und Präfix](/docs/configure/interface-and-prefix) zur Wahl der Quelle und [Felder](/docs/configure/configuration-scopes) zu den Feldern, die das Paket ändern kann.

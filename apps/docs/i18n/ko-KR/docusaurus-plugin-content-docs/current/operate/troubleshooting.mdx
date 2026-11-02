@@ -1,0 +1,121 @@
+---
+id: troubleshooting
+title: 문제 해결
+description: 상태 탭, 명령 출력, 시스템 로그로 설치 오류, 잘못된 주소나 접두사, 반복되는 경고, 실패한 실행, 실행 잠금 메시지를 해결합니다.
+keywords:
+  - pfsense ipv6 prefix updater
+  - 문제 해결
+  - 오류 메시지
+  - 시스템 로그
+  - 실행 잠금
+tags:
+  - operations
+  - troubleshooting
+  - system log
+sidebar_position: 4
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+결과, <Terminology title="지금 실행이나 시험 실행 후 표시되는 읽기 전용 결과" to="/docs/reference/terminology#command-output">명령 출력</Terminology>, <Terminology title="패키지가 기록하는 pfSense 일반 로그" to="/docs/reference/terminology#system-log">시스템 로그</Terminology>, pfSense 알림에서 예상치 못한 결과의 원인을 찾습니다.
+
+## 확인할 위치 \{#where-to-look}
+
+- 상태 탭의 **마지막 실행**에 대부분의 결과가 표시됩니다.
+- **<Terminology title="지금 실행이나 시험 실행 후 표시되는 읽기 전용 결과" to="/docs/reference/terminology#command-output">명령 출력</Terminology>**은 지금 실행, <Terminology title="백업도 쓰기도 하지 않는 미리 보기" to="/docs/reference/terminology#dry-run">시험 실행</Terminology>, **현재 접두사 수락** 후에 나타납니다. **마지막 실행**에 기록되지 않는 작업도 여기에 표시됩니다.
+- **Status → System Logs → System → General** 아래의 <Terminology title="패키지가 기록하는 pfSense 일반 로그" to="/docs/reference/terminology#system-log">시스템 로그</Terminology>에는 패키지가 쓴 줄이 있으며, 각 줄은 `IPv6 Prefix Updater:`로 시작합니다.
+- **<Terminology title="pfSense 알림 목록에 표시되는 항목" to="/docs/reference/terminology#webgui-notice">WebGUI 알림</Terminology>**은 <Terminology title="결과: 접두사가 바뀌었지만 일치하는 승인된 필드 없음" to="/docs/reference/terminology#warning">경고</Terminology> 및 <Terminology title="결과: 검사나 안전 단계가 실행을 중단함" to="/docs/reference/terminology#failure">실패</Terminology> 결과에 대해 나타나며 상태 탭으로 연결됩니다.
+
+## 설치 실패 \{#installation-fails}
+
+- **`pkg`가 404 Not Found를 보고함**: 최신 GitHub 릴리스에 패키지 파일이 없습니다. 어떤 릴리스에 패키지 파일이 있는지는 [패키지 설치](/docs/installation#check-the-release)에서 설명합니다.
+- **`pkg`가 ABI 또는 OS 버전 불일치를 보고함**: 패키지가 사용 중인 pfSense 릴리스와 다른 FreeBSD 버전용으로 빌드되었습니다. 설치를 강제하지 않는 것을 권장합니다.
+- **DNS, TLS 또는 인증서 오류**: pfSense가 `github.com`의 이름을 확인하고 HTTPS로 접속할 수 있어야 하며, 인증서 검사를 위해 정확한 시간을 유지해야 합니다.
+
+## 잘못된 원본 주소 \{#wrong-source-address}
+
+WAN이 <Terminology title="ISP가 방화벽으로 라우팅하는 IPv6 네트워크" to="/docs/reference/terminology#delegated-prefix">위임된 접두사</Terminology>만 받는 경우, 그 접두사를 담은 주소는 LAN 같은 <Terminology title="다른 인터페이스의 위임된 접두사로 주소를 받는 인터페이스" to="/docs/reference/terminology#tracked-interface">추적 인터페이스</Terminology>에 있습니다. 이때는 그 인터페이스가 알맞은 <Terminology title="주소로 현재 접두사를 알려 주는 인터페이스" to="/docs/reference/terminology#monitored-interface">모니터링할 인터페이스</Terminology>입니다.
+
+<Terminology title="ISP 접두사 크기 설정, /48~/64" to="/docs/reference/terminology#delegated-prefix-length">위임된 접두사 길이</Terminology>는 어떤 주소를 읽을지에 영향을 주지 않으므로, 길이를 바꿔도 잘못된 <Terminology title="pfSense가 모니터링할 인터페이스에 보고하는 글로벌 주소" to="/docs/reference/terminology#source-address">원본 주소</Terminology>는 고쳐지지 않습니다. 변경할 때마다 **<Terminology title="pfSense가 모니터링할 인터페이스에 보고하는 글로벌 주소" to="/docs/reference/terminology#source-address">관찰된 원본 주소</Terminology>**를 **Status → Interfaces**와 비교하는 것을 권장합니다.
+
+## 잘못된 관찰된 접두사 \{#wrong-observed-prefix}
+
+<Terminology title="ISP 접두사 크기 설정, /48~/64" to="/docs/reference/terminology#delegated-prefix-length">위임된 접두사 길이</Terminology>를 ISP의 서비스 정보나 WAN의 DHCPv6 접두사 위임 크기와 비교합니다. `/57`이나 `/63` 같은 길이는 IPv6 서브넷 계산기를 쓰면 비교하기 쉽습니다.
+
+:::warning
+
+<Terminology title="구성을 바꾸지 않고 기록한 시작 접두사" to="/docs/reference/terminology#baseline">기준선</Terminology>이 생긴 뒤 길이를 변경하면 <Terminology title="마지막 성공 접두사나 길이와 달라진 상태" to="/docs/reference/terminology#prefix-transition">접두사 전환</Terminology>으로 간주되어 필드가 다시 쓰일 수 있습니다. 이때 일어나는 일은 [접두사 길이 변경](/docs/configure/interface-and-prefix#changing-the-prefix-length)에서 설명합니다.
+
+:::
+
+## 매 실행마다 발생하는 경고 \{#warning-on-every-run}
+
+<Terminology title="결과: 접두사가 바뀌었지만 일치하는 승인된 필드 없음" to="/docs/reference/terminology#warning">경고</Terminology>의 **요약**에는 `접두사가 2001:db8:abcd:7800::/56에서 2001:db8:abcd:8800::/56(으)로 변경되었지만 승인된 필드가 이전 접두사와 일치하지 않았습니다.`처럼 두 접두사가 모두 표시됩니다. <Terminology title="구성을 바꾸지 않고 기록한 시작 접두사" to="/docs/reference/terminology#baseline">기준선</Terminology>은 이동하지 않으므로, 원인을 해결하면 다음 실행이 같은 <Terminology title="마지막 성공 접두사나 길이와 달라진 상태" to="/docs/reference/terminology#prefix-transition">접두사 전환</Terminology>을 다시 시도합니다.
+
+다음 원인을 확인합니다.
+
+- 메시지에 나온 이전 접두사가 주소에서 아직 사용하는 네트워크인지.
+- 필드 탭에서 주소가 있는 <Terminology title="필드 탭에서 스위치 하나로 켜고 끄는 필드 묶음" to="/docs/reference/terminology#field-group">필드 그룹</Terminology>이 켜져 있거나 해당 필드가 선택되어 있는지.
+- 값이 [기타 설정](/docs/configure/configuration-scopes#other-settings)에서 선택한 필드를 포함해 <Terminology title="패키지가 다시 쓸 수 있는 정확한 구성 필드" to="/docs/reference/terminology#approved-field">승인된 필드</Terminology>에 직접 입력된 IPv6 주소나 네트워크인지.
+- 누군가 직접 또는 <Terminology title="Cron 패키지로 실행하던 원래 update.php 스크립트" to="/docs/reference/terminology#legacy-updater">레거시 업데이터</Terminology>로 주소를 이미 변경하지 않았는지.
+- [백업 및 복구](/docs/operate/backups-and-recovery#after-a-failed-run)에서 설명한 것처럼 이전 <Terminology title="결과: 검사나 안전 단계가 실행을 중단함" to="/docs/reference/terminology#failure">실패</Terminology>가 새 값을 이미 저장하지 않았는지.
+- [인터페이스와 접두사](/docs/configure/interface-and-prefix#changing-the-prefix-length)에서 설명한 것처럼 <Terminology title="ISP 접두사 크기 설정, /48~/64" to="/docs/reference/terminology#delegated-prefix-length">위임된 접두사 길이</Terminology>를 줄여 범위를 넓히지 않았는지.
+
+저장된 주소가 아직 이전 접두사를 쓴다면 원인을 해결하고 확인을 다시 실행합니다. 저장된 주소가 이미 활성 접두사를 쓴다면 영향을 받는 모든 주소와 서비스를 검증한 다음 **상태 → 작업 → 기준선 복구 → 현재 접두사 수락**을 선택해 활성 접두사를 새 <Terminology title="구성을 바꾸지 않고 기록한 시작 접두사" to="/docs/reference/terminology#baseline">기준선</Terminology>으로 만듭니다.
+
+:::warning
+
+**현재 접두사 수락**은 저장된 주소를 검사하거나, 구성을 쓰거나, 서비스를 다시 로드하지 않습니다. 이전 접두사에서 업데이트해야 하는 승인된 필드가 하나라도 있다면 사용하지 마십시오.
+
+:::
+
+## 실행 실패 \{#run-failed}
+
+각 실패는 **요약**, <Terminology title="pfSense 알림 목록에 표시되는 항목" to="/docs/reference/terminology#webgui-notice">WebGUI 알림</Terminology>, <Terminology title="패키지가 기록하는 pfSense 일반 로그" to="/docs/reference/terminology#system-log">시스템 로그</Terminology>에서 `실행 실패:` 뒤에 이유를 표시합니다. <Terminology title="지금 실행이나 시험 실행 후 표시되는 읽기 전용 결과" to="/docs/reference/terminology#command-output">명령 출력</Terminology>에서는 이유가 `IPv6 접두사 업데이터 실패:` 뒤에 나옵니다.
+
+| 메시지                                                                         | 의미                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+|-----------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `인터페이스 “lan”에 활성 글로벌 IPv6 주소가 없습니다.`                                        | <Terminology title="주소로 현재 접두사를 알려 주는 인터페이스" to="/docs/reference/terminology#monitored-interface">모니터링할 인터페이스</Terminology>에 현재 <Terminology title="2000::/3 범위의 공인 IPv6 주소" to="/docs/reference/terminology#global-unicast-address">글로벌 주소</Terminology>가 없습니다. <Terminology title="하나의 링크에서만 동작하는 fe80:: 주소" to="/docs/reference/terminology#link-local-address">링크 로컬 주소</Terminology>만 있거나, 인터페이스가 다운되었거나, <Terminology title="ISP가 방화벽으로 라우팅하는 IPv6 네트워크" to="/docs/reference/terminology#delegated-prefix">위임된 접두사</Terminology>만 받는 WAN일 수 있습니다. |
+| `적합한 글로벌 유니캐스트 IPv6 주소가 필요합니다.`                                             | pfSense가 고유 로컬 주소처럼 `2000::/3` 밖의 주소를 반환했습니다.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `구성된 인터페이스 "opt2"이(가) 없습니다.`                                                | 저장된 <Terminology title="주소로 현재 접두사를 알려 주는 인터페이스" to="/docs/reference/terminology#monitored-interface">모니터링할 인터페이스</Terminology>가 pfSense에서 제거되었습니다.                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `선택된 구성 필드가 없습니다. 필드 탭에서 필드를 선택하십시오.`                                       | **모두 지우기**를 누른 뒤처럼 모든 필드 그룹이 꺼져 있고 선택된 필드도 없습니다. 아무것도 읽거나 변경하지 않았습니다.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `모니터링할 pfSense 인터페이스가 필요합니다.`                                               | 패키지 설정이 한 번도 저장되지 않았습니다.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `IPv6 접두사 업데이터 상태가 잘못되었거나 지원되지 않습니다.`                                       | <Terminology title="기준선과 마지막 실행을 담은 패키지 파일" to="/docs/reference/terminology#package-state">패키지 상태</Terminology> 파일이 손상되었거나 지원되지 않는 형식입니다. 파일을 읽을 수 없으면 상태 탭에도 같은 메시지가 빨간 상자로 표시됩니다.                                                                                                                                                                                                                                                                                                                                                                     |
+| `필수 pfSense 종속성 “/usr/local/pkg/wireguard/includes/wg.inc”을(를) 사용할 수 없습니다.` | <Terminology title="pfSense WireGuard 터널에 할당된 주소" to="/docs/reference/terminology#wireguard-tunnel-address">WireGuard 터널 주소</Terminology>를 변경해야 하지만 WireGuard 패키지가 설치되어 있지 않습니다. 이 메시지에 다른 이름이 나오면 pfSense 파일이나 함수가 없다는 뜻입니다.                                                                                                                                                                                                                                                                                                                           |
+| `대상 ID “...”이(가) 중복되었습니다.`                                                  | 같은 종류의 구성 항목 두 개가, 패키지가 항목을 구별하는 데 쓰는 이름이나 ID를 공유합니다. 아무것도 변경되지 않았습니다.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `구성 경로 "..."이(가) 승인된 계획 밖에서 변경되었습니다.`                                       | 계획된 필드가 계획과 저장 사이에 바뀌었거나, 저장 후 예상치 못한 값을 가지고 있었습니다.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `pfSense가 현재 구성을 백업하지 못했습니다.`                                               | 백업이 실패했으므로 아무것도 변경되지 않았습니다.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `pfSense가 계획된 구성을 쓰지 못했습니다.`                                                | 쓰기가 실패했으며, 패키지가 메모리에 있는 원래 값을 복원했습니다.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `구성을 쓴 후 filter 다시 로드에 실패했습니다.`                                             | 방화벽 필터가 다시 로드되지 않았습니다. 새 값은 이미 저장되었습니다.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+
+<Terminology title="기준선과 마지막 실행을 담은 패키지 파일" to="/docs/reference/terminology#package-state">패키지 상태</Terminology>를 읽기 전에 발생한 실패는 **마지막 실행**을 업데이트하지 않습니다. 위의 주소 및 설정 메시지와 읽을 수 없는 <Terminology title="기준선과 마지막 실행을 담은 패키지 파일" to="/docs/reference/terminology#package-state">패키지 상태</Terminology> 파일이 여기에 해당하며, 이 경우 메시지는 <Terminology title="지금 실행이나 시험 실행 후 표시되는 읽기 전용 결과" to="/docs/reference/terminology#command-output">명령 출력</Terminology>, <Terminology title="pfSense 알림 목록에 표시되는 항목" to="/docs/reference/terminology#webgui-notice">WebGUI 알림</Terminology>, <Terminology title="패키지가 기록하는 pfSense 일반 로그" to="/docs/reference/terminology#system-log">시스템 로그</Terminology>에만 나타납니다.
+
+WireGuard 메시지의 경우 WireGuard 패키지를 설치하거나 WireGuard <Terminology title="필드 탭에서 스위치 하나로 켜고 끄는 필드 묶음" to="/docs/reference/terminology#field-group">필드 그룹</Terminology>을 끄면 다음 실행이 계속 진행됩니다. 그룹을 끄면 해당 <Terminology title="pfSense WireGuard 터널에 할당된 주소" to="/docs/reference/terminology#wireguard-tunnel-address">터널 주소</Terminology>도 더 이상 업데이트되지 않습니다.
+
+<Terminology title="기준선과 마지막 실행을 담은 패키지 파일" to="/docs/reference/terminology#package-state">패키지 상태</Terminology>가 손상되었다면 셸에서 `/cf/conf/ipv6-prefix-updater/state.json`을 삭제해 다음 실행이 새 <Terminology title="구성을 바꾸지 않고 기록한 시작 접두사" to="/docs/reference/terminology#baseline">기준선</Terminology>을 기록하게 할 수 있습니다. 새 <Terminology title="구성을 바꾸지 않고 기록한 시작 접두사" to="/docs/reference/terminology#baseline">기준선</Terminology>은 현재 접두사를 그대로 받아들이므로, 아직 이전 접두사를 쓰는 주소는 변경되지 않은 채로 남습니다.
+
+저장 후 실패라면 먼저 검증이나 다시 로드 문제를 고칩니다. 그런 다음 업데이트 전 리비전을 복원하고 업데이트를 다시 실행하거나, 저장된 새 접두사 값과 영향을 받는 서비스가 올바른지 검증한 뒤 **상태 → 작업 → 기준선 복구 → 현재 접두사 수락**을 선택합니다.
+
+이 수락 작업은 패키지 <Terminology title="구성을 바꾸지 않고 기록한 시작 접두사" to="/docs/reference/terminology#baseline">기준선</Terminology>만 업데이트하고, **수락됨** 결과를 기록하고, 반복되는 경고를 끝냅니다. 전체 복구 절차는 [백업 및 복구](/docs/operate/backups-and-recovery#after-a-failed-run)에서 설명합니다.
+
+## 반복되는 실패 알림 \{#repeated-failure-notices}
+
+예약 실행에서 발생한 <Terminology title="결과: 검사나 안전 단계가 실행을 중단함" to="/docs/reference/terminology#failure">실패</Terminology>는 일정이 실행될 때마다 새 <Terminology title="pfSense 알림 목록에 표시되는 항목" to="/docs/reference/terminology#webgui-notice">WebGUI 알림</Terminology>을 추가합니다. 원인을 해결하거나, 해결할 수 있을 때까지 **<Terminology title="pfSense가 관리하는 cron 항목으로 실행하는 자동 확인" to="/docs/reference/terminology#scheduled-updates">예약 업데이트 사용</Terminology>**을 해제하면 새 알림이 멈춥니다.
+
+## 다른 실행이 잠금을 소유한 경우 \{#another-run-owns-the-lock}
+
+`다른 실행이 패키지 잠금을 소유하고 있어 구성을 읽지 않고 이 호출을 종료했습니다.` 메시지는 이미 확인이 실행 중이었다는 뜻입니다. <Terminology title="두 확인이 동시에 실행되지 않게 막는 잠금" to="/docs/reference/terminology#run-lock">실행 잠금</Terminology>은 그 확인이 끝나는 즉시, 비정상 종료한 경우에도 해제되므로 이 메시지는 저절로 사라집니다.
+
+확인이 아직 실행 중인지 보려면 셸에서 `ps ax | grep ipv6-prefix-updater`를 실행합니다. 잠금 파일은 설계상 실행 사이에도 디스크에 남아 있으며, 삭제할 필요가 없습니다.
+
+## 버그 신고 \{#report-a-bug}
+
+버그는 [GitHub 이슈 트래커](https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/issues/new/choose)에 신고합니다. 다음 정보를 포함하는 것을 권장합니다.
+
+- `pkg info pfSense-pkg-Ipv6PrefixUpdater`로 확인한 패키지 버전.
+- pfSense 버전.
+- 각 <Terminology title="주소로 현재 접두사를 알려 주는 인터페이스" to="/docs/reference/terminology#monitored-interface">모니터링할 인터페이스</Terminology>와 그 <Terminology title="ISP 접두사 크기 설정, /48~/64" to="/docs/reference/terminology#delegated-prefix-length">위임된 접두사 길이</Terminology>, 그리고 켜져 있는 <Terminology title="필드 탭에서 스위치 하나로 켜고 끄는 필드 묶음" to="/docs/reference/terminology#field-group">필드 그룹</Terminology>.
+- 상태 탭과 <Terminology title="지금 실행이나 시험 실행 후 표시되는 읽기 전용 결과" to="/docs/reference/terminology#command-output">명령 출력</Terminology>의 스크린샷.
+- 관련 <Terminology title="패키지가 기록하는 pfSense 일반 로그" to="/docs/reference/terminology#system-log">시스템 로그</Terminology> 줄.
+
+게시하기 전에 실제 공인 주소를 `2001:db8::` 예시로 바꾸는 것을 권장합니다.

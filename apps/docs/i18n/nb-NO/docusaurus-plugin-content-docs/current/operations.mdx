@@ -1,0 +1,66 @@
+---
+id: operations
+title: Sikkerhetsmodell
+description: Se kontrollene, sikkerhetskopien og den ene skrivingen før pakken endrer pfSense, hvilke kjøringer som aldri skriver, og hva som fortsatt kan påvirke trafikken.
+keywords:
+  - pfsense ipv6 prefix updater
+  - sikkerhetsmodell
+  - konfigurasjonssikkerhetskopi
+  - verifisering
+  - ny innlasting av tjenester
+tags:
+  - safety
+  - backup
+  - verification
+sidebar_position: 6
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Se hvilke beskyttelser pakken bruker før den endrer konfigurasjonen din, og hva som fortsatt kan påvirke trafikken.
+
+## Hva som skjer ved en prefiksendring \{#what-happens-on-a-prefix-change}
+
+Når pakken finner en <Terminology title="endring fra siste vellykkede prefiks eller lengde" to="/docs/reference/terminology#prefix-transition">prefiksovergang</Terminology>, arbeider den i denne rekkefølgen:
+
+1. Leser den <Terminology title="offentlig IPv6-adresse innenfor 2000::/3" to="/docs/reference/terminology#global-unicast-address">globale adressen</Terminology> til hvert <Terminology title="grensesnittet der adressen avslører gjeldende prefiks" to="/docs/reference/terminology#monitored-interface">overvåket grensesnitt</Terminology> og beregner prefikset for det.
+2. Sammenligner prefikset med det <Terminology title="prefikset neste kontroll sammenligner med" to="/docs/reference/terminology#last-successful-prefix">siste vellykkede prefikset</Terminology>.
+3. Finner de <Terminology title="eksakt konfigurasjonsfelt som pakken kan skrive om" to="/docs/reference/terminology#approved-field">godkjente feltene</Terminology> som fortsatt bruker det gamle prefikset, og bygger den fullstendige <Terminology title="fullstendig liste over feltendringer, bygget før skriving" to="/docs/reference/terminology#change-plan">endringsplanen</Terminology>.
+4. Bekrefter at pfSense kan laste inn alle berørte tjenester på nytt, og at ingen planlagte felt er endret siden de ble lest.
+5. Lagrer en <Terminology title="kopi av konfigurasjonen lagret før en skriving" to="/docs/reference/terminology#configuration-backup">konfigurasjonssikkerhetskopi</Terminology>.
+6. Utfører alle endringene og lagrer konfigurasjonen én gang.
+7. Kontrollerer de lagrede verdiene, laster bare de berørte tjenestene inn på nytt og kontrollerer verdiene igjen.
+8. Flytter <Terminology title="startprefiks registrert uten å endre konfigurasjonen" to="/docs/reference/terminology#baseline">grunnlinjen</Terminology> til det nye prefikset, registrerer resultatet og sender et <Terminology title="varsel sendt etter en verifisert vellykket oppdatering" to="/docs/reference/terminology#change-notification">endringsvarsel</Terminology> hvis det er slått på.
+
+Hvis et trinn før sikkerhetskopien mislykkes, forblir konfigurasjonen som den var.
+
+## Hva som aldri fører til skriving \{#what-never-causes-a-write}
+
+Pakken endrer ikke konfigurasjonen ved disse resultatene:
+
+- <Terminology title="resultat: grunnlinje registrert, konfigurasjon uendret" to="/docs/reference/terminology#initialized">Initialisert</Terminology> og <Terminology title="resultat: testkjøring før en grunnlinje finnes" to="/docs/reference/terminology#initialization-preview">Forhåndsvisning av initialisering</Terminology>.
+- <Terminology title="resultat: prefiks uendret, ingenting gjennomsøkt eller skrevet" to="/docs/reference/terminology#no-change">Ingen endring</Terminology>.
+- <Terminology title="forhåndsvisning som aldri sikkerhetskopierer eller skriver" to="/docs/reference/terminology#dry-run">Testkjøring</Terminology>.
+- <Terminology title="resultat: prefiks endret, men ingen godkjente felt samsvarte" to="/docs/reference/terminology#warning">Advarsel</Terminology>.
+- En <Terminology title="resultat: en kontroll eller et sikkerhetstrinn stoppet kjøringen" to="/docs/reference/terminology#failure">Feil</Terminology> som stopper før sikkerhetskopien.
+
+## Hva som fortsatt kan påvirke trafikken \{#what-can-still-affect-traffic}
+
+- **<Terminology title="pfSense-handling som tar i bruk endrede innstillinger" to="/docs/reference/terminology#service-reload">Ny innlasting av tjenester</Terminology>**: endringer i statiske grensesnitt eller <Terminology title="ekstra grensesnittadresse, for eksempel CARP eller IP Alias" to="/docs/reference/terminology#virtual-ip">virtuelle IP-er</Terminology> laster alle grensesnitt og deretter brannmurfilteret inn på nytt. Endringer i gatewayer og statiske ruter laster rutingen og filteret inn på nytt, OpenVPN-endringer laster alle OpenVPN-instanser inn på nytt, og endringer i DHCPv6, ruterannonsering og DNS starter disse tjenestene på nytt.
+- **Feil etter lagringen**: hvis en kontroll eller en <Terminology title="pfSense-handling som tar i bruk endrede innstillinger" to="/docs/reference/terminology#service-reload">ny innlasting av en tjeneste</Terminology> mislykkes etter lagringen, forblir de nye verdiene lagret, og ingenting rulles tilbake. <Terminology title="startprefiks registrert uten å endre konfigurasjonen" to="/docs/reference/terminology#baseline">Grunnlinjen</Terminology> blir værende på det gamle prefikset, som [Kjøreresultater](/docs/operate/run-outcomes#failures-after-the-save) forklarer.
+- **Verdier som venter på deg**: gatewayer, statiske ruter, DNS-domeneoverstyringer og de andre verdiene i [Andre innstillinger](/docs/configure/configuration-scopes#other-settings) beholder det gamle prefikset til du krysser dem av, og det gjør også felt i en gruppe som er av.
+
+## Gjenopprettingsvei \{#recovery-path}
+
+Hver skriving har en <Terminology title="kopi av konfigurasjonen lagret før en skriving" to="/docs/reference/terminology#configuration-backup">konfigurasjonssikkerhetskopi</Terminology> fra før skrivingen i <Terminology title="pfSense-liste over lagrede konfigurasjonsrevisjoner" to="/docs/reference/terminology#config-history">Config History</Terminology>. Revisjonen som er oppkalt etter pakken, inneholder den oppdaterte konfigurasjonen, så [Sikkerhetskopier og gjenoppretting](/docs/operate/backups-and-recovery) viser hvilken revisjon du skal gjenopprette.
+
+Det anbefales også å beholde de vanlige pfSense-sikkerhetskopiene dine utenfor enheten.
+
+## Hva du kan kontrollere \{#what-you-can-verify}
+
+Fanen Status viser <Terminology title="global adresse pfSense rapporterer for det overvåkede grensesnittet" to="/docs/reference/terminology#source-address">kildeadressen</Terminology>, det <Terminology title="kildeadressen maskert ved prefikslengden" to="/docs/reference/terminology#observed-prefix">observerte prefikset</Terminology>, resultatet, antall endrede felt, utfallet av sikkerhetskopieringen, <Terminology title="pfSense-handling som tar i bruk endrede innstillinger" to="/docs/reference/terminology#service-reload">tjenestene som ble lastet inn på nytt</Terminology>, tidspunktet og sammendraget for den nyeste kjøringen. <Terminology title="skrivebeskyttede resultater vist etter Kjør nå eller Testkjøring" to="/docs/reference/terminology#command-output">Kommandoutdata</Terminology> viser de samme detaljene rett etter en <Terminology title="kontroll startet fra fanen Status" to="/docs/reference/terminology#manual-run">manuell kjøring</Terminology>.
+
+## Les mer \{#learn-more}
+
+- **[Slik fungerer oppdateringer](/docs/safety/how-updates-work)**: hvert trinn i en kjøring og hvor den kan stoppe.
+- **[Kontroller før automatisering](/docs/safety/testing-and-verification)**: en sjekkliste du kan gå gjennom på brannmuren før du slår på tidsplanen.

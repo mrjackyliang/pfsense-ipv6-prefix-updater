@@ -1,0 +1,71 @@
+---
+id: schedule-and-notifications
+title: Tidsplan og varsler
+description: Velg hvor ofte pfSense kontrollerer prefikset, slå på planlagte oppdateringer, og bestem om det skal sendes et endringsvarsel etter hver vellykket oppdatering.
+keywords:
+  - pfsense ipv6 prefix updater
+  - tidsplan
+  - cron
+  - endringsvarsler
+  - webgui-varsler
+tags:
+  - configuration
+  - scheduling
+  - notifications
+sidebar_position: 3
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Velg hvor ofte pfSense kontrollerer prefikset, og om du får et <Terminology title="varsel sendt etter en verifisert vellykket oppdatering" to="/docs/reference/terminology#change-notification">endringsvarsel</Terminology> etter en vellykket oppdatering.
+
+## Velg en tidsplan \{#choose-a-schedule}
+
+| Tidsplan           | Når den kjører                         |
+|--------------------|----------------------------------------|
+| Hvert 15. minutt   | Ved minutt 0, 15, 30 og 45 hver time   |
+| Hver time          | Ved minutt 0 hver time, standardvalget |
+| Hver 6. time       | Kl. 00:00, 06:00, 12:00 og 18:00       |
+| Daglig ved midnatt | Kl. 00:00                              |
+
+Tidspunktene følger tidssonen til brannmuren, mens fanen Status viser UTC.
+
+## Slå på planlagte oppdateringer \{#turn-on-scheduled-updates}
+
+**<Terminology title="automatiske kontroller fra en cron-oppføring styrt av pfSense" to="/docs/reference/terminology#scheduled-updates">Aktiver planlagte oppdateringer</Terminology>** er slått av etter installasjonen. Når du lagrer innstillingene, legges det til eller fjernes en cron-oppføring som pfSense styrer, så det trengs ingen Cron-pakke eller håndskrevet cron-jobb.
+
+Når boksen er umerket, kjøres ingen kontroller av seg selv, mens **Kjør nå** og **<Terminology title="forhåndsvisning som aldri sikkerhetskopierer eller skriver" to="/docs/reference/terminology#dry-run">Testkjøring</Terminology>** fortsatt virker. Det anbefales å slå den på først etter at den [første kjøringen](/docs/first-run) har registrert og bekreftet <Terminology title="startprefiks registrert uten å endre konfigurasjonen" to="/docs/reference/terminology#baseline">grunnlinjen</Terminology>.
+
+## Hva en rutinekontroll koster \{#what-a-routine-check-costs}
+
+En kontroll med <Terminology title="resultat: prefiks uendret, ingenting gjennomsøkt eller skrevet" to="/docs/reference/terminology#no-change">Ingen endring</Terminology> leser bare innstillingene, grensesnittadressene og <Terminology title="pakkefil med grunnlinjen og siste kjøring" to="/docs/reference/terminology#package-state">pakketilstanden</Terminology>. Den gjennomsøker ikke konfigurasjonen, tar ingen sikkerhetskopi, laster ingen tjenester inn på nytt og sender ikke noe varsel.
+
+Den skriver likevel én linje til <Terminology title="generell pfSense-logg som pakken skriver til" to="/docs/reference/terminology#system-log">systemloggen</Terminology>.
+
+## Overlappende kjøringer \{#overlapping-runs}
+
+En <Terminology title="sperre som hindrer to kontroller i å kjøre samtidig" to="/docs/reference/terminology#run-lock">kjørelås</Terminology> sørger for at bare én kontroll kjører om gangen. En kontroll som starter mens en annen kjører, avslutter uten å lese konfigurasjonen og lar **Siste kjøring** være uendret.
+
+Den kontrollen logger `En annen kjøring eier pakkelåsen; denne kjøringen avsluttet uten å lese konfigurasjonen.` i <Terminology title="generell pfSense-logg som pakken skriver til" to="/docs/reference/terminology#system-log">systemloggen</Terminology>.
+
+## Endringsvarsler \{#change-notifications}
+
+**<Terminology title="varsel sendt etter en verifisert vellykket oppdatering" to="/docs/reference/terminology#change-notification">Send endringsvarsler</Terminology>** er slått på som standard. Etter resultatet <Terminology title="resultat: felt oppdatert, lagret, lastet inn igjen og verifisert" to="/docs/reference/terminology#success">Vellykket</Terminology> sender pakken en melding gjennom <Terminology title="eksterne varslingstjenester konfigurert i pfSense" to="/docs/reference/terminology#notification-channels">varslingskanalene</Terminology> i pfSense og legger til et <Terminology title="varsel vist i listen over varsler i pfSense" to="/docs/reference/terminology#webgui-notice">WebGUI-varsel</Terminology>.
+
+Meldingen ser slik ut: `Oppdaterte 1 godkjent(e) felt fra 2001:db8:abcd:7800::/56 til 2001:db8:abcd:8800::/56 på grensesnitt lan.` Ingen andre resultater sender et <Terminology title="varsel sendt etter en verifisert vellykket oppdatering" to="/docs/reference/terminology#change-notification">endringsvarsel</Terminology>.
+
+Hvis leveringen mislykkes, regnes oppdateringen fortsatt som <Terminology title="resultat: felt oppdatert, lagret, lastet inn igjen og verifisert" to="/docs/reference/terminology#success">Vellykket</Terminology>. Fanen Status viser ikke leveringsstatus, og <Terminology title="generell pfSense-logg som pakken skriver til" to="/docs/reference/terminology#system-log">systemloggen</Terminology> registrerer `Konfigurasjonen var vellykket, men endringsvarselet mislyktes.`
+
+## Varsler ved advarsel og feil \{#warning-and-failure-notices}
+
+Resultatene <Terminology title="resultat: prefiks endret, men ingen godkjente felt samsvarte" to="/docs/reference/terminology#warning">Advarsel</Terminology> og <Terminology title="resultat: en kontroll eller et sikkerhetstrinn stoppet kjøringen" to="/docs/reference/terminology#failure">Feil</Terminology> legger alltid til et lokalt <Terminology title="varsel vist i listen over varsler i pfSense" to="/docs/reference/terminology#webgui-notice">WebGUI-varsel</Terminology>, også når **<Terminology title="varsel sendt etter en verifisert vellykket oppdatering" to="/docs/reference/terminology#change-notification">Send endringsvarsler</Terminology>** er umerket. Disse varslene sendes ikke til <Terminology title="eksterne varslingstjenester konfigurert i pfSense" to="/docs/reference/terminology#notification-channels">varslingskanalene</Terminology>, og en årsak som ikke blir rettet, legger til et nytt varsel ved hver planlagte kjøring.
+
+## Kontroller tidsplanen \{#validate-the-schedule}
+
+1. Lagre innstillingene, og bekreft meldingen `Innstillingene er lagret.`
+2. Velg **Kjør nå** i fanen Status, og bekreft resultatet <Terminology title="resultat: prefiks uendret, ingenting gjennomsøkt eller skrevet" to="/docs/reference/terminology#no-change">Ingen endring</Terminology> med et oppdatert **Tidsstempel (UTC)**.
+3. Bekreft at **<Terminology title="kopi av konfigurasjonen lagret før en skriving" to="/docs/reference/terminology#configuration-backup">Konfigurasjonssikkerhetskopi opprettet</Terminology>** viser Nei og **Endrede felt** viser `0`.
+4. Etter neste planlagte tidspunkt laster du fanen Status inn på nytt og bekrefter at tidsstempelet har endret seg.
+5. For å teste leveringen bruker du testknappene i pfSense under **System → Advanced → Notifications**.
+
+Fortsett med [Status og handlinger](/docs/operate/status-and-actions) for feltene som planlagte kontroller og <Terminology title="kontroll startet fra fanen Status" to="/docs/reference/terminology#manual-run">manuelle kjøringer</Terminology> registrerer.

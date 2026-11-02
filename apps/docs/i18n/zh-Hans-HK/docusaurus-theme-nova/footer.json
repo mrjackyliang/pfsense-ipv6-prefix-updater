@@ -1,0 +1,38 @@
+{
+  "layout.learn.title": {
+    "message": "指南"
+  },
+  "layout.resources.title": {
+    "message": "资源"
+  },
+  "sections.learn.0.label": {
+    "message": "安装和配置"
+  },
+  "sections.learn.1.label": {
+    "message": "监控接口 / 委派前缀长度"
+  },
+  "sections.learn.2.label": {
+    "message": "状态 / 操作"
+  },
+  "sections.learn.3.label": {
+    "message": "故障排除"
+  },
+  "sections.resources.0.label": {
+    "message": "安全与运行"
+  },
+  "sections.resources.1.label": {
+    "message": "结果与测试"
+  },
+  "sections.resources.2.label": {
+    "message": "pfSense 文档"
+  },
+  "sections.resources.3.label": {
+    "message": "源代码"
+  },
+  "sections.resources.4.label": {
+    "message": "博客"
+  },
+  "copyright": {
+    "message": "版权所有 © 2023-2026 Jacky Liang。采用 MIT 许可证发布。"
+  }
+}

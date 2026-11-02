@@ -1,0 +1,157 @@
+---
+id: approved-fields
+title: 已批准字段
+description: 列出每个字段组可以改写的具体 pfSense 配置路径、其中的值如何匹配，以及每条路径会触发哪项服务重新加载。
+keywords:
+  - pfsense ipv6 prefix updater
+  - 已批准字段
+  - 配置路径
+  - config_get_path
+  - 服务重新加载
+tags:
+  - reference
+  - approved fields
+  - configuration paths
+sidebar_position: 3
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+查看每个<Terminology title="“字段”选项卡上由一个开关控制的一组字段" to="/docs/reference/terminology#field-group">字段组</Terminology>可以改写的具体 pfSense 配置路径，以及每条路径会重新加载的服务。
+
+## 字段矩阵 \{#field-matrix}
+
+路径采用 pfSense 中 `config_get_path()` 和 `config_set_path()` 所用的斜杠分隔语法。下列路径中，`<index>` 表示列表中的位置，`<interface>` 表示接口键（例如 `lan`），`<boundary>` 表示 `from` 或 `to`，`<side>` 表示 `source` 或 `destination`，`<section>` 表示另一个软件包的设置键。
+
+| <Terminology title="“字段”选项卡上由一个开关控制的一组字段" to="/docs/reference/terminology#field-group">组</Terminology>            | 路径                                                                               | 选中条件                                                                   | 服务                      |
+|-------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|------------------------------------------------------------------------|-------------------------|
+| 别名                                                                                                                | `aliases/alias/<index>/address`                                                  | `type` 为 `host` 或 `network`                                            | `filter`                |
+| 静态接口                                                                                                              | `interfaces/<interface>/ipaddrv6`                                                | 值中包含 `:`                                                               | `interfaces`            |
+| <Terminology title="额外的接口地址，如 CARP 或 IP Alias" to="/docs/reference/terminology#virtual-ip">虚拟 IP 地址</Terminology> | `virtualip/vip/<index>/subnet`                                                   | `mode` 为 `carp` 或 `ipalias`                                            | `interfaces`            |
+| IPsec                                                                                                             | `ipsec/phase2/<index>/localid/address`                                           | `mode` 为 `tunnel6` 或 `vti`，且 `localid/type` 为 `address` 或 `network`    | `ipsec`                 |
+| IPsec                                                                                                             | `ipsec/phase2/<index>/natlocalid/address`                                        | `mode` 为 `tunnel6` 或 `vti`，且 `natlocalid/type` 为 `address` 或 `network` | `ipsec`                 |
+| OpenVPN                                                                                                           | `openvpn/openvpn-server/<index>/tunnel_networkv6`                                | `tunnel_networkv6_type` 不是 `track6`                                    | `openvpn`               |
+| OpenVPN                                                                                                           | `openvpn/openvpn-server/<index>/local_networkv6`                                 | 始终                                                                     | `openvpn`               |
+| OpenVPN                                                                                                           | `openvpn/openvpn-client/<index>/tunnel_networkv6`                                | 始终                                                                     | `openvpn`               |
+| OpenVPN                                                                                                           | `openvpn/openvpn-csc/<index>/tunnel_networkv6`                                   | 始终                                                                     | `openvpn`               |
+| OpenVPN                                                                                                           | `openvpn/openvpn-csc/<index>/local_networkv6`                                    | 始终                                                                     | `openvpn`               |
+| WireGuard                                                                                                         | `installedpackages/wireguard/tunnels/item/<index>/addresses/row/<index>/address` | 始终                                                                     | `wireguard`             |
+| DHCPv6 服务器                                                                                                        | `dhcpdv6/<interface>/range/<boundary>`                                           | 始终                                                                     | `dhcpv6`                |
+| DHCPv6 服务器                                                                                                        | `dhcpdv6/<interface>/prefixrange/<boundary>`                                     | 始终                                                                     | `dhcpv6`                |
+| DHCPv6 服务器                                                                                                        | `dhcpdv6/<interface>/pool/<index>/range/<boundary>`                              | 始终                                                                     | `dhcpv6`                |
+| DHCPv6 服务器                                                                                                        | `dhcpdv6/<interface>/pool/<index>/prefixrange/<boundary>`                        | 始终                                                                     | `dhcpv6`                |
+| DHCPv6 服务器                                                                                                        | `dhcpdv6/<interface>/dnsserver/<index>`                                          | 始终；每个地址池中的同一字段也包括在内                                                    | `dhcpv6`                |
+| DHCPv6 服务器                                                                                                        | `dhcpdv6/<interface>/ntpserver/<index>`                                          | 始终；每个地址池中的同一字段也包括在内                                                    | `dhcpv6`                |
+| DHCPv6 服务器                                                                                                        | `dhcpdv6/<interface>/staticmap/<index>/ipaddrv6`                                 | 始终                                                                     | `dhcpv6`                |
+| 路由器通告                                                                                                             | `dhcpdv6/<interface>/radnsserver/<index>`                                        | 始终                                                                     | `router_advertisements` |
+| 路由器通告                                                                                                             | `dhcpdv6/<interface>/subnets/item/<index>`                                       | 始终                                                                     | `router_advertisements` |
+| DNS 主机覆盖                                                                                                          | `unbound/hosts/<index>/ip`                                                       | 始终                                                                     | `dns_resolver`          |
+| DNS 主机覆盖                                                                                                          | `dnsmasq/hosts/<index>/ip`                                                       | 始终                                                                     | `dns_forwarder`         |
+| 防火墙规则                                                                                                             | `filter/rule/<index>/<side>/address`                                             | 该端保存的是地址，而不是 `network` 或 `any`                                         | `filter`                |
+| NAT 和 NPt                                                                                                         | `nat/rule/<index>/<side>/address`                                                | 始终                                                                     | `filter`                |
+| NAT 和 NPt                                                                                                         | `nat/rule/<index>/target`                                                        | 始终                                                                     | `filter`                |
+| NAT 和 NPt                                                                                                         | `nat/outbound/rule/<index>/<side>/network`                                       | 始终                                                                     | `filter`                |
+| NAT 和 NPt                                                                                                         | `nat/outbound/rule/<index>/target`                                               | 始终                                                                     | `filter`                |
+| NAT 和 NPt                                                                                                         | `nat/onetoone/<index>/external`                                                  | 始终                                                                     | `filter`                |
+| NAT 和 NPt                                                                                                         | `nat/onetoone/<index>/<side>/address`                                            | 始终                                                                     | `filter`                |
+| NAT 和 NPt                                                                                                         | `nat/npt/<index>/<side>/address`                                                 | 前缀是直接填写的，而不是从某个接口跟踪而来                                                  | `filter`                |
+| 另一个软件包的设置                                                                                                         | `installedpackages/<section>/...`                                                | 值中包含 IPv6 地址，且不属于[其他设置](#other-settings)中的任何类型                         | `package:<section>`     |
+
+空值会被跳过；如果目标 ID 或路径重复，运行会在做出任何更改之前停止。每个目标的 ID 取自该记录在[字段标识](#field-identities)中的标识；记录没有标识时，则取自它在列表中的位置。如[字段](/docs/configure/configuration-scopes#other-packages-settings)所述，另一个软件包的字段绝不会被自动选择。
+
+## 值的格式 \{#value-formats}
+
+- 除下面三种列表外，每个字段都只保存单个值。
+- 别名的 `address` 是以空白字符分隔的列表。
+- 服务器和<Terminology title="服务器上针对单个客户端的 OpenVPN 设置" to="/docs/reference/terminology#client-specific-override">客户端特定覆盖</Terminology>中的 OpenVPN `local_networkv6` 是以逗号和空白字符分隔的列表。
+- DNS 解析器主机覆盖的 `ip` 是以逗号和空白字符分隔的列表。
+- 另一个软件包设置中的值和“其他设置”组中的值都是文本。文本中的每个地址都会单独匹配，其余部分保持原样。
+- 以 Base64 存储的值会先解码，再作为文本匹配，值有变化时会重新编码。
+- 分隔符严格保持原样；不是 IPv6 地址的项（如别名名称、IPv4 网络和主机名）会原样保留。
+
+## 匹配规则 \{#matching-rules}
+
+- 每一项可以带有 `/0` 到 `/128` 的 CIDR 后缀，后缀会被保留。带有其他后缀的项保持不变。
+- 只有当某一项的地址按旧的<Terminology title="前导网络位数，如 /56" to="/docs/reference/terminology#prefix-length">前缀长度</Terminology>属于旧前缀时，它才会被更改。
+- 新值的前导位按当前<Terminology title="前导网络位数，如 /56" to="/docs/reference/terminology#prefix-length">前缀长度</Terminology>取自当前<Terminology title="pfSense 为监控接口报告的全局地址" to="/docs/reference/terminology#source-address">源地址</Terminology>，其余各位都取自该项本身。新值以<Terminology title="地址的小写、最短标准写法" to="/docs/reference/terminology#canonical-form">规范形式</Terminology>写入。
+- 不是<Terminology title="位于 2000::/3 内的公网 IPv6 地址" to="/docs/reference/terminology#global-unicast-address">全局单播地址</Terminology>的项原样保留，包括 DHCPv6 设置在<Terminology title="地址来自另一接口委派前缀的接口" to="/docs/reference/terminology#tracked-interface">跟踪接口</Terminology>上保存的 `::1000` 这类后缀。
+- 新值与旧值相同的字段不计为更改。
+
+## 字段标识 \{#field-identities}
+
+“字段”选项卡上的每个<Terminology title="勾选状态与所在组开关相反的单个字段" to="/docs/reference/terminology#field-exception">字段例外</Terminology>都以标识的形式保存，该标识指明的是条目本身，而不是它在列表中的位置：
+
+| 条目           | 字段标识                                                                                                                            |
+|--------------|---------------------------------------------------------------------------------------------------------------------------------|
+| 别名           | `alias:<name>`                                                                                                                  |
+| 静态接口         | `interface:<interface>`                                                                                                         |
+| 虚拟 IP        | `virtual-ip:<uniqid or description>`                                                                                            |
+| IPsec 阶段 2   | `ipsec:<uniqid, reqid, or ikeid>:<localid or natlocalid>`                                                                       |
+| OpenVPN      | `openvpn-server:<vpnid>:<tunnel or local>`、`openvpn-client:<vpnid>:tunnel` 或 `openvpn-override:<common name>:<tunnel or local>` |
+| WireGuard 隧道 | `wireguard:<tunnel name>:addresses`，涵盖每个地址行                                                                                     |
+| DHCPv6 服务器   | `dhcpv6:<interface>:<field>`，其中 `<field>` 是设置名称，例如 `range-from`、`dns-servers` 或 `ntp-servers`                                   |
+| DHCPv6 地址池   | `dhcpv6-pool:<interface>:<description>:<field>`                                                                                 |
+| DHCPv6 静态映射  | `dhcpv6-static-mapping:<interface>:<DUID>`                                                                                      |
+| 路由器通告        | `router-advertisements:<interface>:<dns-servers or subnets>`                                                                    |
+| DNS 解析器主机    | `dns-resolver-host:<host>:<domain>:<inet, inet6, or inet46>`                                                                    |
+| DNS 转发器主机    | `dns-forwarder-host:<host>:<domain>:<inet, inet6, or inet46>`                                                                   |
+| 防火墙规则        | `firewall-rule:<tracker>:<side>`                                                                                                |
+| 端口转发         | `port-forward:<created time>:<source, destination, or target>`                                                                  |
+| 出站 NAT 规则    | `outbound-nat:<created time>:<source, destination, or target>`                                                                  |
+| 1:1 NAT 条目   | `one-to-one-nat:<description>:<external, source, or destination>`                                                               |
+| NPt 条目       | `npt:<description>:<side>`                                                                                                      |
+| 另一个软件包的设置    | `package:<section>:<path>`，其中路径中的每个列表位置都会变为 `<field>=<value>`，取自能唯一标识该条目的字段；软件包只有单个设置记录时则为 `0`                                  |
+| 其他设置         | `other:<path>`，以同样的方式取自不包含地址的字段，例如 `name=<gateway name>`；简单列表（例如 `system/dnsserver`）的所有条目共用一个标识                                 |
+
+- 标识的各个部分都经过 URL 编码，因此 `Web forward` 这样的描述会显示为 `Web%20forward`。
+- 缺少标识或与同一列表中其他记录共用标识的记录没有复选框，其字段只跟随所在组的开关。
+- 如[命令行与文件](/docs/reference/command-line-and-files#field-selection)所述，例外保存在 `installedpackages/ipv6prefixupdater/fields` 下，与“设置”选项卡每次保存时都会替换的设置记录并列。
+- 每次运行都会再次验证已保存的标识，并忽略格式错误的标识。当前没有任何条目对应的已勾选字段会被跳过，并列在“状态”选项卡上的 **跳过的字段** 下。标识只能指向矩阵中或“其他设置”组中的字段。
+
+## 重新加载操作 \{#reload-actions}
+
+| 服务                      | 状态标签         | pfSense 调用                                                                         |
+|-------------------------|--------------|------------------------------------------------------------------------------------|
+| `interfaces`            | 接口           | `interfaces_configure()`，然后是 `filter_configure()`                                  |
+| `routing`               | 路由           | `system_routing_configure()` 和 `setup_gateways_monitor()`，然后是 `filter_configure()` |
+| `filter`                | 防火墙过滤器       | `filter_configure()`；如果 `interfaces` 已运行过它，则跳过                                     |
+| `dhcpv6`                | DHCPv6 服务器   | `services_dhcpd_configure('inet6')`，它也会重启 radvd                                    |
+| `router_advertisements` | 路由器通告        | `services_radvd_configure()`；如果已运行 `dhcpv6`，则跳过                                    |
+| `dns`                   | DNS 服务器      | `system_resolvconf_generate()`，然后在 DNS 解析器和 DNS 转发器已启用时重新加载它们                      |
+| `dns_resolver`          | DNS 解析器      | `services_unbound_configure(false)`                                                |
+| `dns_forwarder`         | DNS 转发器      | `services_dnsmasq_configure(false)`                                                |
+| `ipsec`                 | IPsec        | `ipsec_configure()`                                                                |
+| `openvpn`               | OpenVPN      | `openvpn_resync_all()`                                                             |
+| `wireguard`             | WireGuard    | `wg_resync()`                                                                      |
+| `package:<section>`     | 列在 **软件包** 下 | 对 XML `<name>` 与该配置节相符的已安装软件包运行 `sync_package()`                                   |
+
+服务按此表中的顺序重新加载，其他软件包的设置则在各项重新加载及其验证完成之后，最后才重新应用。在重新加载之前，运行所替换的每个静态路由网络都会通过 `/sbin/route delete` 从路由表中删除，因为 `system_routing_configure()` 只会添加和更改路由。Static Routes 页面上的 **Apply Changes**（应用更改）也会这样做。在 pfSense 2.7.2 中，`interfaces_configure()` 本身就会重启 DHCPv6、radvd 和两项 DNS 服务，因此在它之后会跳过这些重新加载。
+
+当 DNS 转发器或 DNS 解析器注册 DHCP 静态映射时，`dhcpv6` 会改为运行该服务的重新加载，这也会一并重启 DHCP。这与 DHCPv6 Server 页面上 **Apply Changes**（应用更改）按钮的行为一致。
+
+`sync_package()` 会像该软件包的 **保存** 按钮一样运行其重新同步命令，并丢弃其输出。没有已安装软件包拥有的配置节只会被报告而不会被应用，失败也会针对相应的软件包报告。两者都不会撤销已保存的值。
+
+在备份之前，预检步骤会从固定文件（如 `/etc/inc/filter.inc`、`/etc/inc/pkg-utils.inc` 或 `/usr/local/pkg/wireguard/includes/wg.inc`）加载所需的每个函数，缺少任何一个时就会停止运行。`filter_configure()`、`services_unbound_configure()` 和 `services_dnsmasq_configure()` 返回 `false` 或非零整数时会使运行失败，其他调用只有在抛出异常时才会使运行失败。
+
+## 其他设置 \{#other-settings}
+
+值中以文本或 Base64 形式包含 IPv6 地址的所有其他配置路径，都属于 **其他设置** 组。该组默认关闭，其中的值只有在被勾选或该组开启时才会更改。各行会注明以下类型：
+
+- IPsec 的 `remoteid` 标识和阶段 1 远程网关，以及 OpenVPN 的 `remote_networkv6` 网络和客户端的服务器地址。
+- WireGuard 对等端，包括其允许的 IP 和端点。
+- 网关和静态路由。
+- 证书、密钥、密码和其他机密，选项卡会隐藏它们的值。
+- 其他任何以 Base64 存储的值。
+- 描述。
+- 另一个软件包的设置中，名称表明其为证书、密钥、密码、机密、哈希或描述的值。
+
+`host` 和 `network` 以外的别名类型、`carp` 和 `ipalias` 以外的<Terminology title="额外的接口地址，如 CARP 或 IP Alias" to="/docs/reference/terminology#virtual-ip">虚拟 IP</Terminology> 模式，以及矩阵之外的所有其他路径，都会改为显示其设置名称。重新加载取决于路径：`gateways` 和 `staticroutes` 使用 `routing`，`system/dnsserver` 使用 `dns`，`unbound` 和 `dnsmasq` 使用各自的 DNS 服务，`ipsec`、`openvpn`、`filter`、`aliases`、`nat`、`dhcpdv6`、`interfaces` 和 `virtualip` 使用上述重新加载，另一个软件包的配置节会被重新应用，而描述、证书和所有其他路径不会重新加载任何内容。
+
+## 写入与验证 \{#write-and-verification}
+
+- 在备份之前，每条计划路径都必须保持其计划中的旧值。
+- 接着运行 `backup_config()`，它必须返回 `true`。
+- 计划通过 `config_set_path()` 应用，并通过 `write_config($description, false, true)` 保存一次，该调用会跳过第二次备份和无关的同步。
+- 写入之后以及重新加载之后，每条计划路径都必须保持其计划中的新值。
+
+任何不一致都会使运行停止，并显示 `配置路径“<path>”在已批准计划之外发生了变化。` 如[运行结果](/docs/operate/run-outcomes#failures-after-the-save)所述，写入之后的失败会让新值保持已保存状态。

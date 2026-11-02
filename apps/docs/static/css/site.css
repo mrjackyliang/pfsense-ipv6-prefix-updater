@@ -1,0 +1,28 @@
+/**
+ * ============================
+ * Accessible Theme Tokens
+ * ============================
+ */
+
+html:root {
+  --nova-color-text-muted: #526071;
+  --nova-color-text-soft: #667085;
+  --nova-color-text-inverse: #ffffff;
+}
+
+html:root[data-theme="dark"] {
+  --nova-color-text-muted: #c0cad8;
+  --nova-color-text-soft: #a7b4c6;
+}
+
+html:root[data-theme="dark"] .nova-cta-primary {
+  color: #082f2b;
+}
+
+html:root .nova-doc-paginator-label {
+  opacity: 1;
+}
+
+.nova-footer-embassy-social:empty {
+  display: none;
+}

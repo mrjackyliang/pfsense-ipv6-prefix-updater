@@ -1,0 +1,120 @@
+---
+id: backups-and-recovery
+title: 备份与恢复
+description: 在“备份”选项卡或配置历史中找到软件包更新前的配置，用 pfSense 将其恢复，并处理保存之后才失败的运行。
+keywords:
+  - pfsense ipv6 prefix updater
+  - 配置备份
+  - 配置历史
+  - 配置还原
+  - 故障恢复
+tags:
+  - operations
+  - backup
+  - recovery
+  - config history
+sidebar_position: 3
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import backupList from './_assets_/backups-and-recovery-1.png';
+
+在 **备份** 选项卡或 pfSense 的<Terminology title="pfSense 已保存配置修订版本的列表" to="/docs/reference/terminology#config-history">配置历史</Terminology>中找到更新前的配置，并用 pfSense 自带的工具将其恢复。
+
+## 何时创建备份 \{#when-a-backup-is-created}
+
+软件包只会在需要写入的运行中创建<Terminology title="写入前保存的配置副本" to="/docs/reference/terminology#configuration-backup">配置备份</Terminology>，时间点就在更改任何字段之前。“状态”选项卡上的 **<Terminology title="写入前保存的配置副本" to="/docs/reference/terminology#configuration-backup">已创建配置备份</Terminology>** 会显示最近一次运行是否创建了备份。
+
+运行以下列结果结束时，不会创建备份：
+
+- <Terminology title="结果：已记录基线，配置未更改" to="/docs/reference/terminology#initialized">已初始化</Terminology>或<Terminology title="结果：尚无基线时的试运行" to="/docs/reference/terminology#initialization-preview">初始化预览</Terminology>。
+- <Terminology title="结果：前缀未变化，未扫描或写入任何内容" to="/docs/reference/terminology#no-change">无变化</Terminology>。
+- <Terminology title="不备份也不写入的预览" to="/docs/reference/terminology#dry-run">试运行</Terminology>。
+- **已接受**，因为接受当前前缀只会更改软件包自身的<Terminology title="保存基线和上次运行的软件包文件" to="/docs/reference/terminology#package-state">软件包状态</Terminology>。
+- <Terminology title="结果：前缀已变化，但没有匹配的已批准字段" to="/docs/reference/terminology#warning">警告</Terminology>。
+- 在备份阶段之前发生的<Terminology title="结果：检查或安全阶段中止了运行" to="/docs/reference/terminology#failure">失败</Terminology>，例如设置、地址或重新加载能力方面的问题。
+
+## “备份”选项卡 \{#backups-tab}
+
+**Services → IPv6 Prefix Updater** 的 **备份** 选项卡按从新到旧的顺序列出软件包自己保存的 `config.xml` 副本。即使 pfSense 因轮换而将较旧的修订版本移出<Terminology title="pfSense 已保存配置修订版本的列表" to="/docs/reference/terminology#config-history">配置历史</Terminology>，这些副本依然可用。
+
+<img src={backupList} alt="IPv6 Prefix Updater 的“备份”选项卡，列出在前缀更新前和旧版迁移前创建的软件包备份，以及从旧版更新器导入的备份，每个备份都带有“下载”和“删除”操作" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+- **前缀更新前**：就在运行写入配置之前创建。**详细信息** 列出每个接口的旧前缀和新前缀。
+- **迁移 1.x 前**：在软件包将[旧版更新器迁移](/docs/migrate-from-legacy)到自身设置之前创建。
+- **1.x 脚本**：由<Terminology title="由 Cron 软件包运行的原 update.php 脚本" to="/docs/reference/terminology#legacy-updater">旧版更新器</Terminology>创建的备份，导入时保留其原始名称和时间。
+
+软件包备份只保留最新的 10 个，而导入的旧版备份会一直保留，直到你将其删除。所有备份都存储在 `/cf/conf/ipv6-prefix-updater/backups` 中，仅 root 可读取，并且在重启和移除软件包后依然保留。
+
+要恢复某个备份，请选择 **下载**，然后在 **Diagnostics → Backup & Restore → Restore Backup**（诊断 → 备份与恢复 → 恢复备份）中上传该文件。恢复会替换整个配置，因此下文的警告同样适用于这些文件。
+
+## 修订版本如何标注 \{#how-the-revisions-are-labelled}
+
+每次更新都会在<Terminology title="pfSense 已保存配置修订版本的列表" to="/docs/reference/terminology#config-history">配置历史</Terminology>中留下两个修订版本，只有较旧的那个才能撤销此次更新：
+
+- **更新前的配置**：<Terminology title="写入前保存的配置副本" to="/docs/reference/terminology#configuration-backup">配置备份</Terminology>就是这个修订版本的副本。它保留的是更新前最后一次保存的更改所带的描述。
+- **更新后的配置**：软件包将其更改保存为一个新的修订版本，描述为 `IPv6 前缀更新器为接口 <interface> 更改了 <count> 个已批准字段`。
+
+:::warning
+
+带有软件包描述的修订版本保存的是更新后的配置。恢复它并不能撤销此次更新。
+
+:::
+
+## 找到正确的修订版本 \{#find-the-right-revision}
+
+1. 打开 **Diagnostics → Backup & Restore → Config History**（诊断 → 备份与恢复 → 配置历史）。
+2. 找到描述为 `IPv6 前缀更新器为接口 ... 更改了 ...` 的最新修订版本。如果更新之后没有再保存过任何内容，它就是当前配置。
+3. 选择紧挨在它之前保存的修订版本，也就是更新前的配置。
+4. 用差异视图比较这两个修订版本。除修订信息外，应该只有 **已更改字段** 中计入的字段不同。
+5. 检查更新之后是否还保存过其他更改，因为恢复较旧的修订版本也会将它们一并移除。
+
+## 恢复修订版本 \{#restore-the-revision}
+
+1. 对更新前的修订版本执行 pfSense 的恢复操作，并按提示完成。
+2. 打开 **Services → IPv6 Prefix Updater** 的 **设置** 选项卡，检查 **<Terminology title="由 pfSense 管理的 cron 条目运行的自动检查" to="/docs/reference/terminology#scheduled-updates">启用计划更新</Terminology>**，因为恢复的修订版本会带回当时的软件包设置。
+3. 在“状态”选项卡中选择 **<Terminology title="不备份也不写入的预览" to="/docs/reference/terminology#dry-run">试运行</Terminology>**，查看下一次运行将会执行什么。
+
+下一次运行会做什么，取决于你要撤销的是哪种结果：
+
+- **撤销<Terminology title="结果：检查或安全阶段中止了运行" to="/docs/reference/terminology#failure">失败</Terminology>后**：<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>仍保存着旧前缀，因此下一次运行会再次计划同样的更新。
+- **撤销<Terminology title="结果：字段已更新、保存、重新加载并验证" to="/docs/reference/terminology#success">成功</Terminology>后**：<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>已保存新前缀，因此之后的运行会报告<Terminology title="结果：前缀未变化，未扫描或写入任何内容" to="/docs/reference/terminology#no-change">无变化</Terminology>，不会再次应用此次更新。恢复后的地址会一直保留旧前缀，直到你手动更改。
+
+:::warning
+
+恢复修订版本会替换整个配置，包括该修订版本之后保存的所有更改。
+
+:::
+
+## 运行失败后 \{#after-a-failed-run}
+
+先查看 **上次运行** 面板中的 **<Terminology title="写入前保存的配置副本" to="/docs/reference/terminology#configuration-backup">已创建配置备份</Terminology>** 和 **摘要**。<Terminology title="结果：检查或安全阶段中止了运行" to="/docs/reference/terminology#failure">失败</Terminology>时 **已更改字段** 始终显示 `0`，即使字段其实已经写入。
+
+- **<Terminology title="写入前保存的配置副本" to="/docs/reference/terminology#configuration-backup">已创建配置备份</Terminology>显示“否”**：运行在写入之前就已停止，因此配置未变。[故障排除](/docs/operate/troubleshooting#run-failed)列出了可能的原因。
+- **摘要为 `运行失败：pfSense 无法写入计划的配置。`**：pfSense 报告写入失败。软件包在停止前已将原始值恢复到内存中。
+- **其他创建了备份的失败**：新值已经保存，且没有回滚任何内容。<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>仍保存着旧前缀，而已保存的值已不再属于它，因此之后的运行会报告<Terminology title="结果：前缀已变化，但没有匹配的已批准字段" to="/docs/reference/terminology#warning">警告</Terminology>。
+
+对于最后一种情况，请根据已保存的配置选择相应的恢复方式：
+
+- **重新应用更新**：修复失败的检查或重新加载问题，恢复更新前的修订版本，运行一次<Terminology title="不备份也不写入的预览" to="/docs/reference/terminology#dry-run">试运行</Terminology>，然后选择 **立即运行**。
+- **保留已保存的新前缀值**：先自行核实已批准的地址和受影响的服务。然后打开 **状态 → 操作 → 基线恢复**，选择 **接受当前前缀** 并确认操作。
+
+**接受当前前缀** 会将当前活动的源地址、前缀和前缀长度记录为新的<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>。它不会扫描防火墙配置、创建备份、写入配置或重新加载服务；结果为 **已接受**，下一次常规检查应当报告<Terminology title="结果：前缀未变化，未扫描或写入任何内容" to="/docs/reference/terminology#no-change">无变化</Terminology>。
+
+:::warning
+
+不要仅仅为了清除警告而接受当前前缀。只有在确认所有应使用新前缀的地址都已正确，并且（在重新加载失败的情况下）受影响的服务正在使用已保存的配置运行之后，才应接受。
+
+:::
+
+如果 **上次运行** 完全没有变化，说明运行在读取<Terminology title="保存基线和上次运行的软件包文件" to="/docs/reference/terminology#package-state">软件包状态</Terminology>之前就已停止。原因可在<Terminology title="立即运行或试运行后显示的只读结果" to="/docs/reference/terminology#command-output">命令输出</Terminology>和<Terminology title="软件包写入的 pfSense 常规日志" to="/docs/reference/terminology#system-log">系统日志</Terminology>中找到。
+
+## 保留设备外备份 \{#keep-off-device-backups}
+
+<Terminology title="pfSense 已保存配置修订版本的列表" to="/docs/reference/terminology#config-history">配置历史</Terminology>存储在防火墙本机上。建议在安装或更新软件包、或开启<Terminology title="由 pfSense 管理的 cron 条目运行的自动检查" to="/docs/reference/terminology#scheduled-updates">计划更新</Terminology>之前，另外从 **Diagnostics → Backup & Restore** 下载一份备份。
+
+## 保留证据 \{#preserve-evidence}
+
+恢复之前，建议复制 **上次运行** 面板、<Terminology title="立即运行或试运行后显示的只读结果" to="/docs/reference/terminology#command-output">命令输出</Terminology>，以及<Terminology title="软件包写入的 pfSense 常规日志" to="/docs/reference/terminology#system-log">系统日志</Terminology>中以 `IPv6 Prefix Updater:` 开头的行。综合这些信息，可以看出是哪个阶段停止的，以及配置是否已写入。
+
+失败消息请参阅[故障排除](/docs/operate/troubleshooting)；重新开启计划更新之前，请先阅读[自动化前的检查](/docs/safety/testing-and-verification)。

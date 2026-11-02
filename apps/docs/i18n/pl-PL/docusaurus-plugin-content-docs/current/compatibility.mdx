@@ -1,0 +1,60 @@
+---
+id: compatibility
+title: Zgodność
+description: Sprawdź wymagania dotyczące pfSense, PHP, adresu i długości prefiksu, opcjonalną zależność WireGuard oraz znane ograniczenia, zanim zaczniesz polegać na pakiecie.
+keywords:
+  - pfsense ipv6 prefix updater
+  - zgodność
+  - wymagania
+  - globalny adres ipv6
+  - znane ograniczenia
+tags:
+  - setup
+  - compatibility
+  - ipv6
+sidebar_position: 4
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Sprawdź, czy zapora, interfejs i delegacja od dostawcy internetu spełniają wymagania pakietu, zanim zaczniesz polegać na <Terminology title="automatyczne sprawdzenia z wpisu cron zarządzanego przez pfSense" to="/docs/reference/terminology#scheduled-updates">zaplanowanych aktualizacjach</Terminology>.
+
+## Obsługiwane wydania \{#supported-releases}
+
+- Projekt nie opublikował jeszcze listy przetestowanych wydań pfSense.
+- Pakiet nie sprawdza wersji pfSense. Każde uruchomienie sprawdza, czy działa w pfSense z plikami i funkcjami, których używa, i zatrzymuje się przed odczytem ustawień, gdy ich brakuje.
+- Kod pakietu wymaga PHP 8.1 lub nowszego.
+- Plik `.pkg` musi być zbudowany dla wersji FreeBSD, na której działa używane wydanie pfSense, w przeciwnym razie `pkg` zgłasza niezgodność ABI.
+
+## Wymagania dotyczące adresu \{#address-requirements}
+
+- Każdy <Terminology title="interfejs, którego adres ujawnia bieżący prefiks" to="/docs/reference/terminology#monitored-interface">monitorowany interfejs</Terminology> potrzebuje aktywnego <Terminology title="publiczny adres IPv6 z zakresu 2000::/3" to="/docs/reference/terminology#global-unicast-address">globalnego adresu unicast</Terminology>. Pakiet nigdy nie używa zastępczo <Terminology title="adres fe80:: działający tylko w jednym łączu" to="/docs/reference/terminology#link-local-address">adresu link-local</Terminology>.
+- Adresy unique local (`fc00::/7`), multicast, loopback, nieokreślone, mapowane z IPv4 oraz z identyfikatorem strefy nie mogą być <Terminology title="globalny adres zgłaszany przez pfSense dla monitorowanego interfejsu" to="/docs/reference/terminology#source-address">adresem źródłowym</Terminology>.
+- <Terminology title="ustawienie rozmiaru prefiksu od dostawcy, od /48 do /64" to="/docs/reference/terminology#delegated-prefix-length">Długość delegowanego prefiksu</Terminology> musi mieścić się w zakresie od `/48` do `/64`. Działają też długości kończące się wewnątrz cyfry szesnastkowej, na przykład `/57`.
+
+Gdy adres nie spełnia wymagań, ten interfejs zgłasza wynik <Terminology title="wynik: kontrola lub etap bezpieczeństwa zatrzymał uruchomienie" to="/docs/reference/terminology#failure">Błąd</Terminology> z przyczyną, taką jak `Interfejs „lan” nie ma aktywnego globalnego adresu IPv6.` Komunikaty wymienia przewodnik [Rozwiązywanie problemów](/docs/operate/troubleshooting#run-failed).
+
+## Gdy WAN nie ma globalnego adresu \{#when-wan-has-no-global-address}
+
+Niektórzy dostawcy internetu delegują prefiks, nie przydzielając interfejsowi WAN własnego <Terminology title="publiczny adres IPv6 z zakresu 2000::/3" to="/docs/reference/terminology#global-unicast-address">globalnego adresu</Terminology>. Wtedy adres z <Terminology title="sieć IPv6, którą dostawca kieruje do zapory" to="/docs/reference/terminology#delegated-prefix">delegowanego prefiksu</Terminology> ma <Terminology title="interfejs adresowany z delegowanego prefiksu innego interfejsu" to="/docs/reference/terminology#tracked-interface">śledzony interfejs</Terminology>, na przykład LAN, i to on powinien być monitorowany.
+
+**Status → Interfaces** pokazuje, które interfejsy mają <Terminology title="publiczny adres IPv6 z zakresu 2000::/3" to="/docs/reference/terminology#global-unicast-address">globalny adres</Terminology>.
+
+## Co pakiet rozpoznaje \{#what-the-package-recognizes}
+
+Pakiet aktualizuje dosłownie wpisane adresy i sieci IPv6 w <Terminology title="konkretne pole konfiguracji, które pakiet może przepisać" to="/docs/reference/terminology#approved-field">zatwierdzonych polach</Terminology>. Nazwy hostów, adresy URL, wartości IPv4 i inny tekst pozostają bez zmian.
+
+Adresy generowane przez pfSense, na przykład na <Terminology title="interfejs adresowany z delegowanego prefiksu innego interfejsu" to="/docs/reference/terminology#tracked-interface">śledzonych interfejsach</Terminology>, nigdy nie są zmieniane. Adresy opisujące inne urządzenia, na przykład zdalne sieci VPN i peery WireGuard, zmieniają się tylko wtedy, gdy zaznaczysz je w grupie [Inne ustawienia](/docs/configure/configuration-scopes#other-settings).
+
+## Zależności opcjonalne \{#optional-dependencies}
+
+- **Pakiet WireGuard**: potrzebny tylko wtedy, gdy muszą się zmienić <Terminology title="adres przypisany do tunelu WireGuard w pfSense" to="/docs/reference/terminology#wireguard-tunnel-address">adresy tuneli WireGuard</Terminology>. Bez niego rzeczywiste uruchomienie ze zmianami WireGuard zatrzymuje się przed utworzeniem kopii zapasowej.
+
+## Znane ograniczenia \{#known-limits}
+
+- Dodanie <Terminology title="interfejs, którego adres ujawnia bieżący prefiks" to="/docs/reference/terminology#monitored-interface">monitorowanego interfejsu</Terminology> albo przełączenie wiersza na inny interfejs zapisuje dla niego nową <Terminology title="prefiks startowy zapisany bez zmiany konfiguracji" to="/docs/reference/terminology#baseline">wartość bazową</Terminology>, a zmiana <Terminology title="ustawienie rozmiaru prefiksu od dostawcy, od /48 do /64" to="/docs/reference/terminology#delegated-prefix-length">długości delegowanego prefiksu</Terminology> w wierszu liczy się jako <Terminology title="różnica względem ostatniego pomyślnego prefiksu lub długości" to="/docs/reference/terminology#prefix-transition">zmiana prefiksu</Terminology>.
+- <Terminology title="podgląd bez kopii zapasowej i bez zapisu" to="/docs/reference/terminology#dry-run">Próba</Terminology> nie może zasymulować zmiany prefiksu, więc zaplanowane zmiany pojawiają się dopiero po rzeczywistej zmianie.
+- Pary wysokiej dostępności (CARP) nie są obsługiwane w szczególny sposób.
+- Jako że to <Terminology title="pakiet z serwisu GitHub, nie z repozytorium Netgate" to="/docs/reference/terminology#unofficial-package">nieoficjalny pakiet</Terminology>, nowsze wydania instaluje się za pomocą `pkg`, jak opisano w przewodniku [Aktualizacja lub usunięcie](/docs/reference/package-lifecycle).
+
+Wybór źródła opisuje przewodnik [Interfejs i prefiks](/docs/configure/interface-and-prefix), a pola, które pakiet może zmieniać, opisuje strona [Pola](/docs/configure/configuration-scopes).

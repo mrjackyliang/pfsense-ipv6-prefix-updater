@@ -1,0 +1,121 @@
+---
+id: troubleshooting
+title: 疑難排解
+description: 藉助「狀態」分頁、命令輸出與系統記錄，解決安裝錯誤、位址或前綴錯誤、反覆出現的警告、執行失敗與執行鎖定訊息。
+keywords:
+  - pfsense ipv6 prefix updater
+  - 疑難排解
+  - 錯誤訊息
+  - 系統記錄
+  - 執行鎖定
+tags:
+  - operations
+  - troubleshooting
+  - system log
+sidebar_position: 4
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+依據執行結果、<Terminology title="立即執行或試執行後顯示的唯讀結果" to="/docs/reference/terminology#command-output">命令輸出</Terminology>、<Terminology title="套件寫入的 pfSense 一般記錄" to="/docs/reference/terminology#system-log">系統記錄</Terminology>與 pfSense 的通知，找出非預期結果的原因。
+
+## 查看位置 \{#where-to-look}
+
+- 「狀態」分頁上的 **上次執行** 會顯示大多數結果。
+- **<Terminology title="立即執行或試執行後顯示的唯讀結果" to="/docs/reference/terminology#command-output">命令輸出</Terminology>** 會在立即執行、<Terminology title="不備份也不寫入的預覽" to="/docs/reference/terminology#dry-run">試執行</Terminology>或 **接受目前前綴** 之後出現。它也會顯示從未寫入 **上次執行** 的動作。
+- **Status → System Logs → System → General**（狀態 → 系統記錄 → 系統 → 一般）下的<Terminology title="套件寫入的 pfSense 一般記錄" to="/docs/reference/terminology#system-log">系統記錄</Terminology>保存著套件寫入的行，每行都以 `IPv6 Prefix Updater:` 開頭。
+- **<Terminology title="顯示在 pfSense 通知清單中的警示" to="/docs/reference/terminology#webgui-notice">WebGUI 通知</Terminology>** 會在出現<Terminology title="結果：前綴已變更，但沒有符合的已核准欄位" to="/docs/reference/terminology#warning">警告</Terminology>與<Terminology title="結果：檢查或安全階段中止了執行" to="/docs/reference/terminology#failure">失敗</Terminology>結果時顯示，並連結到「狀態」分頁。
+
+## 安裝失敗 \{#installation-fails}
+
+- **`pkg` 回報 404 Not Found**：最新的 GitHub 發行版本中沒有套件檔案。[安裝套件](/docs/installation#check-the-release)說明了哪些版本含有套件檔案。
+- **`pkg` 回報 ABI 或作業系統版本不符**：套件是針對與您的 pfSense 版本不同的 FreeBSD 版本建置的。建議不要強制安裝。
+- **DNS、TLS 或憑證錯誤**：pfSense 需要能解析 `github.com`、透過 HTTPS 連線到它，並維持正確的時間以便檢查憑證。
+
+## 來源位址錯誤 \{#wrong-source-address}
+
+當 WAN 只取得<Terminology title="ISP 路由到防火牆的 IPv6 網路" to="/docs/reference/terminology#delegated-prefix">委派前綴</Terminology>時，承載該前綴的位址位於 LAN 等<Terminology title="位址取自另一介面委派前綴的介面" to="/docs/reference/terminology#tracked-interface">追蹤介面</Terminology>上。此時，該介面才是正確的<Terminology title="其位址可反映目前前綴的介面" to="/docs/reference/terminology#monitored-interface">監控介面</Terminology>。
+
+<Terminology title="ISP 前綴大小設定，/48 至 /64" to="/docs/reference/terminology#delegated-prefix-length">委派前綴長度</Terminology>不會影響讀取哪個位址，因此變更它無法修正錯誤的<Terminology title="pfSense 回報的監控介面全域位址" to="/docs/reference/terminology#source-address">來源位址</Terminology>。建議每次變更後，將 **<Terminology title="pfSense 回報的監控介面全域位址" to="/docs/reference/terminology#source-address">觀察到的來源位址</Terminology>** 與 **Status → Interfaces**（狀態 → 介面）進行比較。
+
+## 觀察到的前綴錯誤 \{#wrong-observed-prefix}
+
+將<Terminology title="ISP 前綴大小設定，/48 至 /64" to="/docs/reference/terminology#delegated-prefix-length">委派前綴長度</Terminology>與 ISP 的服務說明或 WAN 上的 DHCPv6 前綴委派大小進行比較。對於 `/57` 或 `/63` 這類長度，使用 IPv6 子網路計算機會比較容易比對。
+
+:::warning
+
+在<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>已存在後變更長度，會視為一次<Terminology title="與上次成功前綴或長度不同" to="/docs/reference/terminology#prefix-transition">前綴變更</Terminology>，並可能改寫欄位。具體影響請見[變更前綴長度](/docs/configure/interface-and-prefix#changing-the-prefix-length)。
+
+:::
+
+## 每次執行都出現警告 \{#warning-on-every-run}
+
+<Terminology title="結果：前綴已變更，但沒有符合的已核准欄位" to="/docs/reference/terminology#warning">警告</Terminology>的 **摘要** 會列出兩個前綴，例如 `前綴已從 2001:db8:abcd:7800::/56 變更為 2001:db8:abcd:8800::/56，但沒有已核准欄位符合舊前綴。` <Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>不會移動，因此排除原因後，下一次執行會重試同一個<Terminology title="與上次成功前綴或長度不同" to="/docs/reference/terminology#prefix-transition">前綴變更</Terminology>。
+
+請檢查以下原因：
+
+- 訊息中的舊前綴確實是您的位址仍在使用的網路。
+- 在「欄位」分頁上，包含這些位址的<Terminology title="「欄位」分頁上共用一個開關的一組欄位" to="/docs/reference/terminology#field-group">欄位群組</Terminology>已開啟，或這些欄位已勾選。
+- 這些值是<Terminology title="套件可改寫的確切設定欄位" to="/docs/reference/terminology#approved-field">已核准欄位</Terminology>中以字面形式寫出的 IPv6 位址或網路，包括您在[其他設定](/docs/configure/configuration-scopes#other-settings)中勾選的欄位。
+- 沒有人已經手動或透過<Terminology title="由 Cron 套件執行的原始 update.php 指令碼" to="/docs/reference/terminology#legacy-updater">舊版更新器</Terminology>變更過這些位址。
+- 先前的<Terminology title="結果：檢查或安全階段中止了執行" to="/docs/reference/terminology#failure">失敗</Terminology>沒有提早儲存新值，詳見[備份與復原](/docs/operate/backups-and-recovery#after-a-failed-run)。
+- <Terminology title="ISP 前綴大小設定，/48 至 /64" to="/docs/reference/terminology#delegated-prefix-length">委派前綴長度</Terminology>沒有被改得較短（網路範圍變寬），詳見[介面與前綴](/docs/configure/interface-and-prefix#changing-the-prefix-length)。
+
+如果已儲存的位址仍在使用舊前綴，請排除原因後再次執行檢查。如果已儲存的位址已在使用目前作用中的前綴，請核對每個受影響的位址與服務，然後選取 **狀態 → 動作 → 基準復原 → 接受目前前綴**，將其設為新的<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>。
+
+:::warning
+
+**接受目前前綴** 不會檢查已儲存的位址、寫入設定或重新載入服務。如果仍有已核准欄位需要從舊前綴更新，請不要使用它。
+
+:::
+
+## 執行失敗 \{#run-failed}
+
+每次失敗都會在 **摘要**、<Terminology title="顯示在 pfSense 通知清單中的警示" to="/docs/reference/terminology#webgui-notice">WebGUI 通知</Terminology>與<Terminology title="套件寫入的 pfSense 一般記錄" to="/docs/reference/terminology#system-log">系統記錄</Terminology>中的 `執行失敗：` 之後提供原因。在<Terminology title="立即執行或試執行後顯示的唯讀結果" to="/docs/reference/terminology#command-output">命令輸出</Terminology>中，原因接在 `IPv6 前綴更新器失敗：` 之後。
+
+| 訊息                                                                | 意義                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+|-------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `介面「lan」沒有作用中的全域 IPv6 位址。`                                        | <Terminology title="其位址可反映目前前綴的介面" to="/docs/reference/terminology#monitored-interface">監控介面</Terminology>目前沒有<Terminology title="位於 2000::/3 內的公用 IPv6 位址" to="/docs/reference/terminology#global-unicast-address">全域位址</Terminology>。它可能只有<Terminology title="僅在單一鏈路上有效的 fe80:: 位址" to="/docs/reference/terminology#link-local-address">鏈路本機位址</Terminology>、處於停止狀態，或是只取得<Terminology title="ISP 路由到防火牆的 IPv6 網路" to="/docs/reference/terminology#delegated-prefix">委派前綴</Terminology>的 WAN。 |
+| `需要合適的全域單播 IPv6 位址。`                                              | pfSense 傳回的位址不在 `2000::/3` 內，例如唯一本機位址。                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `已設定的介面「opt2」不存在。`                                                | 已儲存的<Terminology title="其位址可反映目前前綴的介面" to="/docs/reference/terminology#monitored-interface">監控介面</Terminology>已從 pfSense 中移除。                                                                                                                                                                                                                                                                                                                                                                  |
+| `未選取任何設定欄位。請在「欄位」分頁中選取欄位。`                                        | 所有欄位群組都已關閉且沒有任何欄位被勾選，例如在 **全部清除** 之後。沒有讀取或變更任何內容。                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `必須指定要監控的 pfSense 介面。`                                            | 套件設定從未儲存過。                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `IPv6 前綴更新器狀態無效或不受支援。`                                            | <Terminology title="保存基準與上次執行的套件檔案" to="/docs/reference/terminology#package-state">套件狀態</Terminology>檔案已損毀或使用不受支援的格式。如果該檔案無法讀取，「狀態」分頁會在紅色方塊中顯示相同的訊息。                                                                                                                                                                                                                                                                                                                                           |
+| `所需的 pfSense 相依項目「/usr/local/pkg/wireguard/includes/wg.inc」無法使用。` | <Terminology title="指派給 pfSense WireGuard 通道的位址" to="/docs/reference/terminology#wireguard-tunnel-address">WireGuard 通道位址</Terminology>需要變更，但未安裝 WireGuard 套件。如果此訊息中出現其他名稱，則表示缺少相應的 pfSense 檔案或函式。                                                                                                                                                                                                                                                                                             |
+| `目標 ID「...」重複。`                                                   | 兩個同類設定項目使用了相同的名稱或 ID，而套件正是靠它來區分這些項目。沒有變更任何內容。                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `設定路徑「...」在已核准計畫之外發生變更。`                                          | 某個規劃中的欄位在規劃與儲存之間被變更，或在儲存後出現非預期的值。                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `pfSense 無法備份目前的設定。`                                              | 備份失敗，因此沒有變更任何內容。                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `pfSense 無法寫入規劃的設定。`                                              | 寫入失敗，套件已將原始值放回記憶體中。                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `寫入設定後，filter 重新載入失敗。`                                            | 防火牆篩選器未能重新載入。新值已經儲存。                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+
+在讀取<Terminology title="保存基準與上次執行的套件檔案" to="/docs/reference/terminology#package-state">套件狀態</Terminology>之前發生的失敗不會更新 **上次執行**。上表中有關位址與設定的訊息，以及<Terminology title="保存基準與上次執行的套件檔案" to="/docs/reference/terminology#package-state">套件狀態</Terminology>檔案無法讀取的情況都屬於此類，它們只會出現在<Terminology title="立即執行或試執行後顯示的唯讀結果" to="/docs/reference/terminology#command-output">命令輸出</Terminology>、<Terminology title="顯示在 pfSense 通知清單中的警示" to="/docs/reference/terminology#webgui-notice">WebGUI 通知</Terminology>與<Terminology title="套件寫入的 pfSense 一般記錄" to="/docs/reference/terminology#system-log">系統記錄</Terminology>中。
+
+對於 WireGuard 相關訊息，安裝 WireGuard 套件或關閉 WireGuard <Terminology title="「欄位」分頁上共用一個開關的一組欄位" to="/docs/reference/terminology#field-group">欄位群組</Terminology>，都能讓下一次執行繼續進行。但關閉該群組也代表這些<Terminology title="指派給 pfSense WireGuard 通道的位址" to="/docs/reference/terminology#wireguard-tunnel-address">通道位址</Terminology>將不再被更新。
+
+如果<Terminology title="保存基準與上次執行的套件檔案" to="/docs/reference/terminology#package-state">套件狀態</Terminology>已損毀，可在 shell 中刪除 `/cf/conf/ipv6-prefix-updater/state.json`，讓下一次執行記錄新的<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>。新的<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>會照原樣接受目前的前綴，因此仍在使用更舊前綴的位址將維持不變。
+
+對於儲存後的失敗，請先排除驗證或重新載入問題。接著，可以還原更新前的修訂版本並重新執行更新，或是核對已儲存的新前綴值與受影響的服務都正確無誤後，選取 **狀態 → 動作 → 基準復原 → 接受目前前綴**。
+
+接受動作只會更新套件的<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>、記錄一個 **已接受** 結果，並結束反覆警告的循環。完整的復原程序請見[備份與復原](/docs/operate/backups-and-recovery#after-a-failed-run)。
+
+## 反覆出現的失敗通知 \{#repeated-failure-notices}
+
+排程執行中的<Terminology title="結果：檢查或安全階段中止了執行" to="/docs/reference/terminology#failure">失敗</Terminology>會在每次排程執行時新增一則 <Terminology title="顯示在 pfSense 通知清單中的警示" to="/docs/reference/terminology#webgui-notice">WebGUI 通知</Terminology>。排除原因，或在排除之前先取消勾選 **<Terminology title="由 pfSense 管理的 cron 項目執行的自動檢查" to="/docs/reference/terminology#scheduled-updates">啟用排程更新</Terminology>**，即可停止產生新通知。
+
+## 另一個執行持有鎖定 \{#another-run-owns-the-lock}
+
+訊息 `另一個執行程序持有套件鎖定；此次呼叫未讀取設定便已結束。` 表示已有一個檢查正在執行。該檢查一結束（即使是異常終止），<Terminology title="防止兩個檢查同時執行的保護機制" to="/docs/reference/terminology#run-lock">執行鎖定</Terminology>就會釋放，因此這則訊息會自行消失。
+
+若要查看檢查是否仍在執行，可以在 shell 中執行 `ps ax | grep ipv6-prefix-updater`。鎖定檔案在兩次執行之間保留在磁碟上是刻意的設計，不需要刪除。
+
+## 回報錯誤 \{#report-a-bug}
+
+請將錯誤回報提交到 [GitHub Issues](https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/issues/new/choose)。建議包含以下內容：
+
+- `pkg info pfSense-pkg-Ipv6PrefixUpdater` 輸出的套件版本。
+- pfSense 版本。
+- 每個<Terminology title="其位址可反映目前前綴的介面" to="/docs/reference/terminology#monitored-interface">監控介面</Terminology>及其<Terminology title="ISP 前綴大小設定，/48 至 /64" to="/docs/reference/terminology#delegated-prefix-length">委派前綴長度</Terminology>，以及已開啟的<Terminology title="「欄位」分頁上共用一個開關的一組欄位" to="/docs/reference/terminology#field-group">欄位群組</Terminology>。
+- 「狀態」分頁與<Terminology title="立即執行或試執行後顯示的唯讀結果" to="/docs/reference/terminology#command-output">命令輸出</Terminology>的螢幕截圖。
+- 相應的<Terminology title="套件寫入的 pfSense 一般記錄" to="/docs/reference/terminology#system-log">系統記錄</Terminology>行。
+
+建議在張貼之前，將真實的公用位址替換為 `2001:db8::` 範例位址。

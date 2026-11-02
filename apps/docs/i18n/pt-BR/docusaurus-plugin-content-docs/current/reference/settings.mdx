@@ -1,0 +1,52 @@
+---
+id: settings
+title: Referência das configurações
+description: Consulte cada campo da guia Configurações do IPv6 Prefix Updater com o valor padrão, os valores aceitos e a mensagem de validação que ele pode exibir.
+keywords:
+  - pfsense ipv6 prefix updater
+  - configurações
+  - valores padrão
+  - validação
+  - webgui
+tags:
+  - reference
+  - settings
+  - webgui
+sidebar_position: 2
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Consulte cada campo da guia Configurações com o valor padrão e os valores que ele aceita.
+
+## Monitorização do prefixo \{#prefix-monitoring}
+
+A guia **Configurações** em **Services → IPv6 Prefix Updater** começa com estes campos, e salvar o formulário mostra `Configurações salvas.`
+
+| Campo                                                                                                                                                                                  | Descrição                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| <Terminology title="verificações automáticas por entrada cron gerenciada pelo pfSense" to="/docs/reference/terminology#scheduled-updates">Ativar atualizações agendadas</Terminology>  | Executa verificações no **Agendamento** selecionado. Desmarcada por padrão, e salvar adiciona ou remove a entrada cron.                                                                                                                                                                                                                                                                                                                           |
+| <Terminology title="interface cujo endereço revela o prefixo atual" to="/docs/reference/terminology#monitored-interface">Interfaces monitoradas</Terminology>                          | Obrigatório. Uma linha para cada interface cujo <Terminology title="endereço IPv6 público dentro de 2000::/3" to="/docs/reference/terminology#global-unicast-address">endereço global</Terminology> contém um <Terminology title="rede IPv6 que o provedor roteia para o firewall" to="/docs/reference/terminology#delegated-prefix">prefixo delegado</Terminology>. **Adicionar** adiciona uma linha, e cada interface só pode aparecer uma vez. |
+| <Terminology title="configuração do tamanho do prefixo do provedor (/48 a /64)" to="/docs/reference/terminology#delegated-prefix-length">Comprimento do prefixo delegado</Terminology> | Obrigatório em cada linha. De `/48` a `/64`, com `/56` selecionado por padrão.                                                                                                                                                                                                                                                                                                                                                                    |
+| Agendamento                                                                                                                                                                            | A cada 15 minutos, A cada hora, A cada 6 horas ou Diariamente à meia-noite. A cada hora por padrão.                                                                                                                                                                                                                                                                                                                                               |
+
+## Seleção de campos \{#field-selection}
+
+Abaixo do campo **Agendamento**, a guia Configurações mostra `Escolha na guia Campos quais campos da configuração mudam com o prefixo.` Os <Terminology title="grupo de campos com uma única chave na guia Campos" to="/docs/reference/terminology#field-group">grupos de campos</Terminology> e os campos individuais são escolhidos na guia **Campos** e salvos separadamente destas configurações, então salvar a guia Configurações nunca os altera. A página [Campos](/docs/configure/configuration-scopes) descreve cada grupo e o padrão dele.
+
+## Notificações \{#notifications}
+
+| Campo                                                                                                                                                                               | Descrição                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| <Terminology title="alerta enviado após uma atualização verificada com sucesso" to="/docs/reference/terminology#change-notification">Enviar notificações de alteração</Terminology> | Marcado por padrão. Envia uma <Terminology title="alerta enviado após uma atualização verificada com sucesso" to="/docs/reference/terminology#change-notification">notificação de alteração</Terminology> após cada <Terminology title="resultado: campos atualizados, salvos, recarregados e verificados" to="/docs/reference/terminology#success">Sucesso</Terminology>, enquanto os alertas de <Terminology title="resultado: o prefixo mudou, mas nenhum campo aprovado correspondeu" to="/docs/reference/terminology#warning">Aviso</Terminology> e <Terminology title="resultado: verificação ou etapa de segurança interrompeu a execução" to="/docs/reference/terminology#failure">Falha</Terminology> aparecem de qualquer forma. |
+
+## Mensagens de validação \{#validation-messages}
+
+| Mensagem                                                                        | Causa                                                                                             |
+|---------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------|
+| `Selecione uma interface pfSense configurada para monitorar.`                   | Não existe nenhuma linha, ou a interface de uma linha não é uma interface configurada do pfSense. |
+| `Cada interface só pode aparecer uma vez. Remova a linha extra de <interface>.` | Duas linhas de **Interfaces monitoradas** indicam a mesma interface.                              |
+| `O comprimento do prefixo delegado deve estar entre 48 e 64.`                   | O comprimento está fora do intervalo aceito.                                                      |
+| `Selecione um agendamento de pacote compatível.`                                | O agendamento não é uma das quatro opções.                                                        |
+
+Cada execução confere as configurações salvas de novo, porque elas podem ter mudado depois que o formulário foi salvo. A página [Solução de problemas](/docs/operate/troubleshooting#run-failed) lista as mensagens que uma execução pode informar.

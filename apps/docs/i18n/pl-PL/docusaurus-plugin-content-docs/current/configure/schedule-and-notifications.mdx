@@ -1,0 +1,71 @@
+---
+id: schedule-and-notifications
+title: Harmonogram i powiadomienia
+description: Wybierz, jak często pfSense sprawdza prefiks, włącz zaplanowane aktualizacje i zdecyduj, czy po każdej udanej aktualizacji ma być wysyłane powiadomienie o zmianie.
+keywords:
+  - pfsense ipv6 prefix updater
+  - harmonogram
+  - cron
+  - powiadomienia o zmianach
+  - komunikaty webgui
+tags:
+  - configuration
+  - scheduling
+  - notifications
+sidebar_position: 3
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Wybierz, jak często pfSense sprawdza prefiks i czy po udanej aktualizacji otrzymujesz <Terminology title="alert wysyłany po zweryfikowanej udanej aktualizacji" to="/docs/reference/terminology#change-notification">powiadomienie o zmianie</Terminology>.
+
+## Wybór harmonogramu \{#choose-a-schedule}
+
+| Harmonogram          | Kiedy działa                                    |
+|----------------------|-------------------------------------------------|
+| Co 15 minut          | W minutach 0, 15, 30 i 45 każdej godziny        |
+| Co godzinę           | W minucie 0 każdej godziny; ustawienie domyślne |
+| Co 6 godzin          | O 00:00, 06:00, 12:00 i 18:00                   |
+| Codziennie o północy | O 00:00                                         |
+
+Godziny są liczone według strefy czasowej zapory, a karta Stan pokazuje czas UTC.
+
+## Włączenie zaplanowanych aktualizacji \{#turn-on-scheduled-updates}
+
+Po instalacji opcja **<Terminology title="automatyczne sprawdzenia z wpisu cron zarządzanego przez pfSense" to="/docs/reference/terminology#scheduled-updates">Włącz zaplanowane aktualizacje</Terminology>** jest wyłączona. Zapisanie ustawień dodaje lub usuwa wpis cron zarządzany przez pfSense, więc nie jest potrzebny ani pakiet Cron, ani ręcznie napisane zadanie cron.
+
+Gdy pole jest odznaczone, żadne sprawdzenie nie uruchamia się samo, ale **Uruchom teraz** i **<Terminology title="podgląd bez kopii zapasowej i bez zapisu" to="/docs/reference/terminology#dry-run">Próba</Terminology>** nadal działają. Zaleca się włączyć tę opcję dopiero wtedy, gdy [pierwsze uruchomienie](/docs/first-run) zapisze i zweryfikuje <Terminology title="prefiks startowy zapisany bez zmiany konfiguracji" to="/docs/reference/terminology#baseline">wartość bazową</Terminology>.
+
+## Koszt rutynowego sprawdzenia \{#what-a-routine-check-costs}
+
+Sprawdzenie z wynikiem <Terminology title="wynik: prefiks bez zmian, nic nie skanowano ani nie zapisano" to="/docs/reference/terminology#no-change">Brak zmian</Terminology> odczytuje tylko swoje ustawienia, adresy interfejsów i <Terminology title="plik pakietu z wartością bazową i ostatnim uruchomieniem" to="/docs/reference/terminology#package-state">stan pakietu</Terminology>. Nie skanuje konfiguracji, nie tworzy kopii zapasowej, nie ładuje ponownie usług i nie wysyła powiadomienia.
+
+Nadal zapisuje jeden wiersz w <Terminology title="ogólny dziennik pfSense, do którego zapisuje pakiet" to="/docs/reference/terminology#system-log">dzienniku systemowym</Terminology>.
+
+## Nakładające się uruchomienia \{#overlapping-runs}
+
+<Terminology title="blokada, która nie pozwala na dwa sprawdzenia naraz" to="/docs/reference/terminology#run-lock">Blokada uruchomienia</Terminology> pozwala na działanie tylko jednego sprawdzenia naraz. Sprawdzenie, które rozpocznie się, gdy działa inne, kończy się bez odczytu konfiguracji i nie zmienia sekcji **Ostatnie uruchomienie**.
+
+Takie sprawdzenie zapisuje w <Terminology title="ogólny dziennik pfSense, do którego zapisuje pakiet" to="/docs/reference/terminology#system-log">dzienniku systemowym</Terminology> komunikat `Inne uruchomienie posiada blokadę pakietu; to wywołanie zakończyło się bez odczytu konfiguracji.`
+
+## Powiadomienia o zmianach \{#change-notifications}
+
+Opcja **<Terminology title="alert wysyłany po zweryfikowanej udanej aktualizacji" to="/docs/reference/terminology#change-notification">Wysyłaj powiadomienia o zmianach</Terminology>** jest domyślnie włączona. Po wyniku <Terminology title="wynik: pola zaktualizowane, zapisane, ponownie załadowane i zweryfikowane" to="/docs/reference/terminology#success">Sukces</Terminology> wysyła wiadomość przez <Terminology title="zdalne usługi alertów skonfigurowane w pfSense" to="/docs/reference/terminology#notification-channels">kanały powiadomień</Terminology> pfSense i dodaje <Terminology title="alert na liście komunikatów pfSense" to="/docs/reference/terminology#webgui-notice">komunikat WebGUI</Terminology>.
+
+Wiadomość wygląda na przykład tak: `Zaktualizowano 1 zatwierdzone pole z 2001:db8:abcd:7800::/56 do 2001:db8:abcd:8800::/56 na interfejsie lan.` Żaden inny wynik nie wysyła <Terminology title="alert wysyłany po zweryfikowanej udanej aktualizacji" to="/docs/reference/terminology#change-notification">powiadomienia o zmianie</Terminology>.
+
+Jeśli dostarczenie się nie powiedzie, aktualizacja nadal liczy się jako <Terminology title="wynik: pola zaktualizowane, zapisane, ponownie załadowane i zweryfikowane" to="/docs/reference/terminology#success">Sukces</Terminology>. Karta Stan nie pokazuje stanu dostarczenia, a <Terminology title="ogólny dziennik pfSense, do którego zapisuje pakiet" to="/docs/reference/terminology#system-log">dziennik systemowy</Terminology> zapisuje `Konfiguracja powiodła się, ale powiadomienie o zmianie nie zostało wysłane.`
+
+## Komunikaty dla wyników Ostrzeżenie i Błąd \{#warning-and-failure-notices}
+
+Wyniki <Terminology title="wynik: prefiks się zmienił, ale żadne zatwierdzone pole nie pasowało" to="/docs/reference/terminology#warning">Ostrzeżenie</Terminology> i <Terminology title="wynik: kontrola lub etap bezpieczeństwa zatrzymał uruchomienie" to="/docs/reference/terminology#failure">Błąd</Terminology> zawsze dodają lokalny <Terminology title="alert na liście komunikatów pfSense" to="/docs/reference/terminology#webgui-notice">komunikat WebGUI</Terminology>, nawet gdy opcja **<Terminology title="alert wysyłany po zweryfikowanej udanej aktualizacji" to="/docs/reference/terminology#change-notification">Wysyłaj powiadomienia o zmianach</Terminology>** jest odznaczona. Te komunikaty nie są wysyłane do <Terminology title="zdalne usługi alertów skonfigurowane w pfSense" to="/docs/reference/terminology#notification-channels">kanałów powiadomień</Terminology>, a nieusunięta przyczyna dodaje nowy komunikat przy każdym zaplanowanym uruchomieniu.
+
+## Weryfikacja harmonogramu \{#validate-the-schedule}
+
+1. Zapisz ustawienia i potwierdź komunikat `Ustawienia zapisano.`
+2. Na karcie Stan wybierz **Uruchom teraz** i potwierdź wynik <Terminology title="wynik: prefiks bez zmian, nic nie skanowano ani nie zapisano" to="/docs/reference/terminology#no-change">Brak zmian</Terminology> z aktualnym polem **Znacznik czasu (UTC)**.
+3. Potwierdź, że pole **<Terminology title="kopia konfiguracji wykonana przed zapisem" to="/docs/reference/terminology#configuration-backup">Utworzono kopię zapasową konfiguracji</Terminology>** pokazuje Nie, a pole **Zmienione pola** pokazuje `0`.
+4. Po następnym zaplanowanym terminie odśwież kartę Stan i potwierdź, że znacznik czasu się zmienił.
+5. Aby przetestować dostarczanie, użyj przycisków testowych pfSense w **System → Advanced → Notifications**.
+
+Pola zapisywane przez zaplanowane sprawdzenia i <Terminology title="sprawdzenie uruchomione z karty Stan" to="/docs/reference/terminology#manual-run">ręczne uruchomienia</Terminology> opisuje przewodnik [Stan i działania](/docs/operate/status-and-actions).

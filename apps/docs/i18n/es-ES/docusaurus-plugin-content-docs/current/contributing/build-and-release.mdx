@@ -1,0 +1,71 @@
+---
+id: build-and-release
+title: Compilación y publicación
+description: Comprueba, prepara y compila el paquete de pfSense en FreeBSD y después adjunta el .pkg y las sumas de comprobación a una versión de GitHub con el flujo de publicación.
+keywords:
+  - pfsense ipv6 prefix updater
+  - compilación
+  - flujo de publicación
+  - freebsd ports
+  - pruebas de php
+tags:
+  - contributing
+  - build
+  - release
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Comprueba, prepara y empaqueta pfSense IPv6 Prefix Updater y después publica el paquete en una versión de GitHub.
+
+## Requisitos \{#requirements}
+
+- **Node.js 22 o 24** — Los manifiestos de la raíz y del espacio de trabajo aceptan `^22 || ^24`.
+- **PHP o Docker** — Las suites de PHP usan un `php` local si existe o, si no, la imagen `php:8.3-cli-alpine` mediante Docker. `PHP_TEST_IMAGE` sustituye la imagen.
+- **FreeBSD para empaquetar** — `npm run deploy` solo se ejecuta en FreeBSD, con `PFSENSE_PORTS_DIR` apuntando a una copia de trabajo de FreeBSD-ports de pfSense.
+
+## Comprobar, preparar y empaquetar \{#check-stage-and-package}
+
+Ejecuta estos comandos desde la raíz del repositorio:
+
+```bash
+# Lint and type-check the scripts, run the PHP and Vitest suites, and validate the port.
+npm run check --workspace pfsense-pkg-ipv6-prefix-updater
+
+# Copy the port into packages/ipv6-prefix-updater/build/port with the workspace version.
+npm run build --workspace pfsense-pkg-ipv6-prefix-updater
+
+# Build the package on FreeBSD into packages/ipv6-prefix-updater/build/release.
+PFSENSE_PORTS_DIR=/path/to/FreeBSD-ports npm run deploy --workspace pfsense-pkg-ipv6-prefix-updater
+```
+
+- La preparación convierte `port/Makefile.template` en `build/port/Makefile` y le añade la `version` de `packages/ipv6-prefix-updater/package.json`.
+- El empaquetado copia el port preparado en `sysutils/pfSense-pkg-Ipv6PrefixUpdater` dentro de la copia de trabajo de ports, ejecuta `make package` y vuelve a eliminar esa copia. Se detiene si el destino ya existe.
+- Después, `build/release` contiene el `.pkg` con versión, una copia llamada `pfSense-pkg-Ipv6PrefixUpdater.pkg` y un archivo `.sha256` para cada uno que solo contiene el hash.
+
+## Flujo de publicación \{#release-workflow}
+
+`.github/workflows/pfsense-ipv6-prefix-updater.yml` se ejecuta cuando se publica una versión en GitHub, o manualmente con la etiqueta de una versión existente:
+
+1. Valida y prepara el port en un runner de Ubuntu.
+2. Inicia una VM de FreeBSD cuya versión procede de la variable de repositorio `PFSENSE_FREEBSD_VERSION`, o `15` si no está definida.
+3. Obtiene la rama `devel` del repositorio FreeBSD-ports de pfSense y ejecuta la compilación del paquete.
+4. Sube `build/release` como artefacto del flujo de trabajo, que se conserva 7 días, y adjunta los mismos archivos a la versión, sustituyendo los recursos existentes.
+
+Se recomienda establecer `PFSENSE_FREEBSD_VERSION` en la versión principal de FreeBSD de la versión de pfSense a la que te diriges, y no publicar un paquete compilado para otra versión principal. El comando `pkg add` de la guía de instalación descarga `pfSense-pkg-Ipv6PrefixUpdater.pkg` de la versión que GitHub marque como la más reciente.
+
+## Suites de pruebas de PHP \{#php-test-suites}
+
+- **`tests/domain.php`**: la <Terminology title="escritura estándar más corta y en minúsculas de una dirección" to="/docs/reference/terminology#canonical-form">forma canónica</Terminology>, los límites `/48` y `/64`, el enmascaramiento, los <Terminology title="bits de la dirección tras el prefijo delegado" to="/docs/reference/terminology#host-portion">bits de host</Terminology> en `/53`, las direcciones rechazadas, la planificación sin cambios, el filtrado por prefijo anterior y un cambio de longitud tratado como <Terminology title="cambio respecto al último prefijo o longitud correctos" to="/docs/reference/terminology#prefix-transition">cambio de prefijo</Terminology>.
+- **`tests/runtime.php`**: el análisis de cada <Terminology title="grupo de campos con un interruptor en la pestaña Campos" to="/docs/reference/terminology#field-group">grupo de campos</Terminology>, las excepciones de campos individuales, la nueva aplicación de los ajustes de otros paquetes, el <Terminology title="archivo del paquete con la referencia y la última ejecución" to="/docs/reference/terminology#package-state">estado del paquete</Terminology> atómico, el <Terminology title="protección que impide dos comprobaciones a la vez" to="/docs/reference/terminology#run-lock">bloqueo de ejecución</Terminology>, las plataformas no compatibles y las comprobaciones programadas desactivadas. También cubre el orden de la transacción y los fallos en la escritura, la copia de seguridad, la verificación previa de recargas, las recargas y la notificación, además de la <Terminology title="resultado: el prefijo cambió, pero ningún campo aprobado coincidió" to="/docs/reference/terminology#warning">Advertencia</Terminology> sin coincidencias.
+- **`tests/pfsense-adapter.php`**: una actualización forzada de la dirección sin alternativa de <Terminology title="dirección fe80:: que solo funciona en un enlace" to="/docs/reference/terminology#link-local-address">enlace local</Terminology>, la copia de seguridad antes del guardado de solo escritura y una copia de seguridad fallida que se detiene antes de la escritura.
+- **`tests/translations.php`** y **`tests/webgui-localization.php`**: catálogos completos para cada identificador de idioma de pfSense, y el formulario de Configuración y los mensajes de validación localizados.
+
+## Sitio de documentación \{#documentation-site}
+
+Desde `apps/docs`, `npm run check` ejecuta ESLint, la comprobación del árbol de traducciones, tres comprobaciones de tipos y las suites de Vitest para los archivos `.env`, el frontmatter, los enlaces, las tablas, los enlaces del glosario y las declaraciones de tipos. `npm run build` compila todos los idiomas.
+
+Las páginas de documentación traducidas de cada idioma están en `apps/docs/i18n/<locale>/docusaurus-plugin-content-docs/current/` y reflejan las páginas en inglés, así que actualízalas cuando cambie una página en inglés. Los textos de la interfaz (página de inicio, barra de navegación, pie de página, blog y etiquetas de la barra lateral) proceden de `scripts/generate-locales.mjs`, que lee `scripts/locale-copies.json` y las traducciones del paquete. `npm run i18n` ejecuta primero ese generador, que deja intactas las páginas de documentación traducidas.
+
+`.github/workflows/nova-publish-project.yml` compila el sitio y lo despliega en GitHub Pages cuando se publica una versión.

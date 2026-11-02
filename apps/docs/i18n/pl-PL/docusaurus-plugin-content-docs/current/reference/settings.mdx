@@ -1,0 +1,52 @@
+---
+id: settings
+title: Opis ustawień
+description: Sprawdź każde pole na karcie Ustawienia pakietu IPv6 Prefix Updater wraz z wartością domyślną, akceptowanymi wartościami i komunikatem walidacji, który może się pojawić.
+keywords:
+  - pfsense ipv6 prefix updater
+  - ustawienia
+  - wartości domyślne
+  - walidacja
+  - webgui
+tags:
+  - reference
+  - settings
+  - webgui
+sidebar_position: 2
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Sprawdź każde pole na karcie Ustawienia wraz z wartością domyślną i akceptowanymi wartościami.
+
+## Monitorowanie prefiksu \{#prefix-monitoring}
+
+Karta **Ustawienia** w **Services → IPv6 Prefix Updater** zaczyna się od tych pól, a zapisanie formularza wyświetla `Ustawienia zapisano.`
+
+| Pole                                                                                                                                                                                  | Opis                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| <Terminology title="automatyczne sprawdzenia z wpisu cron zarządzanego przez pfSense" to="/docs/reference/terminology#scheduled-updates">Włącz zaplanowane aktualizacje</Terminology> | Uruchamia sprawdzenia według wybranego ustawienia **Harmonogram**. Domyślnie wyłączone; zapisanie dodaje lub usuwa wpis cron.                                                                                                                                                                                                                                                                                                         |
+| <Terminology title="interfejs, którego adres ujawnia bieżący prefiks" to="/docs/reference/terminology#monitored-interface">Monitorowane interfejsy</Terminology>                      | Wymagane. Jeden wiersz na każdy interfejs, którego <Terminology title="publiczny adres IPv6 z zakresu 2000::/3" to="/docs/reference/terminology#global-unicast-address">globalny adres</Terminology> zawiera <Terminology title="sieć IPv6, którą dostawca kieruje do zapory" to="/docs/reference/terminology#delegated-prefix">delegowany prefiks</Terminology>. **Dodaj** dodaje wiersz, a każdy interfejs może wystąpić tylko raz. |
+| <Terminology title="ustawienie rozmiaru prefiksu od dostawcy, od /48 do /64" to="/docs/reference/terminology#delegated-prefix-length">Długość delegowanego prefiksu</Terminology>     | Wymagane w każdym wierszu. Od `/48` do `/64`, domyślnie wybrane `/56`.                                                                                                                                                                                                                                                                                                                                                                |
+| Harmonogram                                                                                                                                                                           | Co 15 minut, Co godzinę, Co 6 godzin lub Codziennie o północy. Domyślnie Co godzinę.                                                                                                                                                                                                                                                                                                                                                  |
+
+## Wybór pól \{#field-selection}
+
+Pod polem **Harmonogram** karta Ustawienia pokazuje `Na karcie Pola wybierz, które pola konfiguracji zmieniają się wraz z prefiksem.` <Terminology title="grupa pól z jednym przełącznikiem na karcie Pola" to="/docs/reference/terminology#field-group">Grupy pól</Terminology> i pojedyncze pola wybiera się na karcie **Pola**, a zapisuje osobno od tych ustawień, więc zapisanie karty Ustawienia nigdy ich nie zmienia. Każdą grupę i jej ustawienie domyślne opisuje strona [Pola](/docs/configure/configuration-scopes).
+
+## Powiadomienia \{#notifications}
+
+| Pole                                                                                                                                                                          | Opis                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| <Terminology title="alert wysyłany po zweryfikowanej udanej aktualizacji" to="/docs/reference/terminology#change-notification">Wysyłaj powiadomienia o zmianach</Terminology> | Domyślnie zaznaczone. Wysyła <Terminology title="alert wysyłany po zweryfikowanej udanej aktualizacji" to="/docs/reference/terminology#change-notification">powiadomienie o zmianie</Terminology> po każdym wyniku <Terminology title="wynik: pola zaktualizowane, zapisane, ponownie załadowane i zweryfikowane" to="/docs/reference/terminology#success">Sukces</Terminology>, a komunikaty o wynikach <Terminology title="wynik: prefiks się zmienił, ale żadne zatwierdzone pole nie pasowało" to="/docs/reference/terminology#warning">Ostrzeżenie</Terminology> i <Terminology title="wynik: kontrola lub etap bezpieczeństwa zatrzymał uruchomienie" to="/docs/reference/terminology#failure">Błąd</Terminology> pojawiają się niezależnie od tego ustawienia. |
+
+## Komunikaty walidacji \{#validation-messages}
+
+| Komunikat                                                                         | Przyczyna                                                                                             |
+|-----------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|
+| `Wybierz skonfigurowany interfejs pfSense do monitorowania.`                      | Nie ma żadnego wiersza albo interfejs w którymś wierszu nie jest skonfigurowanym interfejsem pfSense. |
+| `Każdy interfejs może wystąpić tylko raz. Usuń dodatkowy wiersz dla <interface>.` | Dwa wiersze w polu **Monitorowane interfejsy** wskazują ten sam interfejs.                            |
+| `Długość delegowanego prefiksu musi mieścić się w zakresie od 48 do 64.`          | Długość jest poza akceptowanym zakresem.                                                              |
+| `Wybierz obsługiwany harmonogram pakietu.`                                        | Harmonogram nie jest jedną z czterech opcji.                                                          |
+
+Każde uruchomienie ponownie sprawdza zapisane ustawienia, ponieważ mogły się zmienić po zapisaniu formularza. Komunikaty, które może zgłosić uruchomienie, wymienia przewodnik [Rozwiązywanie problemów](/docs/operate/troubleshooting#run-failed).

@@ -1,0 +1,90 @@
+---
+id: intro
+title: Panoramica
+description: Mantieni alias, interfacce e indirizzi VPN di pfSense sul prefisso IPv6 attuale quando il tuo ISP ne delega uno nuovo, con un backup prima di ogni modifica.
+keywords:
+  - pfsense ipv6 prefix updater
+  - panoramica
+  - delega del prefisso ipv6
+  - prefisso dinamico
+  - pacchetto pfsense
+tags:
+  - setup
+  - overview
+  - ipv6
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Mantieni gli indirizzi IPv6 salvati in pfSense sul prefisso attuale quando il tuo ISP assegna un nuovo <Terminology title="rete IPv6 che il tuo ISP instrada verso il firewall" to="/docs/reference/terminology#delegated-prefix">prefisso delegato</Terminology>.
+
+## Cosa fa \{#what-it-does}
+
+pfSense IPv6 Prefix Updater è un pacchetto pfSense che tiene d’occhio le interfacce che scegli per rilevare un nuovo prefisso. Quando il prefisso cambia, riscrive gli indirizzi corrispondenti nei campi che selezioni e mantiene la <Terminology title="bit dell’indirizzo dopo il prefisso delegato" to="/docs/reference/terminology#host-portion">parte host</Terminology> di ciascuno.
+
+## Perché usare questo pacchetto? \{#why-use-this-package}
+
+1. Mantiene la <Terminology title="bit dell’indirizzo dopo il prefisso delegato" to="/docs/reference/terminology#host-portion">parte host</Terminology> di ogni indirizzo, così ogni dispositivo conserva lo stesso suffisso dopo un cambio di prefisso.
+2. Modifica solo i <Terminology title="campo di configurazione preciso che il pacchetto può riscrivere" to="/docs/reference/terminology#approved-field">campi approvati</Terminology> che selezioni nella scheda Campi, così reti VPN remote, peer, gateway e route restano come li hai configurati.
+3. Salva un <Terminology title="copia della configurazione salvata prima di una scrittura" to="/docs/reference/terminology#configuration-backup">backup della configurazione</Terminology> prima di ogni scrittura, così la configurazione precedente è disponibile in <Terminology title="elenco pfSense delle revisioni di configurazione salvate" to="/docs/reference/terminology#config-history">Config History</Terminology>.
+4. Viene eseguito secondo una pianificazione gestita da pfSense, così non ti servono né il pacchetto Cron né uno script in una directory home.
+5. Mostra ogni risultato nella scheda Stato, così puoi vedere cosa è cambiato, quali servizi sono stati ricaricati e se è stato creato un backup.
+
+## Cosa aggiorna \{#what-it-updates}
+
+- **Alias**: indirizzi e reti negli alias host e rete.
+- **Interfacce statiche**: indirizzi delle interfacce configurate con IPv6 statico.
+- **<Terminology title="indirizzo di interfaccia aggiuntivo, come CARP o IP Alias" to="/docs/reference/terminology#virtual-ip">Indirizzi IP virtuali</Terminology>**: <Terminology title="indirizzo di interfaccia aggiuntivo, come CARP o IP Alias" to="/docs/reference/terminology#virtual-ip">IP virtuali</Terminology> CARP e IP Alias.
+- **IPsec**: il lato locale delle voci di <Terminology title="voce IPsec che descrive le reti locale e remota" to="/docs/reference/terminology#ipsec-phase-2">fase 2</Terminology> Tunnel IPv6 e Routed (VTI).
+- **OpenVPN**: reti tunnel e reti locali IPv6 di server e <Terminology title="impostazioni OpenVPN per un singolo client su un server" to="/docs/reference/terminology#client-specific-override">override specifici del client</Terminology>, e reti tunnel IPv6 dei client.
+- **WireGuard**: <Terminology title="indirizzo assegnato a un tunnel WireGuard di pfSense" to="/docs/reference/terminology#wireguard-tunnel-address">indirizzi dei tunnel</Terminology>, quando è installato il pacchetto WireGuard.
+- **Server DHCPv6**: intervalli di indirizzi, di delega del prefisso e dei pool, mappature statiche e i server DNS e NTP forniti ai client.
+- **Router Advertisement**: server DNS annunciati e subnet RA.
+- **Override host DNS**: override host nel DNS Resolver e nel DNS Forwarder.
+- **Regole firewall**: indirizzi di origine e destinazione digitati nelle regole.
+- **NAT e NPt**: indirizzi digitati nei port forward, nel NAT in uscita e nel NAT 1:1, oltre ai prefissi NPt.
+- **Impostazioni di altri pacchetti**: solo i campi che selezioni, dopodiché il pacchetto applica di nuovo le impostazioni di quel pacchetto.
+
+La scheda **Campi** elenca tutti gli indirizzi compresi nel tuo prefisso, con un interruttore per ogni <Terminology title="gruppo di campi con un unico interruttore nella scheda Campi" to="/docs/reference/terminology#field-group">gruppo di campi</Terminology> e una casella di controllo per ogni campo.
+
+## Cosa ti aspetta \{#what-waits-for-you}
+
+Il gruppo **Altre impostazioni** all’inizio è disattivato, quindi questi valori cambiano solo quando li selezioni:
+
+- Il lato remoto di una VPN, come le reti remote IPsec e OpenVPN e i peer, gli IP consentiti e gli endpoint WireGuard.
+- I gateway, le route statiche, gli override di dominio DNS, i certificati, i segreti, i valori codificati in Base64 e le descrizioni.
+- Gli alias di tipo porta, URL e degli altri tipi.
+
+Le interfacce che ottengono l’indirizzo tramite DHCPv6, SLAAC o <Terminology title="interfaccia indirizzata dal prefisso delegato di un’altra interfaccia" to="/docs/reference/terminology#tracked-interface">Track Interface</Terminology> non vengono mai modificate, perché è pfSense a generare quegli indirizzi. Lo stesso vale per gli indirizzi IPv4, i nomi host e gli indirizzi IPv6 al di fuori del vecchio prefisso. [Altre impostazioni](/docs/configure/configuration-scopes#other-settings) contiene l’elenco completo.
+
+## Come funziona un controllo \{#how-a-check-works}
+
+1. Legge l’<Terminology title="indirizzo IPv6 pubblico compreso in 2000::/3" to="/docs/reference/terminology#global-unicast-address">indirizzo globale</Terminology> di ogni <Terminology title="interfaccia il cui indirizzo rivela il prefisso attuale" to="/docs/reference/terminology#monitored-interface">interfaccia monitorata</Terminology> e ne calcola il prefisso.
+2. Lo confronta con l’<Terminology title="prefisso con cui si confronta il controllo successivo" to="/docs/reference/terminology#last-successful-prefix">ultimo prefisso riuscito</Terminology> e si ferma con il risultato <Terminology title="risultato: prefisso invariato, nulla analizzato o scritto" to="/docs/reference/terminology#no-change">Nessuna modifica</Terminology> se coincidono.
+3. In caso di <Terminology title="differenza dall’ultimo prefisso riuscito o dalla sua lunghezza" to="/docs/reference/terminology#prefix-transition">cambio di prefisso</Terminology>, crea un <Terminology title="elenco completo delle modifiche, creato prima della scrittura" to="/docs/reference/terminology#change-plan">piano delle modifiche</Terminology> per i <Terminology title="campo di configurazione preciso che il pacchetto può riscrivere" to="/docs/reference/terminology#approved-field">campi approvati</Terminology> che usano ancora il vecchio prefisso.
+4. Salva un <Terminology title="copia della configurazione salvata prima di una scrittura" to="/docs/reference/terminology#configuration-backup">backup della configurazione</Terminology>, scrive tutte le modifiche in un unico salvataggio, ricarica solo i servizi interessati e ricontrolla i valori.
+5. Registra il risultato nella scheda Stato e invia una <Terminology title="messaggio inviato dopo un aggiornamento riuscito e verificato" to="/docs/reference/terminology#change-notification">notifica di modifica</Terminology> se è attiva.
+
+[Modello di sicurezza](/docs/operations) descrive le protezioni di ogni passaggio.
+
+## Prima di iniziare \{#before-you-start}
+
+:::warning
+
+pfSense IPv6 Prefix Updater è un <Terminology title="pacchetto installato da GitHub, non dal repository di Netgate" to="/docs/reference/terminology#unofficial-package">pacchetto non ufficiale</Terminology>. Lo installi da GitHub con `pkg`, e Netgate non lo verifica né lo supporta.
+
+:::
+
+Le release del pacchetto sono pubblicate nella pagina GitHub Releases del progetto. Le release 1.x contengono solo il <Terminology title="script update.php originale eseguito dal pacchetto Cron" to="/docs/reference/terminology#legacy-updater">vecchio script di aggiornamento</Terminology>, non questo pacchetto.
+
+## Lingue \{#languages}
+
+Tutte le schede del pacchetto, l’<Terminology title="risultati in sola lettura mostrati dopo Esegui ora o Simulazione" to="/docs/reference/terminology#command-output">output del comando</Terminology> e i messaggi del pacchetto seguono la lingua selezionata in pfSense. Il pacchetto include traduzioni per 18 lingue di pfSense e usa l’inglese per qualsiasi altra lingua.
+
+## Passaggi successivi \{#next-steps}
+
+- **[Installa il pacchetto](/docs/installation)**: aggiungi il pacchetto da una release GitHub.
+- **[Stabilisci la linea di base](/docs/first-run)**: registra e controlla il prefisso attuale prima di attivare la pianificazione.
+- **[Migra dallo script](/docs/migrate-from-legacy)**: passa dallo script della versione 1.x al pacchetto.
+- **[Modello di sicurezza](/docs/operations)**: scopri cosa protegge il pacchetto e cosa può ancora influenzare.

@@ -1,0 +1,153 @@
+---
+id: configuration-scopes
+title: Felder
+description: Wählen Sie auf der Registerkarte Felder, welche Konfigurationsfelder sich mit dem delegierten Präfix ändern, legen Sie Ausnahmen fest, prüfen Sie die Einstellungen anderer Pakete und beziehen Sie jeden weiteren Wert auf Wunsch ein.
+keywords:
+  - pfsense ipv6 prefix updater
+  - registerkarte felder
+  - feldgruppen
+  - firewallregeln
+  - dhcpv6
+  - paketeinstellungen
+tags:
+  - configuration
+  - fields
+  - safety
+sidebar_position: 2
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import fieldsTab from './_assets_/configuration-scopes-1.png';
+import fieldException from './_assets_/configuration-scopes-2.png';
+import otherSettings from './_assets_/configuration-scopes-3.png';
+
+Legen Sie fest, welche Konfigurationsfelder sich ändern, wenn sich Ihr Präfix ändert.
+
+## Die Registerkarte Felder \{#the-fields-tab}
+
+Die Registerkarte **Felder** unter **Services → IPv6 Prefix Updater** listet jede Adresse innerhalb des Präfixes jeder <Terminology title="Ausgangspräfix, aufgezeichnet ohne Konfigurationsänderung" to="/docs/reference/terminology#baseline">Basislinie</Terminology> auf, nach Art gruppiert. Die Zeile **Basislinien** nennt die Präfixe, mit denen die Registerkarte vergleicht. Bevor die erste Prüfung eine Basislinie aufzeichnet, zeigt die Registerkarte nur die Gruppenschalter.
+
+<img src={fieldsTab} alt="Registerkarte Felder von IPv6 Prefix Updater mit den Schaltflächen Automatisch auswählen und Alles löschen, einem Suchfeld, einem Filter und der Gruppe Statische Schnittstellen, die die Adressen von LAN und LAB mit hervorgehobenem Präfixteil auflistet" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+Jede Zeile zeigt:
+
+- **Kontrollkästchen**: angekreuzt, wenn der nächste <Terminology title="Abweichung vom letzten erfolgreichen Präfix oder dessen Länge" to="/docs/reference/terminology#prefix-transition">Präfixwechsel</Terminology> das Feld aktualisiert.
+- **Feld**: der Eintrag, etwa eine Regelbeschreibung oder ein Aliasname, dann die Feldbezeichnung und ihr Konfigurationspfad.
+- **Aktueller Wert**: der Wert, in dem der Präfixteil jeder Adresse hervorgehoben ist. Nur der hervorgehobene Teil ändert sich, und der <Terminology title="Adressbits nach dem delegierten Präfix" to="/docs/reference/terminology#host-portion">Hostanteil</Terminology> bleibt erhalten.
+
+## Gruppenschalter und Ausnahmen \{#group-switches-and-exceptions}
+
+Jede <Terminology title="Gruppe von Feldern mit einem Schalter auf der Registerkarte Felder" to="/docs/reference/terminology#field-group">Feldgruppe</Terminology> hat einen Schalter in ihrer Kopfzeile:
+
+- **Eingeschaltet**: jedes Feld dieser Art ändert sich mit dem Präfix, auch später hinzugefügte Felder, außer denen, bei denen Sie das Häkchen entfernen.
+- **Ausgeschaltet**: nur die Felder, die Sie ankreuzen, ändern sich.
+
+Ein Häkchen, das von seinem Gruppenschalter abweicht, ist eine <Terminology title="einzelnes Feld, das entgegen seinem Gruppenschalter angekreuzt oder nicht angekreuzt ist" to="/docs/reference/terminology#field-exception">Feldausnahme</Terminology>. Solange eine Gruppe Ausnahmen hat, zeigt ihre Kopfzeile einen Strich, und **N von M ausgewählt** zählt die angekreuzten Felder. Ein Klick auf die Kopfzeile schaltet die Gruppe ein oder aus und setzt jedes Häkchen darin passend zum Schalter zurück. Wählen Sie **Speichern**, um die Änderungen zu behalten.
+
+<img src={fieldException} alt="Registerkarte Felder mit eingeschalteter Gruppe Firewallregeln, einer Regel ohne Häkchen, sodass die Kopfzeile einen Strich und 2 von 3 ausgewählt zeigt, und einer Regel ohne Tracker-ID, die dem Gruppenschalter folgt" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+Eine Auswahl folgt dem Eintrag, nicht seiner Position in einer Liste, daher lenkt das Verschieben oder Löschen anderer Einträge sie nicht um. Das Paket erkennt jeden Eintrag an folgenden Merkmalen:
+
+- **Firewallregeln**: die Tracker-ID der Regel.
+- **Aliase**: der Aliasname.
+- **Statische DHCPv6-Zuordnungen**: die DUID, weil pfSense DHCPv6-Zuordnungen anhand der DUID statt der MAC-Adresse identifiziert.
+- **Portweiterleitungen und ausgehendes NAT**: der Zeitpunkt, zu dem die Regel erstellt wurde.
+- **1:1-NAT- und NPt-Einträge sowie DHCPv6-Pools**: die Beschreibung.
+- **DNS-Hostüberschreibungen**: Host, Domain und ob der Eintrag IPv4-Adressen, IPv6-Adressen oder beide enthält.
+- **Einstellungen anderer Pakete**: ein Feld, das jeden Listeneintrag eindeutig benennt, etwa sein Name oder seine Beschreibung.
+- **Weitere Einstellungen**: ein Feld, das jeden Listeneintrag eindeutig benennt und keine Adresse enthält, etwa der Name eines Gateways. Eine Auswahl gilt für alle Einträge einer einfachen Liste, etwa die DNS-Server unter **System → General Setup**.
+- **Andere Einträge**: ihre Schnittstelle, ihr Name oder ihre pfSense-ID. Eine Auswahl gilt jeweils für alle DNS-Server, NTP-Server oder RA-Subnetze einer Schnittstelle.
+
+Eine Zeile, deren Eintrag keine solche Kennung hat oder sie mit einem anderen Eintrag teilt, hat kein Kontrollkästchen und zeigt `Keine stabile Kennung, daher folgt dieses Feld dem Gruppenschalter.` Die Auswahlen werden getrennt von den Einstellungen gespeichert, daher löscht das Speichern der Registerkarte Einstellungen sie nicht.
+
+## pfSense-Gruppen \{#pfsense-groups}
+
+Elf Gruppen decken die Einstellungen von pfSense selbst ab. Nach einer Neuinstallation und nach einer Umstellung vom <Terminology title="ursprüngliches update.php-Skript, ausgeführt vom Cron-Paket" to="/docs/reference/terminology#legacy-updater">Legacy-Updater</Terminology> sind sie alle eingeschaltet.
+
+| Gruppe                                                                                                                                                        | Was sie abdeckt                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+|---------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Statische Schnittstellen                                                                                                                                      | Adressen von Schnittstellen, die auf Static IPv6 eingestellt sind. DHCPv6, SLAAC, <Terminology title="Schnittstelle mit Adresse aus dem delegierten Präfix einer anderen" to="/docs/reference/terminology#tracked-interface">Track Interface</Terminology> und andere Modi werden übersprungen.                                                                                                                                                 |
+| <Terminology title="zusätzliche Schnittstellenadresse wie CARP oder IP Alias" to="/docs/reference/terminology#virtual-ip">Virtuelle IP-Adressen</Terminology> | <Terminology title="zusätzliche Schnittstellenadresse wie CARP oder IP Alias" to="/docs/reference/terminology#virtual-ip">Virtuelle IPs</Terminology> vom Typ CARP und IP Alias. Die Typen Proxy ARP und Other gehören zur Gruppe Weitere Einstellungen, und die CIDR-Maske bleibt unverändert.                                                                                                                                                 |
+| Aliase                                                                                                                                                        | Adressen und Netze in Host- und Network-Aliasen. Port-, URL-, URL-Table- und andere Aliastypen gehören zur Gruppe Weitere Einstellungen.                                                                                                                                                                                                                                                                                                        |
+| Firewallregeln                                                                                                                                                | In Firewallregeln eingetippte Quell- und Zieladressen, einschließlich Floating-Regeln. Aliase, Schnittstellennetze wie **LAN subnets** und **any** werden übersprungen.                                                                                                                                                                                                                                                                         |
+| NAT und NPt                                                                                                                                                   | Eingetippte Adressen in Portweiterleitungen, ausgehendem NAT und 1:1-NAT sowie die Präfixe von NPt-Einträgen. NPt-Einträge, die einer Schnittstelle folgen, werden übersprungen.                                                                                                                                                                                                                                                                |
+| DHCPv6-Server                                                                                                                                                 | Adressbereiche, Bereiche für die Präfixdelegierung und Bereiche zusätzlicher Pools, Adressen statischer Zuordnungen sowie die an Clients verteilten DNS- und NTP-Server.                                                                                                                                                                                                                                                                        |
+| Router Advertisements                                                                                                                                         | Die DNS-Server und RA-Subnetze, die jede Schnittstelle ankündigt.                                                                                                                                                                                                                                                                                                                                                                               |
+| DNS-Hostüberschreibungen                                                                                                                                      | Adressen von Hostüberschreibungen im DNS-Resolver und im DNS-Forwarder, einschließlich jeder Adresse in einer durch Kommas getrennten Liste. Domainüberschreibungen gehören zur Gruppe Weitere Einstellungen.                                                                                                                                                                                                                                   |
+| IPsec                                                                                                                                                         | Local Network und NAT/BINAT-Übersetzung von <Terminology title="IPsec-Eintrag für lokale und entfernte Netze" to="/docs/reference/terminology#ipsec-phase-2">Phase-2</Terminology>-Einträgen der Modi Tunnel IPv6 und Routed (VTI), wenn ihr Typ Address oder Network ist. Entfernte Netze gehören zur Gruppe Weitere Einstellungen.                                                                                                            |
+| OpenVPN                                                                                                                                                       | IPv6-Tunnel- und lokale Netze auf Servern, IPv6-Tunnelnetze auf Clients sowie IPv6-Tunnel- und lokale Netze in <Terminology title="OpenVPN-Einstellungen für einen Client auf einem Server" to="/docs/reference/terminology#client-specific-override">clientspezifischen Überschreibungen</Terminology>. Entfernte Netze gehören zur Gruppe Weitere Einstellungen, und Server-Tunnelnetze, die einer Schnittstelle folgen, werden übersprungen. |
+| WireGuard                                                                                                                                                     | <Terminology title="Adresse eines WireGuard-Tunnels in pfSense" to="/docs/reference/terminology#wireguard-tunnel-address">Tunneladressen</Terminology> auf pfSense-WireGuard-Tunneln. Peers, zulässige IPs und Endpunkte gehören zur Gruppe Weitere Einstellungen.                                                                                                                                                                              |
+
+Wenn Sie die Gruppen ausschalten, die die Firewall nicht nutzt, bleiben unerwartete Werte aus einem <Terminology title="vollständige Liste der Feldänderungen, vor dem Schreiben erstellt" to="/docs/reference/terminology#change-plan">Änderungsplan</Terminology> heraus.
+
+## Schaltflächen, Suche und Filter \{#buttons-search-and-filters}
+
+- **Automatisch auswählen**: schaltet jede pfSense-Gruppe ein und kreuzt jedes Feld darin an. Weitere Einstellungen und die Einstellungen anderer Pakete bleiben unverändert.
+- **Alles löschen**: schaltet jede Gruppe aus und entfernt jedes Häkchen.
+- **Felder durchsuchen**: zeigt nur die Zeilen, deren Gruppe, Eintrag, Bezeichnung, Wert oder Pfad den Text enthält.
+- **Filter**: zeigt alle Zeilen, nur ausgewählte Zeilen oder nur Zeilen anderer Pakete.
+
+**Automatisch auswählen** und **Alles löschen** ändern nur die Seite, bis Sie **Speichern** wählen. Sobald eine Auswahl ohne ausgewählte Felder gespeichert ist, zeigt die Registerkarte eine Warnung, und bis Sie wieder Felder auswählen, stoppen Läufe mit `Es sind keine Konfigurationsfelder ausgewählt. Wählen Sie Felder auf der Registerkarte Felder aus.`
+
+Wenn die Registerkarte mehr als 40 Felder auflistet, sind die Gruppen anfangs eingeklappt. Wählen Sie den Namen einer Gruppe, um sie aufzuklappen.
+
+## Einstellungen anderer Pakete \{#other-packages-settings}
+
+Einstellungen, die andere Pakete unter `installedpackages` ablegen, erhalten eine eigene Gruppe, die nach dem installierten Paket benannt ist, dem sie gehören, oder nach ihrem Abschnitt, wenn ihnen keines gehört. Das Paket kann nicht wissen, was diese Felder bedeuten, daher sind sie anfangs nicht angekreuzt, und **Automatisch auswählen** wählt sie nie aus. Kreuzen Sie ein Feld erst an, nachdem Sie geprüft haben, was es in diesem Paket bewirkt.
+
+Nachdem ein Lauf eines dieser Felder geändert hat, wendet er die Einstellungen dieses Pakets erneut an, wie es die eigene Schaltfläche **Save** des Pakets tut. **Letzter Lauf** auf der Registerkarte Status listet jedes Ergebnis unter **Pakete** auf:
+
+- `Die Einstellungen des Pakets <package> wurden erneut angewendet.`
+- `Kein installiertes Paket besitzt die Einstellungen <section>. Starten Sie den Dienst, der sie verwendet, von Hand neu.` Die Werte werden trotzdem gespeichert. Das passiert auch, wenn ein Paket einen Teil seiner Einstellungen unter einem Abschnitt mit anderem Namen ablegt.
+- `Die Einstellungen des Pakets <package> konnten nicht erneut angewendet werden: <reason>` Die neuen Werte bleiben gespeichert, und nichts wird zurückgesetzt.
+
+Beide Probleme fügen außerdem einen <Terminology title="Hinweis in der Hinweisliste der pfSense-WebGUI" to="/docs/reference/terminology#webgui-notice">WebGUI-Hinweis</Terminology> hinzu.
+
+## Felder, die nicht mehr existieren \{#fields-that-no-longer-exist}
+
+Wenn der Eintrag hinter einem angekreuzten Feld gelöscht wird, erscheint das Feld oben auf der Registerkarte unter **Fehlende Felder**. Läufe überspringen es und listen es auf der Registerkarte Status unter **Übersprungene Felder** auf. **Fehlende Felder vergessen** entfernt diese Häkchen.
+
+## Weitere Einstellungen \{#other-settings}
+
+Die Gruppe **Weitere Einstellungen** listet jede weitere Adresse innerhalb des Präfixes einer Basislinie auf. Sie ist anfangs ausgeschaltet, daher ändert sich ein Wert darin nur, wenn Sie ihn ankreuzen oder die Gruppe einschalten, was auch später hinzugefügte Werte umfasst. Jede Zeile nennt ihre Art:
+
+- Die entfernte Seite jedes VPN: entfernte IPsec-Netze und entfernte Gateways sowie entfernte OpenVPN-Netze und Serveradressen.
+- WireGuard-Peers, einschließlich ihrer zulässigen IPs und Endpunkte.
+- Gateways und statische Routen.
+- Zertifikate, private Schlüssel, Passwörter und Pre-Shared Keys, deren Werte als `Wert ausgeblendet` erscheinen.
+- In Base64 gespeicherte Werte, etwa die benutzerdefinierten Optionen des DNS-Resolvers. Sie werden decodiert, umgeschrieben und wieder codiert.
+- Beschreibungen.
+- Jede andere Einstellung, die stattdessen ihren Einstellungsnamen zeigt, etwa Domainüberschreibungen des DNS-Resolvers und die DNS-Server unter **System → General Setup**.
+
+<img src={otherSettings} alt="Gruppe Weitere Einstellungen auf der Registerkarte Felder mit einer statischen Route, einer Aliasbeschreibung, Base64-codierten benutzerdefinierten Optionen des DNS-Resolvers, einer Domainüberschreibung und einem Gateway, jeweils mit ihrer Art" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+Nachdem ein Lauf einen dieser Werte geändert hat, lädt er neu, was pfSense beim Speichern dieser Einstellung neu lädt:
+
+- **Gateways und statische Routen**: das Routing, danach der Firewallfilter.
+- **DNS-Server unter System → General Setup**: die DNS-Einstellungen des Systems, danach der DNS-Resolver oder DNS-Forwarder.
+- **Werte von DNS-Resolver, DNS-Forwarder, IPsec, OpenVPN und WireGuard**: der jeweilige Dienst.
+- **Werte eines anderen Pakets**: die Einstellungen dieses Pakets, wie unter [Einstellungen anderer Pakete](#other-packages-settings) beschrieben.
+- **Beschreibungen, Zertifikate und Werte ohne bekannten Dienst**: nichts. Der neue Wert wird nur gespeichert.
+
+Es empfiehlt sich, diese Felder anzukreuzen, solange die Basislinie noch auf dem alten Präfix steht, da die Registerkarte nach einer Änderung mit dem neuen Präfix vergleicht. Entfernte VPN-Peers behalten ihre eigene Konfiguration, daher muss ein Peer, der auf eine geänderte Adresse zeigt, auf seiner Seite aktualisiert werden.
+
+## Wie Werte abgeglichen werden \{#how-values-are-matched}
+
+- Eine Adresse ändert sich nur, wenn sie zum <Terminology title="Präfix, mit dem die nächste Prüfung vergleicht" to="/docs/reference/terminology#last-successful-prefix">letzten erfolgreichen Präfix</Terminology> gehört, gemessen an der in der <Terminology title="Ausgangspräfix, aufgezeichnet ohne Konfigurationsänderung" to="/docs/reference/terminology#baseline">Basislinie</Terminology> gespeicherten Länge. Adressen aus anderen Netzen, IPv4-Adressen, Hostnamen und Aliasnamen bleiben unverändert, und die Registerkarte listet sie nicht auf.
+- In Listen, etwa Aliaseinträgen, lokalen OpenVPN-Netzen und Hostüberschreibungen des DNS-Resolvers, wird jedes Element einzeln geprüft, und die Trennzeichen bleiben wie geschrieben.
+- In den Einstellungen anderer Pakete und in der Gruppe Weitere Einstellungen wird jede Adresse im Text einzeln geprüft, und der übrige Text bleibt wie geschrieben.
+- Ein CIDR-Suffix wie `/64` bleibt wie geschrieben, und der <Terminology title="Adressbits nach dem delegierten Präfix" to="/docs/reference/terminology#host-portion">Hostanteil</Terminology> jeder Adresse bleibt erhalten.
+- Auf einer <Terminology title="Schnittstelle mit Adresse aus dem delegierten Präfix einer anderen" to="/docs/reference/terminology#tracked-interface">Track-Schnittstelle</Terminology> enthalten DHCPv6-Bereiche und statische Zuordnungen Hostsuffixe wie `::1000`, die unverändert bleiben.
+- Umgeschriebene Adressen werden in <Terminology title="kleingeschriebene, kürzeste Standardschreibweise einer Adresse" to="/docs/reference/terminology#canonical-form">kanonischer Form</Terminology> gespeichert, daher kann ihre Schreibweise von der ursprünglichen Eingabe abweichen.
+
+## Änderungen vorab prüfen \{#previewing-changes}
+
+Ein <Terminology title="Vorschau, die nie sichert oder schreibt" to="/docs/reference/terminology#dry-run">Testlauf</Terminology> liest die ausgewählten Felder erst nach einem <Terminology title="Abweichung vom letzten erfolgreichen Präfix oder dessen Länge" to="/docs/reference/terminology#prefix-transition">Präfixwechsel</Terminology>. Solange das Präfix unverändert ist, meldet er <Terminology title="Ergebnis: Präfix unverändert, nichts durchsucht oder geschrieben" to="/docs/reference/terminology#no-change">Keine Änderung</Terminology>, daher ist die Registerkarte Felder der Weg, eine neue Auswahl vorab zu prüfen. Nach einem Präfixwechsel listet seine <Terminology title="schreibgeschützte Ergebnisse nach Jetzt ausführen oder Testlauf" to="/docs/reference/terminology#command-output">Befehlsausgabe</Terminology> unter `Feldänderungen` jede Adresse auf, die er ersetzen würde.
+
+Ein <Terminology title="Vorschau, die nie sichert oder schreibt" to="/docs/reference/terminology#dry-run">Testlauf</Terminology> überspringt außerdem die Prüfung, ob pfSense die betroffenen Dienste neu laden kann. Ein fehlendes WireGuard-Paket zeigt sich daher erst bei einem echten Lauf.
+
+## WireGuard-Paket \{#wireguard-package}
+
+Zum Aktualisieren von <Terminology title="Adresse eines WireGuard-Tunnels in pfSense" to="/docs/reference/terminology#wireguard-tunnel-address">WireGuard-Tunneladressen</Terminology> ist das WireGuard-Paket nötig. Wenn sich diese Adressen ändern müssen und das Paket nicht installiert ist, stoppt ein echter Lauf vor der Sicherung mit `Die erforderliche pfSense-Abhängigkeit „/usr/local/pkg/wireguard/includes/wg.inc“ ist nicht verfügbar.`
+
+[Genehmigte Felder](/docs/reference/approved-fields) listet die genauen Konfigurationspfade hinter jeder Gruppe und die Identität auf, unter der jede Auswahl gespeichert wird.

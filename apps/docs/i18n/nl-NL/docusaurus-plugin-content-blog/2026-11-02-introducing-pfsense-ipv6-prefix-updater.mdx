@@ -1,0 +1,60 @@
+---
+title: "Dit is pfSense IPv6 Prefix Updater: een veiligere opvolger"
+description: pfSense IPv6 Prefix Updater, opvolger van het update.php-script, volgt nieuwe IPv6-prefixen, behoudt elk hostgedeelte en maakt vóór elke wijziging een back-up.
+slug: introducing-pfsense-ipv6-prefix-updater
+authors:
+  - mrjackyliang
+keywords:
+  - pfsense ipv6 prefix updater
+  - pfsense-pakket
+  - dynamische ipv6-prefix
+  - ipv6-prefixdelegatie
+  - legacy-updater
+tags:
+  - release
+  - ipv6
+  - pfsense
+---
+
+Veel ISP's delegeren een IPv6-prefix die zonder aankondiging kan veranderen. Gebeurt dat, dan raken adressen uit de oude prefix in pfSense-aliassen, interfaces en VPN-instellingen allemaal tegelijk verouderd, en kunnen services uitvallen op manieren die moeilijk te herleiden zijn.
+
+pfSense IPv6 Prefix Updater is mijn antwoord daarop: een native pfSense-pakket dat de nieuwe prefix volgt en adressen bijwerkt in de instellingenbereiken die je goedkeurt.
+
+{/* truncate */}
+
+## Waarom ik het heb gebouwd \{#why-i-built-it}
+
+Dit project begon als `update.php`, een script dat in `/root` werd geïnstalleerd en via een item van het Cron-pakket werd uitgevoerd. Het bewees dat pfSense in staat is om een nieuwe prefix te detecteren, een back-up van de configuratie te maken en oude adressen te herschrijven.
+
+Maar installaties en upgrades waren foutgevoelig, en het script verving de oude prefixtekst overal in de configuratie. Ik wilde een opvolger die alleen de velden wijzigt die hij begrijpt en laat zien wat hij heeft gedaan, zonder handmatige installatie en zonder een zelf aangemaakt item in het Cron-pakket.
+
+## Wat het pakket doet \{#what-it-does}
+
+Het pakket houdt de interfaces in de gaten die je kiest. Verandert een prefix, dan gaat het als volgt te werk:
+
+- **Behoudt het hostgedeelte** — Alleen de prefixbits veranderen, zodat elk apparaat hetzelfde adresachtervoegsel houdt.
+- **Wijzigt alleen goedgekeurde velden** — Elf pfSense-groepen, zoals Aliassen, Firewallregels, DHCPv6-server en WireGuard, staan standaard aan, en op het tabblad Velden kun je een groep uitzetten of een afzonderlijk veld uitvinken.
+- **Maakt een back-up voordat het schrijft** — Eerst komt er een configuratieback-up in Config History, daarna worden alle wijzigingen in één schrijfactie opgeslagen.
+- **Verifieert het resultaat** — Het controleert de opgeslagen waarden, herlaadt alleen de betrokken services en controleert de waarden opnieuw.
+
+Externe VPN-netwerken en peers veranderen alleen als je ze aanvinkt onder [Overige instellingen](/docs/configure/configuration-scopes#other-settings), en na elke geslaagde update volgt een optionele wijzigingsmelding.
+
+## Zo stel je het in \{#how-you-set-it-up}
+
+Voeg op het tabblad Instellingen onder **Services → IPv6 Prefix Updater** voor elke interface die je wilt bewaken een rij in Bewaakte interfaces toe met de lengte van de gedelegeerde prefix van je ISP en sla op.
+
+Selecteer daarna **Nu uitvoeren** op het tabblad Status. De eerste uitvoering legt alleen een baseline vast, zodat je het adres en de prefix kunt controleren en het tabblad Velden kunt bekijken voordat je geplande updates inschakelt, die standaard elk uur draaien via een door pfSense beheerde cronjob.
+
+Een controle die dezelfde prefix vindt, schrijft niets, en **Testuitvoering** voert een controle uit zonder back-up en zonder schrijfactie.
+
+:::info
+
+Dit onofficiële pakket installeer je met `pkg` vanuit een GitHub-release, en Netgate beoordeelt of ondersteunt het niet. Releases van versie 1.x bevatten alleen het script, dus als de nieuwste release geen `.pkg`-bestand heeft, mislukt `pkg add` met een fout Not Found (404).
+
+:::
+
+## Overstappen van het script \{#moving-from-the-script}
+
+Draait `update.php` nog via het Cron-pakket, laat het dan staan en installeer het pakket. Het verplaatst de Cron-items, opgeslagen prefixen en back-ups van het script naar het pakket en verwijdert de oude bestanden, zoals [Migreren vanaf het script](/docs/migrate-from-legacy) uitlegt.
+
+Is het project nieuw voor je? Begin dan met [Het pakket installeren](/docs/installation).

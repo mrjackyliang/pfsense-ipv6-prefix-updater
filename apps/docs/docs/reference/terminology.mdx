@@ -1,0 +1,203 @@
+---
+id: terminology
+title: Terminology
+description: Define the address, prefix, setting, run outcome, and pfSense terms used on the Settings, Status, and Fields tabs and throughout this documentation.
+keywords:
+  - pfsense ipv6 prefix updater
+  - terminology
+  - glossary
+  - delegated prefix
+  - baseline
+  - run outcomes
+tags:
+  - reference
+  - terminology
+  - glossary
+sidebar_position: 1
+---
+
+Define the terms that the Settings, Status, and Fields tabs and these guides use for addresses, prefixes, runs, and pfSense features.
+
+## Delegated Prefix
+
+The IPv6 network your ISP routes to the firewall, usually through DHCPv6 Prefix Delegation. The package follows this prefix but never requests, renews, or changes it.
+
+## Prefix Length
+
+The number of leading bits that identify a network, written as a slash and a number such as `/56`. A CIDR suffix on a configured value, such as `/64`, stays as written when the package rewrites the address.
+
+## Delegated Prefix Length
+
+The **Delegated Prefix Length** setting, which holds the size of the prefix your ISP delegates, from `/48` through `/64`. It starts at `/56`, the package never detects it, and changing it after the baseline exists counts as a prefix transition.
+
+## Global Unicast Address
+
+An IPv6 address inside `2000::/3`, the only kind of address the package reads as a source or rewrites. Link-local, unique local (`fc00::/7`), multicast, loopback, unspecified, and IPv4-mapped addresses are rejected as a source and left unchanged in the configuration.
+
+## Link-Local Address
+
+An address that works only on one network link and starts with `fe80`. The package never falls back to one, so an interface without a global address makes the run fail.
+
+## Host Portion
+
+Every address bit after the delegated prefix length, also called the host bits. The package copies these bits unchanged into the new address, even when the boundary falls inside a hexadecimal digit.
+
+## Canonical Form
+
+The standard lowercase, shortest spelling of an IPv6 address, such as `2001:db8::1` for `2001:0DB8:0:0::1`. The package compares addresses in this form and writes rewritten values this way, so a value can look different while meaning the same address.
+
+## Tracked Interface
+
+A pfSense interface whose IPv6 address comes from another interface's delegated prefix through the **Track Interface** configuration type. It is often the right Monitored Interface when WAN has no global address, and the package never rewrites its address because pfSense generates it.
+
+## Monitored Interface
+
+One row of the **Monitored Interfaces** setting, which names an interface whose global address reveals a current prefix. Status shows its description followed by pfSense's internal name, such as `LAN (lan)`.
+
+Adding an interface makes the next run record a new baseline for it instead of comparing prefixes.
+
+## Source Address
+
+The primary global address pfSense reports for the Monitored Interface, read fresh on every run. Status shows it in canonical form as **Observed Source Address** and **Last Successful Source Address**.
+
+## Observed Prefix
+
+The network calculated from the source address and the Delegated Prefix Length, shown on Status with its length. Each run compares it with the last successful prefix.
+
+## Baseline
+
+The prefix and source address the package records as its starting point, without changing the configuration. A baseline is recorded on the first run for each monitored interface, whenever the package state is missing, when an operator explicitly accepts the active prefix, and from the legacy updater's saved prefix during a migration.
+
+## Last Successful Prefix
+
+The stored prefix and length that the next check compares against. Only the Initialized, Accepted, and Success outcomes change it, and every other outcome leaves it as it was.
+
+## Prefix Transition
+
+A difference between the last successful prefix and the observed prefix, including the same network with a different prefix length. Only a transition makes the package scan the configuration, plan changes, and write.
+
+## Field Group
+
+A group of fields with one switch on the Fields tab. The eleven pfSense groups are Static Interfaces, Virtual IP Addresses, Aliases, Firewall Rules, NAT and NPt, DHCPv6 Server, Router Advertisements, DNS Host Overrides, IPsec, OpenVPN, and WireGuard, and they start on. Each other package's settings get a group of their own that starts off, and every other value is in Other Settings, which starts off too. A group that is on covers every field of its kind, including fields added later.
+
+## Approved Field
+
+An exact configuration field the package is allowed to rewrite: a field in a group that is on and isn't unticked, or a ticked field in a group that is off. Values outside approved fields are never changed.
+
+## Field Exception
+
+A single field whose tick on the Fields tab differs from its group switch: an unticked field in a group that is on, or a ticked field in a group that is off. Each exception names its entry, such as a firewall rule's tracker ID, instead of a list position.
+
+## Change Plan
+
+The complete list of approved fields that will change, with each old value, new value, and service to reload. The package builds the whole plan before it changes anything.
+
+## Scheduled Updates
+
+Automatic checks controlled by **Enable Scheduled Updates**, which is off by default, and **Schedule**, which defaults to Hourly. Saving Settings adds or removes a pfSense-managed cron entry, so the Cron package isn't needed.
+
+## Manual Run
+
+A check started with **Run Now** or **Dry Run** on the Status tab. It runs even while scheduled updates are off.
+
+## Dry Run
+
+A preview started with **Dry Run** that never creates a backup or writes the configuration. When it finds a prefix transition with fields to change, its outcome is **Dry run** and it lists the planned field count.
+
+With an unchanged prefix, a dry run reports No change without scanning the configuration.
+
+## Command Output
+
+The read-only **Latest Run** box under **Command Output** that appears after Run Now, Dry Run, or Accept Current Prefix. It shows the run's lines from `Status` to `Summary`, followed by `Field changes` after a dry run or a Success, or a single line when the action fails or another run holds the lock.
+
+## Run Lock
+
+The lock that lets only one check run at a time. A second check exits without reading the configuration, and the lock is released as soon as the running check ends.
+
+## Package State
+
+The file `/cf/conf/ipv6-prefix-updater/state.json`, where the package keeps each baseline and its latest run outside the pfSense configuration. Only root can read it, and it survives reboots, RAM disks, and package removal so a reinstall keeps each baseline.
+
+## Initialized
+
+The outcome of a run that records a new baseline. It doesn't create a backup, change the configuration, or send a notification.
+
+## Initialization Preview
+
+The outcome of a dry run made while no baseline exists. It shows the baseline a normal run would record, without recording it.
+
+## No Change
+
+The outcome when the observed prefix and its length match the last successful prefix, also called a no-op run. The run doesn't scan the configuration, create a backup, reload services, or send a notification.
+
+## Warning
+
+The outcome when a prefix transition is found but no approved field belongs to the old prefix. Nothing is written, the baseline stays where it was, and each Warning adds a WebGUI notice.
+
+## Accepted
+
+The outcome after an operator selects **Accept Current Prefix** and confirms that the saved addresses already use the active prefix. The package moves the baseline without scanning approved fields, creating a backup, writing configuration, or reloading services.
+
+## Success
+
+The outcome after the backup, the single configuration write, the service reloads, and the value checks all complete. The baseline moves to the new prefix, and a change notification is sent if it's turned on.
+
+## Failure
+
+The outcome when a check or safety stage stops the run. If the stop comes after the configuration was saved, the new values stay saved and the baseline stays on the old prefix.
+
+## Disabled
+
+The outcome of a scheduled check that runs while **Enable Scheduled Updates** is off. It stops before reading any interface or the package state, and it appears only in the command's own output.
+
+## Change Notification
+
+The message sent after a Success when **Send Change Notifications** is selected, which it is by default. It goes to the notification channels configured in pfSense and also appears as a WebGUI notice.
+
+## Notification Channels
+
+The remote alert services set up under **System → Advanced → Notifications**, such as email. Change notifications use these channels, while Warning and Failure notices stay local.
+
+## WebGUI Notice
+
+An alert in the pfSense WebGUI notices list that links to the package's Status tab, or to the Cleanup tab after a move from the legacy updater. Warning and Failure outcomes always add one, even when **Send Change Notifications** is cleared.
+
+## System Log
+
+The pfSense general log under **Status → System Logs → System → General**. Each line the package writes starts with `IPv6 Prefix Updater:`.
+
+## Configuration Backup
+
+A copy of the configuration as it was before a write, made with pfSense's backup function and kept on the **Backups** tab as well. The package makes one on each run that writes, before any field changes, and none on runs that don't write.
+
+## Config History
+
+The list of saved configuration revisions under **Diagnostics → Backup & Restore → Config History**. The revision described as `IPv6 Prefix Updater changed ...` holds the updated configuration, so the revision saved before it is the one to restore.
+
+## Service Reload
+
+The pfSense action that applies changed settings to a running service. The package reloads only the services whose fields changed and lists them under **Reloaded Services**.
+
+## Virtual IP
+
+An extra address assigned to an interface under **Firewall → Virtual IPs**. The Virtual IP Addresses group updates CARP and IP Alias entries only.
+
+## IPsec Phase 2
+
+An IPsec entry that defines the local and remote networks of a tunnel. The IPsec group covers the local side of Tunnel IPv6 and Routed (VTI) entries, and the remote side is in Other Settings.
+
+## Client Specific Override
+
+An OpenVPN entry under **VPN → OpenVPN → Client Specific Overrides** that sets options for one client. The package can update its IPv6 tunnel network and its IPv6 local networks.
+
+## WireGuard Tunnel Address
+
+An interface address assigned to a WireGuard tunnel on pfSense. Updating it needs the WireGuard package, and peer allowed IPs and endpoints are in Other Settings.
+
+## Legacy Updater
+
+Version 1.x of this project, an `update.php` script installed in `/root` and run by a Cron package entry. It replaced the old prefix text anywhere in the configuration.
+
+## Unofficial Package
+
+A package installed with `pkg add` from GitHub instead of Netgate's package repository. Netgate doesn't review or support it, and you install its updates yourself.

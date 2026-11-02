@@ -1,0 +1,38 @@
+{
+  "layout.learn.title": {
+    "message": "가이드"
+  },
+  "layout.resources.title": {
+    "message": "리소스"
+  },
+  "sections.learn.0.label": {
+    "message": "설치 및 구성"
+  },
+  "sections.learn.1.label": {
+    "message": "모니터링할 인터페이스 / 위임된 접두사 길이"
+  },
+  "sections.learn.2.label": {
+    "message": "상태 / 작업"
+  },
+  "sections.learn.3.label": {
+    "message": "문제 해결"
+  },
+  "sections.resources.0.label": {
+    "message": "안전 및 운영"
+  },
+  "sections.resources.1.label": {
+    "message": "결과와 테스트"
+  },
+  "sections.resources.2.label": {
+    "message": "pfSense 문서"
+  },
+  "sections.resources.3.label": {
+    "message": "소스 코드"
+  },
+  "sections.resources.4.label": {
+    "message": "블로그"
+  },
+  "copyright": {
+    "message": "저작권 © 2023-2026 Jacky Liang. MIT 라이선스로 배포됩니다."
+  }
+}

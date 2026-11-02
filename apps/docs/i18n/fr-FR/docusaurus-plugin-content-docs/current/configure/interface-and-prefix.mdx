@@ -1,0 +1,95 @@
+---
+id: interface-and-prefix
+title: Interface et préfixe
+description: Choisissez les interfaces surveillées qui portent vos préfixes délégués, indiquez pour chacune la longueur de préfixe de votre FAI et voyez l’effet d’un changement ultérieur de l’une ou l’autre.
+keywords:
+  - pfsense ipv6 prefix updater
+  - interface surveillée
+  - longueur du préfixe délégué
+  - délégation de préfixe dhcpv6
+  - partie hôte
+tags:
+  - configuration
+  - interface
+  - prefix length
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import monitoredInterfaces from './_assets_/interface-and-prefix-1.png';
+
+Choisissez les interfaces qui révèlent vos préfixes actuels et indiquez la <Terminology title="nombre de bits réseau initiaux, comme /56" to="/docs/reference/terminology#prefix-length">longueur de préfixe</Terminology> que votre FAI délègue pour chacune.
+
+## Choisir les interfaces surveillées \{#choose-the-monitored-interfaces}
+
+Ajoutez une ligne **Interfaces surveillées** pour chaque interface dont l’<Terminology title="adresse IPv6 publique comprise dans 2000::/3" to="/docs/reference/terminology#global-unicast-address">adresse globale</Terminology> provient du <Terminology title="réseau IPv6 que votre FAI route vers le pare-feu" to="/docs/reference/terminology#delegated-prefix">préfixe délégué</Terminology>. Le paquet relit chacune de ces adresses à chaque exécution et ne se rabat jamais sur une <Terminology title="adresse fe80:: valable sur un seul lien" to="/docs/reference/terminology#link-local-address">adresse lien-local</Terminology>.
+
+Si le WAN ne reçoit qu’un <Terminology title="réseau IPv6 que votre FAI route vers le pare-feu" to="/docs/reference/terminology#delegated-prefix">préfixe délégué</Terminology>, une <Terminology title="interface adressée depuis le préfixe délégué d’une autre interface" to="/docs/reference/terminology#tracked-interface">interface suivie</Terminology> comme LAN en tire généralement une <Terminology title="adresse IPv6 publique comprise dans 2000::/3" to="/docs/reference/terminology#global-unicast-address">adresse globale</Terminology> et constitue le bon choix.
+
+<img src={monitoredInterfaces} alt="Onglet Paramètres d’IPv6 Prefix Updater avec deux lignes Interfaces surveillées, LAN et LAB, chacune réglée sur une longueur de préfixe délégué de /56, et un renvoi vers l’onglet Champs" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+- **Ajouter** : ajoute une ligne. Chaque interface ne peut figurer que dans une seule ligne, et un enregistrement sans aucune ligne est refusé.
+- **Supprimer** : retire une ligne. pfSense masque ce bouton tant qu’il ne reste qu’une seule ligne.
+- **Une exécution pour toutes les lignes** : chaque vérification planifiée lit toutes les interfaces surveillées et enregistre leurs modifications en une seule écriture précédée d’une sauvegarde.
+
+La plupart des pare-feu n’ont besoin que d’une ligne. Ajoutez-en d’autres quand plusieurs interfaces reçoivent leur propre préfixe délégué, par exemple avec deux connexions WAN, ou quand vous voulez faire vérifier l’adresse de chaque segment LAN.
+
+Pour confirmer ce choix :
+
+1. Enregistrez les paramètres avec la case **<Terminology title="vérifications automatiques via une entrée cron gérée par pfSense" to="/docs/reference/terminology#scheduled-updates">Activer les mises à jour planifiées</Terminology>** décochée.
+2. Dans l’onglet État, cliquez sur **Exécuter maintenant**.
+3. Comparez **<Terminology title="adresse globale signalée par pfSense pour l’interface surveillée" to="/docs/reference/terminology#source-address">Adresse source observée</Terminology>** avec l’adresse indiquée sous **Status → Interfaces**.
+4. Si l’adresse appartient au mauvais réseau, sélectionnez une autre interface et recommencez.
+
+L’onglet État affiche la description de chaque interface suivie de son nom interne dans pfSense, par exemple `LAN (lan)`.
+
+## Indiquer la longueur du préfixe délégué \{#enter-the-delegated-prefix-length}
+
+Sélectionnez la longueur indiquée dans les détails de service de votre FAI ou la taille de délégation de préfixe DHCPv6 de l’interface WAN. **<Terminology title="paramètre de taille du préfixe du FAI, de /48 à /64" to="/docs/reference/terminology#delegated-prefix-length">Longueur du préfixe délégué</Terminology>** accepte les valeurs de `/48` à `/64`, vaut `/56` au départ et n’est jamais détectée automatiquement.
+
+:::tip
+
+Il est recommandé de confirmer la longueur avant le premier clic sur **Exécuter maintenant**, car la <Terminology title="préfixe de départ enregistré sans modifier la configuration" to="/docs/reference/terminology#baseline">référence</Terminology> enregistre la longueur avec le préfixe.
+
+:::
+
+## Vérifier le réseau calculé \{#check-the-calculated-network}
+
+Après une exécution, **<Terminology title="adresse source masquée à la longueur du préfixe" to="/docs/reference/terminology#observed-prefix">Préfixe observé</Terminology>** affiche le réseau calculé. Les longueurs qui se terminent au milieu d’un chiffre hexadécimal, comme `/57` ou `/63`, fonctionnent de la même façon, car le paquet masque les adresses bit par bit.
+
+Pour une délégation `/56` qui passe de `2001:db8:abcd:7800::/56` à `2001:db8:abcd:8800::/56` :
+
+```text
+Source address:    2001:db8:abcd:88aa::1
+Current prefix:    2001:db8:abcd:8800::/56
+Previous address:  2001:db8:abcd:78aa::42
+Updated address:   2001:db8:abcd:88aa::42
+```
+
+Seuls les 56 premiers bits changent, et la <Terminology title="bits de l’adresse situés après le préfixe délégué" to="/docs/reference/terminology#host-portion">partie hôte</Terminology> `aa::42` reste identique. Dans ces guides, les adresses sous `2001:db8::/32` sont des exemples de documentation.
+
+## Changer les interfaces \{#changing-the-interfaces}
+
+:::warning
+
+Si vous ajoutez une <Terminology title="interface dont l’adresse révèle le préfixe actuel" to="/docs/reference/terminology#monitored-interface">interface surveillée</Terminology>, ou si vous remplacez l’interface d’une ligne par une autre, la prochaine exécution enregistre une nouvelle <Terminology title="préfixe de départ enregistré sans modifier la configuration" to="/docs/reference/terminology#baseline">référence</Terminology> pour celle-ci, sans modifier la configuration. Si son préfixe avait changé sans que le paquet l’ait encore appliqué, ce changement est ignoré.
+
+:::
+
+Supprimer une ligne conserve la <Terminology title="préfixe de départ enregistré sans modifier la configuration" to="/docs/reference/terminology#baseline">référence</Terminology> de cette interface dans l’<Terminology title="fichier du paquet contenant la référence et la dernière exécution" to="/docs/reference/terminology#package-state">état du paquet</Terminology>. Si vous ajoutez de nouveau l’interface plus tard, le paquet compare son préfixe à cette référence conservée au lieu d’en enregistrer une nouvelle.
+
+## Changer la longueur du préfixe \{#changing-the-prefix-length}
+
+Modifier **<Terminology title="paramètre de taille du préfixe du FAI, de /48 à /64" to="/docs/reference/terminology#delegated-prefix-length">Longueur du préfixe délégué</Terminology>** une fois la <Terminology title="préfixe de départ enregistré sans modifier la configuration" to="/docs/reference/terminology#baseline">référence</Terminology> établie compte comme un <Terminology title="écart avec le dernier préfixe réussi ou sa longueur" to="/docs/reference/terminology#prefix-transition">changement de préfixe</Terminology>, même si le réseau lui-même ne change pas. Le paquet compare les adresses avec la longueur enregistrée dans la <Terminology title="préfixe de départ enregistré sans modifier la configuration" to="/docs/reference/terminology#baseline">référence</Terminology> et remplace les bits selon la nouvelle longueur.
+
+:::danger
+
+Réduire le réseau en allongeant le préfixe écrase les bits de sous-réseau de chaque adresse correspondante. Avec l’<Terminology title="adresse globale signalée par pfSense pour l’interface surveillée" to="/docs/reference/terminology#source-address">adresse source</Terminology> `2001:db8:1234:ab00::1` et une <Terminology title="préfixe de départ enregistré sans modifier la configuration" to="/docs/reference/terminology#baseline">référence</Terminology> en `/56`, passer à `/64` transforme `2001:db8:1234:abcc::42` en `2001:db8:1234:ab00::42`.
+
+:::
+
+Élargir le réseau en raccourcissant le préfixe, par exemple de `/64` à `/56`, peut ne rien laisser à modifier. L’exécution signale alors <Terminology title="résultat : préfixe changé, mais aucun champ approuvé correspondant" to="/docs/reference/terminology#warning">Avertissement</Terminology> à chaque passage, jusqu’à ce que le préfixe lui-même change ou que vous vérifiiez les adresses enregistrées et [acceptiez le préfixe actuel](/docs/operate/backups-and-recovery#after-a-failed-run) comme nouvelle référence.
+
+Avant de changer la longueur, il est recommandé de décocher **<Terminology title="vérifications automatiques via une entrée cron gérée par pfSense" to="/docs/reference/terminology#scheduled-updates">Activer les mises à jour planifiées</Terminology>** dans le même enregistrement. Une **<Terminology title="aperçu qui ne sauvegarde ni n’écrit jamais" to="/docs/reference/terminology#dry-run">Simulation</Terminology>** affiche alors le nombre de champs prévus, chaque modification prévue sous `Modifications des champs` et le **Résumé** avant que vous cliquiez sur **Exécuter maintenant**.
+
+[Établissez la référence](/docs/first-run) ensuite, puis choisissez les champs dans l’onglet [Champs](/docs/configure/configuration-scopes).

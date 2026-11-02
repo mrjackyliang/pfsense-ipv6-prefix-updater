@@ -1,0 +1,85 @@
+---
+id: migrate-from-legacy
+title: Migrate From the Script
+description: Install the package over the legacy update.php script and let it move the Cron entries, saved prefixes, and backups for you, then review the result on the Cleanup tab.
+keywords:
+  - pfsense ipv6 prefix updater
+  - legacy updater
+  - migration
+  - update.php
+  - cron package
+  - cleanup
+tags:
+  - setup
+  - migration
+  - legacy updater
+sidebar_position: 5
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import cleanupBefore from './_assets_/migrate-from-legacy-1.png';
+import cleanupAfter from './_assets_/migrate-from-legacy-2.png';
+
+Move from the <Terminology title="original update.php script run by the Cron package" to="/docs/reference/terminology#legacy-updater">legacy updater</Terminology> to the package by installing it, and the package takes over the script's interfaces, saved prefixes, and backups by itself.
+
+## What Changes
+
+| Area          | <Terminology title="original update.php script run by the Cron package" to="/docs/reference/terminology#legacy-updater">Legacy updater</Terminology> | Package                                                                                                                                                                                                                                                                                                                                                        |
+|---------------|------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Installation  | `install.sh` copies files into `/root/pfsense-ipv6-prefix-updater`                                                                                   | `pkg add` installs a pfSense package                                                                                                                                                                                                                                                                                                                           |
+| Scheduling    | A Cron package entry you create                                                                                                                      | The **Schedule** setting, with a cron entry that pfSense manages                                                                                                                                                                                                                                                                                               |
+| Interfaces    | One Cron entry per operating-system device, such as `igb1`                                                                                           | One **Monitored Interfaces** row per pfSense interface, such as LAN, all checked in one run                                                                                                                                                                                                                                                                    |
+| What changes  | The old prefix text anywhere in the configuration, including base64-encoded values                                                                   | <Terminology title="exact configuration field the package may rewrite" to="/docs/reference/terminology#approved-field">Approved fields</Terminology> you select on the **Fields** tab                                                                                                                                                                          |
+| Backups       | World-readable copies in `/root/pfsense-ipv6-prefix-updater-backups`                                                                                 | A <Terminology title="copy of the configuration saved before a write" to="/docs/reference/terminology#configuration-backup">configuration backup</Terminology> in <Terminology title="pfSense list of saved configuration revisions" to="/docs/reference/terminology#config-history">Config History</Terminology> and on the **Backups** tab before each write |
+| Saved prefix  | `/root/pfsense-ipv6-prefix-updater-cache`                                                                                                            | The <Terminology title="package file holding the baseline and last run" to="/docs/reference/terminology#package-state">package state</Terminology>, seeded from the legacy cache during the move                                                                                                                                                               |
+| Notifications | Sent after every change                                                                                                                              | An optional <Terminology title="alert sent after a verified successful update" to="/docs/reference/terminology#change-notification">change notification</Terminology> after a <Terminology title="outcome: fields updated, saved, reloaded, and verified" to="/docs/reference/terminology#success">Success</Terminology>                                       |
+
+## Install the Package
+
+[Install the package](/docs/installation) with `pkg add` while the legacy updater is still in place. There is nothing to remove first, and it is recommended not to delete the Cron entries or the `/root` folders yourself, because the package reads them during the move.
+
+Running the old install command again doesn't reinstall the script. From version 2 on, it prints an error with the `pkg add` command and changes nothing.
+
+## What Happens Automatically
+
+The install step finds the legacy updater and moves it into the package in this order:
+
+1. **Backup**: saves a <Terminology title="copy of the configuration saved before a write" to="/docs/reference/terminology#configuration-backup">configuration backup</Terminology> before anything changes.
+2. **Interfaces**: turns each Cron entry into a **Monitored Interfaces** row by mapping its device, such as `igb1.10`, to the pfSense interface that uses it, and keeps its <Terminology title="number of leading network bits, such as /56" to="/docs/reference/terminology#prefix-length">prefix length</Terminology>.
+3. **Schedule**: picks the package **Schedule** that checks at least as often as the Cron entries did, and turns on <Terminology title="automatic checks run from a pfSense-managed cron entry" to="/docs/reference/terminology#scheduled-updates">scheduled updates</Terminology>.
+4. **Baselines**: records each saved prefix as the <Terminology title="starting prefix recorded without changing configuration" to="/docs/reference/terminology#baseline">baseline</Terminology> for its interface, so no prefix change is lost.
+5. **Cron entries**: removes only the entries that run `update.php`, in the same configuration write as the new settings, so the two updaters never run at once.
+6. **Backups**: copies each legacy backup to the **Backups** tab, readable by root only, and deletes the original after the copy is verified.
+7. **Old files**: deletes the script, its saved prefixes, the downloaded archive, and the saved installer from `/root`.
+
+A WebGUI notice links to the Cleanup tab when the move is done. If the legacy script is running at that moment, the package waits and finishes the move on the next scheduled check.
+
+### Several Cron Entries
+
+Each Cron entry that names a different device becomes its own row, and one run checks them all. Interfaces that share one <Terminology title="IPv6 network your ISP routes to the firewall" to="/docs/reference/terminology#delegated-prefix">delegated prefix</Terminology> update shared fields once, in a single backed-up write.
+
+A Cron entry whose device no longer belongs to any pfSense interface is removed and listed as a warning, because the script could not have updated anything through it.
+
+### Saved Prefixes That Are Out of Date
+
+If the ISP changed the prefix after the legacy updater last ran, its saved prefix stays the <Terminology title="starting prefix recorded without changing configuration" to="/docs/reference/terminology#baseline">baseline</Terminology>. The first package check then finds the fields still on the old prefix and updates them.
+
+When no approved field uses an old saved prefix, the current prefix becomes the baseline instead, so the first check doesn't report a <Terminology title="outcome: prefix changed, but no approved field matched" to="/docs/reference/terminology#warning">Warning</Terminology>.
+
+## Review the Cleanup Tab
+
+Open **Services → IPv6 Prefix Updater → Cleanup** to see every legacy leftover and what happened to it.
+
+<img src={cleanupBefore} alt="IPv6 Prefix Updater Cleanup tab listing two legacy Cron entries, the legacy script, saved prefixes for two devices, one legacy backup, and two installer downloads before cleanup" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+- **1.x Leftovers**: the Cron entries, script, saved prefixes, backups, installer downloads, and script lock, each marked **Found** or **Not present**.
+- **Last Cleanup**: each step the move took and any warning, such as a device that isn't assigned to an interface.
+- **Clean Up Now**: runs the same move immediately instead of waiting for the next scheduled check. Other Cron entries are never touched.
+
+<img src={cleanupAfter} alt="IPv6 Prefix Updater Cleanup tab after Clean Up Now, listing the backup, the removed Cron entries, the moved backup, and the deleted legacy files" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Check Coverage
+
+After the first real <Terminology title="change from the last successful prefix or length" to="/docs/reference/terminology#prefix-transition">prefix transition</Terminology>, compare **Changed Fields** and **Summary** with what the <Terminology title="original update.php script run by the Cron package" to="/docs/reference/terminology#legacy-updater">legacy updater</Terminology> used to change. The legacy updater also rewrote gateways, static routes, descriptions, and Base64-encoded values. The package changes those only when they're ticked under **Other Settings** on the **Fields** tab, so it is recommended to tick them before the prefix changes.
+
+A move starts with every pfSense <Terminology title="group of fields with one switch on the Fields tab" to="/docs/reference/terminology#field-group">field group</Terminology> on, as **Auto-select** sets them. [Fields](/docs/configure/configuration-scopes) lists every group and how to turn one off.

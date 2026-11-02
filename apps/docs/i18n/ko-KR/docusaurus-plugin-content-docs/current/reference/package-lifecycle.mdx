@@ -1,0 +1,65 @@
+---
+id: package-lifecycle
+title: 업데이트 또는 제거
+description: 설치된 버전을 확인하고, 새 릴리스를 기존 버전 위에 설치하거나 패키지를 제거하며, 각 단계가 유지하거나 삭제하는 항목을 확인합니다.
+keywords:
+  - pfsense ipv6 prefix updater
+  - 패키지 업데이트
+  - 패키지 제거
+  - pkg delete
+  - 재설치
+tags:
+  - reference
+  - maintenance
+  - pfsense
+sidebar_position: 5
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+pfSense 셸에서 설치된 버전을 확인하거나, 새 릴리스를 설치하거나, 패키지를 제거합니다.
+
+## 설치된 버전 확인 \{#check-the-installed-version}
+
+```shell
+pkg info pfSense-pkg-Ipv6PrefixUpdater
+```
+
+보고된 버전을 [최신 GitHub 릴리스](https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest)와 비교합니다.
+
+## 패키지 업데이트 \{#update-the-package}
+
+먼저 **Diagnostics → Backup & Restore**에서 구성 사본을 다운로드하는 것을 권장합니다. 그런 다음 기존 패키지 위에 최신 릴리스를 설치합니다.
+
+```shell
+pkg add -f https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
+```
+
+설치 단계는 cron 항목을 저장된 설정과 다시 동기화하며 모든 <Terminology title="구성을 바꾸지 않고 기록한 시작 접두사" to="/docs/reference/terminology#baseline">기준선</Terminology>을 유지합니다. [패키지 설치](/docs/installation#verify-the-download-first)의 체크섬 단계는 업데이트에도 똑같이 사용할 수 있습니다.
+
+업데이트 후에는 다음을 수행합니다.
+
+1. **Services → IPv6 Prefix Updater → 설정**을 열고 저장된 값을 확인합니다.
+2. 상태 탭에서 **현재 상태**를 확인합니다. 각 인터페이스는 자신의 <Terminology title="구성을 바꾸지 않고 기록한 시작 접두사" to="/docs/reference/terminology#baseline">기준선</Terminology>을 유지합니다.
+
+어떤 행에 `초기화되지 않았습니다`가 표시되면 **지금 실행**이 그 행에 대한 새 <Terminology title="구성을 바꾸지 않고 기록한 시작 접두사" to="/docs/reference/terminology#baseline">기준선</Terminology>을 기록합니다. 그러면 그 기준선 이전의 접두사를 아직 쓰는 주소는 변경되지 않은 채로 남습니다.
+
+## 패키지 제거 \{#remove-the-package}
+
+먼저 **<Terminology title="pfSense가 관리하는 cron 항목으로 실행하는 자동 확인" to="/docs/reference/terminology#scheduled-updates">예약 업데이트 사용</Terminology>**을 해제해 두면, pfSense가 저장된 설정을 유지하는 경우 나중에 다시 설치할 때 일정이 바로 시작되지 않습니다. 그런 다음 다음 명령을 실행합니다.
+
+```shell
+pkg delete pfSense-pkg-Ipv6PrefixUpdater
+```
+
+제거하면 패키지의 cron 항목과 <Terminology title="두 확인이 동시에 실행되지 않게 막는 잠금" to="/docs/reference/terminology#run-lock">실행 잠금</Terminology> 파일이 삭제됩니다. <Terminology title="기준선과 마지막 실행을 담은 패키지 파일" to="/docs/reference/terminology#package-state">패키지 상태</Terminology>와 **백업** 탭의 사본은 `/cf/conf/ipv6-prefix-updater`에 남으므로, 업데이트 중에 pfSense가 자체적으로 제거 후 재설치를 해도 <Terminology title="구성을 바꾸지 않고 기록한 시작 접두사" to="/docs/reference/terminology#baseline">기준선</Terminology>을 잃지 않습니다.
+
+제거해도 이미 구성에 저장된 주소는 되돌려지지 않으며, 패키지의 리비전은 <Terminology title="저장된 구성 리비전을 보여 주는 pfSense 목록" to="/docs/reference/terminology#config-history">Config History</Terminology>에 남습니다. 남겨 둔 파일까지 제거하려면 패키지를 제거한 뒤 `rm -rf /cf/conf/ipv6-prefix-updater`를 실행합니다.
+
+## 나중에 다시 설치 \{#reinstall-later}
+
+다시 설치하면 남아 있는 <Terminology title="기준선과 마지막 실행을 담은 패키지 파일" to="/docs/reference/terminology#package-state">패키지 상태</Terminology>를 찾으므로, 첫 실행은 저장된 각 <Terminology title="구성을 바꾸지 않고 기록한 시작 접두사" to="/docs/reference/terminology#baseline">기준선</Terminology>과 비교하고 이전 접두사에 남아 있는 필드를 업데이트합니다. 이전 설정이 **<Terminology title="pfSense가 관리하는 cron 항목으로 실행하는 자동 확인" to="/docs/reference/terminology#scheduled-updates">예약 업데이트 사용</Terminology>**이 선택된 채로 남아 있다면 설치 단계가 일정을 바로 켭니다.
+
+처음부터 다시 시작하려면 다시 설치하기 전에 `/cf/conf/ipv6-prefix-updater`를 삭제합니다. 그러면 첫 실행은 구성을 변경하지 않고 새 <Terminology title="구성을 바꾸지 않고 기록한 시작 접두사" to="/docs/reference/terminology#baseline">기준선</Terminology>을 기록하며 <Terminology title="결과: 기준선 기록, 구성 변경 없음" to="/docs/reference/terminology#initialized">초기화됨</Terminology>을 보고합니다.
+
+유지 관리 전에는 [백업 및 복구](/docs/operate/backups-and-recovery)를, 다시 설치한 뒤에는 [기준선 설정](/docs/first-run)을 검토합니다.

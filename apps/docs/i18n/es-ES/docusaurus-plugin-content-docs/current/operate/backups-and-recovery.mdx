@@ -1,0 +1,120 @@
+---
+id: backups-and-recovery
+title: Copias de seguridad y recuperación
+description: Busca en la pestaña Copias de seguridad o en el historial de configuración la versión previa a una actualización del paquete, restáurala con pfSense y recupérate de una ejecución que falló tras guardar.
+keywords:
+  - pfsense ipv6 prefix updater
+  - copia de seguridad de la configuración
+  - historial de configuración
+  - restaurar
+  - recuperación
+tags:
+  - operations
+  - backup
+  - recovery
+  - config history
+sidebar_position: 3
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import backupList from './_assets_/backups-and-recovery-1.png';
+
+Busca la configuración anterior a una actualización en la pestaña **Copias de seguridad** o en el <Terminology title="lista de pfSense de revisiones guardadas de la configuración" to="/docs/reference/terminology#config-history">historial de configuración</Terminology> de pfSense y restáurala con las propias herramientas de pfSense.
+
+## Cuándo se crea una copia de seguridad \{#when-a-backup-is-created}
+
+El paquete solo crea una <Terminology title="copia de la configuración guardada antes de escribir" to="/docs/reference/terminology#configuration-backup">copia de seguridad de la configuración</Terminology> en una ejecución que escribe, justo antes de cambiar ningún campo. **<Terminology title="copia de la configuración guardada antes de escribir" to="/docs/reference/terminology#configuration-backup">Copia de seguridad de la configuración creada</Terminology>**, en la pestaña Estado, indica si la última ejecución hizo una.
+
+No se crea ninguna copia de seguridad cuando una ejecución termina como:
+
+- <Terminology title="resultado: referencia registrada, configuración sin cambios" to="/docs/reference/terminology#initialized">Inicializado</Terminology> o <Terminology title="resultado: simulación antes de que exista una referencia" to="/docs/reference/terminology#initialization-preview">Vista previa de la inicialización</Terminology>.
+- <Terminology title="resultado: prefijo sin cambios, nada analizado ni escrito" to="/docs/reference/terminology#no-change">Sin cambios</Terminology>.
+- <Terminology title="vista previa que nunca crea copias ni escribe" to="/docs/reference/terminology#dry-run">Simulación</Terminology>.
+- **Aceptado**, porque aceptar el prefijo actual solo cambia el <Terminology title="archivo del paquete con la referencia y la última ejecución" to="/docs/reference/terminology#package-state">estado del paquete</Terminology>.
+- <Terminology title="resultado: el prefijo cambió, pero ningún campo aprobado coincidió" to="/docs/reference/terminology#warning">Advertencia</Terminology>.
+- <Terminology title="resultado: una comprobación o etapa de seguridad detuvo la ejecución" to="/docs/reference/terminology#failure">Fallo</Terminology> antes de la etapa de copia de seguridad, como un problema con los ajustes, con la dirección o con la capacidad de recarga.
+
+## Pestaña Copias de seguridad \{#backups-tab}
+
+La pestaña **Copias de seguridad** de **Services → IPv6 Prefix Updater** enumera las copias propias de `config.xml` que guarda el paquete, de la más reciente a la más antigua. Siguen disponibles después de que pfSense retire las revisiones más antiguas del <Terminology title="lista de pfSense de revisiones guardadas de la configuración" to="/docs/reference/terminology#config-history">historial de configuración</Terminology>.
+
+<img src={backupList} alt="Pestaña Copias de seguridad de IPv6 Prefix Updater con copias de seguridad del paquete hechas antes de actualizaciones del prefijo y antes de una migración heredada, además de copias importadas del actualizador heredado, cada una con las acciones Descargar y Eliminar" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+- **Antes de actualizar el prefijo**: se crea justo antes de que una ejecución escriba. **Detalles** indica el prefijo antiguo y el nuevo de cada interfaz.
+- **Antes de migrar desde 1.x**: se creó antes de que el paquete [trasladara el actualizador heredado](/docs/migrate-from-legacy) a sus ajustes.
+- **Script 1.x**: una copia de seguridad que hizo el <Terminology title="script update.php original ejecutado por el paquete Cron" to="/docs/reference/terminology#legacy-updater">actualizador heredado</Terminology>, importada con su nombre y su hora originales.
+
+Solo se conservan las 10 copias de seguridad más recientes del paquete, mientras que las copias heredadas importadas se mantienen hasta que las elimines. Todas las copias se guardan en `/cf/conf/ipv6-prefix-updater/backups`, solo root puede leerlas y sobreviven a los reinicios y a la desinstalación del paquete.
+
+Para restaurar una, pulsa **Descargar** y después sube el archivo en **Diagnostics → Backup & Restore → Restore Backup**. Restaurar sustituye toda la configuración, así que las advertencias de más abajo también se aplican a estos archivos.
+
+## Cómo se etiquetan las revisiones \{#how-the-revisions-are-labelled}
+
+Cada actualización deja dos revisiones en el <Terminology title="lista de pfSense de revisiones guardadas de la configuración" to="/docs/reference/terminology#config-history">historial de configuración</Terminology>, y solo la más antigua deshace la actualización:
+
+- **La configuración anterior a la actualización**: la <Terminology title="copia de la configuración guardada antes de escribir" to="/docs/reference/terminology#configuration-backup">copia de seguridad de la configuración</Terminology> es una copia de esta revisión. Conserva la descripción del último cambio guardado antes de la actualización, sea cual sea.
+- **La configuración actualizada**: el paquete guarda su cambio como una nueva revisión descrita como `El Actualizador de prefijo IPv6 cambió <cantidad> campo(s) aprobado(s) para la interfaz <interfaz>`.
+
+:::warning
+
+La revisión con la descripción del paquete contiene la configuración actualizada. Restaurarla no deshace la actualización.
+
+:::
+
+## Encontrar la revisión correcta \{#find-the-right-revision}
+
+1. Abre **Diagnostics → Backup & Restore → Config History**.
+2. Busca la revisión más reciente descrita como `El Actualizador de prefijo IPv6 cambió ... para la interfaz ...`. Si no se guardó nada después de la actualización, es la configuración actual.
+3. Elige la revisión guardada justo antes, que es la configuración anterior a la actualización.
+4. Compara las dos revisiones con la vista de diferencias. Aparte de los datos de la revisión, solo deberían diferir los campos contados en **Campos modificados**.
+5. Comprueba si se guardaron otros cambios después de la actualización, porque restaurar una revisión anterior también los elimina.
+
+## Restaurar la revisión \{#restore-the-revision}
+
+1. Usa la acción de restauración de pfSense en la revisión anterior a la actualización y sigue sus indicaciones.
+2. Abre la pestaña **Configuración** de **Services → IPv6 Prefix Updater** y revisa **<Terminology title="comprobaciones automáticas desde una entrada de cron gestionada por pfSense" to="/docs/reference/terminology#scheduled-updates">Activar actualizaciones programadas</Terminology>**, porque la revisión restaurada recupera los ajustes del paquete de aquel momento.
+3. En la pestaña Estado, pulsa **<Terminology title="vista previa que nunca crea copias ni escribe" to="/docs/reference/terminology#dry-run">Simulación</Terminology>** para ver qué haría la siguiente ejecución.
+
+Lo que hace la siguiente ejecución depende del resultado que estés deshaciendo:
+
+- **Tras un <Terminology title="resultado: una comprobación o etapa de seguridad detuvo la ejecución" to="/docs/reference/terminology#failure">Fallo</Terminology>**: la <Terminology title="prefijo inicial registrado sin cambiar la configuración" to="/docs/reference/terminology#baseline">referencia</Terminology> sigue teniendo el prefijo anterior, así que la siguiente ejecución vuelve a planificar la misma actualización.
+- **Tras un resultado <Terminology title="resultado: campos actualizados, guardados, recargados y verificados" to="/docs/reference/terminology#success">Correcto</Terminology>**: la <Terminology title="prefijo inicial registrado sin cambiar la configuración" to="/docs/reference/terminology#baseline">referencia</Terminology> ya tiene el nuevo prefijo, así que las ejecuciones posteriores devuelven <Terminology title="resultado: prefijo sin cambios, nada analizado ni escrito" to="/docs/reference/terminology#no-change">Sin cambios</Terminology> y no vuelven a aplicar la actualización. Las direcciones restauradas conservan el prefijo anterior hasta que las cambies.
+
+:::warning
+
+Restaurar una revisión sustituye toda la configuración, incluidos todos los cambios guardados después de esa revisión.
+
+:::
+
+## Después de una ejecución fallida \{#after-a-failed-run}
+
+Empieza por **<Terminology title="copia de la configuración guardada antes de escribir" to="/docs/reference/terminology#configuration-backup">Copia de seguridad de la configuración creada</Terminology>** y **Resumen** en el panel **Última ejecución**. Un <Terminology title="resultado: una comprobación o etapa de seguridad detuvo la ejecución" to="/docs/reference/terminology#failure">Fallo</Terminology> siempre muestra `0` en **Campos modificados**, aunque ya se hayan escrito campos.
+
+- **<Terminology title="copia de la configuración guardada antes de escribir" to="/docs/reference/terminology#configuration-backup">Copia de seguridad de la configuración creada</Terminology> muestra No**: la ejecución se detuvo antes de escribir, así que la configuración no ha cambiado. [Solución de problemas](/docs/operate/troubleshooting#run-failed) enumera las causas.
+- **Resumen dice `La ejecución falló: pfSense no pudo escribir la configuración planificada.`**: pfSense informó de que la escritura había fallado. El paquete restauró los valores originales en memoria antes de detenerse.
+- **Cualquier otro fallo con copia de seguridad**: los valores nuevos ya están guardados y no se revirtió nada. La <Terminology title="prefijo inicial registrado sin cambiar la configuración" to="/docs/reference/terminology#baseline">referencia</Terminology> sigue teniendo el prefijo anterior, así que las ejecuciones posteriores devuelven <Terminology title="resultado: el prefijo cambió, pero ningún campo aprobado coincidió" to="/docs/reference/terminology#warning">Advertencia</Terminology> porque los valores guardados ya no pertenecen a él.
+
+En el último caso, elige la recuperación que corresponda a la configuración guardada:
+
+- **Volver a aplicar la actualización**: corrige la comprobación o la recarga que falló, restaura la revisión anterior a la actualización, ejecuta una <Terminology title="vista previa que nunca crea copias ni escribe" to="/docs/reference/terminology#dry-run">Simulación</Terminology> y después pulsa **Ejecutar ahora**.
+- **Conservar los valores guardados con el nuevo prefijo**: primero verifica tú mismo las direcciones aprobadas y los servicios afectados. Después abre **Estado → Acciones → Recuperación de la referencia**, pulsa **Aceptar prefijo actual** y confirma la acción.
+
+**Aceptar prefijo actual** registra la dirección de origen, el prefijo y la longitud del prefijo activos como nueva <Terminology title="prefijo inicial registrado sin cambiar la configuración" to="/docs/reference/terminology#baseline">referencia</Terminology>. No analiza la configuración del cortafuegos, no crea una copia de seguridad, no escribe la configuración ni recarga ningún servicio; el resultado es **Aceptado**, y la siguiente comprobación normal debería devolver <Terminology title="resultado: prefijo sin cambios, nada analizado ni escrito" to="/docs/reference/terminology#no-change">Sin cambios</Terminology>.
+
+:::warning
+
+No aceptes el prefijo actual solo para quitar una advertencia. Acéptalo únicamente después de confirmar que todas las direcciones que deben usar el nuevo prefijo ya son correctas y, tras un fallo de recarga, que el servicio afectado funciona con la configuración guardada.
+
+:::
+
+Si **Última ejecución** no cambió en absoluto, la ejecución se detuvo antes de leer su <Terminology title="archivo del paquete con la referencia y la última ejecución" to="/docs/reference/terminology#package-state">estado del paquete</Terminology>. El motivo está en la <Terminology title="resultados de solo lectura tras Ejecutar ahora o Simulación" to="/docs/reference/terminology#command-output">Salida del comando</Terminology> y en el <Terminology title="registro general de pfSense donde escribe el paquete" to="/docs/reference/terminology#system-log">registro del sistema</Terminology>.
+
+## Guardar copias de seguridad fuera del cortafuegos \{#keep-off-device-backups}
+
+El <Terminology title="lista de pfSense de revisiones guardadas de la configuración" to="/docs/reference/terminology#config-history">historial de configuración</Terminology> se guarda en el propio cortafuegos. Se recomienda descargar también una copia de seguridad desde **Diagnostics → Backup & Restore** antes de instalar o actualizar el paquete o de activar las <Terminology title="comprobaciones automáticas desde una entrada de cron gestionada por pfSense" to="/docs/reference/terminology#scheduled-updates">actualizaciones programadas</Terminology>.
+
+## Conservar las pruebas \{#preserve-evidence}
+
+Antes de restaurar, se recomienda copiar el panel **Última ejecución**, la <Terminology title="resultados de solo lectura tras Ejecutar ahora o Simulación" to="/docs/reference/terminology#command-output">Salida del comando</Terminology> y las líneas del <Terminology title="registro general de pfSense donde escribe el paquete" to="/docs/reference/terminology#system-log">registro del sistema</Terminology> que empiezan por `IPv6 Prefix Updater:`. Juntos muestran qué etapa se detuvo y si se escribió la configuración.
+
+Consulta [Solución de problemas](/docs/operate/troubleshooting) para ver los mensajes de fallo y [Comprobar antes de automatizar](/docs/safety/testing-and-verification) antes de volver a activar la programación.

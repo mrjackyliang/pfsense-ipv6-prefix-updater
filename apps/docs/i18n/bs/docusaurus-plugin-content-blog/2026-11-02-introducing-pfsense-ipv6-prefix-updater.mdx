@@ -1,0 +1,60 @@
+---
+title: "Upoznajte pfSense IPv6 Prefix Updater: sigurniji nasljednik"
+description: pfSense IPv6 Prefix Updater, nasljednik skripte update.php, prati novi IPv6 prefiks, zadržava svaki dio hosta i pravi sigurnosnu kopiju prije svake promjene.
+slug: introducing-pfsense-ipv6-prefix-updater
+authors:
+  - mrjackyliang
+keywords:
+  - pfsense ipv6 prefix updater
+  - pfsense paket
+  - dinamički ipv6 prefiks
+  - dodjela ipv6 prefiksa
+  - stari program za ažuriranje
+tags:
+  - release
+  - ipv6
+  - pfsense
+---
+
+Mnogi ISP-ovi dodjeljuju IPv6 prefiks koji se može promijeniti bez najave. Kada se to desi, adrese iz starog prefiksa u pfSense aliasima, sučeljima i VPN postavkama odjednom postaju zastarjele, a usluge mogu otkazati na načine kojima je teško ući u trag.
+
+pfSense IPv6 Prefix Updater je moj odgovor: izvorni pfSense paket koji prati novi prefiks i ažurira adrese u područjima postavki koja odobrite.
+
+{/* truncate */}
+
+## Zašto sam ga napravio \{#why-i-built-it}
+
+Ovaj projekat je počeo kao `update.php`, skripta instalirana u `/root` i pokretana putem unosa Cron paketa. Dokazala je da pfSense može otkriti novi prefiks, napraviti sigurnosnu kopiju konfiguracije i prepisati stare adrese.
+
+Ali instalacije i nadogradnje bile su nepouzdane, a skripta je zamjenjivala tekst starog prefiksa bilo gdje u konfiguraciji. Želio sam nasljednika koji bi mijenjao samo polja koja razumije i prikazivao šta je uradio, bez ručne instalacije i bez ručno napravljenog unosa Cron paketa.
+
+## Šta paket radi \{#what-it-does}
+
+Paket nadgleda sučelja koja odaberete. Kada se neki prefiks promijeni, paket:
+
+- **Zadržava dio hosta** — mijenjaju se samo bitovi prefiksa, pa svaki uređaj zadržava isti sufiks adrese.
+- **Mijenja samo odobrena polja** — jedanaest pfSense grupa, na primjer Aliasi, Pravila vatrozida, DHCPv6 server i WireGuard, po zadanim postavkama je uključeno, a kartica Polja omogućava vam da isključite grupu ili uklonite kvačicu s pojedinačnog polja.
+- **Pravi sigurnosnu kopiju prije upisa** — sigurnosna kopija konfiguracije pohranjuje se u Config History, a zatim se sve promjene čuvaju jednim upisom.
+- **Provjerava rezultat** — provjerava sačuvane vrijednosti, ponovo učitava samo pogođene usluge i još jednom provjerava vrijednosti.
+
+Udaljene VPN mreže i peerovi mijenjaju se samo kada ih označite u grupi [Ostale postavke](/docs/configure/configuration-scopes#other-settings), a nakon svakog uspješnog ažuriranja slijedi opcionalno obavještenje o promjeni.
+
+## Kako ga podesiti \{#how-you-set-it-up}
+
+Na kartici Postavke u **Services → IPv6 Prefix Updater** dodajte red u polju Nadzirana sučelja s dužinom dodijeljenog prefiksa koju koristi ISP za svako sučelje koje želite nadzirati i sačuvajte.
+
+Zatim na kartici Status odaberite **Pokreni sada**. Prvo pokretanje samo bilježi početno stanje, pa možete provjeriti adresu i prefiks i pregledati karticu Polja prije nego što uključite zakazana ažuriranja, koja se po zadanim postavkama pokreću svaki sat putem cron unosa kojim upravlja pfSense.
+
+Provjera koja pronađe isti prefiks ništa ne upisuje, a **Probno pokretanje** izvršava provjeru bez sigurnosne kopije i bez upisa.
+
+:::info
+
+Ovaj nezvanični paket instalira se iz izdanja na GitHubu pomoću `pkg`, a Netgate ga ne pregleda niti podržava. Izdanja verzije 1.x sadrže samo skriptu, pa ako najnovije izdanje nema `.pkg` datoteku, `pkg add` završava greškom not found (404).
+
+:::
+
+## Prelazak sa skripte \{#moving-from-the-script}
+
+Ako `update.php` još radi iz Cron paketa, ostavite ga na mjestu i instalirajte paket. Paket preuzima Cron unose, sačuvane prefikse i sigurnosne kopije skripte i briše stare datoteke, kako objašnjava uputstvo [Prelazak sa skripte](/docs/migrate-from-legacy).
+
+Tek se upoznajete s projektom? Počnite s uputstvom [Instalacija paketa](/docs/installation).

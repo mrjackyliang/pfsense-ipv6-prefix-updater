@@ -1,0 +1,76 @@
+---
+id: first-run
+title: Stabilisci la linea di base
+description: Registra il prefisso IPv6 attuale come linea di base con Esegui ora, controlla l’indirizzo e il prefisso riportati, esamina la scheda Campi e solo dopo attiva gli aggiornamenti pianificati.
+keywords:
+  - pfsense ipv6 prefix updater
+  - prima esecuzione
+  - linea di base
+  - esegui ora
+  - inizializzato
+tags:
+  - setup
+  - baseline
+  - status
+sidebar_position: 3
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Registra il prefisso attuale come <Terminology title="prefisso di partenza registrato senza modificare la configurazione" to="/docs/reference/terminology#baseline">linea di base</Terminology> e controllalo prima di attivare gli <Terminology title="controlli automatici da una voce cron gestita da pfSense" to="/docs/reference/terminology#scheduled-updates">aggiornamenti pianificati</Terminology>.
+
+## Salva le impostazioni iniziali \{#save-the-initial-settings}
+
+1. Apri **Services → IPv6 Prefix Updater**, poi la scheda **Impostazioni**.
+2. Lascia deselezionato **<Terminology title="controlli automatici da una voce cron gestita da pfSense" to="/docs/reference/terminology#scheduled-updates">Abilita aggiornamenti pianificati</Terminology>**.
+3. Aggiungi una riga **<Terminology title="interfaccia il cui indirizzo rivela il prefisso attuale" to="/docs/reference/terminology#monitored-interface">Interfacce monitorate</Terminology>** per ogni interfaccia il cui <Terminology title="indirizzo IPv6 pubblico compreso in 2000::/3" to="/docs/reference/terminology#global-unicast-address">indirizzo globale</Terminology> proviene dal <Terminology title="rete IPv6 che il tuo ISP instrada verso il firewall" to="/docs/reference/terminology#delegated-prefix">prefisso delegato</Terminology>, come descritto in [Interfaccia e prefisso](/docs/configure/interface-and-prefix).
+4. In ogni riga, seleziona in **<Terminology title="impostazione della dimensione del prefisso dell’ISP, da /48 a /64" to="/docs/reference/terminology#delegated-prefix-length">Lunghezza prefisso delegato</Terminology>** la lunghezza delegata dal tuo ISP.
+5. Salva e verifica che compaia il messaggio `Impostazioni salvate.`
+
+## Esegui il primo controllo \{#run-the-first-check}
+
+Nella scheda **Stato**, fai clic su **Esegui ora**. In assenza di una <Terminology title="prefisso di partenza registrato senza modificare la configurazione" to="/docs/reference/terminology#baseline">linea di base</Terminology>, l’esecuzione registra l’<Terminology title="indirizzo globale riportato da pfSense per l’interfaccia monitorata" to="/docs/reference/terminology#source-address">indirizzo sorgente</Terminology> e il prefisso di ogni interfaccia e riporta <Terminology title="risultato: linea di base registrata, configurazione invariata" to="/docs/reference/terminology#initialized">Inizializzato</Terminology>.
+
+La registrazione di una <Terminology title="prefisso di partenza registrato senza modificare la configurazione" to="/docs/reference/terminology#baseline">linea di base</Terminology> non modifica la configurazione, non crea un backup e non invia notifiche.
+
+## Verifica il risultato \{#verify-the-result}
+
+Controlla questi valori in ogni riga di **Stato attuale**:
+
+- **<Terminology title="interfaccia il cui indirizzo rivela il prefisso attuale" to="/docs/reference/terminology#monitored-interface">Interfaccia monitorata</Terminology>** mostra l’interfaccia prevista con la descrizione e il nome interno, ad esempio `LAN (lan)`.
+- **<Terminology title="indirizzo globale riportato da pfSense per l’interfaccia monitorata" to="/docs/reference/terminology#source-address">Ultimo indirizzo sorgente riuscito</Terminology>** corrisponde all’indirizzo indicato in **Status → Interfaces** per quell’interfaccia.
+- **<Terminology title="prefisso con cui si confronta il controllo successivo" to="/docs/reference/terminology#last-successful-prefix">Ultimo prefisso riuscito</Terminology>** corrisponde al prefisso delegato dal tuo ISP.
+- **Ultimo aggiornamento riuscito** mostra l’ora di questa esecuzione in UTC.
+
+L’<Terminology title="risultati in sola lettura mostrati dopo Esegui ora o Simulazione" to="/docs/reference/terminology#command-output">output del comando</Terminology> dovrebbe mostrare `Stato: Inizializzato`, `Campi pianificati o modificati: 0` e `Backup della configurazione: Non creato`. Ad esempio, l’indirizzo di documentazione `2001:db8:abcd:78aa::1` con una lunghezza `/56` appartiene a `2001:db8:abcd:7800::/56`.
+
+:::warning
+
+Se l’interfaccia o la lunghezza sono sbagliate, è consigliabile correggere le impostazioni prima di attivare la pianificazione. Un’interfaccia diversa registra una nuova <Terminology title="prefisso di partenza registrato senza modificare la configurazione" to="/docs/reference/terminology#baseline">linea di base</Terminology>, mentre una lunghezza diversa conta come <Terminology title="differenza dall’ultimo prefisso riuscito o dalla sua lunghezza" to="/docs/reference/terminology#prefix-transition">cambio di prefisso</Terminology>, come spiega [Interfaccia e prefisso](/docs/configure/interface-and-prefix#changing-the-prefix-length).
+
+:::
+
+## Esamina i campi \{#review-the-fields}
+
+Apri la scheda **Campi**. Con la <Terminology title="prefisso di partenza registrato senza modificare la configurazione" to="/docs/reference/terminology#baseline">linea di base</Terminology> registrata, elenca tutti gli indirizzi compresi nel prefisso e indica quali di essi verrebbero aggiornati al prossimo cambio.
+
+1. Disattiva i <Terminology title="gruppo di campi con un unico interruttore nella scheda Campi" to="/docs/reference/terminology#field-group">gruppi di campi</Terminology> che il firewall non usa. All’inizio sono attivi tutti e undici i gruppi di pfSense.
+2. Deseleziona i singoli campi che devono mantenere il loro valore, e seleziona i campi di un altro pacchetto che devono seguire il prefisso.
+3. Seleziona in **Altre impostazioni** i campi che devono seguire il prefisso, come un gateway o una route statica.
+4. Fai clic su **Salva** e verifica che compaia il messaggio `Selezione dei campi salvata.`
+
+[Campi](/docs/configure/configuration-scopes) spiega ogni gruppo e ogni elemento della scheda.
+
+## Cosa mostra ora una simulazione \{#what-a-dry-run-shows-now}
+
+Con il prefisso invariato, **<Terminology title="anteprima che non esegue mai backup né scritture" to="/docs/reference/terminology#dry-run">Simulazione</Terminology>** riporta <Terminology title="risultato: prefisso invariato, nulla analizzato o scritto" to="/docs/reference/terminology#no-change">Nessuna modifica</Terminology> senza analizzare la configurazione, perché il piano delle modifiche viene creato solo dopo un vero <Terminology title="differenza dall’ultimo prefisso riuscito o dalla sua lunghezza" to="/docs/reference/terminology#prefix-transition">cambio di prefisso</Terminology>. La scheda Campi mostra quali campi toccherebbe una modifica futura.
+
+Una <Terminology title="anteprima che non esegue mai backup né scritture" to="/docs/reference/terminology#dry-run">simulazione</Terminology> eseguita prima che esista una <Terminology title="prefisso di partenza registrato senza modificare la configurazione" to="/docs/reference/terminology#baseline">linea di base</Terminology> riporta <Terminology title="risultato: simulazione prima che esista una linea di base" to="/docs/reference/terminology#initialization-preview">Anteprima inizializzazione</Terminology> e non registra nulla.
+
+## Attiva la pianificazione \{#turn-on-the-schedule}
+
+Quando i valori corrispondono, seleziona **<Terminology title="controlli automatici da una voce cron gestita da pfSense" to="/docs/reference/terminology#scheduled-updates">Abilita aggiornamenti pianificati</Terminology>**, scegli una **Pianificazione** e salva. [Pianificazione e notifiche](/docs/configure/schedule-and-notifications) spiega ogni opzione.
+
+Dopo la prima esecuzione pianificata, **Data e ora (UTC)** in **Ultima esecuzione** indica quando è stato eseguito quel controllo.
+
+Continua con [Verifica prima di automatizzare](/docs/safety/testing-and-verification) per una checklist completa.

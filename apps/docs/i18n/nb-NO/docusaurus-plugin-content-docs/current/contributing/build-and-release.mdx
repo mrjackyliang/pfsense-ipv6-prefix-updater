@@ -1,0 +1,71 @@
+---
+id: build-and-release
+title: Bygging og utgivelse
+description: Kontroller, klargjør og bygg pfSense-pakken på FreeBSD, og legg deretter ved .pkg-filen og sjekksumfilene i en GitHub-utgivelse med publiseringsarbeidsflyten.
+keywords:
+  - pfsense ipv6 prefix updater
+  - bygging
+  - utgivelsesarbeidsflyt
+  - freebsd-porter
+  - php-tester
+tags:
+  - contributing
+  - build
+  - release
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Kontroller, klargjør og pakk pfSense IPv6 Prefix Updater, og publiser deretter pakken i en GitHub-utgivelse.
+
+## Krav \{#requirements}
+
+- **Node.js 22 eller 24** — Manifestene i roten og i arbeidsområdet godtar `^22 || ^24`.
+- **PHP eller Docker** — PHP-testsuitene bruker en lokal `php` når den finnes, ellers bildet `php:8.3-cli-alpine` gjennom Docker. `PHP_TEST_IMAGE` overstyrer bildet.
+- **FreeBSD for pakking** — `npm run deploy` kjører bare på FreeBSD, med `PFSENSE_PORTS_DIR` som peker på en utsjekk av FreeBSD-ports fra pfSense.
+
+## Kontroller, klargjør og pakk \{#check-stage-and-package}
+
+Kjør disse kommandoene fra roten av kodelageret:
+
+```bash
+# Lint and type-check the scripts, run the PHP and Vitest suites, and validate the port.
+npm run check --workspace pfsense-pkg-ipv6-prefix-updater
+
+# Copy the port into packages/ipv6-prefix-updater/build/port with the workspace version.
+npm run build --workspace pfsense-pkg-ipv6-prefix-updater
+
+# Build the package on FreeBSD into packages/ipv6-prefix-updater/build/release.
+PFSENSE_PORTS_DIR=/path/to/FreeBSD-ports npm run deploy --workspace pfsense-pkg-ipv6-prefix-updater
+```
+
+- Klargjøringen gjør `port/Makefile.template` om til `build/port/Makefile` og stempler den med `version` fra `packages/ipv6-prefix-updater/package.json`.
+- Pakkingen kopierer den klargjorte porten til `sysutils/pfSense-pkg-Ipv6PrefixUpdater` i ports-utsjekken, kjører `make package` og fjerner kopien igjen. Den stopper hvis målet allerede finnes.
+- `build/release` inneholder deretter den versjonerte `.pkg`-filen, en kopi med navnet `pfSense-pkg-Ipv6PrefixUpdater.pkg` og en `.sha256`-fil for hver av dem som bare inneholder hashen.
+
+## Utgivelsesarbeidsflyt \{#release-workflow}
+
+`.github/workflows/pfsense-ipv6-prefix-updater.yml` kjører når en GitHub-utgivelse publiseres, eller manuelt med taggen til en eksisterende utgivelse:
+
+1. Validerer og klargjør porten på en Ubuntu-runner.
+2. Starter en FreeBSD-VM der utgaven kommer fra kodelagervariabelen `PFSENSE_FREEBSD_VERSION`, eller `15` når den ikke er satt.
+3. Sjekker ut grenen `devel` i FreeBSD-ports-kodelageret til pfSense og kjører pakkebyggingen.
+4. Laster opp `build/release` som en arbeidsflytartefakt som beholdes i 7 dager, og legger ved de samme filene i utgivelsen, der de erstatter eksisterende filer.
+
+Det anbefales å sette `PFSENSE_FREEBSD_VERSION` til FreeBSD-hovedversjonen for pfSense-utgaven du sikter mot, og ikke publisere en pakke som er bygget mot en annen hovedversjon. `pkg add`-kommandoen i installasjonsveiledningen henter `pfSense-pkg-Ipv6PrefixUpdater.pkg` fra den utgivelsen GitHub merker som nyeste.
+
+## PHP-testsuiter \{#php-test-suites}
+
+- **`tests/domain.php`**: <Terminology title="korteste standardskrivemåte for en adresse, med små bokstaver" to="/docs/reference/terminology#canonical-form">kanonisk form</Terminology>, grensene `/48` og `/64`, maskering, <Terminology title="adressebitene etter det delegerte prefikset" to="/docs/reference/terminology#host-portion">vertsbiter</Terminology> ved `/53`, avviste adresser, planlegging uten endringer, filtrering på forrige prefiks og en lengdeendring som behandles som en <Terminology title="endring fra siste vellykkede prefiks eller lengde" to="/docs/reference/terminology#prefix-transition">prefiksovergang</Terminology>.
+- **`tests/runtime.php`**: gjennomsøking av alle <Terminology title="gruppe av felt med én bryter i fanen Felt" to="/docs/reference/terminology#field-group">feltgrupper</Terminology>, unntak for enkeltfelt, ny bruk av innstillingene til andre pakker, atomisk <Terminology title="pakkefil med grunnlinjen og siste kjøring" to="/docs/reference/terminology#package-state">pakketilstand</Terminology>, <Terminology title="sperre som hindrer to kontroller i å kjøre samtidig" to="/docs/reference/terminology#run-lock">kjørelåsen</Terminology>, plattformer som ikke støttes, og deaktiverte planlagte kontroller. Den dekker også transaksjonsrekkefølgen og feil i skrivingen, sikkerhetskopien, forhåndskontrollen av innlastingene, innlastingene og varslingen, samt <Terminology title="resultat: prefiks endret, men ingen godkjente felt samsvarte" to="/docs/reference/terminology#warning">Advarsel</Terminology> uten treff.
+- **`tests/pfsense-adapter.php`**: en tvungen ny avlesning av adressen uten å falle tilbake til <Terminology title="fe80::-adresse som bare virker på én lenke" to="/docs/reference/terminology#link-local-address">link-local</Terminology>, sikkerhetskopien før lagringen som bare skriver, og en mislykket sikkerhetskopi som stopper før skrivingen.
+- **`tests/translations.php`** og **`tests/webgui-localization.php`**: fullstendige kataloger for alle språkidentifikatorer i pfSense og det lokaliserte skjemaet Innstillinger med valideringsmeldingene.
+
+## Dokumentasjonsnettstedet \{#documentation-site}
+
+Fra `apps/docs` kjører `npm run check` ESLint, kontrollen av oversettelsestreet, tre typekontroller og Vitest-suitene for `.env`-filer, frontmatter, lenker, tabeller, ordlistelenker og typedeklarasjoner. `npm run build` bygger alle språkversjoner.
+
+De oversatte dokumentasjonssidene for hver språkversjon ligger i `apps/docs/i18n/<locale>/docusaurus-plugin-content-docs/current/` og speiler de engelske sidene, så oppdater dem når en engelsk side endres. Grensesnittekstene (startside, navigasjonslinje, bunntekst, blogg og etiketter i sidepanelet) kommer fra `scripts/generate-locales.mjs`, som leser `scripts/locale-copies.json` og pakkeoversettelsene. `npm run i18n` kjører denne generatoren først, og den lar de oversatte dokumentasjonssidene stå urørt.
+
+`.github/workflows/nova-publish-project.yml` bygger nettstedet og publiserer det på GitHub Pages når en utgivelse publiseres.

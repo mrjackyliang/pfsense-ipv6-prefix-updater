@@ -1,0 +1,76 @@
+---
+id: first-run
+title: Estabelecer a referência
+description: Registre o prefixo IPv6 atual como referência com Executar agora, confira o endereço e o prefixo informados, revise a guia Campos e só então ative as atualizações agendadas.
+keywords:
+  - pfsense ipv6 prefix updater
+  - primeira execução
+  - referência
+  - executar agora
+  - inicializado
+tags:
+  - setup
+  - baseline
+  - status
+sidebar_position: 3
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Registre o prefixo atual como <Terminology title="prefixo inicial registrado sem alterar a configuração" to="/docs/reference/terminology#baseline">referência</Terminology> e confira-o antes de ativar as <Terminology title="verificações automáticas por entrada cron gerenciada pelo pfSense" to="/docs/reference/terminology#scheduled-updates">atualizações agendadas</Terminology>.
+
+## Salvar as configurações iniciais \{#save-the-initial-settings}
+
+1. Abra **Services → IPv6 Prefix Updater** e depois a guia **Configurações**.
+2. Deixe a opção **<Terminology title="verificações automáticas por entrada cron gerenciada pelo pfSense" to="/docs/reference/terminology#scheduled-updates">Ativar atualizações agendadas</Terminology>** desmarcada.
+3. Adicione uma linha em **<Terminology title="interface cujo endereço revela o prefixo atual" to="/docs/reference/terminology#monitored-interface">Interfaces monitoradas</Terminology>** para cada interface cujo <Terminology title="endereço IPv6 público dentro de 2000::/3" to="/docs/reference/terminology#global-unicast-address">endereço global</Terminology> vem do <Terminology title="rede IPv6 que o provedor roteia para o firewall" to="/docs/reference/terminology#delegated-prefix">prefixo delegado</Terminology>, conforme descrito em [Interface e prefixo](/docs/configure/interface-and-prefix).
+4. Em cada linha, selecione o **<Terminology title="configuração do tamanho do prefixo do provedor (/48 a /64)" to="/docs/reference/terminology#delegated-prefix-length">Comprimento do prefixo delegado</Terminology>** que o seu provedor delega.
+5. Salve e confirme a mensagem `Configurações salvas.`
+
+## Executar a primeira verificação \{#run-the-first-check}
+
+Na guia **Status**, clique em **Executar agora**. Como ainda não há <Terminology title="prefixo inicial registrado sem alterar a configuração" to="/docs/reference/terminology#baseline">referência</Terminology>, a execução registra o <Terminology title="endereço global informado pelo pfSense para a interface monitorada" to="/docs/reference/terminology#source-address">endereço de origem</Terminology> e o prefixo de cada interface e informa <Terminology title="resultado: referência registrada, configuração inalterada" to="/docs/reference/terminology#initialized">Inicializado</Terminology>.
+
+Registrar uma <Terminology title="prefixo inicial registrado sem alterar a configuração" to="/docs/reference/terminology#baseline">referência</Terminology> não altera a configuração, não cria backup e não envia notificação.
+
+## Conferir o resultado \{#verify-the-result}
+
+Confira estes valores em cada linha de **Estado atual**:
+
+- **<Terminology title="interface cujo endereço revela o prefixo atual" to="/docs/reference/terminology#monitored-interface">Interface monitorada</Terminology>** mostra a interface pretendida pela descrição e pelo nome interno, como `LAN (lan)`.
+- **<Terminology title="endereço global informado pelo pfSense para a interface monitorada" to="/docs/reference/terminology#source-address">Último endereço de origem bem-sucedido</Terminology>** corresponde ao endereço dessa interface em **Status → Interfaces**.
+- **<Terminology title="prefixo usado na comparação da próxima verificação" to="/docs/reference/terminology#last-successful-prefix">Último prefixo bem-sucedido</Terminology>** corresponde ao prefixo que o seu provedor delega.
+- **Última atualização bem-sucedida** mostra o horário desta execução em UTC.
+
+A <Terminology title="resultados somente leitura após Executar agora ou Simulação" to="/docs/reference/terminology#command-output">Saída do comando</Terminology> deve mostrar `Estado: Inicializado`, `Campos planejados ou alterados: 0` e `Cópia de segurança da configuração: Não criada`. Por exemplo, o endereço de documentação `2001:db8:abcd:78aa::1` com comprimento `/56` pertence a `2001:db8:abcd:7800::/56`.
+
+:::warning
+
+Se a interface ou o comprimento estiverem errados, é recomendável corrigir as Configurações antes de ativar o agendamento. Uma interface diferente registra uma nova <Terminology title="prefixo inicial registrado sem alterar a configuração" to="/docs/reference/terminology#baseline">referência</Terminology>, enquanto um comprimento diferente conta como <Terminology title="mudança em relação ao último prefixo ou comprimento bem-sucedido" to="/docs/reference/terminology#prefix-transition">transição de prefixo</Terminology>, como explica [Interface e prefixo](/docs/configure/interface-and-prefix#changing-the-prefix-length).
+
+:::
+
+## Revisar os campos \{#review-the-fields}
+
+Abra a guia **Campos**. Com a <Terminology title="prefixo inicial registrado sem alterar a configuração" to="/docs/reference/terminology#baseline">referência</Terminology> registrada, ela lista todos os endereços dentro do prefixo e quais deles a próxima mudança atualizaria.
+
+1. Desative os <Terminology title="grupo de campos com uma única chave na guia Campos" to="/docs/reference/terminology#field-group">grupos de campos</Terminology> que o firewall não usa. Os onze grupos do pfSense começam ativados.
+2. Desmarque os campos individuais que devem manter o valor e marque qualquer campo de outro pacote que deva acompanhar o prefixo.
+3. Marque em **Outras configurações** qualquer campo que deva acompanhar o prefixo, como um gateway ou uma rota estática.
+4. Clique em **Salvar** e confirme a mensagem `Seleção de campos salva.`
+
+A página [Campos](/docs/configure/configuration-scopes) explica cada grupo e cada controle.
+
+## O que uma simulação mostra agora \{#what-a-dry-run-shows-now}
+
+Com o prefixo inalterado, a **<Terminology title="prévia que nunca faz backup nem grava" to="/docs/reference/terminology#dry-run">Simulação</Terminology>** informa <Terminology title="resultado: prefixo inalterado, nada analisado nem gravado" to="/docs/reference/terminology#no-change">Sem alteração</Terminology> sem analisar a configuração, porque o planejamento só começa depois de uma <Terminology title="mudança em relação ao último prefixo ou comprimento bem-sucedido" to="/docs/reference/terminology#prefix-transition">transição de prefixo</Terminology> real. A guia Campos mostra quais campos uma alteração futura afetaria.
+
+Uma <Terminology title="prévia que nunca faz backup nem grava" to="/docs/reference/terminology#dry-run">simulação</Terminology> feita antes de existir uma <Terminology title="prefixo inicial registrado sem alterar a configuração" to="/docs/reference/terminology#baseline">referência</Terminology> informa <Terminology title="resultado: simulação feita antes de existir uma referência" to="/docs/reference/terminology#initialization-preview">Pré-visualização da inicialização</Terminology> e não registra nada.
+
+## Ativar o agendamento \{#turn-on-the-schedule}
+
+Quando os valores estiverem corretos, marque **<Terminology title="verificações automáticas por entrada cron gerenciada pelo pfSense" to="/docs/reference/terminology#scheduled-updates">Ativar atualizações agendadas</Terminology>**, escolha um **Agendamento** e salve. [Agendamento e notificações](/docs/configure/schedule-and-notifications) explica cada opção.
+
+Depois do primeiro horário agendado, **Data e hora (UTC)** em **Última execução** mostra quando essa verificação rodou.
+
+Siga para [Verificar antes de automatizar](/docs/safety/testing-and-verification) para ver um checklist completo.

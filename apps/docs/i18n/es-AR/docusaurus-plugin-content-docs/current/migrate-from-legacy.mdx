@@ -1,0 +1,85 @@
+---
+id: migrate-from-legacy
+title: Migrar desde el script
+description: Instalá el paquete sobre el script heredado update.php y dejá que traslade por vos las entradas de Cron, los prefijos guardados y las copias de seguridad; después revisá el resultado en la pestaña Limpieza.
+keywords:
+  - pfsense ipv6 prefix updater
+  - actualizador heredado
+  - migración
+  - update.php
+  - paquete cron
+  - limpieza
+tags:
+  - setup
+  - migration
+  - legacy updater
+sidebar_position: 5
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import cleanupBefore from './_assets_/migrate-from-legacy-1.png';
+import cleanupAfter from './_assets_/migrate-from-legacy-2.png';
+
+Pasá del <Terminology title="script update.php original que ejecutaba el paquete Cron" to="/docs/reference/terminology#legacy-updater">actualizador heredado</Terminology> al paquete instalándolo, y el paquete se hace cargo por su cuenta de las interfaces, los prefijos guardados y las copias de seguridad del script.
+
+## Qué cambia \{#what-changes}
+
+| Área                | <Terminology title="script update.php original que ejecutaba el paquete Cron" to="/docs/reference/terminology#legacy-updater">Actualizador heredado</Terminology> | Paquete                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+|---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Instalación         | `install.sh` copia archivos en `/root/pfsense-ipv6-prefix-updater`                                                                                                | `pkg add` instala un paquete de pfSense                                                                                                                                                                                                                                                                                                                                                                                                        |
+| Programación        | Una entrada del paquete Cron que creás vos                                                                                                                        | La opción **Programación**, con una entrada de cron que administra pfSense                                                                                                                                                                                                                                                                                                                                                                     |
+| Interfaces          | Una entrada de Cron por cada dispositivo del sistema operativo, como `igb1`                                                                                       | Una fila de **Interfaces supervisadas** por cada interfaz de pfSense, como LAN, y todas se comprueban en una sola ejecución                                                                                                                                                                                                                                                                                                                    |
+| Qué cambia          | El texto del prefijo anterior en cualquier parte de la configuración, incluidos los valores codificados en base64                                                 | <Terminology title="campo de configuración puntual que el paquete puede reescribir" to="/docs/reference/terminology#approved-field">Campos aprobados</Terminology> que seleccionás en la pestaña **Campos**                                                                                                                                                                                                                                    |
+| Copias de seguridad | Copias que cualquier usuario puede leer en `/root/pfsense-ipv6-prefix-updater-backups`                                                                            | Una <Terminology title="copia de la configuración guardada antes de escribir" to="/docs/reference/terminology#configuration-backup">copia de seguridad de la configuración</Terminology> en el <Terminology title="lista de pfSense con las revisiones guardadas de la configuración" to="/docs/reference/terminology#config-history">historial de configuración</Terminology> y en la pestaña **Copias de seguridad** antes de cada escritura |
+| Prefijo guardado    | `/root/pfsense-ipv6-prefix-updater-cache`                                                                                                                         | El <Terminology title="archivo del paquete con la referencia y la última ejecución" to="/docs/reference/terminology#package-state">estado del paquete</Terminology>, que arranca con los datos de la caché heredada durante la migración                                                                                                                                                                                                       |
+| Notificaciones      | Se envían después de cada cambio                                                                                                                                  | Una <Terminology title="alerta enviada después de una actualización correcta verificada" to="/docs/reference/terminology#change-notification">notificación de cambios</Terminology> opcional después de un resultado <Terminology title="resultado: campos actualizados, guardados, recargados y verificados" to="/docs/reference/terminology#success">Correcto</Terminology>                                                                  |
+
+## Instalar el paquete \{#install-the-package}
+
+[Instalá el paquete](/docs/installation) con `pkg add` mientras el actualizador heredado sigue instalado. No hace falta quitar nada antes, y se recomienda no borrar vos mismo las entradas de Cron ni las carpetas de `/root`, porque el paquete las lee durante la migración.
+
+Volver a ejecutar el comando de instalación viejo no reinstala el script. A partir de la versión 2, muestra un error con el comando `pkg add` y no cambia nada.
+
+## Qué pasa automáticamente \{#what-happens-automatically}
+
+El paso de instalación detecta el actualizador heredado y lo traslada al paquete en este orden:
+
+1. **Copia de seguridad**: guarda una <Terminology title="copia de la configuración guardada antes de escribir" to="/docs/reference/terminology#configuration-backup">copia de seguridad de la configuración</Terminology> antes de cambiar cualquier cosa.
+2. **Interfaces**: convierte cada entrada de Cron en una fila de **Interfaces supervisadas** asociando su dispositivo, como `igb1.10`, con la interfaz de pfSense que lo usa, y conserva su <Terminology title="cantidad de bits iniciales de red, como /56" to="/docs/reference/terminology#prefix-length">longitud del prefijo</Terminology>.
+3. **Programación**: elige la **Programación** del paquete que comprueba al menos con la misma frecuencia que las entradas de Cron, y activa las <Terminology title="comprobaciones automáticas desde una entrada de cron administrada por pfSense" to="/docs/reference/terminology#scheduled-updates">actualizaciones programadas</Terminology>.
+4. **Referencias**: registra cada prefijo guardado como la <Terminology title="prefijo inicial registrado sin cambiar la configuración" to="/docs/reference/terminology#baseline">referencia</Terminology> de su interfaz, para que no se pierda ningún cambio de prefijo.
+5. **Entradas de Cron**: quita solo las entradas que ejecutan `update.php`, en la misma escritura de la configuración que las opciones nuevas, para que los dos actualizadores nunca se ejecuten al mismo tiempo.
+6. **Copias de seguridad**: importa a la pestaña **Copias de seguridad** cada copia de seguridad heredada, legible solo por root, y borra el original después de verificar la copia importada.
+7. **Archivos viejos**: borra de `/root` el script, sus prefijos guardados, el archivo descargado y el instalador guardado.
+
+Cuando termina la migración, un aviso de la WebGUI enlaza con la pestaña Limpieza. Si el script heredado se está ejecutando en ese momento, el paquete espera y termina la migración en la próxima comprobación programada.
+
+### Varias entradas de Cron \{#several-cron-entries}
+
+Cada entrada de Cron que indica un dispositivo distinto pasa a ser su propia fila, y una sola ejecución las comprueba todas. Las interfaces que comparten un mismo <Terminology title="red IPv6 que tu ISP enruta al firewall" to="/docs/reference/terminology#delegated-prefix">prefijo delegado</Terminology> actualizan los campos compartidos una sola vez, en una única escritura con copia de seguridad.
+
+Una entrada de Cron cuyo dispositivo ya no pertenece a ninguna interfaz de pfSense se quita y figura como advertencia, porque el script no podría haber actualizado nada a través de ella.
+
+### Prefijos guardados desactualizados \{#saved-prefixes-that-are-out-of-date}
+
+Si el ISP cambió el prefijo después de la última ejecución del actualizador heredado, su prefijo guardado sigue siendo la <Terminology title="prefijo inicial registrado sin cambiar la configuración" to="/docs/reference/terminology#baseline">referencia</Terminology>. Entonces, la primera comprobación del paquete encuentra los campos que todavía usan el prefijo anterior y los actualiza.
+
+Cuando ningún campo aprobado usa un prefijo guardado viejo, el prefijo actual pasa a ser la referencia en su lugar, para que la primera comprobación no devuelva <Terminology title="resultado: el prefijo cambió, pero ningún campo aprobado coincidió" to="/docs/reference/terminology#warning">Advertencia</Terminology>.
+
+## Revisar la pestaña Limpieza \{#review-the-cleanup-tab}
+
+Abrí la pestaña **Limpieza** de **Services → IPv6 Prefix Updater** para ver todos los restos heredados y qué pasó con cada uno.
+
+<img src={cleanupBefore} alt="Pestaña Limpieza de IPv6 Prefix Updater con dos entradas de Cron heredadas, el script heredado, los prefijos guardados de dos dispositivos, una copia de seguridad heredada y dos archivos de instalación descargados antes de la limpieza" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+- **Restos de 1.x**: las entradas de Cron, el script, los prefijos guardados, las copias de seguridad, los archivos de instalación descargados y el bloqueo del script, cada uno marcado como **Encontrado** o **No existe**.
+- **Última limpieza**: cada paso que hizo la migración y cualquier advertencia, como un dispositivo que no está asignado a ninguna interfaz.
+- **Limpiar ahora**: ejecuta la misma migración enseguida, en lugar de esperar a la próxima comprobación programada. Las demás entradas de Cron nunca se tocan.
+
+<img src={cleanupAfter} alt="Pestaña Limpieza de IPv6 Prefix Updater después de Limpiar ahora, con la copia de seguridad, las entradas de Cron quitadas, la copia de seguridad trasladada y los archivos heredados borrados" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Verificar la cobertura \{#check-coverage}
+
+Después del primer <Terminology title="cambio respecto del último prefijo o longitud correctos" to="/docs/reference/terminology#prefix-transition">cambio de prefijo</Terminology> real, compará **Campos modificados** y **Resumen** con lo que solía cambiar el <Terminology title="script update.php original que ejecutaba el paquete Cron" to="/docs/reference/terminology#legacy-updater">actualizador heredado</Terminology>. El actualizador heredado también reescribía puertas de enlace, rutas estáticas, descripciones y valores codificados en Base64. El paquete solo los cambia cuando están tildados en **Otra configuración**, en la pestaña **Campos**, así que se recomienda tildarlos antes de que cambie el prefijo.
+
+Una migración arranca con todos los <Terminology title="grupo de campos con un interruptor en la pestaña Campos" to="/docs/reference/terminology#field-group">grupos de campos</Terminology> de pfSense activados, tal como los deja **Selección automática**. [Campos](/docs/configure/configuration-scopes) enumera todos los grupos y explica cómo desactivar uno.

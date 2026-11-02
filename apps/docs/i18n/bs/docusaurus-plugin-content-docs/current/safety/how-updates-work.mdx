@@ -1,0 +1,79 @@
+---
+id: how-updates-work
+title: Kako rade ažuriranja
+description: Pratite jedno pokretanje fazu po fazu, od čitanja adresa sučelja preko planiranja, sigurnosne kopije, jednog upisa i ponovnog učitavanja usluga do zabilježenog rezultata.
+keywords:
+  - pfsense ipv6 prefix updater
+  - proces ažuriranja
+  - plan promjena
+  - ponovno učitavanje usluge
+  - provjera
+tags:
+  - safety
+  - update process
+  - service reload
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Pratite jedno pokretanje od čitanja adresa sučelja do bilježenja rezultata, uključujući svako mjesto na kojem se može zaustaviti.
+
+## 1. Čitanje i validacija \{#1-read-and-validate}
+
+- Zakazana provjera se odmah zaustavlja s ishodom <Terminology title="ishod: zakazana provjera preskočena dok su ažuriranja isključena" to="/docs/reference/terminology#disabled">Onemogućeno</Terminology> kada je **<Terminology title="automatske provjere iz cron unosa kojim upravlja pfSense" to="/docs/reference/terminology#scheduled-updates">Omogući zakazana ažuriranja</Terminology>** isključeno. <Terminology title="provjera pokrenuta s kartice Status" to="/docs/reference/terminology#manual-run">Ručno pokretanje</Terminology> se nastavlja.
+- Pokretanje ponovo provjerava sačuvane postavke, jer su se mogle promijeniti otkako je obrazac sačuvan.
+- Iznova čita <Terminology title="javna IPv6 adresa unutar 2000::/3" to="/docs/reference/terminology#global-unicast-address">globalnu adresu</Terminology> svakog <Terminology title="sučelje čija adresa otkriva trenutni prefiks" to="/docs/reference/terminology#monitored-interface">nadziranog sučelja</Terminology>, bez zamjene <Terminology title="fe80:: adresa koja radi samo na jednoj vezi" to="/docs/reference/terminology#link-local-address">link-local adresom</Terminology>, i pretvara je u <Terminology title="najkraći standardni zapis adrese malim slovima" to="/docs/reference/terminology#canonical-form">kanonski oblik</Terminology>.
+- Maskira svaku adresu na <Terminology title="postavka veličine ISP prefiksa, od /48 do /64" to="/docs/reference/terminology#delegated-prefix-length">dužinu dodijeljenog prefiksa</Terminology> njenog reda da bi dobilo <Terminology title="izvorna adresa maskirana na dužinu prefiksa" to="/docs/reference/terminology#observed-prefix">uočeni prefiks</Terminology>.
+
+## 2. Poređenje \{#2-compare}
+
+- Kada za sučelje ne postoji <Terminology title="početni prefiks zabilježen bez promjene konfiguracije" to="/docs/reference/terminology#baseline">početno stanje</Terminology>, pokretanje ga bilježi i završava ishodom <Terminology title="ishod: početno stanje zabilježeno, konfiguracija nepromijenjena" to="/docs/reference/terminology#initialized">Inicijalizirano</Terminology>.
+- Kada prefiks i njegova dužina odgovaraju <Terminology title="prefiks s kojim se poredi sljedeća provjera" to="/docs/reference/terminology#last-successful-prefix">posljednjem uspješnom prefiksu</Terminology>, pokretanje završava ishodom <Terminology title="ishod: prefiks nepromijenjen, ništa nije skenirano ni upisano" to="/docs/reference/terminology#no-change">Bez promjene</Terminology> bez skeniranja konfiguracije.
+- Drugačiji prefiks ili dužina je <Terminology title="razlika u odnosu na posljednji uspješni prefiks ili dužinu" to="/docs/reference/terminology#prefix-transition">promjena prefiksa</Terminology> i pokretanje se nastavlja.
+
+## 3. Planiranje \{#3-plan}
+
+- Pokretanje čita konfiguraciju putem pfSense funkcija za konfiguraciju i zadržava samo polja odabrana na kartici Polja. Odabrana polja koja više ne postoje preskaču se i navode pod **Preskočena polja**.
+- Svaka adresa u <Terminology title="tačno polje konfiguracije koje paket smije prepisati" to="/docs/reference/terminology#approved-field">odobrenom polju</Terminology> koja pripada starom prefiksu, pri sačuvanoj dužini, dobija bitove novog prefiksa pri trenutnoj dužini i zadržava svoj <Terminology title="bitovi adrese nakon dodijeljenog prefiksa" to="/docs/reference/terminology#host-portion">dio hosta</Terminology>. Zajedno ove promjene čine potpuni <Terminology title="potpuna lista promjena polja, sastavljena prije upisa" to="/docs/reference/terminology#change-plan">plan promjena</Terminology>.
+- Kada nema ničega za promjenu, pokretanje završava ishodom <Terminology title="ishod: prefiks promijenjen, ali nijedno odobreno polje nije odgovaralo" to="/docs/reference/terminology#warning">Upozorenje</Terminology>. <Terminology title="pregled bez sigurnosne kopije i bez upisa" to="/docs/reference/terminology#dry-run">Probno pokretanje</Terminology> s promjenama ovdje završava ishodom <Terminology title="pregled bez sigurnosne kopije i bez upisa" to="/docs/reference/terminology#dry-run">Probno pokretanje</Terminology>.
+
+## 4. Prethodna provjera \{#4-preflight}
+
+- Pokretanje potvrđuje da pfSense može ponovo učitati svaku uslugu iz plana. <Terminology title="adresa dodijeljena pfSense WireGuard tunelu" to="/docs/reference/terminology#wireguard-tunnel-address">Adrese WireGuard tunela</Terminology> za to zahtijevaju WireGuard paket.
+- Potvrđuje da svako planirano polje i dalje ima vrijednost koju je imalo kada je plan sastavljen.
+
+## 5. Sigurnosna kopija i jedan upis \{#5-back-up-and-write-once}
+
+- pfSense pravi <Terminology title="kopija konfiguracije napravljena prije upisa" to="/docs/reference/terminology#configuration-backup">sigurnosnu kopiju konfiguracije</Terminology>, a pokretanje se zaustavlja ako je pfSense ne potvrdi.
+- Pokretanje primjenjuje sve promjene i čuva ih jednom, s opisom `Ažuriranje IPv6 prefiksa promijenilo je <count> odobrenih polja za sučelje <interface>`.
+- Ako pfSense prijavi da čuvanje nije uspjelo, pokretanje vraća originalne vrijednosti u memoriju i zaustavlja se.
+
+## 6. Provjera, ponovno učitavanje, provjera \{#6-verify-reload-verify}
+
+- Pokretanje provjerava da sačuvane vrijednosti odgovaraju planu, ponovo učitava pogođene usluge i ponovo provjerava vrijednosti.
+- Usluge se ponovo učitavaju fiksnim redoslijedom koji navodi odjeljak [Radnje ponovnog učitavanja](/docs/reference/approved-fields#reload-actions), od usluge Sučelja do usluge WireGuard. Nakon ponovnog učitavanja usluge Sučelja slijedi ponovno učitavanje filtera vatrozida, koje se tada ne ponavlja.
+- Ponovna učitavanja filtera vatrozida, DNS Resolvera i DNS Forwardera uzrokuju neuspjeh pokretanja kada vrate neuspješan rezultat. Ostala ponovna učitavanja uzrokuju neuspjeh pokretanja samo kada izbace grešku.
+- Postavke drugih paketa ponovo se primjenjuju na kraju, nakon ponovnih učitavanja i njihove provjere. Paket čije se postavke ne mogu primijeniti prijavljuje se, a sačuvane vrijednosti ostaju.
+- Greška u ovoj fazi ostavlja nove vrijednosti sačuvane.
+
+## 7. Bilježenje i obavještavanje \{#7-record-and-notify}
+
+- <Terminology title="početni prefiks zabilježen bez promjene konfiguracije" to="/docs/reference/terminology#baseline">Početno stanje</Terminology> prelazi na novi prefiks, a **Posljednje pokretanje** bilježi ishod <Terminology title="ishod: polja ažurirana, sačuvana, ponovo učitana i provjerena" to="/docs/reference/terminology#success">Uspjeh</Terminology> s brojem promijenjenih polja i <Terminology title="pfSense radnja koja primjenjuje promijenjene postavke" to="/docs/reference/terminology#service-reload">ponovo učitanim uslugama</Terminology>.
+- Pokretanje upisuje red u <Terminology title="opći pfSense dnevnik u koji paket upisuje" to="/docs/reference/terminology#system-log">sistemski dnevnik</Terminology> i šalje <Terminology title="obavještenje poslano nakon provjerenog uspješnog ažuriranja" to="/docs/reference/terminology#change-notification">obavještenje o promjeni</Terminology> ako je uključeno. Neuspjelo obavještenje ne mijenja ishod.
+
+## Gdje se pokretanje može zaustaviti \{#where-a-run-can-stop}
+
+| Gdje se zaustavlja                                                                                                                                                                                                                                                                                                           | Konfiguracija upisana          | Sigurnosna kopija napravljena | Posljednje pokretanje ažurirano                                                                                                                          |
+|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------|-------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Zakazana provjera s ishodom <Terminology title="ishod: zakazana provjera preskočena dok su ažuriranja isključena" to="/docs/reference/terminology#disabled">Onemogućeno</Terminology>                                                                                                                                        | Ne                             | Ne                            | Ne                                                                                                                                                       |
+| Postavke, adresa ili nečitljivo <Terminology title="datoteka paketa s početnim stanjem i posljednjim pokretanjem" to="/docs/reference/terminology#package-state">stanje paketa</Terminology>                                                                                                                                 | Ne                             | Ne                            | Ne                                                                                                                                                       |
+| <Terminology title="ishod: početno stanje zabilježeno, konfiguracija nepromijenjena" to="/docs/reference/terminology#initialized">Inicijalizirano</Terminology> ili <Terminology title="ishod: prefiks nepromijenjen, ništa nije skenirano ni upisano" to="/docs/reference/terminology#no-change">Bez promjene</Terminology> | Ne                             | Ne                            | Da                                                                                                                                                       |
+| <Terminology title="ishod: prefiks promijenjen, ali nijedno odobreno polje nije odgovaralo" to="/docs/reference/terminology#warning">Upozorenje</Terminology> ili <Terminology title="pregled bez sigurnosne kopije i bez upisa" to="/docs/reference/terminology#dry-run">Probno pokretanje</Terminology>                    | Ne                             | Ne                            | Da                                                                                                                                                       |
+| Greška prethodne provjere                                                                                                                                                                                                                                                                                                    | Ne                             | Ne                            | Da                                                                                                                                                       |
+| Greška sigurnosne kopije                                                                                                                                                                                                                                                                                                     | Ne                             | Ne                            | Da                                                                                                                                                       |
+| Greška upisa                                                                                                                                                                                                                                                                                                                 | Ne, prema izvještaju pfSense-a | Da                            | Da                                                                                                                                                       |
+| Greška provjere ili ponovnog učitavanja                                                                                                                                                                                                                                                                                      | Da                             | Da                            | Da                                                                                                                                                       |
+| Greška obavještenja                                                                                                                                                                                                                                                                                                          | Da                             | Da                            | Da, kao <Terminology title="ishod: polja ažurirana, sačuvana, ponovo učitana i provjerena" to="/docs/reference/terminology#success">Uspjeh</Terminology> |
+
+Stranica [Odobrena polja](/docs/reference/approved-fields) navodi pfSense funkciju iza svakog ponovnog učitavanja, a uputstvo [Sigurnosne kopije i oporavak](/docs/operate/backups-and-recovery) obrađuje oporavak nakon greške.

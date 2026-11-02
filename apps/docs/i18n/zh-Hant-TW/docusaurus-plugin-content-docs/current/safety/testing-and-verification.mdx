@@ -1,0 +1,63 @@
+---
+id: testing-and-verification
+title: 自動化前的檢查
+description: 在讓套件無人監督地依排程執行之前，先在您自己的防火牆上核對介面、前綴、復原途徑與通知。
+keywords:
+  - pfsense ipv6 prefix updater
+  - 檢查清單
+  - 試執行
+  - 設定歷程
+  - 排程更新
+tags:
+  - safety
+  - checklist
+  - scheduled updates
+sidebar_position: 2
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+檢查防火牆上的介面、前綴、復原途徑與通知，然後再讓套件依排程執行。
+
+## 1. 確認位址來源 \{#1-confirm-the-source}
+
+在 **<Terminology title="由 pfSense 管理的 cron 項目執行的自動檢查" to="/docs/reference/terminology#scheduled-updates">啟用排程更新</Terminology>** 未勾選的情況下儲存設定，並選取一次 **立即執行**。然後檢查「狀態」分頁：
+
+- **<Terminology title="其位址可反映目前前綴的介面" to="/docs/reference/terminology#monitored-interface">監控介面</Terminology>** 是預期的 WAN 或<Terminology title="位址取自另一介面委派前綴的介面" to="/docs/reference/terminology#tracked-interface">追蹤介面</Terminology>。
+- **<Terminology title="pfSense 回報的監控介面全域位址" to="/docs/reference/terminology#source-address">上次成功來源位址</Terminology>** 與 **Status → Interfaces**（狀態 → 介面）中的位址相同。
+- **<Terminology title="下次檢查用來比較的前綴" to="/docs/reference/terminology#last-successful-prefix">上次成功前綴</Terminology>** 與 ISP 委派的前綴相同。
+- **上次執行** 下的 **結果** 為<Terminology title="結果：已記錄基準，設定未變更" to="/docs/reference/terminology#initialized">已初始化</Terminology>，**已變更欄位** 為 `0`。
+
+如果任何值不如預期，建議先修正再繼續。[介面與前綴](/docs/configure/interface-and-prefix#changing-the-interfaces)說明了<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>建立後變更介面或長度會造成什麼影響。
+
+## 2. 執行預覽 \{#2-run-a-preview}
+
+選取 **<Terminology title="不備份也不寫入的預覽" to="/docs/reference/terminology#dry-run">試執行</Terminology>**。前綴未變更時，它會回報<Terminology title="結果：前綴未變更，未掃描或寫入任何內容" to="/docs/reference/terminology#no-change">無變更</Terminology>，**<Terminology title="寫入前儲存的設定副本" to="/docs/reference/terminology#configuration-backup">已建立設定備份</Terminology>** 顯示「否」。
+
+<Terminology title="不備份也不寫入的預覽" to="/docs/reference/terminology#dry-run">試執行</Terminology>無法模擬前綴變更，因此只有在實際發生<Terminology title="與上次成功前綴或長度不同" to="/docs/reference/terminology#prefix-transition">前綴變更</Terminology>後，它才會列出規劃變更的欄位。
+
+## 3. 檢查復原途徑 \{#3-check-recovery}
+
+開啟 **Diagnostics → Backup & Restore → Config History**（診斷 → 備份與還原 → 設定歷程），確認 pfSense 會保留設定歷程。需要寫入的執行會在第一次變更之前，將<Terminology title="寫入前儲存的設定副本" to="/docs/reference/terminology#configuration-backup">設定備份</Terminology>儲存在那裡。
+
+建議現在就閱讀[找到正確的修訂版本](/docs/operate/backups-and-recovery#find-the-right-revision)，因為以套件命名的修訂版本保存的是更新後的設定。另外也值得下載一份裝置外的備份，因為<Terminology title="pfSense 已儲存設定修訂版本的清單" to="/docs/reference/terminology#config-history">設定歷程</Terminology>存放在防火牆本身。
+
+## 4. 測試通知 \{#4-test-notifications}
+
+如果已勾選 **<Terminology title="更新驗證成功後傳送的警示" to="/docs/reference/terminology#change-notification">傳送變更通知</Terminology>**，建議使用 pfSense 在 **System → Advanced → Notifications**（系統 → 進階 → 通知）中內建的按鈕傳送一則測試通知。套件使用的就是在那裡設定好的<Terminology title="在 pfSense 中設定的遠端警示服務" to="/docs/reference/terminology#notification-channels">通知管道</Terminology>。
+
+<Terminology title="結果：前綴已變更，但沒有符合的已核准欄位" to="/docs/reference/terminology#warning">警告</Terminology>與<Terminology title="結果：檢查或安全階段中止了執行" to="/docs/reference/terminology#failure">失敗</Terminology>通知只會顯示在 WebGUI 中，不會使用這些管道。
+
+## 5. 開啟排程更新 \{#5-turn-on-the-schedule}
+
+上述步驟顯示的位址與前綴都符合預期後，勾選 **<Terminology title="由 pfSense 管理的 cron 項目執行的自動檢查" to="/docs/reference/terminology#scheduled-updates">啟用排程更新</Terminology>**。**排程** 的預設值為 **每小時**。
+
+到了第一個排程時間後，建議查看 **上次執行** 下的 **時間戳記 (UTC)** 與 **結果**。
+
+## 需要實際前綴變更才能驗證的內容 \{#what-needs-a-real-prefix-change}
+
+<Terminology title="寫入前建立的完整欄位變更清單" to="/docs/reference/terminology#change-plan">變更計畫</Terminology>、<Terminology title="寫入前儲存的設定副本" to="/docs/reference/terminology#configuration-backup">設定備份</Terminology>、<Terminology title="套用已變更設定的 pfSense 動作" to="/docs/reference/terminology#service-reload">服務重新載入</Terminology>與<Terminology title="更新驗證成功後傳送的警示" to="/docs/reference/terminology#change-notification">變更通知</Terminology>，只會在實際發生<Terminology title="與上次成功前綴或長度不同" to="/docs/reference/terminology#prefix-transition">前綴變更</Terminology>後才會出現。要觀察一次完整的執行，最安全的地方是前綴可以變更的實驗室防火牆。
+
+在您自己的防火牆上，建議在「狀態」分頁中檢查第一次實際的變更，先從 **已變更欄位**、**<Terminology title="套用已變更設定的 pfSense 動作" to="/docs/reference/terminology#service-reload">已重新載入的服務</Terminology>** 與 **摘要** 看起。
+
+執行後顯示的每個欄位，請參閱[狀態與動作](/docs/operate/status-and-actions)。

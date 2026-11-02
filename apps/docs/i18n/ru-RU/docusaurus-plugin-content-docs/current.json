@@ -1,0 +1,20 @@
+{
+  "sidebar.docs.category.Start Here": {
+    "message": "Начало работы"
+  },
+  "sidebar.docs.category.Configure": {
+    "message": "Настройка"
+  },
+  "sidebar.docs.category.Operate": {
+    "message": "Эксплуатация"
+  },
+  "sidebar.docs.category.Safety": {
+    "message": "Безопасность"
+  },
+  "sidebar.docs.category.Reference": {
+    "message": "Справочник"
+  },
+  "sidebar.docs.category.Contributing": {
+    "message": "Участие в разработке"
+  }
+}

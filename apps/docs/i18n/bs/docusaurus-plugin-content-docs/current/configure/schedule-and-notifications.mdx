@@ -1,0 +1,71 @@
+---
+id: schedule-and-notifications
+title: Raspored i obavještenja
+description: Odaberite koliko često pfSense provjerava prefiks, uključite zakazana ažuriranja i odlučite da li se nakon svakog uspješnog ažuriranja šalje obavještenje o promjeni.
+keywords:
+  - pfsense ipv6 prefix updater
+  - raspored
+  - cron
+  - obavještenja o promjenama
+  - webgui obavijesti
+tags:
+  - configuration
+  - scheduling
+  - notifications
+sidebar_position: 3
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Odaberite koliko često pfSense provjerava prefiks i da li nakon uspješnog ažuriranja dobijate <Terminology title="obavještenje poslano nakon provjerenog uspješnog ažuriranja" to="/docs/reference/terminology#change-notification">obavještenje o promjeni</Terminology>.
+
+## Odabir rasporeda \{#choose-a-schedule}
+
+| Raspored            | Kada se pokreće                           |
+|---------------------|-------------------------------------------|
+| Svakih 15 minuta    | U minutama 0, 15, 30 i 45 svakog sata     |
+| Svaki sat           | U minuti 0 svakog sata; zadana vrijednost |
+| Svakih 6 sati       | U 00:00, 06:00, 12:00 i 18:00             |
+| Svakog dana u ponoć | U 00:00                                   |
+
+Vremena prate vremensku zonu vatrozida, dok kartica Status prikazuje UTC.
+
+## Uključivanje zakazanih ažuriranja \{#turn-on-scheduled-updates}
+
+**<Terminology title="automatske provjere iz cron unosa kojim upravlja pfSense" to="/docs/reference/terminology#scheduled-updates">Omogući zakazana ažuriranja</Terminology>** je isključeno nakon instalacije. Čuvanje postavki dodaje ili uklanja cron unos kojim upravlja pfSense, pa nije potreban ni Cron paket ni ručno napisan cron zadatak.
+
+Kada je polje neoznačeno, nijedna provjera se ne pokreće sama, dok **Pokreni sada** i **<Terminology title="pregled bez sigurnosne kopije i bez upisa" to="/docs/reference/terminology#dry-run">Probno pokretanje</Terminology>** i dalje rade. Preporučuje se da ga uključite tek nakon što [prvo pokretanje](/docs/first-run) zabilježi i provjeri <Terminology title="početni prefiks zabilježen bez promjene konfiguracije" to="/docs/reference/terminology#baseline">početno stanje</Terminology>.
+
+## Šta košta rutinska provjera \{#what-a-routine-check-costs}
+
+Provjera s ishodom <Terminology title="ishod: prefiks nepromijenjen, ništa nije skenirano ni upisano" to="/docs/reference/terminology#no-change">Bez promjene</Terminology> čita samo svoje postavke, adrese sučelja i <Terminology title="datoteka paketa s početnim stanjem i posljednjim pokretanjem" to="/docs/reference/terminology#package-state">stanje paketa</Terminology>. Ne skenira konfiguraciju, ne pravi sigurnosnu kopiju, ne učitava ponovo usluge i ne šalje obavještenje.
+
+I dalje upisuje jedan red u <Terminology title="opći pfSense dnevnik u koji paket upisuje" to="/docs/reference/terminology#system-log">sistemski dnevnik</Terminology>.
+
+## Preklapanje pokretanja \{#overlapping-runs}
+
+<Terminology title="zaštita koja sprječava dvije istovremene provjere" to="/docs/reference/terminology#run-lock">Zaključavanje pokretanja</Terminology> dozvoljava da u isto vrijeme radi samo jedna provjera. Provjera koja počne dok druga radi završava bez čitanja konfiguracije i ostavlja **Posljednje pokretanje** nepromijenjenim.
+
+Takva provjera u <Terminology title="opći pfSense dnevnik u koji paket upisuje" to="/docs/reference/terminology#system-log">sistemski dnevnik</Terminology> upisuje `Drugo pokretanje posjeduje zaključavanje paketa; ovo pokretanje je završilo bez čitanja konfiguracije.`
+
+## Obavještenja o promjenama \{#change-notifications}
+
+**<Terminology title="obavještenje poslano nakon provjerenog uspješnog ažuriranja" to="/docs/reference/terminology#change-notification">Šalji obavještenja o promjenama</Terminology>** je po zadanim postavkama uključeno. Nakon ishoda <Terminology title="ishod: polja ažurirana, sačuvana, ponovo učitana i provjerena" to="/docs/reference/terminology#success">Uspjeh</Terminology> šalje poruku putem pfSense <Terminology title="udaljene usluge obavještavanja podešene u pfSense-u" to="/docs/reference/terminology#notification-channels">kanala obavještenja</Terminology> i dodaje <Terminology title="obavijest na listi obavijesti u pfSense-u" to="/docs/reference/terminology#webgui-notice">WebGUI obavijest</Terminology>.
+
+Poruka izgleda ovako: `Ažurirano je 1 odobreno polje sa 2001:db8:abcd:7800::/56 na 2001:db8:abcd:8800::/56 na sučelju lan.` Nijedan drugi ishod ne šalje <Terminology title="obavještenje poslano nakon provjerenog uspješnog ažuriranja" to="/docs/reference/terminology#change-notification">obavještenje o promjeni</Terminology>.
+
+Ako isporuka ne uspije, ažuriranje se i dalje računa kao <Terminology title="ishod: polja ažurirana, sačuvana, ponovo učitana i provjerena" to="/docs/reference/terminology#success">Uspjeh</Terminology>. Kartica Status ne prikazuje status isporuke, a <Terminology title="opći pfSense dnevnik u koji paket upisuje" to="/docs/reference/terminology#system-log">sistemski dnevnik</Terminology> bilježi `Konfiguracija je uspješno izmijenjena, ali obavještenje o promjeni nije poslano.`
+
+## Obavijesti za ishode Upozorenje i Greška \{#warning-and-failure-notices}
+
+Ishodi <Terminology title="ishod: prefiks promijenjen, ali nijedno odobreno polje nije odgovaralo" to="/docs/reference/terminology#warning">Upozorenje</Terminology> i <Terminology title="ishod: kontrola ili sigurnosna faza zaustavila je pokretanje" to="/docs/reference/terminology#failure">Greška</Terminology> uvijek dodaju lokalnu <Terminology title="obavijest na listi obavijesti u pfSense-u" to="/docs/reference/terminology#webgui-notice">WebGUI obavijest</Terminology>, čak i kada **<Terminology title="obavještenje poslano nakon provjerenog uspješnog ažuriranja" to="/docs/reference/terminology#change-notification">Šalji obavještenja o promjenama</Terminology>** nije označeno. Ove obavijesti se ne šalju na <Terminology title="udaljene usluge obavještavanja podešene u pfSense-u" to="/docs/reference/terminology#notification-channels">kanale obavještenja</Terminology>, a neotklonjen uzrok dodaje novu pri svakom zakazanom pokretanju.
+
+## Provjera rasporeda \{#validate-the-schedule}
+
+1. Sačuvajte postavke i potvrdite poruku `Postavke su sačuvane.`
+2. Na kartici Status odaberite **Pokreni sada** i potvrdite ishod <Terminology title="ishod: prefiks nepromijenjen, ništa nije skenirano ni upisano" to="/docs/reference/terminology#no-change">Bez promjene</Terminology> s aktuelnim poljem **Vremenska oznaka (UTC)**.
+3. Potvrdite da **<Terminology title="kopija konfiguracije napravljena prije upisa" to="/docs/reference/terminology#configuration-backup">Napravljena sigurnosna kopija konfiguracije</Terminology>** prikazuje Ne, a **Promijenjena polja** prikazuje `0`.
+4. Nakon sljedećeg zakazanog termina osvježite karticu Status i potvrdite da se vremenska oznaka promijenila.
+5. Da biste testirali isporuku, koristite pfSense dugmad za testiranje u **System → Advanced → Notifications**.
+
+Nastavite s uputstvom [Status i radnje](/docs/operate/status-and-actions) za polja koja bilježe zakazane provjere i <Terminology title="provjera pokrenuta s kartice Status" to="/docs/reference/terminology#manual-run">ručna pokretanja</Terminology>.

@@ -1,0 +1,60 @@
+---
+id: compatibility
+title: Kompatibilitet
+description: Sjekk kravene til pfSense, PHP, adresse og prefikslengde, den valgfrie WireGuard-avhengigheten og de kjente begrensningene før du stoler på pakken.
+keywords:
+  - pfsense ipv6 prefix updater
+  - kompatibilitet
+  - krav
+  - global ipv6-adresse
+  - kjente begrensninger
+tags:
+  - setup
+  - compatibility
+  - ipv6
+sidebar_position: 4
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Kontroller at brannmuren, grensesnittet og delegeringen fra internettleverandøren oppfyller kravene til pakken før du stoler på <Terminology title="automatiske kontroller fra en cron-oppføring styrt av pfSense" to="/docs/reference/terminology#scheduled-updates">planlagte oppdateringer</Terminology>.
+
+## Støttede utgaver \{#supported-releases}
+
+- Prosjektet har ikke publisert noen liste over testede pfSense-utgaver ennå.
+- Pakken kontrollerer ikke pfSense-versjonen. Hver kjøring kontrollerer at den kjører på pfSense med filene og funksjonene den bruker, og stopper før innstillingene leses hvis noe av dette mangler.
+- Pakkekoden krever PHP 8.1 eller nyere.
+- `.pkg`-filen må være bygget for FreeBSD-versjonen som pfSense-utgaven din kjører på, ellers rapporterer `pkg` et ABI-avvik.
+
+## Adressekrav \{#address-requirements}
+
+- Hvert <Terminology title="grensesnittet der adressen avslører gjeldende prefiks" to="/docs/reference/terminology#monitored-interface">overvåket grensesnitt</Terminology> må ha en aktiv <Terminology title="offentlig IPv6-adresse innenfor 2000::/3" to="/docs/reference/terminology#global-unicast-address">global unicast-adresse</Terminology>. Pakken faller aldri tilbake til en <Terminology title="fe80::-adresse som bare virker på én lenke" to="/docs/reference/terminology#link-local-address">link-local-adresse</Terminology>.
+- Unike lokale adresser (`fc00::/7`), multicast-, loopback-, uspesifiserte og IPv4-tilordnede adresser samt adresser med soneangivelse kan ikke være <Terminology title="global adresse pfSense rapporterer for det overvåkede grensesnittet" to="/docs/reference/terminology#source-address">kildeadressen</Terminology>.
+- <Terminology title="innstilling for leverandørens prefiksstørrelse, /48 til /64" to="/docs/reference/terminology#delegated-prefix-length">Lengden på det delegerte prefikset</Terminology> må være fra `/48` til `/64`. Lengder som slutter inne i et heksadesimalt siffer, for eksempel `/57`, fungerer også.
+
+Når en adresse ikke oppfyller kravene, ender det grensesnittet med <Terminology title="resultat: en kontroll eller et sikkerhetstrinn stoppet kjøringen" to="/docs/reference/terminology#failure">Feil</Terminology> og en årsak som `Grensesnittet «lan» har ingen aktiv global IPv6-adresse.` [Feilsøking](/docs/operate/troubleshooting#run-failed) viser meldingene.
+
+## Når WAN ikke har noen global adresse \{#when-wan-has-no-global-address}
+
+Noen internettleverandører delegerer et prefiks uten å gi WAN en egen <Terminology title="offentlig IPv6-adresse innenfor 2000::/3" to="/docs/reference/terminology#global-unicast-address">global adresse</Terminology>. Et <Terminology title="grensesnitt adressert fra et annet grensesnitts delegerte prefiks" to="/docs/reference/terminology#tracked-interface">sporet grensesnitt</Terminology> som LAN har da en adresse fra det <Terminology title="IPv6-nettverket internettleverandøren ruter til brannmuren" to="/docs/reference/terminology#delegated-prefix">delegerte prefikset</Terminology> og er grensesnittet som skal overvåkes.
+
+**Status → Interfaces** viser hvilke grensesnitt som har en <Terminology title="offentlig IPv6-adresse innenfor 2000::/3" to="/docs/reference/terminology#global-unicast-address">global adresse</Terminology>.
+
+## Hva pakken gjenkjenner \{#what-the-package-recognizes}
+
+Pakken oppdaterer eksplisitte IPv6-adresser og -nettverk i <Terminology title="eksakt konfigurasjonsfelt som pakken kan skrive om" to="/docs/reference/terminology#approved-field">godkjente felt</Terminology>. Vertsnavn, URL-er, IPv4-verdier og annen tekst forblir som de er.
+
+Adresser som pfSense genererer, for eksempel på <Terminology title="grensesnitt adressert fra et annet grensesnitts delegerte prefiks" to="/docs/reference/terminology#tracked-interface">sporede grensesnitt</Terminology>, endres aldri. Adresser som beskriver andre enheter, for eksempel eksterne VPN-nettverk og WireGuard-noder, endres bare når du krysser dem av under [Andre innstillinger](/docs/configure/configuration-scopes#other-settings).
+
+## Valgfrie avhengigheter \{#optional-dependencies}
+
+- **WireGuard-pakken**: trengs bare når <Terminology title="adresse tildelt en WireGuard-tunnel i pfSense" to="/docs/reference/terminology#wireguard-tunnel-address">WireGuard-tunneladresser</Terminology> må endres. Uten den stopper en reell kjøring med WireGuard-endringer før sikkerhetskopien.
+
+## Kjente begrensninger \{#known-limits}
+
+- Når du legger til et <Terminology title="grensesnittet der adressen avslører gjeldende prefiks" to="/docs/reference/terminology#monitored-interface">overvåket grensesnitt</Terminology> eller bytter en rad til et annet grensesnitt, registreres en ny <Terminology title="startprefiks registrert uten å endre konfigurasjonen" to="/docs/reference/terminology#baseline">grunnlinje</Terminology> for det, og når du endrer <Terminology title="innstilling for leverandørens prefiksstørrelse, /48 til /64" to="/docs/reference/terminology#delegated-prefix-length">lengden på det delegerte prefikset</Terminology> i en rad, regnes det som en <Terminology title="endring fra siste vellykkede prefiks eller lengde" to="/docs/reference/terminology#prefix-transition">prefiksovergang</Terminology>.
+- En <Terminology title="forhåndsvisning som aldri sikkerhetskopierer eller skriver" to="/docs/reference/terminology#dry-run">testkjøring</Terminology> kan ikke simulere en prefiksendring, så planlagte endringer vises først etter en reell endring.
+- Høytilgjengelighetspar (CARP) får ingen spesialbehandling.
+- Siden dette er en <Terminology title="pakke installert fra GitHub, ikke fra Netgates pakkebrønn" to="/docs/reference/terminology#unofficial-package">uoffisiell pakke</Terminology>, installeres nyere utgivelser med `pkg`, som beskrevet i [Oppdater eller fjern](/docs/reference/package-lifecycle).
+
+Se [Grensesnitt og prefiks](/docs/configure/interface-and-prefix) for valg av kilde og [Felt](/docs/configure/configuration-scopes) for feltene pakken kan endre.

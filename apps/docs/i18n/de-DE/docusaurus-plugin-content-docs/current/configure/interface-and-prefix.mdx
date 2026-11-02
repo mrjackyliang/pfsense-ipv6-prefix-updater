@@ -1,0 +1,95 @@
+---
+id: interface-and-prefix
+title: Schnittstelle und Präfix
+description: Wählen Sie die überwachten Schnittstellen mit Ihren delegierten Präfixen, geben Sie für jede die Präfixlänge Ihres Internetanbieters ein und sehen Sie, was eine spätere Änderung bewirkt.
+keywords:
+  - pfsense ipv6 prefix updater
+  - überwachte schnittstelle
+  - länge des delegierten präfixes
+  - dhcpv6 prefix delegation
+  - hostbits
+tags:
+  - configuration
+  - interface
+  - prefix length
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import monitoredInterfaces from './_assets_/interface-and-prefix-1.png';
+
+Wählen Sie die Schnittstellen, die Ihre aktuellen Präfixe verraten, und geben Sie für jede die <Terminology title="Anzahl der führenden Netzbits, etwa /56" to="/docs/reference/terminology#prefix-length">Präfixlänge</Terminology> ein, die Ihr Internetanbieter delegiert.
+
+## Überwachte Schnittstellen wählen \{#choose-the-monitored-interfaces}
+
+Fügen Sie unter **Überwachte Schnittstellen** eine Zeile für jede Schnittstelle hinzu, deren <Terminology title="öffentliche IPv6-Adresse innerhalb von 2000::/3" to="/docs/reference/terminology#global-unicast-address">globale Adresse</Terminology> aus dem <Terminology title="IPv6-Netz, das Ihr Internetanbieter zur Firewall routet" to="/docs/reference/terminology#delegated-prefix">delegierten Präfix</Terminology> stammt. Das Paket liest jede Adresse bei jedem Lauf neu und greift nie auf eine <Terminology title="fe80::-Adresse, die nur auf einem Link funktioniert" to="/docs/reference/terminology#link-local-address">Link-Local-Adresse</Terminology> zurück.
+
+Wenn WAN nur ein <Terminology title="IPv6-Netz, das Ihr Internetanbieter zur Firewall routet" to="/docs/reference/terminology#delegated-prefix">delegiertes Präfix</Terminology> erhält, trägt meist eine <Terminology title="Schnittstelle mit Adresse aus dem delegierten Präfix einer anderen" to="/docs/reference/terminology#tracked-interface">Track-Schnittstelle</Terminology> wie LAN eine <Terminology title="öffentliche IPv6-Adresse innerhalb von 2000::/3" to="/docs/reference/terminology#global-unicast-address">globale Adresse</Terminology> daraus und ist die richtige Wahl.
+
+<img src={monitoredInterfaces} alt="Registerkarte Einstellungen von IPv6 Prefix Updater mit zwei Zeilen unter Überwachte Schnittstellen, LAN und LAB, jeweils mit einer Länge des delegierten Präfixes von /56, und einem Hinweis auf die Registerkarte Felder" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+- **Hinzufügen**: fügt eine Zeile hinzu. Jede Schnittstelle darf nur in einer Zeile stehen, und das Speichern ohne Zeilen wird abgelehnt.
+- **Löschen**: entfernt eine Zeile. pfSense blendet die Schaltfläche aus, solange nur eine Zeile übrig ist.
+- **Ein Lauf für alle Zeilen**: jede geplante Prüfung liest alle überwachten Schnittstellen und speichert ihre Änderungen in einem einzigen gesicherten Schreibvorgang.
+
+Die meisten Firewalls brauchen eine Zeile. Fügen Sie weitere hinzu, wenn mehrere Schnittstellen ihr eigenes delegiertes Präfix erhalten, etwa bei zwei WAN-Verbindungen, oder wenn Sie die Adresse jedes LAN-Segments prüfen lassen möchten.
+
+So bestätigen Sie die Wahl:
+
+1. Speichern Sie die Einstellungen mit deaktiviertem **<Terminology title="automatische Prüfungen über einen von pfSense verwalteten Cron-Eintrag" to="/docs/reference/terminology#scheduled-updates">Geplante Aktualisierungen aktivieren</Terminology>**.
+2. Wählen Sie auf der Registerkarte Status **Jetzt ausführen**.
+3. Vergleichen Sie **<Terminology title="globale Adresse, die pfSense für die überwachte Schnittstelle meldet" to="/docs/reference/terminology#source-address">Beobachtete Quelladresse</Terminology>** mit der Adresse unter **Status → Interfaces**.
+4. Wenn die Adresse zum falschen Netz gehört, wählen Sie eine andere Schnittstelle und wiederholen Sie die Schritte.
+
+Die Registerkarte Status zeigt die Beschreibung jeder Schnittstelle, gefolgt vom internen pfSense-Namen, etwa `LAN (lan)`.
+
+## Länge des delegierten Präfixes eingeben \{#enter-the-delegated-prefix-length}
+
+Wählen Sie die Länge aus den Vertragsdetails Ihres Internetanbieters oder aus der Größe der DHCPv6-Präfixdelegierung auf der WAN-Schnittstelle. **<Terminology title="Einstellung für die Präfixgröße des Anbieters, /48 bis /64" to="/docs/reference/terminology#delegated-prefix-length">Länge des delegierten Präfixes</Terminology>** akzeptiert `/48` bis `/64`, steht anfangs auf `/56` und wird nie automatisch erkannt.
+
+:::tip
+
+Es empfiehlt sich, die Länge vor dem ersten **Jetzt ausführen** zu bestätigen, weil die <Terminology title="Ausgangspräfix, aufgezeichnet ohne Konfigurationsänderung" to="/docs/reference/terminology#baseline">Basislinie</Terminology> die Länge zusammen mit dem Präfix speichert.
+
+:::
+
+## Berechnetes Netz prüfen \{#check-the-calculated-network}
+
+Nach einem Lauf zeigt **<Terminology title="Quelladresse, auf die Präfixlänge maskiert" to="/docs/reference/terminology#observed-prefix">Beobachtetes Präfix</Terminology>** das berechnete Netz. Längen, die innerhalb einer Hexadezimalziffer enden, etwa `/57` oder `/63`, funktionieren genauso, weil das Paket Adressen bitweise maskiert.
+
+Für eine `/56`-Delegierung, die von `2001:db8:abcd:7800::/56` zu `2001:db8:abcd:8800::/56` wechselt:
+
+```text
+Source address:    2001:db8:abcd:88aa::1
+Current prefix:    2001:db8:abcd:8800::/56
+Previous address:  2001:db8:abcd:78aa::42
+Updated address:   2001:db8:abcd:88aa::42
+```
+
+Nur die ersten 56 Bits ändern sich, und der <Terminology title="Adressbits nach dem delegierten Präfix" to="/docs/reference/terminology#host-portion">Hostanteil</Terminology> `aa::42` bleibt gleich. Adressen unter `2001:db8::/32` sind in diesen Anleitungen Dokumentationsbeispiele.
+
+## Schnittstellen ändern \{#changing-the-interfaces}
+
+:::warning
+
+Wenn Sie eine <Terminology title="Schnittstelle, deren Adresse das aktuelle Präfix verrät" to="/docs/reference/terminology#monitored-interface">überwachte Schnittstelle</Terminology> hinzufügen oder eine Zeile auf eine andere umstellen, zeichnet der nächste Lauf für sie eine neue <Terminology title="Ausgangspräfix, aufgezeichnet ohne Konfigurationsänderung" to="/docs/reference/terminology#baseline">Basislinie</Terminology> auf, ohne die Konfiguration zu ändern. Hatte sich ihr Präfix geändert, ohne dass das Paket die Änderung schon angewendet hat, wird diese Änderung übersprungen.
+
+:::
+
+Wenn Sie eine Zeile löschen, bleibt die <Terminology title="Ausgangspräfix, aufgezeichnet ohne Konfigurationsänderung" to="/docs/reference/terminology#baseline">Basislinie</Terminology> dieser Schnittstelle im <Terminology title="Paketdatei mit Basislinie und letztem Lauf" to="/docs/reference/terminology#package-state">Paketzustand</Terminology> erhalten. Fügen Sie die Schnittstelle später wieder hinzu, vergleicht der Lauf mit dieser gespeicherten Basislinie, statt eine neue aufzuzeichnen.
+
+## Präfixlänge ändern \{#changing-the-prefix-length}
+
+Eine Änderung von **<Terminology title="Einstellung für die Präfixgröße des Anbieters, /48 bis /64" to="/docs/reference/terminology#delegated-prefix-length">Länge des delegierten Präfixes</Terminology>**, nachdem die <Terminology title="Ausgangspräfix, aufgezeichnet ohne Konfigurationsänderung" to="/docs/reference/terminology#baseline">Basislinie</Terminology> existiert, zählt als <Terminology title="Abweichung vom letzten erfolgreichen Präfix oder dessen Länge" to="/docs/reference/terminology#prefix-transition">Präfixwechsel</Terminology>, auch wenn das Netz selbst gleich bleibt. Das Paket gleicht Adressen mit der in der <Terminology title="Ausgangspräfix, aufgezeichnet ohne Konfigurationsänderung" to="/docs/reference/terminology#baseline">Basislinie</Terminology> gespeicherten Länge ab und ersetzt Bits mit der neuen Länge.
+
+:::danger
+
+Wenn Sie die Länge verengen, werden die Subnetzbits jeder passenden Adresse überschrieben. Mit der <Terminology title="globale Adresse, die pfSense für die überwachte Schnittstelle meldet" to="/docs/reference/terminology#source-address">Quelladresse</Terminology> `2001:db8:1234:ab00::1` und einer `/56`-<Terminology title="Ausgangspräfix, aufgezeichnet ohne Konfigurationsänderung" to="/docs/reference/terminology#baseline">Basislinie</Terminology> macht ein Wechsel auf `/64` aus `2001:db8:1234:abcc::42` die Adresse `2001:db8:1234:ab00::42`.
+
+:::
+
+Wenn Sie die Länge erweitern, etwa von `/64` auf `/56`, hat der Lauf möglicherweise nichts zu ändern. Jeder Lauf meldet dann <Terminology title="Ergebnis: Präfix geändert, aber kein genehmigtes Feld passte" to="/docs/reference/terminology#warning">Warnung</Terminology>, bis sich das Präfix selbst ändert oder bis Sie die gespeicherten Adressen prüfen und [das aktuelle Präfix als neue Basislinie übernehmen](/docs/operate/backups-and-recovery#after-a-failed-run).
+
+Bevor Sie die Länge ändern, empfiehlt es sich, im selben Speichervorgang **<Terminology title="automatische Prüfungen über einen von pfSense verwalteten Cron-Eintrag" to="/docs/reference/terminology#scheduled-updates">Geplante Aktualisierungen aktivieren</Terminology>** zu deaktivieren. Ein **<Terminology title="Vorschau, die nie sichert oder schreibt" to="/docs/reference/terminology#dry-run">Testlauf</Terminology>** zeigt dann die Anzahl der geplanten Felder, jede geplante Änderung unter `Feldänderungen` und die **Zusammenfassung**, bevor Sie **Jetzt ausführen** wählen.
+
+Als Nächstes folgt [Basislinie festlegen](/docs/first-run), danach wählen Sie die Felder auf der Registerkarte [Felder](/docs/configure/configuration-scopes).

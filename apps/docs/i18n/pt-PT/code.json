@@ -1,0 +1,173 @@
+{
+  "home.meta.description": {
+    "message": "Detete alterações do prefixo delegado, atualize apenas campos pfSense aprovados, preserve os bits de anfitrião e verifique cada transação."
+  },
+  "home.meta.title": {
+    "message": "Atualizador de prefixo IPv6 - Mantenha os prefixos IPv6 dinâmicos alinhados em segurança."
+  },
+  "home.hero.eyebrow": {
+    "message": "Pacote pfSense nativo"
+  },
+  "home.hero.heading": {
+    "message": "Mantenha os prefixos IPv6 dinâmicos alinhados em segurança."
+  },
+  "home.hero.tagline": {
+    "message": "Detete alterações do prefixo delegado, atualize apenas campos pfSense aprovados, preserve os bits de anfitrião e verifique cada transação."
+  },
+  "home.hero.primaryAction": {
+    "message": "Instalar e configurar"
+  },
+  "home.hero.secondaryAction": {
+    "message": "Rever o funcionamento seguro"
+  },
+  "home.preview.ariaLabel": {
+    "message": "Comprimento do prefixo delegado: /56"
+  },
+  "home.preview.dryRun": {
+    "message": "Simulação"
+  },
+  "home.preview.detected": {
+    "message": "Endereço de origem observado"
+  },
+  "home.preview.previous": {
+    "message": "Prefixo anterior"
+  },
+  "home.preview.current": {
+    "message": "Prefixo atual"
+  },
+  "home.preview.prefixChanged": {
+    "message": "Prefixo observado"
+  },
+  "home.preview.hostPreserved": {
+    "message": "Comprimento do prefixo delegado"
+  },
+  "home.preview.result": {
+    "message": "A simulação encontrou 2 alteração(ões) de campo aprovada(s) para 2001:db8:abcd:8800::/56; a configuração não foi modificada."
+  },
+  "home.workflow.eyebrow": {
+    "message": "Segurança e funcionamento"
+  },
+  "home.workflow.heading": {
+    "message": "Transação segura"
+  },
+  "home.workflow.detect": {
+    "message": "Endereço de origem observado"
+  },
+  "home.workflow.plan": {
+    "message": "Campos alterados"
+  },
+  "home.workflow.backup": {
+    "message": "Cópia de segurança da configuração criada"
+  },
+  "home.workflow.write": {
+    "message": "Prefixo atual"
+  },
+  "home.workflow.verify": {
+    "message": "Sucesso"
+  },
+  "home.workflow.notify": {
+    "message": "Notificações"
+  },
+  "home.features.interface.title": {
+    "message": "Interfaces monitorizadas"
+  },
+  "home.features.interface.description": {
+    "message": "Adicione uma linha por cada interface cujo endereço IPv6 global ativo principal contém um prefixo delegado. Para DHCPv6 só com prefixo na WAN, selecione uma interface acompanhada a jusante. Os bits de anfitrião após o comprimento do prefixo são preservados exatamente, e o endereço que o pfSense escolhe para cada interface aparece no separador Estado."
+  },
+  "home.features.prefix.title": {
+    "message": "Comprimento do prefixo delegado"
+  },
+  "home.features.prefix.description": {
+    "message": "Introduza o limite do prefixo delegado pelo ISP. Os bits de anfitrião após esse limite são preservados exatamente."
+  },
+  "home.features.scopes.title": {
+    "message": "Campos"
+  },
+  "home.features.scopes.description": {
+    "message": "Escolha no separador Campos que campos da configuração mudam com o prefixo."
+  },
+  "home.features.dryRun.title": {
+    "message": "Simulação"
+  },
+  "home.features.dryRun.description": {
+    "message": "Executar agora pode atualizar campos aprovados após uma alteração detetada. A simulação regista apenas uma pré-visualização e nunca escreve a configuração da firewall."
+  },
+  "home.features.backup.title": {
+    "message": "Cópia de segurança da configuração criada"
+  },
+  "home.features.backup.description": {
+    "message": "Cópia de segurança da configuração criada: Sim."
+  },
+  "home.features.notify.title": {
+    "message": "Notificações"
+  },
+  "home.features.notify.description": {
+    "message": "Utiliza os canais de notificação do pfSense configurados após uma atualização de prefixo verificada e bem-sucedida. Verificações sem alteração nunca notificam."
+  },
+  "home.stats.heading": {
+    "message": "Segurança e funcionamento"
+  },
+  "home.stats.boundaries": {
+    "message": "Comprimento do prefixo delegado"
+  },
+  "home.stats.backups": {
+    "message": "Cópia de segurança da configuração criada"
+  },
+  "home.stats.writes": {
+    "message": "Campos alterados"
+  },
+  "home.stats.noChange": {
+    "message": "O prefixo IPv6 ativo não foi alterado; nenhum destino de configuração aprovado foi lido ou escrito."
+  },
+  "home.routes.eyebrow": {
+    "message": "Guias"
+  },
+  "home.routes.heading": {
+    "message": "Instalar e configurar"
+  },
+  "home.routes.install.title": {
+    "message": "Instalar o pacote"
+  },
+  "home.routes.install.description": {
+    "message": "Execute este comando numa shell pfSense para instalar a versão mais recente diretamente do GitHub."
+  },
+  "home.routes.open": {
+    "message": "Começar a ler"
+  },
+  "home.routes.configure.title": {
+    "message": "Interfaces monitorizadas / Comprimento do prefixo delegado"
+  },
+  "home.routes.configure.description": {
+    "message": "Adicione uma linha por cada interface cujo endereço IPv6 global ativo principal contém um prefixo delegado. Para DHCPv6 só com prefixo na WAN, selecione uma interface acompanhada a jusante. Os bits de anfitrião após o comprimento do prefixo são preservados exatamente, e o endereço que o pfSense escolhe para cada interface aparece no separador Estado."
+  },
+  "home.routes.status.title": {
+    "message": "Estado / Saída do comando"
+  },
+  "home.routes.status.description": {
+    "message": "Executar agora pode atualizar campos aprovados após uma alteração detetada. A simulação regista apenas uma pré-visualização e nunca escreve a configuração da firewall."
+  },
+  "home.routes.troubleshoot.title": {
+    "message": "Resolução de problemas"
+  },
+  "home.routes.troubleshoot.description": {
+    "message": "Se o endereço de origem estiver errado, escolha a interface rastreada a jusante que realmente possui o endereço global; não compense com um comprimento adivinhado."
+  },
+  "home.spotlight.heading": {
+    "message": "Saída do comando"
+  },
+  "home.spotlight.description": {
+    "message": "Verifique cada execução na página Estado: endereço de origem, prefixo calculado, cópia de segurança e resultado."
+  },
+  "home.spotlight.statusAction": {
+    "message": "Estado / Saída do comando"
+  },
+  "home.spotlight.testsAction": {
+    "message": "Resultados e testes"
+  },
+  "home.blogPreview.heading": {
+    "message": "Do blogue"
+  },
+  "home.blogPreview.description": {
+    "message": "Notas de versão, guias de configuração e artigos sobre prefixos IPv6 dinâmicos."
+  }
+}

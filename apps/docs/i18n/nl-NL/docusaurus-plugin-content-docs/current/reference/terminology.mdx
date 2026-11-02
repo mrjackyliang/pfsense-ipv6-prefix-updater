@@ -1,0 +1,203 @@
+---
+id: terminology
+title: Terminologie
+description: Zoek de termen op voor adressen, prefixen, instellingen, uitvoeringsresultaten en pfSense die de tabbladen Instellingen, Status en Velden en deze documentatie gebruiken.
+keywords:
+  - pfsense ipv6 prefix updater
+  - terminologie
+  - woordenlijst
+  - gedelegeerde prefix
+  - baseline
+  - uitvoeringsresultaten
+tags:
+  - reference
+  - terminology
+  - glossary
+sidebar_position: 1
+---
+
+Zoek de termen op die de tabbladen Instellingen, Status en Velden en deze handleidingen gebruiken voor adressen, prefixen, uitvoeringen en pfSense-functies.
+
+## Gedelegeerde prefix \{#delegated-prefix}
+
+Het IPv6-netwerk dat je ISP naar de firewall routeert, meestal via DHCPv6 Prefix Delegation. Het pakket volgt deze prefix, maar vraagt hem nooit aan, vernieuwt hem nooit en wijzigt hem nooit.
+
+## Prefixlengte \{#prefix-length}
+
+Het aantal voorloopbits dat een netwerk aanduidt, geschreven als een schuine streep met een getal, zoals `/56`. Een CIDR-achtervoegsel bij een geconfigureerde waarde, zoals `/64`, blijft staan zoals het is geschreven wanneer het pakket het adres herschrijft.
+
+## Lengte gedelegeerde prefix \{#delegated-prefix-length}
+
+De instelling **Lengte gedelegeerde prefix**, die de grootte bevat van de prefix die je ISP delegeert, van `/48` tot en met `/64`. Ze begint op `/56`, het pakket detecteert haar nooit zelf, en een wijziging nadat de baseline bestaat, telt als prefixwissel.
+
+## Globaal unicastadres \{#global-unicast-address}
+
+Een IPv6-adres binnen `2000::/3`, het enige soort adres dat het pakket als bron leest of herschrijft. Link-local-, unique-local- (`fc00::/7`), multicast-, loopback-, niet-gespecificeerde en IPv4-mapped adressen worden als bron geweigerd en blijven in de configuratie ongewijzigd.
+
+## Link-local-adres \{#link-local-address}
+
+Een adres dat alleen op één netwerklink werkt en met `fe80` begint. Het pakket valt nooit terug op zo'n adres, dus een interface zonder globaal adres laat de uitvoering mislukken.
+
+## Hostgedeelte \{#host-portion}
+
+Alle adresbits na de lengte van de gedelegeerde prefix, ook hostbits genoemd. Het pakket kopieert deze bits ongewijzigd naar het nieuwe adres, ook als de grens midden in een hexadecimaal cijfer valt.
+
+## Canonieke vorm \{#canonical-form}
+
+De standaardnotatie van een IPv6-adres in kleine letters en zo kort mogelijk, zoals `2001:db8::1` voor `2001:0DB8:0:0::1`. Het pakket vergelijkt adressen in deze vorm en schrijft herschreven waarden zo weg, dus een waarde kan er anders uitzien en toch hetzelfde adres zijn.
+
+## Gevolgde interface \{#tracked-interface}
+
+Een pfSense-interface waarvan het IPv6-adres via het configuratietype **Track Interface** uit de gedelegeerde prefix van een andere interface komt. Het is vaak de juiste bewaakte interface als WAN geen globaal adres heeft, en het pakket herschrijft het adres ervan nooit, omdat pfSense het zelf genereert.
+
+## Bewaakte interface \{#monitored-interface}
+
+Eén rij van de instelling **Bewaakte interfaces**, die een interface aanwijst waarvan het globale adres een huidige prefix verraadt. Het tabblad Status toont de beschrijving van de interface, gevolgd door de interne pfSense-naam, zoals `LAN (lan)`.
+
+Voeg je een interface toe, dan legt de volgende uitvoering daarvoor een nieuwe baseline vast in plaats van prefixen te vergelijken.
+
+## Bronadres \{#source-address}
+
+Het primaire globale adres dat pfSense voor de bewaakte interface meldt en dat bij elke uitvoering opnieuw wordt gelezen. Het tabblad Status toont het in canonieke vorm als **Waargenomen bronadres** en **Laatste geslaagde bronadres**.
+
+## Waargenomen prefix \{#observed-prefix}
+
+Het netwerk dat uit het bronadres en de lengte van de gedelegeerde prefix wordt berekend en met zijn lengte op het tabblad Status staat. Elke uitvoering vergelijkt het met de laatste geslaagde prefix.
+
+## Baseline \{#baseline}
+
+De prefix en het bronadres die het pakket als vertrekpunt vastlegt, zonder de configuratie te wijzigen. Er wordt een baseline vastgelegd bij de eerste uitvoering voor elke bewaakte interface, telkens wanneer de pakketstatus ontbreekt, wanneer een beheerder de actieve prefix uitdrukkelijk accepteert en tijdens een migratie vanuit de opgeslagen prefix van de legacy-updater.
+
+## Laatste geslaagde prefix \{#last-successful-prefix}
+
+De opgeslagen prefix en lengte waarmee de volgende controle vergelijkt. Alleen de resultaten Geïnitialiseerd, Geaccepteerd en Geslaagd wijzigen hem, en elk ander resultaat laat hem zoals hij was.
+
+## Prefixwissel \{#prefix-transition}
+
+Een verschil tussen de laatste geslaagde prefix en de waargenomen prefix, ook als alleen hetzelfde netwerk een andere prefixlengte heeft. Alleen een prefixwissel laat het pakket de configuratie scannen, wijzigingen plannen en schrijven.
+
+## Veldgroep \{#field-group}
+
+Een groep velden met één schakelaar op het tabblad Velden. De elf pfSense-groepen zijn Statische interfaces, Virtuele IP-adressen, Aliassen, Firewallregels, NAT en NPt, DHCPv6-server, Router Advertisements, DNS-hostoverschrijvingen, IPsec, OpenVPN en WireGuard, en ze staan standaard aan. De instellingen van elk ander pakket krijgen een eigen groep, die standaard uit staat, en elke andere waarde valt onder de groep Overige instellingen, die ook standaard uit staat. Een groep die aan staat, dekt elk veld van die soort, ook velden die later worden toegevoegd.
+
+## Goedgekeurd veld \{#approved-field}
+
+Een exact configuratieveld dat het pakket mag herschrijven: een veld in een groep die aan staat en dat niet is uitgevinkt, of een aangevinkt veld in een groep die uit staat. Waarden buiten goedgekeurde velden worden nooit gewijzigd.
+
+## Velduitzondering \{#field-exception}
+
+Een afzonderlijk veld waarvan het vinkje op het tabblad Velden afwijkt van de groepsschakelaar: een uitgevinkt veld in een groep die aan staat, of een aangevinkt veld in een groep die uit staat. Elke uitzondering benoemt haar item, zoals de tracker-ID van een firewallregel, in plaats van een positie in een lijst.
+
+## Wijzigingsplan \{#change-plan}
+
+De volledige lijst met goedgekeurde velden die gaan veranderen, elk met de oude waarde, de nieuwe waarde en de service die opnieuw moet worden geladen. Het pakket stelt het hele plan op voordat het iets wijzigt.
+
+## Geplande updates \{#scheduled-updates}
+
+Automatische controles, geregeld door **Geplande updates inschakelen**, dat standaard uit staat, en **Schema**, dat standaard op Elk uur staat. Bij het opslaan van de instellingen wordt een door pfSense beheerde cronjob toegevoegd of verwijderd, dus het Cron-pakket is niet nodig.
+
+## Handmatige uitvoering \{#manual-run}
+
+Een controle die je start met **Nu uitvoeren** of **Testuitvoering** op het tabblad Status. Ze draait ook als geplande updates uit staan.
+
+## Testuitvoering \{#dry-run}
+
+Een voorbeeld dat je start met **Testuitvoering** en dat nooit een back-up maakt of de configuratie schrijft. Vindt het een prefixwissel met velden die moeten veranderen, dan is het resultaat **Testuitvoering** en toont het het aantal geplande velden.
+
+Bij een ongewijzigde prefix meldt een testuitvoering Geen wijziging zonder de configuratie te scannen.
+
+## Opdrachtuitvoer \{#command-output}
+
+Het alleen-lezen vak **Nieuwste uitvoering** onder **Opdrachtuitvoer** dat verschijnt na Nu uitvoeren, Testuitvoering of Huidig prefix accepteren. Het toont de regels van de uitvoering van `Status` tot `Samenvatting`, na een testuitvoering of het resultaat Geslaagd gevolgd door `Veldwijzigingen`, of één regel als de actie mislukt of een andere uitvoering de vergrendeling vasthoudt.
+
+## Uitvoeringsvergrendeling \{#run-lock}
+
+De vergrendeling die ervoor zorgt dat er maar één controle tegelijk draait. Een tweede controle stopt zonder de configuratie te lezen, en de vergrendeling wordt vrijgegeven zodra de lopende controle klaar is.
+
+## Pakketstatus \{#package-state}
+
+Het bestand `/cf/conf/ipv6-prefix-updater/state.json`, waarin het pakket elke baseline en zijn laatste uitvoering buiten de pfSense-configuratie bewaart. Alleen root kan het lezen, en het blijft behouden na herstarts, RAM-disks en het verwijderen van het pakket, zodat een herinstallatie elke baseline behoudt.
+
+## Geïnitialiseerd \{#initialized}
+
+Het resultaat van een uitvoering die een nieuwe baseline vastlegt. Ze maakt geen back-up, wijzigt de configuratie niet en verstuurt geen melding.
+
+## Voorbeeld van initialisatie \{#initialization-preview}
+
+Het resultaat van een testuitvoering terwijl er nog geen baseline bestaat. Het toont de baseline die een normale uitvoering zou vastleggen, zonder die vast te leggen.
+
+## Geen wijziging \{#no-change}
+
+Het resultaat wanneer de waargenomen prefix en de lengte ervan overeenkomen met de laatste geslaagde prefix, ook wel een no-op-uitvoering genoemd. De uitvoering scant de configuratie niet, maakt geen back-up, herlaadt geen services en verstuurt geen melding.
+
+## Waarschuwing \{#warning}
+
+Het resultaat wanneer een prefixwissel is gevonden, maar geen goedgekeurd veld bij de oude prefix hoort. Er wordt niets geschreven, de baseline blijft waar hij was en elke Waarschuwing voegt een WebGUI-melding toe.
+
+## Geaccepteerd \{#accepted}
+
+Het resultaat nadat een beheerder **Huidig prefix accepteren** heeft geselecteerd en heeft bevestigd dat de opgeslagen adressen al de actieve prefix gebruiken. Het pakket verplaatst de baseline zonder goedgekeurde velden te scannen, een back-up te maken, de configuratie te schrijven of services te herladen.
+
+## Geslaagd \{#success}
+
+Het resultaat nadat de back-up, de enkele schrijfactie, het herladen van de services en de controles van de waarden allemaal zijn voltooid. De baseline verschuift naar de nieuwe prefix, en er wordt een wijzigingsmelding verstuurd als die aan staat.
+
+## Mislukt \{#failure}
+
+Het resultaat wanneer een controle of veiligheidsstap de uitvoering stopt. Gebeurt dat pas nadat de configuratie is opgeslagen, dan blijven de nieuwe waarden opgeslagen en blijft de baseline op de oude prefix staan.
+
+## Uitgeschakeld \{#disabled}
+
+Het resultaat van een geplande controle die draait terwijl **Geplande updates inschakelen** uit staat. Ze stopt voordat ze een interface of de pakketstatus leest, en verschijnt alleen in de eigen uitvoer van de opdracht.
+
+## Wijzigingsmelding \{#change-notification}
+
+Het bericht dat na het resultaat Geslaagd wordt verstuurd als **Wijzigingsmeldingen verzenden** is aangevinkt, wat standaard het geval is. Het gaat naar de meldingskanalen die in pfSense zijn ingesteld en verschijnt ook als WebGUI-melding.
+
+## Meldingskanalen \{#notification-channels}
+
+De externe meldingsdiensten die zijn ingesteld onder **System → Advanced → Notifications**, zoals e-mail. Wijzigingsmeldingen gebruiken deze kanalen, terwijl meldingen bij Waarschuwing en Mislukt lokaal blijven.
+
+## WebGUI-melding \{#webgui-notice}
+
+Een item in de meldingenlijst van de pfSense-WebGUI dat naar het tabblad Status van het pakket linkt, of na de overstap van de legacy-updater naar het tabblad Opruimen. De resultaten Waarschuwing en Mislukt voegen er altijd een toe, ook als **Wijzigingsmeldingen verzenden** is uitgevinkt.
+
+## Systeemlogboek \{#system-log}
+
+Het algemene logboek van pfSense onder **Status → System Logs → System → General**. Elke regel die het pakket schrijft, begint met `IPv6 Prefix Updater:`.
+
+## Configuratieback-up \{#configuration-backup}
+
+Een kopie van de configuratie zoals die was vóór een schrijfactie, gemaakt met de back-upfunctie van pfSense en ook bewaard op het tabblad **Back-ups**. Het pakket maakt er een bij elke uitvoering die schrijft, voordat er een veld verandert, en geen bij uitvoeringen die niet schrijven.
+
+## Config History \{#config-history}
+
+De lijst met opgeslagen configuratierevisies onder **Diagnostics → Backup & Restore → Config History**. De revisie met de beschrijving `IPv6-prefixupdater wijzigde ...` bevat de bijgewerkte configuratie, dus de revisie die daarvóór is opgeslagen, is degene die je terugzet.
+
+## Herladen van services \{#service-reload}
+
+De pfSense-actie die gewijzigde instellingen toepast op een draaiende service. Het pakket herlaadt alleen de services waarvan velden zijn gewijzigd en toont ze onder **Opnieuw geladen services**.
+
+## Virtuele IP \{#virtual-ip}
+
+Een extra adres dat onder **Firewall → Virtual IPs** aan een interface is toegewezen. De groep Virtuele IP-adressen werkt alleen items van het type CARP en IP Alias bij.
+
+## IPsec fase 2 \{#ipsec-phase-2}
+
+Een IPsec-item dat de lokale en externe netwerken van een tunnel vastlegt. De groep IPsec dekt de lokale kant van items in de modi Tunnel IPv6 en Routed (VTI), en de externe kant valt onder de groep Overige instellingen.
+
+## Clientspecifieke overschrijving \{#client-specific-override}
+
+Een OpenVPN-item onder **VPN → OpenVPN → Client Specific Overrides** dat opties voor één client instelt. Het pakket kan het IPv6-tunnelnetwerk en de lokale IPv6-netwerken ervan bijwerken.
+
+## WireGuard-tunneladres \{#wireguard-tunnel-address}
+
+Een interfaceadres dat aan een WireGuard-tunnel in pfSense is toegewezen. Voor het bijwerken is het WireGuard-pakket nodig, en toegestane IP's en eindpunten van peers vallen onder de groep Overige instellingen.
+
+## Legacy-updater \{#legacy-updater}
+
+Versie 1.x van dit project, een `update.php`-script dat in `/root` werd geïnstalleerd en via een item van het Cron-pakket werd uitgevoerd. Het verving de oude prefixtekst overal in de configuratie.
+
+## Onofficieel pakket \{#unofficial-package}
+
+Een pakket dat je met `pkg add` vanaf GitHub installeert in plaats van uit de pakketrepository van Netgate. Netgate beoordeelt of ondersteunt het niet, en je installeert de updates zelf.

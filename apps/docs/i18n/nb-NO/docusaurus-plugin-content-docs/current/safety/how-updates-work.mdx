@@ -1,0 +1,79 @@
+---
+id: how-updates-work
+title: Slik fungerer oppdateringer
+description: Følg én kjøring trinn for trinn, fra lesing av grensesnittadressene via planlegging, sikkerhetskopi, én skriving og ny innlasting til det registrerte resultatet.
+keywords:
+  - pfsense ipv6 prefix updater
+  - oppdateringsprosess
+  - endringsplan
+  - ny innlasting av tjenester
+  - verifisering
+tags:
+  - safety
+  - update process
+  - service reload
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Følg én kjøring fra lesingen av grensesnittadressene til registreringen av resultatet, inkludert alle punkter der den kan stoppe.
+
+## 1. Les og valider \{#1-read-and-validate}
+
+- En planlagt kontroll stopper umiddelbart som <Terminology title="resultat: planlagt kontroll hoppet over mens oppdateringer er av" to="/docs/reference/terminology#disabled">Deaktivert</Terminology> når **<Terminology title="automatiske kontroller fra en cron-oppføring styrt av pfSense" to="/docs/reference/terminology#scheduled-updates">Aktiver planlagte oppdateringer</Terminology>** er slått av. En <Terminology title="kontroll startet fra fanen Status" to="/docs/reference/terminology#manual-run">manuell kjøring</Terminology> fortsetter.
+- Kjøringen kontrollerer de lagrede innstillingene på nytt, fordi de kan ha blitt endret siden skjemaet ble lagret.
+- Den leser den <Terminology title="offentlig IPv6-adresse innenfor 2000::/3" to="/docs/reference/terminology#global-unicast-address">globale adressen</Terminology> til hvert <Terminology title="grensesnittet der adressen avslører gjeldende prefiks" to="/docs/reference/terminology#monitored-interface">overvåket grensesnitt</Terminology> på nytt, uten å falle tilbake til en <Terminology title="fe80::-adresse som bare virker på én lenke" to="/docs/reference/terminology#link-local-address">link-local-adresse</Terminology>, og konverterer den til <Terminology title="korteste standardskrivemåte for en adresse, med små bokstaver" to="/docs/reference/terminology#canonical-form">kanonisk form</Terminology>.
+- Den maskerer hver adresse ved <Terminology title="innstilling for leverandørens prefiksstørrelse, /48 til /64" to="/docs/reference/terminology#delegated-prefix-length">lengden på det delegerte prefikset</Terminology> i raden for å få det <Terminology title="kildeadressen maskert ved prefikslengden" to="/docs/reference/terminology#observed-prefix">observerte prefikset</Terminology>.
+
+## 2. Sammenlign \{#2-compare}
+
+- Hvis det ikke finnes noen <Terminology title="startprefiks registrert uten å endre konfigurasjonen" to="/docs/reference/terminology#baseline">grunnlinje</Terminology> for grensesnittet, registrerer kjøringen en og avsluttes som <Terminology title="resultat: grunnlinje registrert, konfigurasjon uendret" to="/docs/reference/terminology#initialized">Initialisert</Terminology>.
+- Når prefikset og lengden samsvarer med det <Terminology title="prefikset neste kontroll sammenligner med" to="/docs/reference/terminology#last-successful-prefix">siste vellykkede prefikset</Terminology>, avsluttes kjøringen som <Terminology title="resultat: prefiks uendret, ingenting gjennomsøkt eller skrevet" to="/docs/reference/terminology#no-change">Ingen endring</Terminology> uten å gjennomsøke konfigurasjonen.
+- Et annet prefiks eller en annen lengde er en <Terminology title="endring fra siste vellykkede prefiks eller lengde" to="/docs/reference/terminology#prefix-transition">prefiksovergang</Terminology>, og kjøringen fortsetter.
+
+## 3. Planlegg \{#3-plan}
+
+- Kjøringen leser konfigurasjonen gjennom konfigurasjonsfunksjonene i pfSense og beholder bare feltene som er valgt i fanen Felt. Valgte felt som ikke lenger finnes, hoppes over og vises under **Felt som ble hoppet over**.
+- Hver adresse i et <Terminology title="eksakt konfigurasjonsfelt som pakken kan skrive om" to="/docs/reference/terminology#approved-field">godkjent felt</Terminology> som hører til det gamle prefikset ved den lagrede lengden, får de nye prefiksbitene ved den gjeldende lengden og beholder <Terminology title="adressebitene etter det delegerte prefikset" to="/docs/reference/terminology#host-portion">vertsdelen</Terminology> sin. Til sammen utgjør disse endringene den fullstendige <Terminology title="fullstendig liste over feltendringer, bygget før skriving" to="/docs/reference/terminology#change-plan">endringsplanen</Terminology>.
+- Når det ikke er noe å endre, avsluttes kjøringen som <Terminology title="resultat: prefiks endret, men ingen godkjente felt samsvarte" to="/docs/reference/terminology#warning">Advarsel</Terminology>. En <Terminology title="forhåndsvisning som aldri sikkerhetskopierer eller skriver" to="/docs/reference/terminology#dry-run">testkjøring</Terminology> med endringer avsluttes her som <Terminology title="forhåndsvisning som aldri sikkerhetskopierer eller skriver" to="/docs/reference/terminology#dry-run">Testkjøring</Terminology>.
+
+## 4. Forhåndskontroll \{#4-preflight}
+
+- Kjøringen bekrefter at pfSense kan laste inn alle tjenestene i planen på nytt. <Terminology title="adresse tildelt en WireGuard-tunnel i pfSense" to="/docs/reference/terminology#wireguard-tunnel-address">WireGuard-tunneladresser</Terminology> trenger WireGuard-pakken for dette.
+- Den bekrefter at hvert planlagte felt fortsatt har verdien det hadde da planen ble bygget.
+
+## 5. Sikkerhetskopier og skriv én gang \{#5-back-up-and-write-once}
+
+- pfSense oppretter en <Terminology title="kopi av konfigurasjonen lagret før en skriving" to="/docs/reference/terminology#configuration-backup">konfigurasjonssikkerhetskopi</Terminology>, og kjøringen stopper hvis pfSense ikke bekrefter den.
+- Kjøringen utfører alle endringene og lagrer én gang, med beskrivelsen `IPv6-prefiksoppdateringen endret <count> godkjent(e) felt for grensesnitt <interface>`.
+- Hvis pfSense rapporterer at lagringen mislyktes, legger kjøringen de opprinnelige verdiene tilbake i minnet og stopper.
+
+## 6. Verifiser, last inn på nytt, verifiser \{#6-verify-reload-verify}
+
+- Kjøringen kontrollerer at de lagrede verdiene samsvarer med planen, laster de berørte tjenestene inn på nytt og kontrollerer verdiene igjen.
+- Tjenestene lastes inn på nytt i den faste rekkefølgen som [Handlinger for ny innlasting](/docs/reference/approved-fields#reload-actions) viser, fra Grensesnitt til WireGuard. Etter en ny innlasting av grensesnittene følger en ny innlasting av brannmurfilteret, som da ikke gjentas.
+- De nye innlastingene av brannmurfilteret, DNS Resolver og DNS Forwarder får kjøringen til å mislykkes når de returnerer en feilverdi. De andre innlastingene får den til å mislykkes bare når de utløser en feil.
+- Innstillingene til andre pakker brukes på nytt til slutt, etter innlastingene og verifiseringen av dem. En pakke der innstillingene ikke kan brukes på nytt, rapporteres, og de lagrede verdiene blir værende.
+- En feil i dette trinnet lar de nye verdiene forbli lagret.
+
+## 7. Registrer og varsle \{#7-record-and-notify}
+
+- <Terminology title="startprefiks registrert uten å endre konfigurasjonen" to="/docs/reference/terminology#baseline">Grunnlinjen</Terminology> flyttes til det nye prefikset, og **Siste kjøring** registrerer resultatet <Terminology title="resultat: felt oppdatert, lagret, lastet inn igjen og verifisert" to="/docs/reference/terminology#success">Vellykket</Terminology> med antall endrede felt og <Terminology title="pfSense-handling som tar i bruk endrede innstillinger" to="/docs/reference/terminology#service-reload">tjenestene som ble lastet inn på nytt</Terminology>.
+- Kjøringen skriver en linje i <Terminology title="generell pfSense-logg som pakken skriver til" to="/docs/reference/terminology#system-log">systemloggen</Terminology> og sender et <Terminology title="varsel sendt etter en verifisert vellykket oppdatering" to="/docs/reference/terminology#change-notification">endringsvarsel</Terminology> hvis det er slått på. Et mislykket varsel endrer ikke resultatet.
+
+## Hvor en kjøring kan stoppe \{#where-a-run-can-stop}
+
+| Hvor den stopper                                                                                                                                                                                                                                                                                                     | Konfigurasjon skrevet | Sikkerhetskopi opprettet | Siste kjøring oppdatert                                                                                                                                        |
+|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------|--------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| <Terminology title="resultat: planlagt kontroll hoppet over mens oppdateringer er av" to="/docs/reference/terminology#disabled">Deaktivert</Terminology> planlagt kontroll                                                                                                                                           | Nei                   | Nei                      | Nei                                                                                                                                                            |
+| Innstillinger, adresse eller uleselig <Terminology title="pakkefil med grunnlinjen og siste kjøring" to="/docs/reference/terminology#package-state">pakketilstand</Terminology>                                                                                                                                      | Nei                   | Nei                      | Nei                                                                                                                                                            |
+| <Terminology title="resultat: grunnlinje registrert, konfigurasjon uendret" to="/docs/reference/terminology#initialized">Initialisert</Terminology> eller <Terminology title="resultat: prefiks uendret, ingenting gjennomsøkt eller skrevet" to="/docs/reference/terminology#no-change">Ingen endring</Terminology> | Nei                   | Nei                      | Ja                                                                                                                                                             |
+| <Terminology title="resultat: prefiks endret, men ingen godkjente felt samsvarte" to="/docs/reference/terminology#warning">Advarsel</Terminology> eller <Terminology title="forhåndsvisning som aldri sikkerhetskopierer eller skriver" to="/docs/reference/terminology#dry-run">Testkjøring</Terminology>           | Nei                   | Nei                      | Ja                                                                                                                                                             |
+| Feil i forhåndskontrollen                                                                                                                                                                                                                                                                                            | Nei                   | Nei                      | Ja                                                                                                                                                             |
+| Feil ved sikkerhetskopiering                                                                                                                                                                                                                                                                                         | Nei                   | Nei                      | Ja                                                                                                                                                             |
+| Feil ved skriving                                                                                                                                                                                                                                                                                                    | Nei, ifølge pfSense   | Ja                       | Ja                                                                                                                                                             |
+| Feil ved verifisering eller ny innlasting                                                                                                                                                                                                                                                                            | Ja                    | Ja                       | Ja                                                                                                                                                             |
+| Feil ved varsling                                                                                                                                                                                                                                                                                                    | Ja                    | Ja                       | Ja, som <Terminology title="resultat: felt oppdatert, lagret, lastet inn igjen og verifisert" to="/docs/reference/terminology#success">Vellykket</Terminology> |
+
+[Godkjente felt](/docs/reference/approved-fields) viser pfSense-funksjonen bak hver ny innlasting, og [Sikkerhetskopier og gjenoppretting](/docs/operate/backups-and-recovery) beskriver gjenoppretting etter en feil.

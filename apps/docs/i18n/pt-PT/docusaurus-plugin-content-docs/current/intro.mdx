@@ -1,0 +1,90 @@
+---
+id: intro
+title: Visão geral
+description: Mantenha aliases, interfaces e endereços VPN do pfSense no prefixo IPv6 atual quando o ISP delega um novo, com cópia de segurança antes de cada alteração.
+keywords:
+  - pfsense ipv6 prefix updater
+  - visão geral
+  - delegação de prefixo ipv6
+  - prefixo dinâmico
+  - pacote pfsense
+tags:
+  - setup
+  - overview
+  - ipv6
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Mantenha os endereços IPv6 guardados no pfSense no prefixo atual quando o ISP atribui um novo <Terminology title="rede IPv6 que o ISP encaminha para a firewall" to="/docs/reference/terminology#delegated-prefix">prefixo delegado</Terminology>.
+
+## O que faz \{#what-it-does}
+
+O pfSense IPv6 Prefix Updater é um pacote do pfSense que monitoriza as interfaces que escolher para detetar um novo prefixo. Quando o prefixo muda, reescreve os endereços correspondentes nos campos que selecionar e mantém a <Terminology title="bits do endereço após o prefixo delegado" to="/docs/reference/terminology#host-portion">parte de anfitrião</Terminology> de cada um.
+
+## Porquê usar este pacote? \{#why-use-this-package}
+
+1. Mantém a <Terminology title="bits do endereço após o prefixo delegado" to="/docs/reference/terminology#host-portion">parte de anfitrião</Terminology> de cada endereço, para que cada dispositivo conserve o mesmo sufixo após uma mudança de prefixo.
+2. Altera apenas os <Terminology title="campo de configuração exato que o pacote pode reescrever" to="/docs/reference/terminology#approved-field">campos aprovados</Terminology> que selecionar no separador Campos, para que as redes VPN remotas, os pares, os gateways e as rotas fiquem como os definiu.
+3. Guarda uma <Terminology title="cópia da configuração guardada antes de uma gravação" to="/docs/reference/terminology#configuration-backup">cópia de segurança da configuração</Terminology> antes de cada gravação, para que a configuração anterior fique disponível no <Terminology title="lista do pfSense com as revisões guardadas da configuração" to="/docs/reference/terminology#config-history">Config History</Terminology>.
+4. Funciona com um agendamento gerido pelo pfSense, pelo que dispensa o pacote Cron e qualquer script numa pasta pessoal.
+5. Mostra cada resultado no separador Estado, para que veja o que mudou, que serviços foram recarregados e se foi criada uma cópia de segurança.
+
+## O que atualiza \{#what-it-updates}
+
+- **Aliases**: endereços e redes em aliases dos tipos Host e Network.
+- **Interfaces estáticas**: endereços de interfaces configuradas como Static IPv6.
+- **<Terminology title="endereço adicional de interface, como CARP ou IP Alias" to="/docs/reference/terminology#virtual-ip">Endereços IP virtuais</Terminology>**: <Terminology title="endereço adicional de interface, como CARP ou IP Alias" to="/docs/reference/terminology#virtual-ip">IPs virtuais</Terminology> CARP e IP Alias.
+- **IPsec**: o lado local das entradas de <Terminology title="entrada IPsec que descreve as redes local e remota" to="/docs/reference/terminology#ipsec-phase-2">fase 2</Terminology> Tunnel IPv6 e Routed (VTI).
+- **OpenVPN**: redes de túnel e redes locais IPv6 em servidores e em <Terminology title="definições OpenVPN de um cliente num servidor" to="/docs/reference/terminology#client-specific-override">substituições específicas de cliente</Terminology>, e redes de túnel IPv6 em clientes.
+- **WireGuard**: <Terminology title="endereço atribuído a um túnel WireGuard do pfSense" to="/docs/reference/terminology#wireguard-tunnel-address">endereços de túnel</Terminology>, quando o pacote WireGuard está instalado.
+- **Servidor DHCPv6**: intervalos de endereços, de delegação de prefixos e de pools, mapeamentos estáticos e os servidores DNS e NTP entregues aos clientes.
+- **Anúncios de router**: servidores DNS anunciados e sub-redes RA.
+- **Substituições de anfitriões DNS**: substituições de anfitriões no DNS Resolver e no DNS Forwarder.
+- **Regras da firewall**: endereços de origem e de destino escritos nas regras.
+- **NAT e NPt**: endereços escritos em reencaminhamentos de portas, NAT de saída e NAT 1:1, e prefixos NPt.
+- **Definições de outros pacotes**: apenas os campos que marcar, e depois o pacote aplica novamente as definições desse pacote.
+
+O separador **Campos** lista todos os endereços contidos no seu prefixo, com um interruptor para cada <Terminology title="grupo de campos com um só interruptor no separador Campos" to="/docs/reference/terminology#field-group">grupo de campos</Terminology> e uma caixa de verificação para cada campo.
+
+## O que fica à sua espera \{#what-waits-for-you}
+
+O grupo **Outras definições** começa desativado, pelo que estes valores só mudam quando os marcar:
+
+- O lado remoto de uma VPN, como as redes remotas IPsec e OpenVPN e os pares, IPs permitidos e pontos finais do WireGuard.
+- Gateways, rotas estáticas, substituições de domínio DNS, certificados, segredos, valores codificados em Base64 e descrições.
+- Aliases dos tipos Port, URL e outros.
+
+As interfaces que obtêm o endereço por DHCPv6, SLAAC ou <Terminology title="interface endereçada a partir do prefixo delegado de outra" to="/docs/reference/terminology#tracked-interface">Track Interface</Terminology> nunca são alteradas, porque é o pfSense que gera esses endereços. O mesmo se aplica aos endereços IPv4, aos nomes de anfitrião e aos endereços IPv6 fora do prefixo antigo. A lista completa está em [Outras definições](/docs/configure/configuration-scopes#other-settings).
+
+## Como funciona uma verificação \{#how-a-check-works}
+
+1. Lê o <Terminology title="endereço IPv6 público dentro de 2000::/3" to="/docs/reference/terminology#global-unicast-address">endereço global</Terminology> de cada <Terminology title="interface cujo endereço revela o prefixo atual" to="/docs/reference/terminology#monitored-interface">Interface monitorizada</Terminology> e calcula o respetivo prefixo.
+2. Compara-o com o <Terminology title="prefixo com que a próxima verificação compara" to="/docs/reference/terminology#last-successful-prefix">último prefixo bem-sucedido</Terminology> e termina com <Terminology title="resultado: prefixo inalterado, nada analisado nem gravado" to="/docs/reference/terminology#no-change">Sem alteração</Terminology> se coincidirem.
+3. Perante uma <Terminology title="mudança face ao último prefixo ou comprimento bem-sucedido" to="/docs/reference/terminology#prefix-transition">transição de prefixo</Terminology>, cria um <Terminology title="lista completa das alterações, criada antes de gravar" to="/docs/reference/terminology#change-plan">plano de alterações</Terminology> para os <Terminology title="campo de configuração exato que o pacote pode reescrever" to="/docs/reference/terminology#approved-field">campos aprovados</Terminology> que ainda usam o prefixo antigo.
+4. Guarda uma <Terminology title="cópia da configuração guardada antes de uma gravação" to="/docs/reference/terminology#configuration-backup">cópia de segurança da configuração</Terminology>, grava todas as alterações de uma só vez, recarrega apenas os serviços afetados e volta a verificar os valores.
+5. Regista o resultado no separador Estado e envia uma <Terminology title="alerta enviado após uma atualização verificada com sucesso" to="/docs/reference/terminology#change-notification">notificação de alteração</Terminology>, se estiver ativada.
+
+O [Modelo de segurança](/docs/operations) descreve as proteções de cada passo.
+
+## Antes de começar \{#before-you-start}
+
+:::warning
+
+O pfSense IPv6 Prefix Updater é um <Terminology title="pacote instalado do GitHub, não do repositório da Netgate" to="/docs/reference/terminology#unofficial-package">pacote não oficial</Terminology>. É instalado a partir do GitHub com o `pkg`, e a Netgate não o revê nem lhe presta suporte.
+
+:::
+
+As versões do pacote são publicadas na página GitHub Releases do projeto. As versões 1.x contêm apenas o <Terminology title="script update.php original executado pelo pacote Cron" to="/docs/reference/terminology#legacy-updater">atualizador legado</Terminology>, e não este pacote.
+
+## Idiomas \{#languages}
+
+Todos os separadores do pacote, a <Terminology title="resultados só de leitura após Executar agora ou Simulação" to="/docs/reference/terminology#command-output">Saída do comando</Terminology> e as mensagens do pacote seguem o idioma selecionado no pfSense. O pacote inclui traduções para 18 opções de idioma do pfSense e recorre ao inglês para qualquer outro idioma.
+
+## Próximos passos \{#next-steps}
+
+- **[Instalar o pacote](/docs/installation)**: adicione o pacote a partir de uma versão publicada no GitHub.
+- **[Estabelecer a referência](/docs/first-run)**: registe e verifique o prefixo atual antes de ativar o agendamento.
+- **[Migrar a partir do script](/docs/migrate-from-legacy)**: faça a transição a partir do script da versão 1.x.
+- **[Modelo de segurança](/docs/operations)**: veja o que o pacote protege e o que ainda pode afetar.

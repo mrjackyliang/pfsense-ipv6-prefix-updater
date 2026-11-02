@@ -1,0 +1,52 @@
+---
+id: settings
+title: Référence des paramètres
+description: Consultez chaque champ de l’onglet Paramètres d’IPv6 Prefix Updater avec sa valeur par défaut, les valeurs qu’il accepte et le message de validation qu’il peut afficher.
+keywords:
+  - pfsense ipv6 prefix updater
+  - paramètres
+  - valeurs par défaut
+  - validation
+  - webgui
+tags:
+  - reference
+  - settings
+  - webgui
+sidebar_position: 2
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Consultez chaque champ de l’onglet Paramètres avec sa valeur par défaut et les valeurs qu’il accepte.
+
+## Surveillance du préfixe \{#prefix-monitoring}
+
+L’onglet **Paramètres** sous **Services → IPv6 Prefix Updater** commence par ces champs, et l’enregistrement du formulaire affiche `Paramètres enregistrés.`
+
+| Champ                                                                                                                                                                                      | Description                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| <Terminology title="vérifications automatiques via une entrée cron gérée par pfSense" to="/docs/reference/terminology#scheduled-updates">Activer les mises à jour planifiées</Terminology> | Lance les vérifications selon la **Planification** choisie. Décoché par défaut ; l’enregistrement ajoute ou supprime l’entrée cron.                                                                                                                                                                                                                                                                                                                      |
+| <Terminology title="interface dont l’adresse révèle le préfixe actuel" to="/docs/reference/terminology#monitored-interface">Interfaces surveillées</Terminology>                           | Obligatoire. Une ligne par interface dont l’<Terminology title="adresse IPv6 publique comprise dans 2000::/3" to="/docs/reference/terminology#global-unicast-address">adresse globale</Terminology> porte un <Terminology title="réseau IPv6 que votre FAI route vers le pare-feu" to="/docs/reference/terminology#delegated-prefix">préfixe délégué</Terminology>. **Ajouter** ajoute une ligne, et chaque interface ne peut figurer qu’une seule fois. |
+| <Terminology title="paramètre de taille du préfixe du FAI, de /48 à /64" to="/docs/reference/terminology#delegated-prefix-length">Longueur du préfixe délégué</Terminology>                | Obligatoire dans chaque ligne. De `/48` à `/64`, `/56` étant sélectionné par défaut.                                                                                                                                                                                                                                                                                                                                                                     |
+| Planification                                                                                                                                                                              | Toutes les 15 minutes, Toutes les heures, Toutes les 6 heures ou Chaque jour à minuit. Toutes les heures par défaut.                                                                                                                                                                                                                                                                                                                                     |
+
+## Sélection des champs \{#field-selection}
+
+Sous **Planification**, l’onglet Paramètres affiche `Choisissez dans l’onglet Champs les champs de configuration qui changent avec le préfixe.` Les <Terminology title="groupe de champs avec un seul interrupteur dans l’onglet Champs" to="/docs/reference/terminology#field-group">groupes de champs</Terminology> et les champs isolés se choisissent dans l’onglet **Champs** et sont enregistrés à part de ces paramètres ; enregistrer l’onglet Paramètres ne les modifie donc jamais. [Champs](/docs/configure/configuration-scopes) décrit chaque groupe et sa valeur par défaut.
+
+## Notifications \{#notifications}
+
+| Champ                                                                                                                                                                                    | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| <Terminology title="alerte envoyée après une mise à jour réussie et vérifiée" to="/docs/reference/terminology#change-notification">Envoyer les notifications de changement</Terminology> | Coché par défaut. Envoie une <Terminology title="alerte envoyée après une mise à jour réussie et vérifiée" to="/docs/reference/terminology#change-notification">notification de changement</Terminology> après chaque <Terminology title="résultat : champs mis à jour, enregistrés, rechargés et vérifiés" to="/docs/reference/terminology#success">Réussite</Terminology>, tandis que les alertes <Terminology title="résultat : préfixe changé, mais aucun champ approuvé correspondant" to="/docs/reference/terminology#warning">Avertissement</Terminology> et <Terminology title="résultat : une vérification ou une étape de sécurité a arrêté l’exécution" to="/docs/reference/terminology#failure">Échec</Terminology> apparaissent dans tous les cas. |
+
+## Messages de validation \{#validation-messages}
+
+| Message                                                                                            | Cause                                                                                         |
+|----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------|
+| `Sélectionnez une interface pfSense configurée à surveiller.`                                      | Aucune ligne n’existe, ou l’interface d’une ligne n’est pas une interface pfSense configurée. |
+| `Chaque interface ne peut figurer qu’une seule fois. Supprimez la ligne en trop pour <interface>.` | Deux lignes **Interfaces surveillées** désignent la même interface.                           |
+| `La longueur du préfixe délégué doit être comprise entre 48 et 64.`                                | La longueur est hors de la plage acceptée.                                                    |
+| `Sélectionnez une planification prise en charge.`                                                  | La planification ne fait pas partie des quatre options.                                       |
+
+Chaque exécution revérifie les paramètres enregistrés, car ils ont pu changer après l’enregistrement du formulaire. [Dépannage](/docs/operate/troubleshooting#run-failed) liste les messages qu’une exécution peut signaler.

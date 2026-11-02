@@ -1,0 +1,65 @@
+---
+id: package-lifecycle
+title: Aktualizacja lub usunięcie
+description: Sprawdź zainstalowaną wersję, zainstaluj nowsze wydanie na starszym albo usuń pakiet i zobacz, co każdy z tych kroków zachowuje, a co usuwa.
+keywords:
+  - pfsense ipv6 prefix updater
+  - aktualizacja pakietu
+  - usuwanie pakietu
+  - pkg delete
+  - ponowna instalacja
+tags:
+  - reference
+  - maintenance
+  - pfsense
+sidebar_position: 5
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Sprawdź zainstalowaną wersję, zainstaluj nowsze wydanie lub usuń pakiet z poziomu powłoki pfSense.
+
+## Sprawdzenie zainstalowanej wersji \{#check-the-installed-version}
+
+```shell
+pkg info pfSense-pkg-Ipv6PrefixUpdater
+```
+
+Porównaj zgłoszoną wersję z [najnowszym wydaniem w serwisie GitHub](https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest).
+
+## Aktualizacja pakietu \{#update-the-package}
+
+Zaleca się najpierw pobrać kopię konfiguracji z **Diagnostics → Backup & Restore**. Następnie zainstaluj najnowsze wydanie na istniejącym pakiecie:
+
+```shell
+pkg add -f https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
+```
+
+Krok instalacji ponownie synchronizuje wpis cron z zapisanymi ustawieniami i zachowuje każdą <Terminology title="prefiks startowy zapisany bez zmiany konfiguracji" to="/docs/reference/terminology#baseline">wartość bazową</Terminology>. Kroki weryfikacji sumy kontrolnej z przewodnika [Instalacja pakietu](/docs/installation#verify-the-download-first) działają także przy aktualizacjach.
+
+Po aktualizacji:
+
+1. Otwórz **Services → IPv6 Prefix Updater → Ustawienia** i potwierdź zapisane wartości.
+2. Na karcie Stan sprawdź sekcję **Bieżący stan**. Każdy interfejs zachowuje swoją <Terminology title="prefiks startowy zapisany bez zmiany konfiguracji" to="/docs/reference/terminology#baseline">wartość bazową</Terminology>.
+
+Jeśli wiersz pokazuje `Nie zainicjowano`, **Uruchom teraz** zapisze dla niego nową <Terminology title="prefiks startowy zapisany bez zmiany konfiguracji" to="/docs/reference/terminology#baseline">wartość bazową</Terminology>. Adresy, które nadal używają prefiksu sprzed tej wartości bazowej, pozostają wtedy bez zmian.
+
+## Usunięcie pakietu \{#remove-the-package}
+
+Wcześniejsze odznaczenie opcji **<Terminology title="automatyczne sprawdzenia z wpisu cron zarządzanego przez pfSense" to="/docs/reference/terminology#scheduled-updates">Włącz zaplanowane aktualizacje</Terminology>** sprawia, że późniejsza ponowna instalacja nie uruchomi od razu harmonogramu, jeśli pfSense zachowa zapisane ustawienia. Następnie uruchom:
+
+```shell
+pkg delete pfSense-pkg-Ipv6PrefixUpdater
+```
+
+Usunięcie kasuje wpis cron pakietu i plik <Terminology title="blokada, która nie pozwala na dwa sprawdzenia naraz" to="/docs/reference/terminology#run-lock">blokady uruchomienia</Terminology>. Zachowuje <Terminology title="plik pakietu z wartością bazową i ostatnim uruchomieniem" to="/docs/reference/terminology#package-state">stan pakietu</Terminology> i kopie z karty **Kopie zapasowe** w `/cf/conf/ipv6-prefix-updater`, dzięki czemu usuwanie i ponowna instalacja, które pfSense samo wykonuje podczas aktualizacji, nigdy nie gubią <Terminology title="prefiks startowy zapisany bez zmiany konfiguracji" to="/docs/reference/terminology#baseline">wartości bazowej</Terminology>.
+
+Usunięcie nie cofa adresów już zapisanych w konfiguracji, a rewizje pakietu pozostają w <Terminology title="lista zapisanych rewizji konfiguracji w pfSense" to="/docs/reference/terminology#config-history">Config History</Terminology>. Aby usunąć także zachowane pliki, po usunięciu pakietu uruchom `rm -rf /cf/conf/ipv6-prefix-updater`.
+
+## Późniejsza ponowna instalacja \{#reinstall-later}
+
+Ponowna instalacja odnajduje zachowany <Terminology title="plik pakietu z wartością bazową i ostatnim uruchomieniem" to="/docs/reference/terminology#package-state">stan pakietu</Terminology>, więc pierwsze uruchomienie porównuje prefiks z każdą zapisaną <Terminology title="prefiks startowy zapisany bez zmiany konfiguracji" to="/docs/reference/terminology#baseline">wartością bazową</Terminology> i aktualizuje pola, które pozostały na starszym prefiksie. Jeśli wcześniejsze ustawienia nadal istnieją z zaznaczoną opcją **<Terminology title="automatyczne sprawdzenia z wpisu cron zarządzanego przez pfSense" to="/docs/reference/terminology#scheduled-updates">Włącz zaplanowane aktualizacje</Terminology>**, krok instalacji od razu włącza harmonogram.
+
+Aby zacząć od zera, przed ponowną instalacją usuń `/cf/conf/ipv6-prefix-updater`. Pierwsze uruchomienie zapisuje wtedy nową <Terminology title="prefiks startowy zapisany bez zmiany konfiguracji" to="/docs/reference/terminology#baseline">wartość bazową</Terminology> i zgłasza wynik <Terminology title="wynik: zapisano wartość bazową, konfiguracja bez zmian" to="/docs/reference/terminology#initialized">Zainicjowano</Terminology> bez zmiany konfiguracji.
+
+Przed pracami konserwacyjnymi zapoznaj się z przewodnikiem [Kopie zapasowe i odzyskiwanie](/docs/operate/backups-and-recovery), a po ponownej instalacji — z przewodnikiem [Ustalenie wartości bazowej](/docs/first-run).

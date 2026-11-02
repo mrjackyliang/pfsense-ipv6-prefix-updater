@@ -1,0 +1,35 @@
+{
+  "layout.learn.title": {
+    "message": "Vodiči"
+  },
+  "layout.resources.title": {
+    "message": "Resursi"
+  },
+  "sections.learn.0.label": {
+    "message": "Instalacija i podešavanje"
+  },
+  "sections.learn.1.label": {
+    "message": "Nadzirana sučelja / Dužina dodijeljenog prefiksa"
+  },
+  "sections.learn.2.label": {
+    "message": "Status / Radnje"
+  },
+  "sections.learn.3.label": {
+    "message": "Rješavanje problema"
+  },
+  "sections.resources.0.label": {
+    "message": "Sigurnost i rad"
+  },
+  "sections.resources.1.label": {
+    "message": "Ishodi i testovi"
+  },
+  "sections.resources.2.label": {
+    "message": "pfSense dokumentacija"
+  },
+  "sections.resources.3.label": {
+    "message": "Izvorni kod"
+  },
+  "copyright": {
+    "message": "Autorska prava © 2023-2026 Jacky Liang. Objavljeno pod MIT licencom."
+  }
+}

@@ -1,0 +1,76 @@
+---
+id: first-run
+title: 建立基準
+description: 使用「立即執行」將目前的 IPv6 前綴記錄為基準，核對回報的位址與前綴，檢查「欄位」分頁，確認無誤後再開啟排程更新。
+keywords:
+  - pfsense ipv6 prefix updater
+  - 首次執行
+  - 基準
+  - 立即執行
+  - 已初始化
+tags:
+  - setup
+  - baseline
+  - status
+sidebar_position: 3
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+將目前的前綴記錄為<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>，並在開啟<Terminology title="由 pfSense 管理的 cron 項目執行的自動檢查" to="/docs/reference/terminology#scheduled-updates">排程更新</Terminology>之前先檢查它。
+
+## 儲存初始設定 \{#save-the-initial-settings}
+
+1. 開啟 **Services → IPv6 Prefix Updater**，然後進入 **設定** 分頁。
+2. 讓 **<Terminology title="由 pfSense 管理的 cron 項目執行的自動檢查" to="/docs/reference/terminology#scheduled-updates">啟用排程更新</Terminology>** 維持未勾選。
+3. 依照[介面與前綴](/docs/configure/interface-and-prefix)中的說明，為每個<Terminology title="位於 2000::/3 內的公用 IPv6 位址" to="/docs/reference/terminology#global-unicast-address">全域位址</Terminology>來自<Terminology title="ISP 路由到防火牆的 IPv6 網路" to="/docs/reference/terminology#delegated-prefix">委派前綴</Terminology>的介面新增一列 **<Terminology title="其位址可反映目前前綴的介面" to="/docs/reference/terminology#monitored-interface">監控介面</Terminology>**。
+4. 在每一列中選取與 ISP 委派大小一致的 **<Terminology title="ISP 前綴大小設定，/48 至 /64" to="/docs/reference/terminology#delegated-prefix-length">委派前綴長度</Terminology>**。
+5. 儲存並確認出現 `設定已儲存。` 訊息。
+
+## 執行第一次檢查 \{#run-the-first-check}
+
+在 **狀態** 分頁中選取 **立即執行**。由於尚未有<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>，這次執行會記錄每個介面的<Terminology title="pfSense 回報的監控介面全域位址" to="/docs/reference/terminology#source-address">來源位址</Terminology>與前綴，並回報<Terminology title="結果：已記錄基準，設定未變更" to="/docs/reference/terminology#initialized">已初始化</Terminology>。
+
+記錄<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>不會變更設定、建立備份或傳送通知。
+
+## 核對結果 \{#verify-the-result}
+
+檢查 **目前狀態** 每一列中的這些值：
+
+- **<Terminology title="其位址可反映目前前綴的介面" to="/docs/reference/terminology#monitored-interface">監控介面</Terminology>** 以描述加內部名稱（例如 `LAN (lan)`）顯示預期的介面。
+- **<Terminology title="pfSense 回報的監控介面全域位址" to="/docs/reference/terminology#source-address">上次成功來源位址</Terminology>** 與 **Status → Interfaces**（狀態 → 介面）中該介面的位址相同。
+- **<Terminology title="下次檢查用來比較的前綴" to="/docs/reference/terminology#last-successful-prefix">上次成功前綴</Terminology>** 與 ISP 委派的前綴相同。
+- **上次成功更新** 以 UTC 顯示這次執行的時間。
+
+<Terminology title="立即執行或試執行後顯示的唯讀結果" to="/docs/reference/terminology#command-output">命令輸出</Terminology>應顯示 `狀態: 已初始化`、`計畫或已變更欄位: 0` 與 `設定備份: 未建立`。例如，文件範例位址 `2001:db8:abcd:78aa::1` 在 `/56` 長度下屬於 `2001:db8:abcd:7800::/56`。
+
+:::warning
+
+如果介面或長度有誤，建議在開啟排程更新前先在「設定」中修正。如[介面與前綴](/docs/configure/interface-and-prefix#changing-the-prefix-length)所述，改用其他介面會記錄新的<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>，而變更長度則會視為一次<Terminology title="與上次成功前綴或長度不同" to="/docs/reference/terminology#prefix-transition">前綴變更</Terminology>。
+
+:::
+
+## 查看欄位 \{#review-the-fields}
+
+開啟 **欄位** 分頁。記錄<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>後，它會列出前綴內的所有位址，以及下一次變更會更新其中哪些位址。
+
+1. 關閉防火牆用不到的<Terminology title="「欄位」分頁上共用一個開關的一組欄位" to="/docs/reference/terminology#field-group">欄位群組</Terminology>。十一個 pfSense 群組預設全部開啟。
+2. 取消勾選應保留原值的個別欄位，並勾選其他套件中應跟隨前綴變更的欄位。
+3. 在 **其他設定** 中勾選應跟隨前綴變更的欄位，例如閘道或靜態路由。
+4. 選取 **儲存**，並確認出現 `欄位選取已儲存。` 訊息。
+
+[欄位](/docs/configure/configuration-scopes)頁面說明了每個群組與控制項。
+
+## 此時試執行會顯示什麼 \{#what-a-dry-run-shows-now}
+
+前綴未變更時，**<Terminology title="不備份也不寫入的預覽" to="/docs/reference/terminology#dry-run">試執行</Terminology>** 會回報<Terminology title="結果：前綴未變更，未掃描或寫入任何內容" to="/docs/reference/terminology#no-change">無變更</Terminology>，且不會掃描設定，因為只有在實際發生<Terminology title="與上次成功前綴或長度不同" to="/docs/reference/terminology#prefix-transition">前綴變更</Terminology>後才會開始規劃。日後的變更會影響哪些欄位，可以在「欄位」分頁中查看。
+
+在尚無<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>時進行的<Terminology title="不備份也不寫入的預覽" to="/docs/reference/terminology#dry-run">試執行</Terminology>會回報<Terminology title="結果：尚無基準時的試執行" to="/docs/reference/terminology#initialization-preview">初始化預覽</Terminology>，且不會記錄任何內容。
+
+## 開啟排程更新 \{#turn-on-the-schedule}
+
+各項值都相符後，勾選 **<Terminology title="由 pfSense 管理的 cron 項目執行的自動檢查" to="/docs/reference/terminology#scheduled-updates">啟用排程更新</Terminology>**，選擇 **排程**，然後儲存。[排程與通知](/docs/configure/schedule-and-notifications)說明了每個選項。
+
+到了第一個排程時間後，**上次執行** 下的 **時間戳記 (UTC)** 會顯示該次檢查的執行時間。
+
+完整的檢查清單請繼續閱讀[自動化前的檢查](/docs/safety/testing-and-verification)。

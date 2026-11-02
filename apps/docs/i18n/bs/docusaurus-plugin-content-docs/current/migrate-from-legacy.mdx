@@ -1,0 +1,85 @@
+---
+id: migrate-from-legacy
+title: Prelazak sa skripte
+description: Instalirajte paket preko stare skripte update.php i prepustite mu da umjesto vas premjesti Cron unose, sačuvane prefikse i sigurnosne kopije, a zatim pregledajte rezultat na kartici Čišćenje.
+keywords:
+  - pfsense ipv6 prefix updater
+  - stari program za ažuriranje
+  - migracija
+  - update.php
+  - cron paket
+  - čišćenje
+tags:
+  - setup
+  - migration
+  - legacy updater
+sidebar_position: 5
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import cleanupBefore from './_assets_/migrate-from-legacy-1.png';
+import cleanupAfter from './_assets_/migrate-from-legacy-2.png';
+
+Pređite sa <Terminology title="originalna skripta update.php koju pokreće Cron paket" to="/docs/reference/terminology#legacy-updater">starog programa za ažuriranje</Terminology> na paket tako što ćete ga instalirati, a paket će sam preuzeti sučelja, sačuvane prefikse i sigurnosne kopije skripte.
+
+## Šta se mijenja \{#what-changes}
+
+| Područje          | <Terminology title="originalna skripta update.php koju pokreće Cron paket" to="/docs/reference/terminology#legacy-updater">Stari program za ažuriranje</Terminology> | Paket                                                                                                                                                                                                                                                                                                                                                                          |
+|-------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Instalacija       | `install.sh` kopira datoteke u `/root/pfsense-ipv6-prefix-updater`                                                                                                   | `pkg add` instalira pfSense paket                                                                                                                                                                                                                                                                                                                                              |
+| Raspored          | Unos Cron paketa koji sami napravite                                                                                                                                 | Postavka **Raspored** s cron unosom kojim upravlja pfSense                                                                                                                                                                                                                                                                                                                     |
+| Sučelja           | Jedan Cron unos po uređaju operativnog sistema, na primjer `igb1`                                                                                                    | Jedan red u polju **Nadzirana sučelja** po pfSense sučelju, na primjer LAN, a sva se provjeravaju u jednom pokretanju                                                                                                                                                                                                                                                          |
+| Šta se mijenja    | Tekst starog prefiksa bilo gdje u konfiguraciji, uključujući vrijednosti kodirane u base64                                                                           | <Terminology title="tačno polje konfiguracije koje paket smije prepisati" to="/docs/reference/terminology#approved-field">Odobrena polja</Terminology> koja odaberete na kartici **Polja**                                                                                                                                                                                     |
+| Sigurnosne kopije | Kopije čitljive svim korisnicima u `/root/pfsense-ipv6-prefix-updater-backups`                                                                                       | <Terminology title="kopija konfiguracije napravljena prije upisa" to="/docs/reference/terminology#configuration-backup">Sigurnosna kopija konfiguracije</Terminology> u <Terminology title="pfSense lista sačuvanih revizija konfiguracije" to="/docs/reference/terminology#config-history">Config History</Terminology> i na kartici **Sigurnosne kopije** prije svakog upisa |
+| Sačuvani prefiks  | `/root/pfsense-ipv6-prefix-updater-cache`                                                                                                                            | <Terminology title="datoteka paketa s početnim stanjem i posljednjim pokretanjem" to="/docs/reference/terminology#package-state">Stanje paketa</Terminology>, koje se tokom premještanja popunjava iz starog keša                                                                                                                                                              |
+| Obavještenja      | Šalju se nakon svake promjene                                                                                                                                        | Opcionalno <Terminology title="obavještenje poslano nakon provjerenog uspješnog ažuriranja" to="/docs/reference/terminology#change-notification">obavještenje o promjeni</Terminology> nakon ishoda <Terminology title="ishod: polja ažurirana, sačuvana, ponovo učitana i provjerena" to="/docs/reference/terminology#success">Uspjeh</Terminology>                           |
+
+## Instalacija paketa \{#install-the-package}
+
+[Instalirajte paket](/docs/installation) naredbom `pkg add` dok je stari program za ažuriranje još na mjestu. Prije toga ne treba ništa uklanjati, a preporučuje se da sami ne brišete Cron unose ni direktorije u `/root`, jer ih paket čita tokom premještanja.
+
+Ponovno pokretanje stare naredbe za instalaciju ne instalira skriptu ponovo. Od verzije 2 ona ispisuje grešku s naredbom `pkg add` i ništa ne mijenja.
+
+## Šta se dešava automatski \{#what-happens-automatically}
+
+Korak instalacije pronalazi stari program za ažuriranje i premješta ga u paket ovim redoslijedom:
+
+1. **Sigurnosna kopija**: čuva <Terminology title="kopija konfiguracije napravljena prije upisa" to="/docs/reference/terminology#configuration-backup">sigurnosnu kopiju konfiguracije</Terminology> prije bilo kakve promjene.
+2. **Sučelja**: pretvara svaki Cron unos u red polja **Nadzirana sučelja** tako što njegov uređaj, na primjer `igb1.10`, povezuje s pfSense sučeljem koje koristi taj uređaj, i zadržava <Terminology title="broj vodećih mrežnih bitova, npr. /56" to="/docs/reference/terminology#prefix-length">dužinu prefiksa</Terminology> iz tog unosa.
+3. **Raspored**: odabire **Raspored** paketa koji provjerava barem onoliko često koliko su to činili Cron unosi i uključuje <Terminology title="automatske provjere iz cron unosa kojim upravlja pfSense" to="/docs/reference/terminology#scheduled-updates">zakazana ažuriranja</Terminology>.
+4. **Početna stanja**: bilježi svaki sačuvani prefiks kao <Terminology title="početni prefiks zabilježen bez promjene konfiguracije" to="/docs/reference/terminology#baseline">početno stanje</Terminology> za njegovo sučelje, tako da se nijedna promjena prefiksa ne izgubi.
+5. **Cron unosi**: uklanja samo unose koji pokreću `update.php`, u istom upisu konfiguracije kao i nove postavke, tako da dva programa za ažuriranje nikada ne rade istovremeno.
+6. **Sigurnosne kopije**: kopira svaku sigurnosnu kopiju starog programa na karticu **Sigurnosne kopije**, gdje je može čitati samo root, i briše original nakon što se kopija provjeri.
+7. **Stare datoteke**: briše iz `/root` skriptu, njene sačuvane prefikse, preuzetu arhivu i sačuvani instalacijski program.
+
+Kada je premještanje završeno, WebGUI obavijest vodi na karticu Čišćenje. Ako stara skripta u tom trenutku radi, paket čeka i završava premještanje pri sljedećoj zakazanoj provjeri.
+
+### Više Cron unosa \{#several-cron-entries}
+
+Svaki Cron unos koji navodi drugi uređaj postaje zaseban red, a jedno pokretanje provjerava sve njih. Sučelja koja dijele jedan <Terminology title="IPv6 mreža koju ISP usmjerava prema vatrozidu" to="/docs/reference/terminology#delegated-prefix">dodijeljeni prefiks</Terminology> ažuriraju zajednička polja samo jednom, u jednom upisu kojem prethodi sigurnosna kopija.
+
+Cron unos čiji uređaj više ne pripada nijednom pfSense sučelju uklanja se i navodi kao upozorenje, jer skripta preko njega ionako nije mogla ništa ažurirati.
+
+### Zastarjeli sačuvani prefiksi \{#saved-prefixes-that-are-out-of-date}
+
+Ako je ISP promijenio prefiks nakon posljednjeg rada starog programa za ažuriranje, njegov sačuvani prefiks ostaje <Terminology title="početni prefiks zabilježen bez promjene konfiguracije" to="/docs/reference/terminology#baseline">početno stanje</Terminology>. Prva provjera paketa tada pronalazi polja koja su još na starom prefiksu i ažurira ih.
+
+Kada nijedno odobreno polje ne koristi stari sačuvani prefiks, početno stanje umjesto njega postaje trenutni prefiks, pa prva provjera ne prijavljuje ishod <Terminology title="ishod: prefiks promijenjen, ali nijedno odobreno polje nije odgovaralo" to="/docs/reference/terminology#warning">Upozorenje</Terminology>.
+
+## Pregled kartice Čišćenje \{#review-the-cleanup-tab}
+
+Otvorite **Services → IPv6 Prefix Updater → Čišćenje** da vidite svaki ostatak starog programa za ažuriranje i šta se s njim desilo.
+
+<img src={cleanupBefore} alt="Kartica Čišćenje paketa IPv6 Prefix Updater prije čišćenja, s dva Cron unosa starog programa za ažuriranje, starom skriptom, sačuvanim prefiksima za dva uređaja, jednom sigurnosnom kopijom starog programa i dva preuzimanja instalacije" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+- **Ostaci verzije 1.x**: Cron unosi, skripta, sačuvani prefiksi, sigurnosne kopije, preuzimanja instalacije i zaključavanje skripte, a svaka stavka je označena kao **Pronađeno** ili **Nije prisutno**.
+- **Posljednje čišćenje**: svaki korak koji je premještanje izvršilo i svako upozorenje, na primjer o uređaju koji nije dodijeljen nijednom sučelju.
+- **Očisti sada**: odmah izvršava isto premještanje umjesto čekanja na sljedeću zakazanu provjeru. Ostali Cron unosi se nikada ne diraju.
+
+<img src={cleanupAfter} alt="Kartica Čišćenje paketa IPv6 Prefix Updater nakon radnje Očisti sada, sa sigurnosnom kopijom, uklonjenim Cron unosima, premještenom sigurnosnom kopijom i izbrisanim datotekama starog programa za ažuriranje" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Provjera obuhvata \{#check-coverage}
+
+Nakon prve stvarne <Terminology title="razlika u odnosu na posljednji uspješni prefiks ili dužinu" to="/docs/reference/terminology#prefix-transition">promjene prefiksa</Terminology> uporedite **Promijenjena polja** i **Sažetak** s onim što je mijenjao <Terminology title="originalna skripta update.php koju pokreće Cron paket" to="/docs/reference/terminology#legacy-updater">stari program za ažuriranje</Terminology>. Stari program za ažuriranje prepisivao je i mrežne prolaze, statičke rute, opise i vrijednosti kodirane u Base64. Paket ih mijenja samo kada su označeni u grupi **Ostale postavke** na kartici **Polja**, pa se preporučuje da ih označite prije promjene prefiksa.
+
+Nakon premještanja sve pfSense <Terminology title="grupa polja s jednim prekidačem na kartici Polja" to="/docs/reference/terminology#field-group">grupe polja</Terminology> su uključene, kao da ste odabrali **Automatski odaberi**. Stranica [Polja](/docs/configure/configuration-scopes) navodi svaku grupu i objašnjava kako je isključiti.

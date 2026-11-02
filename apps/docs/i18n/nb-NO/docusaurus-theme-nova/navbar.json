@@ -1,0 +1,17 @@
+{
+  "item.label.Home": {
+    "message": "Hjem"
+  },
+  "item.label.Guides": {
+    "message": "Dokumentasjon"
+  },
+  "item.label.Safety": {
+    "message": "Sikkerhet og drift"
+  },
+  "item.label.Troubleshooting": {
+    "message": "Feilsøking"
+  },
+  "item.label.Blog": {
+    "message": "Blogg"
+  }
+}

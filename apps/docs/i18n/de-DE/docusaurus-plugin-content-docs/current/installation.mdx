@@ -1,0 +1,89 @@
+---
+id: installation
+title: Paket installieren
+description: Installieren Sie pfSense IPv6 Prefix Updater mit pkg aus einem GitHub-Release, prüfen Sie den Download anhand seiner SHA-256-Datei und bestätigen Sie die neuen Seiten in der WebGUI.
+keywords:
+  - pfsense ipv6 prefix updater
+  - installation
+  - pkg add
+  - github-release
+  - sha256-prüfsumme
+tags:
+  - setup
+  - installation
+  - pfsense
+sidebar_position: 2
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Installieren Sie das Paket mit dem pfSense-Werkzeug `pkg` aus einem GitHub-Release und bestätigen Sie anschließend, dass seine Seiten in der WebGUI erscheinen.
+
+## Voraussetzungen \{#requirements}
+
+- **Administrator-Shell** — SSH- oder Konsolenzugriff auf die pfSense-Shell. **Diagnostics → Command Prompt** in der WebGUI kann ebenfalls einzelne Befehle ausführen.
+- **HTTPS-Zugriff auf GitHub** — Die Firewall lädt das Paket von GitHub Releases herunter.
+- **Ein passender Paket-Build** — Das Paket muss für die FreeBSD-Version gebaut sein, auf der Ihre pfSense-Version läuft.
+- **Eine aktuelle Sicherung** — Laden Sie vor der Installation unter **Diagnostics → Backup & Restore** eine Kopie der Konfiguration herunter.
+- **Der <Terminology title="ursprüngliches update.php-Skript, ausgeführt vom Cron-Paket" to="/docs/reference/terminology#legacy-updater">Legacy-Updater</Terminology> kann bleiben** — Wenn das Skript der Version 1.x noch über das Cron-Paket läuft, lassen Sie es bestehen. Der Installationsschritt übernimmt es in das Paket, wie [Vom Skript migrieren](/docs/migrate-from-legacy) erklärt.
+
+:::warning
+
+pfSense IPv6 Prefix Updater ist ein <Terminology title="Paket von GitHub, nicht aus dem Netgate-Repository" to="/docs/reference/terminology#unofficial-package">inoffizielles Paket</Terminology>. Die Installation einer `.pkg`-Datei von GitHub umgeht die Paketprüfung und den Support von Netgate, daher empfiehlt es sich, das Paket zuerst auf einer gesicherten oder entbehrlichen Firewall auszuprobieren.
+
+:::
+
+## Release prüfen \{#check-the-release}
+
+Paket-Releases sind auf der [Seite GitHub Releases](https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases) aufgeführt. Jedes Paket-Release enthält diese Dateien:
+
+| Datei                                         | Beschreibung                                                                    |
+|-----------------------------------------------|---------------------------------------------------------------------------------|
+| `pfSense-pkg-Ipv6PrefixUpdater.pkg`           | Das Paket unter einem festen Namen, den die Befehle auf dieser Seite verwenden. |
+| `pfSense-pkg-Ipv6PrefixUpdater-<version>.pkg` | Dasselbe Paket mit der Version im Dateinamen.                                   |
+| `.sha256`-Dateien                             | Eine SHA-256-Prüfsumme für jede Paketdatei.                                     |
+
+:::info
+
+Releases der Version 1.x enthalten nur den <Terminology title="ursprüngliches update.php-Skript, ausgeführt vom Cron-Paket" to="/docs/reference/terminology#legacy-updater">Legacy-Updater</Terminology>. Wenn das neueste Release keine `.pkg`-Datei hat, schlagen die Befehle auf dieser Seite mit einem Fehler Not Found (404) fehl.
+
+:::
+
+## Paket installieren \{#install-the-package}
+
+Führen Sie diesen Befehl in der pfSense-Shell aus:
+
+```shell
+pkg add https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
+```
+
+`pkg` lädt das Paket aus dem neuesten Release herunter und führt seinen Installationsschritt aus, der **Services → IPv6 Prefix Updater** bei pfSense registriert.
+
+## Download zuerst prüfen \{#verify-the-download-first}
+
+Um die Datei vor der Installation anhand ihrer Prüfsumme zu prüfen, laden Sie beide Dateien nach `/tmp` herunter und geben Sie beide Werte aus:
+
+```shell
+cd /tmp
+fetch https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
+fetch https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg.sha256
+sha256 -q pfSense-pkg-Ipv6PrefixUpdater.pkg
+cat pfSense-pkg-Ipv6PrefixUpdater.pkg.sha256
+```
+
+Die letzten beiden Befehle geben denselben Wert aus, wenn der Download intakt ist. Anschließend können Sie die geprüfte Datei mit `pkg add /tmp/pfSense-pkg-Ipv6PrefixUpdater.pkg` installieren.
+
+## In der WebGUI bestätigen \{#confirm-in-the-webgui}
+
+1. Melden Sie sich an der pfSense-WebGUI an.
+2. Öffnen Sie **Services → IPv6 Prefix Updater** und prüfen Sie, ob die Registerkarten **Einstellungen**, **Status**, **Felder**, **Sicherungen** und **Bereinigung** erscheinen.
+3. Prüfen Sie auf der Registerkarte Status, ob **Aktueller Zustand** `Es sind noch keine überwachten Schnittstellen gespeichert. Fügen Sie sie auf der Registerkarte Einstellungen hinzu.` anzeigt. Nach der Umstellung vom Legacy-Updater listet der Abschnitt stattdessen die übernommenen Schnittstellen auf.
+4. Lassen Sie **<Terminology title="automatische Prüfungen über einen von pfSense verwalteten Cron-Eintrag" to="/docs/reference/terminology#scheduled-updates">Geplante Aktualisierungen aktivieren</Terminology>** deaktiviert, wie standardmäßig voreingestellt, bis Sie [die Basislinie festlegen](/docs/first-run). Nach der Umstellung vom Legacy-Updater ist die Option bereits aktiviert, passend zum alten Cron-Zeitplan.
+
+## Wenn die Installation fehlschlägt \{#if-installation-fails}
+
+- **Not Found (404)**: Das neueste Release hat keine Paketdatei. [Release prüfen](/docs/installation#check-the-release) erklärt, welche Releases eine enthalten.
+- **ABI- oder OS-Versionskonflikt**: Das Paket wurde für eine andere FreeBSD-Version gebaut als die, auf der Ihre pfSense-Version läuft. Es empfiehlt sich, einen passenden Build zu verwenden, statt die Installation zu erzwingen.
+- **DNS-, TLS- oder Zertifikatsfehler**: pfSense muss `github.com` auflösen, es über HTTPS erreichen und für Zertifikatsprüfungen die richtige Uhrzeit haben.
+
+Fahren Sie mit [Basislinie festlegen](/docs/first-run) fort, sobald das Paket in der WebGUI erscheint.

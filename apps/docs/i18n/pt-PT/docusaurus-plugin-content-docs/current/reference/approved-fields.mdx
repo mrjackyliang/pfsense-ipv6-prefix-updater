@@ -1,0 +1,157 @@
+---
+id: approved-fields
+title: Campos aprovados
+description: Consulte os caminhos de configuração do pfSense que cada grupo de campos pode reescrever, como os valores são comparados e que recarregamento acionam.
+keywords:
+  - pfsense ipv6 prefix updater
+  - campos aprovados
+  - caminhos de configuração
+  - config_get_path
+  - recarregamento de serviços
+tags:
+  - reference
+  - approved fields
+  - configuration paths
+sidebar_position: 3
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Consulte os caminhos exatos da configuração do pfSense que cada <Terminology title="grupo de campos com um só interruptor no separador Campos" to="/docs/reference/terminology#field-group">grupo de campos</Terminology> pode reescrever e o serviço que cada um recarrega.
+
+## Matriz de campos \{#field-matrix}
+
+Os caminhos usam a sintaxe do pfSense separada por barras de `config_get_path()` e `config_set_path()`. Nos caminhos abaixo, `<index>` representa uma posição numa lista, `<interface>` uma chave de interface, como `lan`, `<boundary>` o valor `from` ou `to`, `<side>` o valor `source` ou `destination`, e `<section>` a chave das definições de outro pacote.
+
+| <Terminology title="grupo de campos com um só interruptor no separador Campos" to="/docs/reference/terminology#field-group">Grupo</Terminology>             | Caminho                                                                          | Selecionado quando                                                                                         | Serviço                 |
+|-------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------|-------------------------|
+| Aliases                                                                                                                                                     | `aliases/alias/<index>/address`                                                  | `type` é `host` ou `network`                                                                               | `filter`                |
+| Interfaces estáticas                                                                                                                                        | `interfaces/<interface>/ipaddrv6`                                                | O valor contém `:`                                                                                         | `interfaces`            |
+| <Terminology title="endereço adicional de interface, como CARP ou IP Alias" to="/docs/reference/terminology#virtual-ip">Endereços IP virtuais</Terminology> | `virtualip/vip/<index>/subnet`                                                   | `mode` é `carp` ou `ipalias`                                                                               | `interfaces`            |
+| IPsec                                                                                                                                                       | `ipsec/phase2/<index>/localid/address`                                           | `mode` é `tunnel6` ou `vti`, e `localid/type` é `address` ou `network`                                     | `ipsec`                 |
+| IPsec                                                                                                                                                       | `ipsec/phase2/<index>/natlocalid/address`                                        | `mode` é `tunnel6` ou `vti`, e `natlocalid/type` é `address` ou `network`                                  | `ipsec`                 |
+| OpenVPN                                                                                                                                                     | `openvpn/openvpn-server/<index>/tunnel_networkv6`                                | `tunnel_networkv6_type` não é `track6`                                                                     | `openvpn`               |
+| OpenVPN                                                                                                                                                     | `openvpn/openvpn-server/<index>/local_networkv6`                                 | Sempre                                                                                                     | `openvpn`               |
+| OpenVPN                                                                                                                                                     | `openvpn/openvpn-client/<index>/tunnel_networkv6`                                | Sempre                                                                                                     | `openvpn`               |
+| OpenVPN                                                                                                                                                     | `openvpn/openvpn-csc/<index>/tunnel_networkv6`                                   | Sempre                                                                                                     | `openvpn`               |
+| OpenVPN                                                                                                                                                     | `openvpn/openvpn-csc/<index>/local_networkv6`                                    | Sempre                                                                                                     | `openvpn`               |
+| WireGuard                                                                                                                                                   | `installedpackages/wireguard/tunnels/item/<index>/addresses/row/<index>/address` | Sempre                                                                                                     | `wireguard`             |
+| Servidor DHCPv6                                                                                                                                             | `dhcpdv6/<interface>/range/<boundary>`                                           | Sempre                                                                                                     | `dhcpv6`                |
+| Servidor DHCPv6                                                                                                                                             | `dhcpdv6/<interface>/prefixrange/<boundary>`                                     | Sempre                                                                                                     | `dhcpv6`                |
+| Servidor DHCPv6                                                                                                                                             | `dhcpdv6/<interface>/pool/<index>/range/<boundary>`                              | Sempre                                                                                                     | `dhcpv6`                |
+| Servidor DHCPv6                                                                                                                                             | `dhcpdv6/<interface>/pool/<index>/prefixrange/<boundary>`                        | Sempre                                                                                                     | `dhcpv6`                |
+| Servidor DHCPv6                                                                                                                                             | `dhcpdv6/<interface>/dnsserver/<index>`                                          | Sempre, e também dentro de cada pool                                                                       | `dhcpv6`                |
+| Servidor DHCPv6                                                                                                                                             | `dhcpdv6/<interface>/ntpserver/<index>`                                          | Sempre, e também dentro de cada pool                                                                       | `dhcpv6`                |
+| Servidor DHCPv6                                                                                                                                             | `dhcpdv6/<interface>/staticmap/<index>/ipaddrv6`                                 | Sempre                                                                                                     | `dhcpv6`                |
+| Anúncios de router                                                                                                                                          | `dhcpdv6/<interface>/radnsserver/<index>`                                        | Sempre                                                                                                     | `router_advertisements` |
+| Anúncios de router                                                                                                                                          | `dhcpdv6/<interface>/subnets/item/<index>`                                       | Sempre                                                                                                     | `router_advertisements` |
+| Substituições de anfitriões DNS                                                                                                                             | `unbound/hosts/<index>/ip`                                                       | Sempre                                                                                                     | `dns_resolver`          |
+| Substituições de anfitriões DNS                                                                                                                             | `dnsmasq/hosts/<index>/ip`                                                       | Sempre                                                                                                     | `dns_forwarder`         |
+| Regras da firewall                                                                                                                                          | `filter/rule/<index>/<side>/address`                                             | O lado contém um endereço em vez de `network` ou `any`                                                     | `filter`                |
+| NAT e NPt                                                                                                                                                   | `nat/rule/<index>/<side>/address`                                                | Sempre                                                                                                     | `filter`                |
+| NAT e NPt                                                                                                                                                   | `nat/rule/<index>/target`                                                        | Sempre                                                                                                     | `filter`                |
+| NAT e NPt                                                                                                                                                   | `nat/outbound/rule/<index>/<side>/network`                                       | Sempre                                                                                                     | `filter`                |
+| NAT e NPt                                                                                                                                                   | `nat/outbound/rule/<index>/target`                                               | Sempre                                                                                                     | `filter`                |
+| NAT e NPt                                                                                                                                                   | `nat/onetoone/<index>/external`                                                  | Sempre                                                                                                     | `filter`                |
+| NAT e NPt                                                                                                                                                   | `nat/onetoone/<index>/<side>/address`                                            | Sempre                                                                                                     | `filter`                |
+| NAT e NPt                                                                                                                                                   | `nat/npt/<index>/<side>/address`                                                 | O prefixo está escrito em vez de ser rastreado a partir de uma interface                                   | `filter`                |
+| Definições de outro pacote                                                                                                                                  | `installedpackages/<section>/...`                                                | O valor contém um endereço IPv6 e nenhum dos tipos de [Outras definições](#other-settings) se aplica a ele | `package:<section>`     |
+
+Os valores vazios são ignorados, e um ID de destino ou um caminho duplicado para a execução antes de qualquer alteração. Cada destino recebe o ID a partir da identidade do registo em [Identidades dos campos](#field-identities), ou a partir da posição na lista quando o registo não tem identidade. Os campos de outro pacote nunca são selecionados automaticamente, como explica a página [Campos](/docs/configure/configuration-scopes#other-packages-settings).
+
+## Formatos de valores \{#value-formats}
+
+- Cada campo contém um único valor, exceto as três listas abaixo.
+- O `address` dos aliases é uma lista separada por espaços em branco.
+- O `local_networkv6` do OpenVPN em servidores e em <Terminology title="definições OpenVPN de um cliente num servidor" to="/docs/reference/terminology#client-specific-override">substituições específicas de cliente</Terminology> é uma lista separada por vírgulas e espaços em branco.
+- O `ip` das substituições de anfitriões do DNS Resolver é uma lista separada por vírgulas e espaços em branco.
+- Os valores nas definições de outro pacote e no grupo Outras definições são texto. Cada endereço do texto é comparado isoladamente, e o resto fica como foi escrito.
+- Um valor guardado em Base64 é descodificado, comparado como texto e codificado novamente quando muda.
+- Os separadores ficam exatamente como foram escritos, e os tokens que não são endereços IPv6, como nomes de alias, redes IPv4 e nomes de anfitrião, passam sem alterações.
+
+## Regras de correspondência \{#matching-rules}
+
+- Um token pode terminar num sufixo CIDR de `/0` a `/128`, que é mantido. Um token com qualquer outro sufixo fica inalterado.
+- Um token só muda quando o respetivo endereço pertence ao prefixo anterior, com o <Terminology title="número de bits iniciais de rede, como /56" to="/docs/reference/terminology#prefix-length">comprimento do prefixo</Terminology> anterior.
+- O novo valor obtém os bits iniciais do <Terminology title="endereço global indicado pelo pfSense para a interface monitorizada" to="/docs/reference/terminology#source-address">endereço de origem</Terminology> atual, com o <Terminology title="número de bits iniciais de rede, como /56" to="/docs/reference/terminology#prefix-length">comprimento do prefixo</Terminology> atual, e todos os outros bits do token. É gravado na <Terminology title="grafia padrão mais curta de um endereço, em minúsculas" to="/docs/reference/terminology#canonical-form">forma canónica</Terminology>.
+- Os tokens que não são <Terminology title="endereço IPv6 público dentro de 2000::/3" to="/docs/reference/terminology#global-unicast-address">endereços unicast globais</Terminology> passam sem alterações, incluindo os sufixos do tipo `::1000` que as definições DHCPv6 contêm numa <Terminology title="interface endereçada a partir do prefixo delegado de outra" to="/docs/reference/terminology#tracked-interface">interface rastreada</Terminology>.
+- Um campo cujo novo valor é igual ao valor antigo não conta como alteração.
+
+## Identidades dos campos \{#field-identities}
+
+Cada <Terminology title="campo marcado ou desmarcado ao contrário do interruptor do grupo" to="/docs/reference/terminology#field-exception">exceção de campo</Terminology> no separador Campos é guardada como uma identidade que indica a entrada em vez da respetiva posição na lista:
+
+| Entrada                    | Identidade do campo                                                                                                                                                                                                       |
+|----------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Alias                      | `alias:<name>`                                                                                                                                                                                                            |
+| Interface estática         | `interface:<interface>`                                                                                                                                                                                                   |
+| IP virtual                 | `virtual-ip:<uniqid or description>`                                                                                                                                                                                      |
+| Fase 2 do IPsec            | `ipsec:<uniqid, reqid, or ikeid>:<localid or natlocalid>`                                                                                                                                                                 |
+| OpenVPN                    | `openvpn-server:<vpnid>:<tunnel or local>`, `openvpn-client:<vpnid>:tunnel` ou `openvpn-override:<common name>:<tunnel or local>`                                                                                         |
+| Túnel WireGuard            | `wireguard:<tunnel name>:addresses`, que abrange todas as linhas de endereço                                                                                                                                              |
+| Servidor DHCPv6            | `dhcpv6:<interface>:<field>`, em que `<field>` indica a definição, como `range-from`, `dns-servers` ou `ntp-servers`                                                                                                      |
+| Pool DHCPv6                | `dhcpv6-pool:<interface>:<description>:<field>`                                                                                                                                                                           |
+| Mapeamento estático DHCPv6 | `dhcpv6-static-mapping:<interface>:<DUID>`                                                                                                                                                                                |
+| Anúncios de router         | `router-advertisements:<interface>:<dns-servers or subnets>`                                                                                                                                                              |
+| Anfitrião do DNS Resolver  | `dns-resolver-host:<host>:<domain>:<inet, inet6, or inet46>`                                                                                                                                                              |
+| Anfitrião do DNS Forwarder | `dns-forwarder-host:<host>:<domain>:<inet, inet6, or inet46>`                                                                                                                                                             |
+| Regra da firewall          | `firewall-rule:<tracker>:<side>`                                                                                                                                                                                          |
+| Reencaminhamento de porta  | `port-forward:<created time>:<source, destination, or target>`                                                                                                                                                            |
+| Regra de NAT de saída      | `outbound-nat:<created time>:<source, destination, or target>`                                                                                                                                                            |
+| Entrada de NAT 1:1         | `one-to-one-nat:<description>:<external, source, or destination>`                                                                                                                                                         |
+| Entrada NPt                | `npt:<description>:<side>`                                                                                                                                                                                                |
+| Definição de outro pacote  | `package:<section>:<path>`, em que cada posição de lista no caminho passa a `<field>=<value>`, a partir de um campo que identifica a entrada de forma única, ou a `0` no registo único de definições de um pacote         |
+| Outras definições          | `other:<path>`, construída da mesma forma a partir de um campo que não contém nenhum endereço, como `name=<gateway name>`. Uma lista simples, como `system/dnsserver`, mantém uma única identidade para todas as entradas |
+
+- As partes da identidade são codificadas em URL, pelo que uma descrição como `Web forward` aparece como `Web%20forward`.
+- Um registo cuja identidade está em falta ou é partilhada com outro registo da mesma lista não tem caixa de verificação, e os respetivos campos seguem apenas o interruptor do grupo.
+- As exceções são guardadas em `installedpackages/ipv6prefixupdater/fields`, ao lado do registo de definições que o separador Definições substitui sempre que guarda, como descreve [Linha de comandos e ficheiros](/docs/reference/command-line-and-files#field-selection).
+- Cada execução volta a validar as identidades guardadas e ignora as malformadas. Um campo marcado que nenhuma entrada atual tem é ignorado e listado em **Campos ignorados** no separador Estado. Uma identidade só pode indicar um campo da matriz ou do grupo Outras definições.
+
+## Ações de recarregamento \{#reload-actions}
+
+| Serviço                 | Etiqueta no Estado     | Chamada do pfSense                                                                                                   |
+|-------------------------|------------------------|----------------------------------------------------------------------------------------------------------------------|
+| `interfaces`            | Interfaces             | `interfaces_configure()` e depois `filter_configure()`                                                               |
+| `routing`               | Encaminhamento         | `system_routing_configure()` e `setup_gateways_monitor()`, e depois `filter_configure()`                             |
+| `filter`                | Filtro da firewall     | `filter_configure()`, ignorada quando `interfaces` já a executou                                                     |
+| `dhcpv6`                | Servidor DHCPv6        | `services_dhcpd_configure('inet6')`, que também reinicia o radvd                                                     |
+| `router_advertisements` | Anúncios de router     | `services_radvd_configure()`, ignorada após `dhcpv6`                                                                 |
+| `dns`                   | Servidores DNS         | `system_resolvconf_generate()` e depois os recarregamentos do DNS Resolver e do DNS Forwarder, quando estão ativados |
+| `dns_resolver`          | DNS Resolver           | `services_unbound_configure(false)`                                                                                  |
+| `dns_forwarder`         | DNS Forwarder          | `services_dnsmasq_configure(false)`                                                                                  |
+| `ipsec`                 | IPsec                  | `ipsec_configure()`                                                                                                  |
+| `openvpn`               | OpenVPN                | `openvpn_resync_all()`                                                                                               |
+| `wireguard`             | WireGuard              | `wg_resync()`                                                                                                        |
+| `package:<section>`     | Listado em **Pacotes** | `sync_package()` para o pacote instalado cujo `<name>` no XML corresponde à secção                                   |
+
+Os serviços são recarregados pela ordem desta tabela, e as definições de outros pacotes são aplicadas novamente no fim, depois dos recarregamentos e da respetiva verificação. Antes dos recarregamentos, cada rede de rota estática que uma execução substituiu é removida da tabela de encaminhamento com `/sbin/route delete`, porque `system_routing_configure()` só adiciona e altera rotas. A página Static Routes faz o mesmo com **Apply Changes**. No pfSense 2.7.2, `interfaces_configure()` já reinicia o DHCPv6, o radvd e os dois serviços DNS, pelo que esses recarregamentos são ignorados depois dela.
+
+Quando o DNS Forwarder ou o DNS Resolver registam os mapeamentos estáticos DHCP, `dhcpv6` executa, em vez disso, o recarregamento desse serviço, que também reinicia o DHCP. Isto corresponde a **Apply Changes** na página DHCPv6 Server.
+
+`sync_package()` executa o comando de ressincronização do pacote, tal como o botão **Save** desse pacote, e a saída é descartada. Uma secção que não pertence a nenhum pacote instalado é comunicada em vez de aplicada, e uma falha é comunicada para esse pacote. Nenhum dos casos anula os valores guardados.
+
+Antes da cópia de segurança, uma etapa de verificação prévia carrega cada função necessária a partir de um ficheiro fixo, como `/etc/inc/filter.inc`, `/etc/inc/pkg-utils.inc` ou `/usr/local/pkg/wireguard/includes/wg.inc`, e para a execução quando falta alguma. `filter_configure()`, `services_unbound_configure()` e `services_dnsmasq_configure()` fazem falhar a execução quando devolvem `false` ou um inteiro diferente de zero, e as outras chamadas só a fazem falhar quando lançam uma exceção.
+
+## Outras definições \{#other-settings}
+
+Todos os outros caminhos de configuração cujo valor contém um endereço IPv6, como texto ou em Base64, pertencem ao grupo **Outras definições**. Começa desativado, e um valor nele só muda quando está marcado ou quando o grupo está ativado. As linhas indicam estes tipos:
+
+- Identidades IPsec `remoteid` e gateways remotos da fase 1, e redes OpenVPN `remote_networkv6` e endereços de servidor dos clientes.
+- Pares do WireGuard, incluindo os respetivos IPs permitidos e pontos finais.
+- Gateways e rotas estáticas.
+- Certificados, chaves, palavras-passe e outros segredos, cujos valores o separador oculta.
+- Qualquer outro valor guardado em Base64.
+- Descrições.
+- Nas definições de outro pacote, os valores cujo nome indica um certificado, uma chave, uma palavra-passe, um segredo, um hash ou uma descrição.
+
+Os tipos de alias que não sejam `host` e `network`, os modos de <Terminology title="endereço adicional de interface, como CARP ou IP Alias" to="/docs/reference/terminology#virtual-ip">IP virtual</Terminology> que não sejam `carp` e `ipalias` e todos os outros caminhos fora da matriz mostram em vez disso o nome da respetiva definição. O recarregamento depende do caminho: `gateways` e `staticroutes` usam `routing`, `system/dnsserver` usa `dns`, `unbound` e `dnsmasq` usam o respetivo serviço DNS, `ipsec`, `openvpn`, `filter`, `aliases`, `nat`, `dhcpdv6`, `interfaces` e `virtualip` usam os recarregamentos acima, a secção de outro pacote é aplicada novamente, e as descrições, os certificados e todos os outros caminhos não recarregam nada.
+
+## Gravação e verificação \{#write-and-verification}
+
+- Antes da cópia de segurança, cada caminho planeado tem de conter o valor antigo previsto no plano.
+- Em seguida, é executada `backup_config()`, que tem de devolver `true`.
+- O plano é aplicado com `config_set_path()` e guardado uma vez com `write_config($description, false, true)`, que evita uma segunda cópia de segurança e sincronizações não relacionadas.
+- Após a gravação, e de novo após os recarregamentos, cada caminho planeado tem de conter o novo valor previsto no plano.
+
+Uma discrepância para a execução com `O caminho de configuração «<path>» mudou fora do plano aprovado.` Uma falha após a gravação deixa os novos valores guardados, como descreve [Resultados da execução](/docs/operate/run-outcomes#failures-after-the-save).

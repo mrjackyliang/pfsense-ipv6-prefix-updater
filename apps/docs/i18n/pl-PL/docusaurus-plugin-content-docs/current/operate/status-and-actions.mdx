@@ -1,0 +1,122 @@
+---
+id: status-and-actions
+title: Stan i działania
+description: Odczytuj panele Bieżący stan i Ostatnie uruchomienie, uruchamiaj sprawdzenia i podglądy, odzyskuj wartość bazową i interpretuj Wynik polecenia na karcie Stan.
+keywords:
+  - pfsense ipv6 prefix updater
+  - karta stan
+  - uruchom teraz
+  - próba
+  - wynik polecenia
+tags:
+  - operations
+  - status
+  - dry run
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import unchangedRun from './_assets_/status-and-actions-1.png';
+import changedRun from './_assets_/status-and-actions-2.png';
+import runByInterface from './_assets_/status-and-actions-3.png';
+
+Zobacz, co zapisały bieżąca wartość bazowa i ostatnie uruchomienie, oraz uruchom sprawdzenie, podgląd lub odzyskiwanie wartości bazowej z karty Stan.
+
+## Bieżący stan \{#current-state}
+
+Karta **Stan** w **Services → IPv6 Prefix Updater** zaczyna się od tej tabeli, która ma jeden wiersz na każdy monitorowany interfejs i opisuje <Terminology title="prefiks startowy zapisany bez zmiany konfiguracji" to="/docs/reference/terminology#baseline">wartość bazową</Terminology>, z którą porówna następne sprawdzenie:
+
+- **<Terminology title="interfejs, którego adres ujawnia bieżący prefiks" to="/docs/reference/terminology#monitored-interface">Monitorowany interfejs</Terminology>**: opis interfejsu, a po nim jego wewnętrzna nazwa w pfSense, na przykład `LAN (lan)`.
+- **<Terminology title="prefiks, z którym porównuje następne sprawdzenie" to="/docs/reference/terminology#last-successful-prefix">Ostatni pomyślny prefiks</Terminology>**: prefiks i jego długość, na przykład `2001:db8:abcd:7800::/56`.
+- **<Terminology title="globalny adres zgłaszany przez pfSense dla monitorowanego interfejsu" to="/docs/reference/terminology#source-address">Ostatni pomyślny adres źródłowy</Terminology>**: adres w <Terminology title="najkrótszy standardowy zapis adresu małymi literami" to="/docs/reference/terminology#canonical-form">postaci kanonicznej</Terminology>. Odświeża go także uruchomienie z wynikiem <Terminology title="wynik: prefiks bez zmian, nic nie skanowano ani nie zapisano" to="/docs/reference/terminology#no-change">Brak zmian</Terminology>.
+- **Ostatnia pomyślna aktualizacja**: czas UTC, w którym <Terminology title="prefiks startowy zapisany bez zmiany konfiguracji" to="/docs/reference/terminology#baseline">wartość bazowa</Terminology> została zainicjowana, zaakceptowana lub przeniesiona po ostatnim wyniku <Terminology title="wynik: pola zaktualizowane, zapisane, ponownie załadowane i zweryfikowane" to="/docs/reference/terminology#success">Sukces</Terminology>, na przykład `2026-10-24T14:00:00+00:00`.
+
+Przed pierwszym uruchomieniem dla danego interfejsu jego wiersz pokazuje `Nie zainicjowano. Uruchom raz normalne sprawdzenie, aby ustalić bezpieczną wartość bazową.` Do czasu pierwszego sprawdzenia <Terminology title="prefiks startowy zapisany bez zmiany konfiguracji" to="/docs/reference/terminology#baseline">wartość bazowa</Terminology> przejęta od starszego aktualizatora pokazuje jako adres źródłowy `Nie zapisano przez tę wersję pakietu`.
+
+## Ostatnie uruchomienie \{#last-run}
+
+Ten panel opisuje ostatnie uruchomienie. Gdy monitorujesz jeden interfejs, pokazuje bezpośrednio wynik tego interfejsu:
+
+- **Wynik**: rezultat uruchomienia, objaśniony w przewodniku [Wyniki uruchomień](/docs/operate/run-outcomes).
+- **Znacznik czasu (UTC)**: kiedy uruchomienie się zakończyło.
+- **<Terminology title="globalny adres zgłaszany przez pfSense dla monitorowanego interfejsu" to="/docs/reference/terminology#source-address">Zaobserwowany adres źródłowy</Terminology>**: adres, który pfSense zwrócił dla <Terminology title="interfejs, którego adres ujawnia bieżący prefiks" to="/docs/reference/terminology#monitored-interface">monitorowanego interfejsu</Terminology>.
+- **<Terminology title="adres źródłowy zamaskowany do długości prefiksu" to="/docs/reference/terminology#observed-prefix">Zaobserwowany prefiks</Terminology>**: sieć obliczona z tego adresu i <Terminology title="ustawienie rozmiaru prefiksu od dostawcy, od /48 do /64" to="/docs/reference/terminology#delegated-prefix-length">długości delegowanego prefiksu</Terminology>.
+- **Zmienione pola**: liczba <Terminology title="konkretne pole konfiguracji, które pakiet może przepisać" to="/docs/reference/terminology#approved-field">zatwierdzonych pól</Terminology>, które uruchomienie zmieniło lub zmieniłoby w przypadku <Terminology title="podgląd bez kopii zapasowej i bez zapisu" to="/docs/reference/terminology#dry-run">próby</Terminology>.
+- **<Terminology title="kopia konfiguracji wykonana przed zapisem" to="/docs/reference/terminology#configuration-backup">Utworzono kopię zapasową konfiguracji</Terminology>**: `Tak` lub `Nie — to uruchomienie nie zapisało konfiguracji`.
+- **<Terminology title="akcja pfSense stosująca zmienione ustawienia" to="/docs/reference/terminology#service-reload">Ponownie załadowane usługi</Terminology>**: usługi, które uruchomienie ponownie załadowało lub załadowałoby w przypadku <Terminology title="podgląd bez kopii zapasowej i bez zapisu" to="/docs/reference/terminology#dry-run">próby</Terminology>.
+- **Podsumowanie**: jedno zdanie o rezultacie, po <Terminology title="różnica względem ostatniego pomyślnego prefiksu lub długości" to="/docs/reference/terminology#prefix-transition">zmianie prefiksu</Terminology> także z poprzednim prefiksem.
+- **Pakiety**: wyświetlane, gdy uruchomienie zmieniło ustawienia innego pakietu, z jednym wierszem na każdy pakiet, na przykład `Ponownie zastosowano ustawienia pakietu <package>.` Każdy komunikat wymienia strona [Pola](/docs/configure/configuration-scopes#other-packages-settings).
+- **Pominięte pola**: wyświetlane, gdy zaznaczone pola już nie istnieją, z komunikatem `Te wybrane pola już nie istnieją, więc uruchomienie je pominęło. Przejrzyj je na karcie Pola.` i tożsamością każdego pola.
+
+Zaleca się najpierw sprawdzić zaobserwowany adres i prefiks. Pokazują one, czy pfSense zwrócił zamierzony adres i czy długość dała oczekiwaną sieć.
+
+Sekcja **Ostatnie uruchomienie** nie jest aktualizowana, gdy <Terminology title="blokada, która nie pozwala na dwa sprawdzenia naraz" to="/docs/reference/terminology#run-lock">blokadę uruchomienia</Terminology> trzyma inne sprawdzenie albo gdy uruchomienie zatrzyma się przed odczytem <Terminology title="plik pakietu z wartością bazową i ostatnim uruchomieniem" to="/docs/reference/terminology#package-state">stanu pakietu</Terminology>, na przykład gdy żaden monitorowany interfejs nie ma <Terminology title="publiczny adres IPv6 z zakresu 2000::/3" to="/docs/reference/terminology#global-unicast-address">globalnego adresu</Terminology>. Wynik <Terminology title="wynik: kontrola lub etap bezpieczeństwa zatrzymał uruchomienie" to="/docs/reference/terminology#failure">Błąd</Terminology> zawsze pokazuje `0` zmienionych pól, co wyjaśnia przewodnik [Wyniki uruchomień](/docs/operate/run-outcomes#failures-after-the-save).
+
+### Ostatnie uruchomienie według interfejsu \{#last-run-by-interface}
+
+Gdy monitorujesz więcej niż jeden interfejs, sekcja **Ostatnie uruchomienie** pokazuje sumy, a **Podsumowanie** podaje liczbę interfejsów zaktualizowanych, bez zmian i wymagających uwagi. Tabela **Ostatnie uruchomienie według interfejsu** pod nią wymienia każdy interfejs z jego własnym wynikiem, zaobserwowanym prefiksem, zmienionymi polami i podsumowaniem.
+
+- Wartość **Zmienione pola** w sekcji **Ostatnie uruchomienie** uwzględnia każde pole tylko raz, nawet gdy zaplanowały je dwa interfejsy współdzielące <Terminology title="sieć IPv6, którą dostawca kieruje do zapory" to="/docs/reference/terminology#delegated-prefix">delegowany prefiks</Terminology>.
+- Interfejs bez <Terminology title="publiczny adres IPv6 z zakresu 2000::/3" to="/docs/reference/terminology#global-unicast-address">globalnego adresu</Terminology> zgłasza wynik <Terminology title="wynik: kontrola lub etap bezpieczeństwa zatrzymał uruchomienie" to="/docs/reference/terminology#failure">Błąd</Terminology> we własnym wierszu, a pozostałe interfejsy są nadal sprawdzane.
+- Jeśli dwa interfejsy zaplanują różne wartości dla tego samego pola, uruchomienie zatrzymuje się przed jakimkolwiek zapisem i zgłasza, którego pola dotyczy niezgodność.
+
+## Działania \{#actions}
+
+| Działanie                                                                                                                  | Co robi                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+|----------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Uruchom teraz                                                                                                              | Wykonuje pełne sprawdzenie, nawet gdy <Terminology title="automatyczne sprawdzenia z wpisu cron zarządzanego przez pfSense" to="/docs/reference/terminology#scheduled-updates">zaplanowane aktualizacje</Terminology> są wyłączone. Zapisuje <Terminology title="prefiks startowy zapisany bez zmiany konfiguracji" to="/docs/reference/terminology#baseline">wartość bazową</Terminology>, gdy żadna nie istnieje, i stosuje <Terminology title="różnica względem ostatniego pomyślnego prefiksu lub długości" to="/docs/reference/terminology#prefix-transition">zmianę prefiksu</Terminology>, gdy ją wykryje. |
+| <Terminology title="podgląd bez kopii zapasowej i bez zapisu" to="/docs/reference/terminology#dry-run">Próba</Terminology> | Wykonuje to samo sprawdzenie bez kopii zapasowej i bez zapisu. Zanim powstanie <Terminology title="prefiks startowy zapisany bez zmiany konfiguracji" to="/docs/reference/terminology#baseline">wartość bazowa</Terminology>, zgłasza wynik <Terminology title="wynik: próba przed ustaleniem wartości bazowej" to="/docs/reference/terminology#initialization-preview">Podgląd inicjalizacji</Terminology>.                                                                                                                                                                                                      |
+| Zaakceptuj bieżący prefiks                                                                                                 | Po potwierdzeniu zapisuje aktywny adres źródłowy, prefiks i długość jako nową <Terminology title="prefiks startowy zapisany bez zmiany konfiguracji" to="/docs/reference/terminology#baseline">wartość bazową</Terminology>. Nie sprawdza zatwierdzonych pól, nie tworzy kopii zapasowej, nie zapisuje konfiguracji i nie ładuje ponownie usług.                                                                                                                                                                                                                                                                  |
+
+Uruchom teraz i <Terminology title="podgląd bez kopii zapasowej i bez zapisu" to="/docs/reference/terminology#dry-run">Próba</Terminology> to <Terminology title="sprawdzenie uruchomione z karty Stan" to="/docs/reference/terminology#manual-run">ręczne uruchomienia</Terminology>. **Zaakceptuj bieżący prefiks** to działanie naprawcze, którego należy używać dopiero po zweryfikowaniu zapisanych adresów i usług, których dotyczą zmiany.
+
+Każde działanie wyświetla baner o zakończeniu lub ostrzeżenie. Potwierdzenie przy **Zaakceptuj bieżący prefiks** jest ostatnim zabezpieczeniem, zanim pakiet zastąpi wartość bazową używaną do porównań.
+
+Sprawdzenie, które wykryje inne trwające uruchomienie, również pokazuje baner o zakończeniu, dlatego zaleca się przeczytać także <Terminology title="wyniki tylko do odczytu po Uruchom teraz lub Próbie" to="/docs/reference/terminology#command-output">Wynik polecenia</Terminology>.
+
+## Wynik polecenia \{#command-output}
+
+Po wykonaniu działania w sekcji **<Terminology title="wyniki tylko do odczytu po Uruchom teraz lub Próbie" to="/docs/reference/terminology#command-output">Wynik polecenia</Terminology>** pojawia się pole tylko do odczytu **Najnowsze uruchomienie**:
+
+```text
+Stan: Brak zmian
+Interfejs: lan
+Zaobserwowany adres źródłowy: 2001:db8:abcd:78aa::1
+Poprzedni prefiks: 2001:db8:abcd:7800::
+Bieżący prefiks: 2001:db8:abcd:7800::/56
+Zaplanowane lub zmienione pola: 0
+Kopia zapasowa konfiguracji: Nie utworzono
+Ponownie załadowane usługi: Brak
+Podsumowanie: Aktywny prefiks IPv6 nie uległ zmianie; żaden zatwierdzony cel konfiguracji nie został odczytany ani zapisany.
+```
+
+Poprzedni prefiks jest wyświetlany bez długości. Nieudane uruchomienie pokazuje zamiast tego jeden wiersz zaczynający się od `Aktualizator prefiksu IPv6 nie powiódł się:`.
+
+Po <Terminology title="podgląd bez kopii zapasowej i bez zapisu" to="/docs/reference/terminology#dry-run">próbie</Terminology> lub zmianie następuje `Zmiany pól:` z każdym adresem, który uruchomienie zastąpiło lub by zastąpiło, oraz polem, do którego ten adres należy:
+
+```text
+Zmiany pól:
+- aliases/alias/0/address: 2001:db8:abcd:78aa::10 → 2001:db8:abcd:88aa::10
+```
+
+## Wybór pól \{#choosing-fields}
+
+To, które pola aktualizuje uruchomienie, wybiera się na karcie **Pola**, która wymienia każdy adres należący do prefiksu każdej <Terminology title="prefiks startowy zapisany bez zmiany konfiguracji" to="/docs/reference/terminology#baseline">wartości bazowej</Terminology>. Grupy, wyjątki dla pojedynczych pól i grupę Inne ustawienia wyjaśnia strona [Pola](/docs/configure/configuration-scopes).
+
+## Zrzuty ekranu \{#screenshots}
+
+Pierwszy zrzut ekranu pokazuje wynik <Terminology title="wynik: prefiks bez zmian, nic nie skanowano ani nie zapisano" to="/docs/reference/terminology#no-change">Brak zmian</Terminology> dla dwóch monitorowanych interfejsów, bez zmienionych pól i bez kopii zapasowej.
+
+<img src={unchangedRun} alt="Karta Stan pakietu IPv6 Prefix Updater z sekcjami Ostatnie uruchomienie i Ostatnie uruchomienie według interfejsu dla dwóch niezmienionych interfejsów, bez zmienionych pól i bez kopii zapasowej" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+Drugi zrzut ekranu pokazuje wynik <Terminology title="wynik: pola zaktualizowane, zapisane, ponownie załadowane i zweryfikowane" to="/docs/reference/terminology#success">Sukces</Terminology>, który zmienił jedno <Terminology title="konkretne pole konfiguracji, które pakiet może przepisać" to="/docs/reference/terminology#approved-field">zatwierdzone pole</Terminology>, utworzył <Terminology title="kopia konfiguracji wykonana przed zapisem" to="/docs/reference/terminology#configuration-backup">kopię zapasową konfiguracji</Terminology> i ponownie załadował filtr zapory.
+
+<img src={changedRun} alt="Karta Stan pakietu IPv6 Prefix Updater z udaną zmianą prefiksu /56 dla dwóch monitorowanych interfejsów, jednym zmienionym polem, kopią zapasową konfiguracji i ponownym załadowaniem filtra zapory" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+Trzeci zrzut ekranu pokazuje tabelę **Ostatnie uruchomienie według interfejsu** dla tego uruchomienia, w którym LAN i LAB współdzielą jeden <Terminology title="sieć IPv6, którą dostawca kieruje do zapory" to="/docs/reference/terminology#delegated-prefix">delegowany prefiks</Terminology> i każdy z nich zgłasza to samo zmienione pole.
+
+<img src={runByInterface} alt="Tabela Ostatnie uruchomienie według interfejsu pakietu IPv6 Prefix Updater, w której LAN i LAB zgłaszają wynik Sukces z jednym zmienionym polem po tej samej zmianie prefiksu /56" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+Adresy `2001:db8::/32` na tych zrzutach ekranu to zarezerwowane przykłady dokumentacyjne.
+
+Wszystkie wyniki opisuje przewodnik [Wyniki uruchomień](/docs/operate/run-outcomes), a zanim zaczniesz polegać na uruchomieniu ze zmianami, zapoznaj się z przewodnikiem [Kopie zapasowe i odzyskiwanie](/docs/operate/backups-and-recovery).

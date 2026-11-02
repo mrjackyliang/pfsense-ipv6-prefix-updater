@@ -1,0 +1,157 @@
+---
+id: approved-fields
+title: Goedgekeurde velden
+description: Zoek de exacte configuratiepaden van pfSense op die elke veldgroep kan herschrijven, hoe waarden daarin worden vergeleken en welke herlaadactie elk pad start.
+keywords:
+  - pfsense ipv6 prefix updater
+  - goedgekeurde velden
+  - configuratiepaden
+  - config_get_path
+  - herladen van services
+tags:
+  - reference
+  - approved fields
+  - configuration paths
+sidebar_position: 3
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Controleer de exacte configuratiepaden van pfSense die elke <Terminology title="groep velden met één schakelaar op het tabblad Velden" to="/docs/reference/terminology#field-group">veldgroep</Terminology> kan herschrijven, en de service die elk pad herlaadt.
+
+## Veldmatrix \{#field-matrix}
+
+Paden gebruiken de pfSense-syntaxis met schuine strepen voor `config_get_path()` en `config_set_path()`. In de paden hieronder staat `<index>` voor een positie in een lijst, `<interface>` voor een interfacesleutel zoals `lan`, `<boundary>` voor `from` of `to`, `<side>` voor `source` of `destination` en `<section>` voor de instellingensleutel van een ander pakket.
+
+| <Terminology title="groep velden met één schakelaar op het tabblad Velden" to="/docs/reference/terminology#field-group">Groep</Terminology>      | Pad                                                                              | Geselecteerd als                                                                                                           | Service                 |
+|--------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------|-------------------------|
+| Aliassen                                                                                                                                         | `aliases/alias/<index>/address`                                                  | `type` is `host` of `network`                                                                                              | `filter`                |
+| Statische interfaces                                                                                                                             | `interfaces/<interface>/ipaddrv6`                                                | De waarde bevat `:`                                                                                                        | `interfaces`            |
+| <Terminology title="extra interfaceadres, zoals CARP of IP Alias" to="/docs/reference/terminology#virtual-ip">Virtuele IP-adressen</Terminology> | `virtualip/vip/<index>/subnet`                                                   | `mode` is `carp` of `ipalias`                                                                                              | `interfaces`            |
+| IPsec                                                                                                                                            | `ipsec/phase2/<index>/localid/address`                                           | `mode` is `tunnel6` of `vti`, en `localid/type` is `address` of `network`                                                  | `ipsec`                 |
+| IPsec                                                                                                                                            | `ipsec/phase2/<index>/natlocalid/address`                                        | `mode` is `tunnel6` of `vti`, en `natlocalid/type` is `address` of `network`                                               | `ipsec`                 |
+| OpenVPN                                                                                                                                          | `openvpn/openvpn-server/<index>/tunnel_networkv6`                                | `tunnel_networkv6_type` is niet `track6`                                                                                   | `openvpn`               |
+| OpenVPN                                                                                                                                          | `openvpn/openvpn-server/<index>/local_networkv6`                                 | Altijd                                                                                                                     | `openvpn`               |
+| OpenVPN                                                                                                                                          | `openvpn/openvpn-client/<index>/tunnel_networkv6`                                | Altijd                                                                                                                     | `openvpn`               |
+| OpenVPN                                                                                                                                          | `openvpn/openvpn-csc/<index>/tunnel_networkv6`                                   | Altijd                                                                                                                     | `openvpn`               |
+| OpenVPN                                                                                                                                          | `openvpn/openvpn-csc/<index>/local_networkv6`                                    | Altijd                                                                                                                     | `openvpn`               |
+| WireGuard                                                                                                                                        | `installedpackages/wireguard/tunnels/item/<index>/addresses/row/<index>/address` | Altijd                                                                                                                     | `wireguard`             |
+| DHCPv6-server                                                                                                                                    | `dhcpdv6/<interface>/range/<boundary>`                                           | Altijd                                                                                                                     | `dhcpv6`                |
+| DHCPv6-server                                                                                                                                    | `dhcpdv6/<interface>/prefixrange/<boundary>`                                     | Altijd                                                                                                                     | `dhcpv6`                |
+| DHCPv6-server                                                                                                                                    | `dhcpdv6/<interface>/pool/<index>/range/<boundary>`                              | Altijd                                                                                                                     | `dhcpv6`                |
+| DHCPv6-server                                                                                                                                    | `dhcpdv6/<interface>/pool/<index>/prefixrange/<boundary>`                        | Altijd                                                                                                                     | `dhcpv6`                |
+| DHCPv6-server                                                                                                                                    | `dhcpdv6/<interface>/dnsserver/<index>`                                          | Altijd, en ook binnen elke pool                                                                                            | `dhcpv6`                |
+| DHCPv6-server                                                                                                                                    | `dhcpdv6/<interface>/ntpserver/<index>`                                          | Altijd, en ook binnen elke pool                                                                                            | `dhcpv6`                |
+| DHCPv6-server                                                                                                                                    | `dhcpdv6/<interface>/staticmap/<index>/ipaddrv6`                                 | Altijd                                                                                                                     | `dhcpv6`                |
+| Router Advertisements                                                                                                                            | `dhcpdv6/<interface>/radnsserver/<index>`                                        | Altijd                                                                                                                     | `router_advertisements` |
+| Router Advertisements                                                                                                                            | `dhcpdv6/<interface>/subnets/item/<index>`                                       | Altijd                                                                                                                     | `router_advertisements` |
+| DNS-hostoverschrijvingen                                                                                                                         | `unbound/hosts/<index>/ip`                                                       | Altijd                                                                                                                     | `dns_resolver`          |
+| DNS-hostoverschrijvingen                                                                                                                         | `dnsmasq/hosts/<index>/ip`                                                       | Altijd                                                                                                                     | `dns_forwarder`         |
+| Firewallregels                                                                                                                                   | `filter/rule/<index>/<side>/address`                                             | De kant bevat een adres in plaats van `network` of `any`                                                                   | `filter`                |
+| NAT en NPt                                                                                                                                       | `nat/rule/<index>/<side>/address`                                                | Altijd                                                                                                                     | `filter`                |
+| NAT en NPt                                                                                                                                       | `nat/rule/<index>/target`                                                        | Altijd                                                                                                                     | `filter`                |
+| NAT en NPt                                                                                                                                       | `nat/outbound/rule/<index>/<side>/network`                                       | Altijd                                                                                                                     | `filter`                |
+| NAT en NPt                                                                                                                                       | `nat/outbound/rule/<index>/target`                                               | Altijd                                                                                                                     | `filter`                |
+| NAT en NPt                                                                                                                                       | `nat/onetoone/<index>/external`                                                  | Altijd                                                                                                                     | `filter`                |
+| NAT en NPt                                                                                                                                       | `nat/onetoone/<index>/<side>/address`                                            | Altijd                                                                                                                     | `filter`                |
+| NAT en NPt                                                                                                                                       | `nat/npt/<index>/<side>/address`                                                 | De prefix is ingetypt in plaats van vanaf een interface gevolgd                                                            | `filter`                |
+| Instellingen van een ander pakket                                                                                                                | `installedpackages/<section>/...`                                                | De waarde bevat een IPv6-adres en geen van de soorten onder [Overige instellingen](#other-settings) is erop van toepassing | `package:<section>`     |
+
+Lege waarden worden overgeslagen, en een dubbele doel-ID of een dubbel pad stopt de uitvoering vóór elke wijziging. Elk doel krijgt zijn ID van de identiteit van het record in [Veldidentiteiten](#field-identities), of van zijn positie in de lijst als het record er geen heeft. Velden van een ander pakket worden nooit automatisch geselecteerd, zoals [Velden](/docs/configure/configuration-scopes#other-packages-settings) uitlegt.
+
+## Waardeformaten \{#value-formats}
+
+- Elk veld bevat één waarde, behalve de drie lijsten hieronder.
+- Alias-`address` is een lijst die op witruimte wordt gesplitst.
+- OpenVPN-`local_networkv6` op servers en in <Terminology title="OpenVPN-instellingen voor één client op een server" to="/docs/reference/terminology#client-specific-override">clientspecifieke overschrijvingen</Terminology> is een lijst die op komma's en witruimte wordt gesplitst.
+- `ip` van een hostoverschrijving in de DNS Resolver is een lijst die op komma's en witruimte wordt gesplitst.
+- Waarden in de instellingen van een ander pakket en in de groep Overige instellingen zijn tekst. Elk adres in de tekst wordt apart vergeleken, en de rest blijft staan zoals die is geschreven.
+- Een waarde die in Base64 is opgeslagen, wordt gedecodeerd, als tekst vergeleken en opnieuw gecodeerd wanneer die verandert.
+- Scheidingstekens blijven precies zoals ze zijn geschreven, en tokens die geen IPv6-adressen zijn, zoals aliasnamen, IPv4-netwerken en hostnamen, gaan ongewijzigd door.
+
+## Vergelijkingsregels \{#matching-rules}
+
+- Een token mag eindigen op een CIDR-achtervoegsel van `/0` tot en met `/128`, dat behouden blijft. Een token met een ander achtervoegsel blijft ongewijzigd.
+- Een token verandert alleen als het adres bij de vorige prefix hoort, met de vorige <Terminology title="aantal voorloopbits van het netwerk, zoals /56" to="/docs/reference/terminology#prefix-length">prefixlengte</Terminology>.
+- De nieuwe waarde neemt de voorloopbits over van het huidige <Terminology title="globaal adres dat pfSense voor de bewaakte interface meldt" to="/docs/reference/terminology#source-address">bronadres</Terminology> met de huidige <Terminology title="aantal voorloopbits van het netwerk, zoals /56" to="/docs/reference/terminology#prefix-length">prefixlengte</Terminology>, en alle andere bits van het token. Ze wordt in <Terminology title="kortste standaardnotatie van een adres, in kleine letters" to="/docs/reference/terminology#canonical-form">canonieke vorm</Terminology> geschreven.
+- Tokens die geen <Terminology title="openbaar IPv6-adres binnen 2000::/3" to="/docs/reference/terminology#global-unicast-address">globale unicastadressen</Terminology> zijn, gaan ongewijzigd door, ook de achtervoegsels in de stijl van `::1000` die DHCPv6-instellingen op een <Terminology title="interface met een adres uit de gedelegeerde prefix van een andere" to="/docs/reference/terminology#tracked-interface">Track Interface</Terminology> bevatten.
+- Een veld waarvan de nieuwe waarde gelijk is aan de oude waarde, telt niet als wijziging.
+
+## Veldidentiteiten \{#field-identities}
+
+Elke <Terminology title="afzonderlijk veld dat tegen de groepsschakelaar in is aan- of uitgevinkt" to="/docs/reference/terminology#field-exception">velduitzondering</Terminology> op het tabblad Velden wordt opgeslagen als een identiteit die het item benoemt in plaats van zijn positie in de lijst:
+
+| Item                            | Veldidentiteit                                                                                                                                                                                |
+|---------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Alias                           | `alias:<name>`                                                                                                                                                                                |
+| Statische interface             | `interface:<interface>`                                                                                                                                                                       |
+| Virtuele IP                     | `virtual-ip:<uniqid or description>`                                                                                                                                                          |
+| IPsec fase 2                    | `ipsec:<uniqid, reqid, or ikeid>:<localid or natlocalid>`                                                                                                                                     |
+| OpenVPN                         | `openvpn-server:<vpnid>:<tunnel or local>`, `openvpn-client:<vpnid>:tunnel` of `openvpn-override:<common name>:<tunnel or local>`                                                             |
+| WireGuard-tunnel                | `wireguard:<tunnel name>:addresses`, voor alle adresrijen samen                                                                                                                               |
+| DHCPv6-server                   | `dhcpv6:<interface>:<field>`, waarbij `<field>` de instelling noemt, zoals `range-from`, `dns-servers` of `ntp-servers`                                                                       |
+| DHCPv6-pool                     | `dhcpv6-pool:<interface>:<description>:<field>`                                                                                                                                               |
+| Statische DHCPv6-toewijzing     | `dhcpv6-static-mapping:<interface>:<DUID>`                                                                                                                                                    |
+| Router Advertisements           | `router-advertisements:<interface>:<dns-servers or subnets>`                                                                                                                                  |
+| Host in de DNS Resolver         | `dns-resolver-host:<host>:<domain>:<inet, inet6, or inet46>`                                                                                                                                  |
+| Host in de DNS Forwarder        | `dns-forwarder-host:<host>:<domain>:<inet, inet6, or inet46>`                                                                                                                                 |
+| Firewallregel                   | `firewall-rule:<tracker>:<side>`                                                                                                                                                              |
+| Port forward                    | `port-forward:<created time>:<source, destination, or target>`                                                                                                                                |
+| Uitgaande NAT-regel             | `outbound-nat:<created time>:<source, destination, or target>`                                                                                                                                |
+| 1:1-NAT-item                    | `one-to-one-nat:<description>:<external, source, or destination>`                                                                                                                             |
+| NPt-item                        | `npt:<description>:<side>`                                                                                                                                                                    |
+| Instelling van een ander pakket | `package:<section>:<path>`, waarbij elke lijstpositie in het pad `<field>=<value>` wordt, met een veld dat het item uniek benoemt, of `0` bij het enige instellingenrecord van een pakket     |
+| Overige instellingen            | `other:<path>`, op dezelfde manier opgebouwd met een veld dat geen adres bevat, zoals `name=<gateway name>`. Een gewone lijst, zoals `system/dnsserver`, houdt één identiteit voor alle items |
+
+- Delen van een identiteit zijn URL-gecodeerd, dus een beschrijving zoals `Web forward` verschijnt als `Web%20forward`.
+- Een record waarvan de identiteit ontbreekt of gelijk is aan die van een ander record in dezelfde lijst, krijgt geen vakje, en de velden ervan volgen alleen de groepsschakelaar.
+- Uitzonderingen worden opgeslagen onder `installedpackages/ipv6prefixupdater/fields`, naast het instellingenrecord dat het tabblad Instellingen bij elke opslag vervangt, zoals [Opdrachtregel en bestanden](/docs/reference/command-line-and-files#field-selection) beschrijft.
+- Elke uitvoering valideert de opgeslagen identiteiten opnieuw en negeert ongeldige identiteiten. Een aangevinkt veld dat bij geen enkel huidig item hoort, wordt overgeslagen en onder **Overgeslagen velden** op het tabblad Status vermeld. Een identiteit kan alleen een veld uit de matrix of uit de groep Overige instellingen benoemen.
+
+## Herlaadacties \{#reload-actions}
+
+| Service                 | Label op Status             | pfSense-aanroep                                                                                                    |
+|-------------------------|-----------------------------|--------------------------------------------------------------------------------------------------------------------|
+| `interfaces`            | Interfaces                  | `interfaces_configure()`, daarna `filter_configure()`                                                              |
+| `routing`               | Routering                   | `system_routing_configure()` en `setup_gateways_monitor()`, daarna `filter_configure()`                            |
+| `filter`                | Firewallfilter              | `filter_configure()`, overgeslagen als `interfaces` het al heeft uitgevoerd                                        |
+| `dhcpv6`                | DHCPv6-server               | `services_dhcpd_configure('inet6')`, dat ook radvd opnieuw start                                                   |
+| `router_advertisements` | Router Advertisements       | `services_radvd_configure()`, overgeslagen na `dhcpv6`                                                             |
+| `dns`                   | DNS-servers                 | `system_resolvconf_generate()`, daarna het herladen van de DNS Resolver en DNS Forwarder als die zijn ingeschakeld |
+| `dns_resolver`          | DNS Resolver                | `services_unbound_configure(false)`                                                                                |
+| `dns_forwarder`         | DNS Forwarder               | `services_dnsmasq_configure(false)`                                                                                |
+| `ipsec`                 | IPsec                       | `ipsec_configure()`                                                                                                |
+| `openvpn`               | OpenVPN                     | `openvpn_resync_all()`                                                                                             |
+| `wireguard`             | WireGuard                   | `wg_resync()`                                                                                                      |
+| `package:<section>`     | Vermeld onder **Pakketten** | `sync_package()` voor het geïnstalleerde pakket waarvan de XML-`<name>` overeenkomt met de sectie                  |
+
+Services worden herladen in de volgorde van deze tabel, en de instellingen van andere pakketten worden als laatste opnieuw toegepast, na het herladen en de verificatie daarvan. Vóór het herladen wordt elk netwerk van een statische route dat een uitvoering heeft vervangen, met `/sbin/route delete` uit de routeringstabel verwijderd, omdat `system_routing_configure()` routes alleen toevoegt en wijzigt. De pagina Static Routes doet hetzelfde bij **Apply Changes**. In pfSense 2.7.2 start `interfaces_configure()` DHCPv6, radvd en beide DNS-services al opnieuw, dus die herlaadacties worden daarna overgeslagen.
+
+Registreert de DNS Forwarder of DNS Resolver statische DHCP-toewijzingen, dan voert `dhcpv6` in plaats daarvan het herladen van die service uit, waarbij ook DHCP opnieuw start. Dat komt overeen met **Apply Changes** op de pagina DHCPv6 Server.
+
+`sync_package()` voert de resync-opdracht van het pakket uit, zoals de knop **Save** ervan doet, en de uitvoer daarvan wordt weggegooid. Een sectie waarvan geen geïnstalleerd pakket eigenaar is, wordt gemeld in plaats van toegepast, en een fout wordt voor dat pakket gemeld. Geen van beide maakt de opgeslagen waarden ongedaan.
+
+Vóór de back-up laadt een voorcontrole elke benodigde functie uit een vast bestand, zoals `/etc/inc/filter.inc`, `/etc/inc/pkg-utils.inc` of `/usr/local/pkg/wireguard/includes/wg.inc`, en stopt de uitvoering als er een ontbreekt. `filter_configure()`, `services_unbound_configure()` en `services_dnsmasq_configure()` laten de uitvoering mislukken als ze `false` of een geheel getal ongelijk aan nul teruggeven, en de andere aanroepen laten haar alleen mislukken als ze een uitzondering geven.
+
+## Overige instellingen \{#other-settings}
+
+Elk ander configuratiepad waarvan de waarde een IPv6-adres bevat, als tekst of in Base64, hoort bij de groep **Overige instellingen**. De groep staat standaard uit, en een waarde erin verandert alleen als die is aangevinkt of als de groep aan staat. Rijen noemen deze soorten:
+
+- IPsec-identiteiten in `remoteid` en externe gateways van fase 1, en OpenVPN-netwerken in `remote_networkv6` en serveradressen van clients.
+- WireGuard-peers, inclusief hun toegestane IP's en eindpunten.
+- Gateways en statische routes.
+- Certificaten, sleutels, wachtwoorden en andere geheimen, waarvan het tabblad de waarden verbergt.
+- Elke andere waarde die in Base64 is opgeslagen.
+- Beschrijvingen.
+- In de instellingen van een ander pakket: waarden waarvan de naam een certificaat, sleutel, wachtwoord, geheim, hash of beschrijving aanduidt.
+
+Andere aliastypen dan `host` en `network`, andere modi voor <Terminology title="extra interfaceadres, zoals CARP of IP Alias" to="/docs/reference/terminology#virtual-ip">virtuele IP's</Terminology> dan `carp` en `ipalias` en elk ander pad buiten de matrix tonen in plaats daarvan de naam van hun instelling. Het herladen hangt af van het pad: `gateways` en `staticroutes` gebruiken `routing`, `system/dnsserver` gebruikt `dns`, `unbound` en `dnsmasq` gebruiken hun DNS-service, `ipsec`, `openvpn`, `filter`, `aliases`, `nat`, `dhcpdv6`, `interfaces` en `virtualip` gebruiken de herlaadacties hierboven, de sectie van een ander pakket wordt opnieuw toegepast, en beschrijvingen, certificaten en elk ander pad herladen niets.
+
+## Schrijven en verificatie \{#write-and-verification}
+
+- Vóór de back-up moet elk gepland pad de geplande oude waarde bevatten.
+- Daarna draait `backup_config()`, dat `true` moet teruggeven.
+- Het plan wordt toegepast met `config_set_path()` en één keer opgeslagen met `write_config($description, false, true)`, wat een tweede back-up en niet-gerelateerde synchronisatie overslaat.
+- Na het schrijven, en opnieuw na het herladen, moet elk gepland pad de geplande nieuwe waarde bevatten.
+
+Een afwijking stopt de uitvoering met `Configuratiepad "<path>" is buiten het goedgekeurde plan gewijzigd.` Een fout na het schrijven laat de nieuwe waarden opgeslagen, zoals [Uitvoeringsresultaten](/docs/operate/run-outcomes#failures-after-the-save) beschrijft.

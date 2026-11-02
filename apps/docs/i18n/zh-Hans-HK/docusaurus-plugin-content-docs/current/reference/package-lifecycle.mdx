@@ -1,0 +1,65 @@
+---
+id: package-lifecycle
+title: 更新或移除
+description: 检查已安装的版本，在旧版本之上安装新版本或移除软件包，并了解每一步会保留或删除哪些内容。
+keywords:
+  - pfsense ipv6 prefix updater
+  - 软件包更新
+  - 软件包移除
+  - pkg delete
+  - 重新安装
+tags:
+  - reference
+  - maintenance
+  - pfsense
+sidebar_position: 5
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+在 pfSense shell 中检查已安装的版本、安装新版本或移除软件包。
+
+## 检查已安装的版本 \{#check-the-installed-version}
+
+```shell
+pkg info pfSense-pkg-Ipv6PrefixUpdater
+```
+
+将报告的版本与 [GitHub 上的最新发布版本](https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest)进行比较。
+
+## 更新软件包 \{#update-the-package}
+
+建议先在 **Diagnostics → Backup & Restore**（诊断 → 备份与恢复）中下载一份配置副本。然后在现有软件包之上安装最新版本：
+
+```shell
+pkg add -f https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
+```
+
+安装步骤会再次根据已保存的设置同步 cron 条目，并保留每个<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>。[安装软件包](/docs/installation#verify-the-download-first)中的校验和步骤同样适用于更新。
+
+更新之后：
+
+1. 打开 **Services → IPv6 Prefix Updater** 的 **设置** 选项卡，确认已保存的值。
+2. 在“状态”选项卡中查看 **当前状态**。每个接口都会保留其<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>。
+
+如果某一行显示 `尚未初始化`，**立即运行** 会为它记录新的<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>。这样一来，仍在使用该基线之前旧前缀的地址将保持不变。
+
+## 移除软件包 \{#remove-the-package}
+
+如果 pfSense 保留了已保存的设置，先取消勾选 **<Terminology title="由 pfSense 管理的 cron 条目运行的自动检查" to="/docs/reference/terminology#scheduled-updates">启用计划更新</Terminology>** 可以避免日后重新安装时立即启动计划更新。然后运行：
+
+```shell
+pkg delete pfSense-pkg-Ipv6PrefixUpdater
+```
+
+移除操作会删除软件包的 cron 条目和<Terminology title="防止两个检查同时运行的保护机制" to="/docs/reference/terminology#run-lock">运行锁</Terminology>文件。它会保留 `/cf/conf/ipv6-prefix-updater` 中的<Terminology title="保存基线和上次运行的软件包文件" to="/docs/reference/terminology#package-state">软件包状态</Terminology>和 **备份** 选项卡中的副本，因此 pfSense 在更新期间自行执行的移除并重新安装绝不会丢失<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>。
+
+移除操作不会撤销已保存到配置中的地址，软件包产生的修订版本也会保留在<Terminology title="pfSense 已保存配置修订版本的列表" to="/docs/reference/terminology#config-history">配置历史</Terminology>中。如果还要删除保留的文件，请在移除软件包后运行 `rm -rf /cf/conf/ipv6-prefix-updater`。
+
+## 日后重新安装 \{#reinstall-later}
+
+重新安装时会找到保留的<Terminology title="保存基线和上次运行的软件包文件" to="/docs/reference/terminology#package-state">软件包状态</Terminology>，因此首次运行会与每个已保存的<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>进行比较，并更新仍停留在更旧前缀上的字段。如果之前的设置仍然存在且勾选了 **<Terminology title="由 pfSense 管理的 cron 条目运行的自动检查" to="/docs/reference/terminology#scheduled-updates">启用计划更新</Terminology>**，安装步骤会立即开启计划更新。
+
+如果想从头开始，请在重新安装之前删除 `/cf/conf/ipv6-prefix-updater`。这样首次运行会记录新的<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>并报告<Terminology title="结果：已记录基线，配置未更改" to="/docs/reference/terminology#initialized">已初始化</Terminology>，不会更改配置。
+
+维护之前请阅读[备份与恢复](/docs/operate/backups-and-recovery)，重新安装之后请阅读[建立基线](/docs/first-run)。

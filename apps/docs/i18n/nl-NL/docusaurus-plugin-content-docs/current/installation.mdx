@@ -1,0 +1,89 @@
+---
+id: installation
+title: Het pakket installeren
+description: Installeer pfSense IPv6 Prefix Updater met pkg vanuit een GitHub-release, controleer de download met het SHA-256-bestand en bevestig de nieuwe pagina's in de WebGUI.
+keywords:
+  - pfsense ipv6 prefix updater
+  - installatie
+  - pkg add
+  - github-release
+  - sha256-controlesom
+tags:
+  - setup
+  - installation
+  - pfsense
+sidebar_position: 2
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Installeer het pakket vanuit een GitHub-release met de pfSense-tool `pkg` en controleer daarna of de pagina's ervan in de WebGUI verschijnen.
+
+## Vereisten \{#requirements}
+
+- **Beheerdersshell** — SSH- of consoletoegang tot de pfSense-shell. Met **Diagnostics → Command Prompt** in de WebGUI kun je ook losse opdrachten uitvoeren.
+- **HTTPS-toegang tot GitHub** — De firewall downloadt het pakket van GitHub Releases.
+- **Een passende pakketbuild** — Het pakket moet gebouwd zijn voor de FreeBSD-versie waarop je pfSense-release draait.
+- **Een recente back-up** — Download vóór de installatie een kopie van de configuratie via **Diagnostics → Backup & Restore**.
+- **De <Terminology title="oorspronkelijk update.php-script, uitgevoerd via het Cron-pakket" to="/docs/reference/terminology#legacy-updater">legacy-updater</Terminology> mag blijven** — Draait het script van versie 1.x nog via het Cron-pakket, laat het dan staan. De installatiestap verplaatst het naar het pakket, zoals [Migreren vanaf het script](/docs/migrate-from-legacy) uitlegt.
+
+:::warning
+
+pfSense IPv6 Prefix Updater is een <Terminology title="pakket van GitHub, niet uit de repository van Netgate" to="/docs/reference/terminology#unofficial-package">onofficieel pakket</Terminology>. Een `.pkg`-bestand van GitHub installeren omzeilt de pakketbeoordeling en ondersteuning van Netgate, dus het is aan te raden om het eerst te proberen op een firewall met een back-up of een firewall die je kunt missen.
+
+:::
+
+## De release controleren \{#check-the-release}
+
+Pakketreleases staan op de [GitHub Releases-pagina](https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases). Elke pakketrelease bevat deze bestanden:
+
+| Bestand                                       | Beschrijving                                                                 |
+|-----------------------------------------------|------------------------------------------------------------------------------|
+| `pfSense-pkg-Ipv6PrefixUpdater.pkg`           | Het pakket onder een vaste naam, die de opdrachten op deze pagina gebruiken. |
+| `pfSense-pkg-Ipv6PrefixUpdater-<version>.pkg` | Hetzelfde pakket met de versie in de bestandsnaam.                           |
+| `.sha256`-bestanden                           | Eén SHA-256-controlesom per pakketbestand.                                   |
+
+:::info
+
+Releases van versie 1.x bevatten alleen de <Terminology title="oorspronkelijk update.php-script, uitgevoerd via het Cron-pakket" to="/docs/reference/terminology#legacy-updater">legacy-updater</Terminology>. Heeft de nieuwste release geen `.pkg`-bestand, dan mislukken de opdrachten op deze pagina met een fout Not Found (404).
+
+:::
+
+## Het pakket installeren \{#install-the-package}
+
+Voer deze opdracht uit in de pfSense-shell:
+
+```shell
+pkg add https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
+```
+
+`pkg` downloadt het pakket uit de nieuwste release en voert de installatiestap uit, die **Services → IPv6 Prefix Updater** bij pfSense registreert.
+
+## Eerst de download verifiëren \{#verify-the-download-first}
+
+Wil je het bestand vóór de installatie met de controlesom vergelijken, download dan beide bestanden naar `/tmp` en toon beide waarden:
+
+```shell
+cd /tmp
+fetch https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
+fetch https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg.sha256
+sha256 -q pfSense-pkg-Ipv6PrefixUpdater.pkg
+cat pfSense-pkg-Ipv6PrefixUpdater.pkg.sha256
+```
+
+De laatste twee opdrachten tonen dezelfde waarde als de download intact is. Daarna kun je het gecontroleerde bestand installeren met `pkg add /tmp/pfSense-pkg-Ipv6PrefixUpdater.pkg`.
+
+## Bevestigen in de WebGUI \{#confirm-in-the-webgui}
+
+1. Meld je aan bij de pfSense-WebGUI.
+2. Open **Services → IPv6 Prefix Updater** en controleer of de tabbladen **Instellingen**, **Status**, **Velden**, **Back-ups** en **Opruimen** verschijnen.
+3. Controleer op het tabblad Status of **Huidige status** `Er zijn nog geen bewaakte interfaces opgeslagen. Voeg ze toe op het tabblad Instellingen.` toont. Na de overstap van de legacy-updater staan daar in plaats daarvan de verplaatste interfaces.
+4. Laat **<Terminology title="automatische controles via een door pfSense beheerde cronjob" to="/docs/reference/terminology#scheduled-updates">Geplande updates inschakelen</Terminology>** uitgevinkt, zoals standaard het geval is, totdat je [de baseline hebt vastgelegd](/docs/first-run). Na de overstap van de legacy-updater is deze optie al ingeschakeld, passend bij het oude Cron-schema.
+
+## Als de installatie mislukt \{#if-installation-fails}
+
+- **Not Found (404)**: de nieuwste release heeft geen pakketbestand. [De release controleren](/docs/installation#check-the-release) legt uit welke releases er een bevatten.
+- **ABI- of OS-versieconflict**: het pakket is gebouwd voor een andere FreeBSD-versie dan die van je pfSense-release. Het is aan te raden om een passende build te gebruiken in plaats van de installatie te forceren.
+- **DNS-, TLS- of certificaatfouten**: pfSense moet `github.com` kunnen omzetten, het via HTTPS kunnen bereiken en de juiste tijd hebben voor certificaatcontroles.
+
+Ga verder met [De baseline vastleggen](/docs/first-run) zodra het pakket in de WebGUI verschijnt.

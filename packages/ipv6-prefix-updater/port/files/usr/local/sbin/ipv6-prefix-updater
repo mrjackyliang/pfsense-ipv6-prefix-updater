@@ -1,0 +1,370 @@
+#!/usr/local/bin/php
+<?php
+
+declare(strict_types=1);
+
+use PfSense\Ipv6PrefixUpdater\Runtime\BackupStore;
+use PfSense\Ipv6PrefixUpdater\Runtime\FileLock;
+use PfSense\Ipv6PrefixUpdater\Runtime\LegacyMigrator;
+use PfSense\Ipv6PrefixUpdater\Runtime\PackagePaths;
+use PfSense\Ipv6PrefixUpdater\Runtime\PfSenseAdapter;
+use PfSense\Ipv6PrefixUpdater\Runtime\PrefixUpdater;
+use PfSense\Ipv6PrefixUpdater\Runtime\StateStore;
+use PfSense\Ipv6PrefixUpdater\Runtime\Translator;
+
+require_once('/usr/local/pkg/ipv6-prefix-updater/BackupStore.php');
+require_once('/usr/local/pkg/ipv6-prefix-updater/FileLock.php');
+require_once('/usr/local/pkg/ipv6-prefix-updater/LegacyMigrator.php');
+require_once('/usr/local/pkg/ipv6-prefix-updater/PackagePaths.php');
+require_once('/usr/local/pkg/ipv6-prefix-updater/PfSenseAdapter.php');
+require_once('/usr/local/pkg/ipv6-prefix-updater/PrefixUpdater.php');
+require_once('/usr/local/pkg/ipv6-prefix-updater/StateStore.php');
+require_once('/usr/local/pkg/ipv6-prefix-updater/Translator.php');
+
+/**
+ * Formats one safe run result for terminal and WebGUI command output.
+ *
+ * The output exposes the exact selected source address, derived prefix, backup state,
+ * and affected service names without including configuration values or secrets. A
+ * multi-interface result prints its summary followed by one block per interface.
+ *
+ * @param array $result - Prefix updater result.
+ *
+ * @return string
+ *
+ * @since 2.0.0
+ */
+function formatIpv6PrefixUpdaterResult(array $result): string
+{
+    $targets = $result['targets'] ?? null;
+
+    if (is_array($targets) && count($targets) > 0) {
+        $blocks = [
+            implode(PHP_EOL, [
+                Translator::translate('cli_status') . ': ' . formatIpv6PrefixUpdaterStatus($result),
+                Translator::translate('cli_summary') . ': ' . (string) ($result['message'] ?? Translator::translate('run_completed')),
+                ...formatIpv6PrefixUpdaterRunDetails($result),
+            ]),
+        ];
+
+        foreach ($targets as $target) {
+            if (is_array($target)) {
+                $blocks[] = formatIpv6PrefixUpdaterResult($target);
+            }
+        }
+
+        return implode(PHP_EOL . PHP_EOL, $blocks);
+    }
+
+    $currentPrefix = $result['current_prefix'] ?? null;
+    $currentPrefixLength = $result['current_prefix_length'] ?? null;
+    $currentPrefixDisplay = Translator::translate('not_available');
+
+    if (is_string($currentPrefix) && is_int($currentPrefixLength)) {
+        $currentPrefixDisplay = sprintf('%s/%d', $currentPrefix, $currentPrefixLength);
+    }
+
+    $services = $result['services'] ?? [];
+    $serviceDisplay = is_array($services) && count($services) > 0
+        ? implode(', ', array_map(
+            static function (mixed $service): string {
+                try {
+                    return Translator::translate('service_' . (string) $service);
+                } catch (Throwable) {
+                    return (string) $service;
+                }
+            },
+            $services,
+        ))
+        : Translator::translate('none');
+    $backupDisplay = (($result['backup_created'] ?? false) === true)
+        ? Translator::translate('created')
+        : Translator::translate('not_created');
+
+    $outputLines = [
+        Translator::translate('cli_status') . ': ' . formatIpv6PrefixUpdaterStatus($result),
+        Translator::translate('cli_interface') . ': ' . (string) ($result['interface'] ?? Translator::translate('not_available')),
+        Translator::translate('cli_observed_address') . ': ' . (string) ($result['observed_address'] ?? Translator::translate('not_available')),
+        Translator::translate('cli_previous_prefix') . ': ' . (string) ($result['previous_prefix'] ?? Translator::translate('not_available')),
+        Translator::translate('cli_current_prefix') . ': ' . $currentPrefixDisplay,
+        Translator::translate('cli_changed_fields') . ': ' . (string) ($result['change_count'] ?? 0),
+        Translator::translate('cli_backup') . ': ' . $backupDisplay,
+        Translator::translate('cli_services') . ': ' . $serviceDisplay,
+        Translator::translate('cli_summary') . ': ' . (string) ($result['message'] ?? Translator::translate('run_completed')),
+    ];
+    $changes = is_array($result['changes'] ?? null) ? $result['changes'] : [];
+
+    if (count($changes) > 0) {
+        $outputLines[] = Translator::translate('cli_field_changes') . ':';
+
+        foreach ($changes as $change) {
+            foreach ((is_array($change['replacements'] ?? null) ? $change['replacements'] : []) as $replacement) {
+                $outputLines[] = sprintf(
+                    '- %s: %s → %s',
+                    (string) ($change['path'] ?? ''),
+                    (string) ($replacement[0] ?? ''),
+                    (string) ($replacement[1] ?? ''),
+                );
+            }
+        }
+    }
+
+    return implode(PHP_EOL, [...$outputLines, ...formatIpv6PrefixUpdaterRunDetails($result)]);
+}
+
+/**
+ * Formats package re-applies and skipped fields recorded with a run.
+ *
+ * @param array $result - Prefix updater result.
+ *
+ * @return list<string>
+ *
+ * @since 2.0.0
+ */
+function formatIpv6PrefixUpdaterRunDetails(array $result): array
+{
+    $outputLines = [];
+
+    foreach ((is_array($result['package_reapply'] ?? null) ? $result['package_reapply'] : []) as $outcome) {
+        $section = (string) ($outcome['section'] ?? '');
+        $package = (string) ($outcome['package'] ?? $section);
+
+        $outputLines[] = match ($outcome['status'] ?? null) {
+            'reapplied' => Translator::translate('package_reapplied', [$package]),
+            'unknown_owner' => Translator::translate('package_owner_unknown', [$section]),
+            default => Translator::translate('package_reapply_failed', [$package, (string) ($outcome['error'] ?? '')]),
+        };
+    }
+
+    $skippedFields = is_array($result['skipped_fields'] ?? null) ? $result['skipped_fields'] : [];
+
+    if (count($skippedFields) > 0) {
+        $outputLines[] = Translator::translate('skipped_fields_message', [implode(', ', $skippedFields)]);
+    }
+
+    return $outputLines;
+}
+
+/**
+ * Translates the status of one result for command output.
+ *
+ * @param array $result - Prefix updater result.
+ *
+ * @return string
+ *
+ * @since 2.0.0
+ */
+function formatIpv6PrefixUpdaterStatus(array $result): string
+{
+    try {
+        return Translator::translate('status_' . (string) ($result['status'] ?? 'unknown'));
+    } catch (Throwable) {
+        return Translator::translate('unknown');
+    }
+}
+
+/**
+ * Formats a version 1.x migration report for command output.
+ *
+ * @param array $report - Migration report.
+ *
+ * @return string
+ *
+ * @since 2.0.0
+ */
+function formatIpv6PrefixUpdaterMigration(array $report): string
+{
+    $outputLines = [
+        Translator::translate('cli_status') . ': ' . Translator::translate('legacy_status_' . (string) ($report['status'] ?? 'none')),
+    ];
+
+    foreach (['steps', 'warnings'] as $group) {
+        foreach (($report[$group] ?? []) as $message) {
+            if (!is_array($message) || !is_string($message['key'] ?? null)) {
+                continue;
+            }
+
+            $arguments = is_array($message['arguments'] ?? null) ? $message['arguments'] : [];
+
+            if ($message['key'] === 'legacy_step_schedule' && is_string($arguments[0] ?? null)) {
+                $arguments[0] = Translator::translate($arguments[0]);
+            }
+
+            $outputLines[] = (($group === 'warnings') ? '! ' : '- ') . Translator::translate($message['key'], $arguments);
+        }
+    }
+
+    return implode(PHP_EOL, $outputLines);
+}
+
+/**
+ * Moves a version 1.x installation into the package when one is present.
+ *
+ * Called under the package lock before every check, so a migration that was deferred
+ * while the old script was running finishes on the next scheduled check. When the
+ * move completes, the package cron job is rebuilt from the new settings.
+ *
+ * @param PfSenseAdapter $platformAdapter - Platform adapter.
+ * @param StateStore     $stateStore      - State store.
+ * @param BackupStore    $backupStore     - Backup store.
+ *
+ * @return array{status: string, steps: list<array>, warnings: list<array>}
+ *
+ * @throws Throwable When the migration fails.
+ *
+ * @since 2.0.0
+ */
+function migrateIpv6PrefixUpdaterLegacy(
+    PfSenseAdapter $platformAdapter,
+    StateStore $stateStore,
+    BackupStore $backupStore,
+): array {
+    $report = (new LegacyMigrator($platformAdapter, $stateStore, $backupStore))->migrate();
+
+    if (in_array($report['status'], ['completed', 'completed_with_warnings'], true)) {
+        require_once('/usr/local/pkg/ipv6-prefix-updater.inc');
+
+        pfsensePackageIpv6PrefixUpdaterInstallCron();
+    }
+
+    return $report;
+}
+
+/**
+ * Runs the package command-line entry point.
+ *
+ * Argument parsing remains intentionally small because scheduled and WebGUI callers
+ * use fixed flags. All operational behavior lives in independently tested classes.
+ *
+ * @param list<string> $arguments - Command-line arguments.
+ *
+ * @return int
+ *
+ * @since 2.0.0
+ */
+function ipv6PrefixUpdaterMain(array $arguments): int
+{
+    $manual = false;
+    $dryRun = false;
+    $acceptCurrentPrefix = false;
+    $migrateLegacy = false;
+    $onlyInterface = null;
+
+    foreach (array_slice($arguments, 1) as $argument) {
+        if (str_starts_with($argument, '--interface=')) {
+            $onlyInterface = substr($argument, strlen('--interface='));
+
+            if (preg_match('/^[A-Za-z0-9_]+$/', $onlyInterface) !== 1) {
+                fwrite(STDERR, Translator::translate('unknown_option', [$argument]) . PHP_EOL);
+
+                return 64;
+            }
+
+            continue;
+        }
+
+        switch ($argument) {
+            case '--manual': {
+                $manual = true;
+                break;
+            }
+
+            case '--dry-run': {
+                $dryRun = true;
+                $manual = true;
+                break;
+            }
+
+            case '--accept-current-prefix': {
+                $acceptCurrentPrefix = true;
+                $manual = true;
+                break;
+            }
+
+            case '--migrate-legacy': {
+                $migrateLegacy = true;
+                $manual = true;
+                break;
+            }
+
+            case '--help': {
+                fwrite(STDOUT, Translator::translate('usage') . PHP_EOL);
+
+                return 0;
+            }
+
+            default: {
+                fwrite(STDERR, Translator::translate('unknown_option', [$argument]) . PHP_EOL);
+
+                return 64;
+            }
+        }
+    }
+
+    if ($acceptCurrentPrefix === true && $dryRun === true) {
+        fwrite(STDERR, Translator::translate('accept_current_prefix_conflict') . PHP_EOL);
+
+        return 64;
+    }
+
+    $platformAdapter = new PfSenseAdapter();
+    $fileLock = new FileLock(PackagePaths::LOCK_FILE);
+
+    try {
+        $platformAdapter->assertEnvironment();
+
+        if ($fileLock->acquire() === false) {
+            $message = Translator::translate('lock_owned');
+
+            $platformAdapter->log($message);
+            fwrite(STDOUT, $message . PHP_EOL);
+
+            return 0;
+        }
+
+        $stateStore = new StateStore(PackagePaths::STATE_FILE);
+        $backupStore = new BackupStore(PackagePaths::BACKUP_DIRECTORY);
+
+        if ($migrateLegacy === true) {
+            $report = migrateIpv6PrefixUpdaterLegacy($platformAdapter, $stateStore, $backupStore);
+
+            fwrite(STDOUT, formatIpv6PrefixUpdaterMigration($report) . PHP_EOL);
+
+            return (count($report['warnings']) > 0) ? 2 : 0;
+        }
+
+        if ($dryRun === false && $acceptCurrentPrefix === false) {
+            try {
+                $report = migrateIpv6PrefixUpdaterLegacy($platformAdapter, $stateStore, $backupStore);
+
+                if ($report['status'] !== 'none') {
+                    fwrite(STDOUT, formatIpv6PrefixUpdaterMigration($report) . PHP_EOL . PHP_EOL);
+                }
+            } catch (Throwable $throwable) {
+                $platformAdapter->log(Translator::translate('legacy_failed', [$throwable->getMessage()]));
+            }
+        }
+
+        $prefixUpdater = new PrefixUpdater($platformAdapter, $stateStore, $backupStore);
+
+        if ($acceptCurrentPrefix === true) {
+            $result = $prefixUpdater->acceptCurrentPrefix($onlyInterface);
+        } else {
+            $result = $prefixUpdater->run($manual, $dryRun);
+        }
+
+        $output = formatIpv6PrefixUpdaterResult($result);
+
+        fwrite(STDOUT, $output . PHP_EOL);
+
+        return (($result['status'] ?? null) === 'warning') ? 2 : 0;
+    } catch (Throwable $throwable) {
+        fwrite(STDERR, Translator::translate('cli_failed', [$throwable->getMessage()]) . PHP_EOL);
+
+        return 1;
+    } finally {
+        $fileLock->release();
+    }
+}
+
+exit(ipv6PrefixUpdaterMain($argv));

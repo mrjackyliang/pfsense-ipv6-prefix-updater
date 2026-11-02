@@ -1,0 +1,121 @@
+---
+id: troubleshooting
+title: Troubleshooting
+description: Resolve installation errors, wrong addresses or prefixes, repeated warnings, failed runs, and run lock messages with Status, Command Output, and the system log.
+keywords:
+  - pfsense ipv6 prefix updater
+  - troubleshooting
+  - error messages
+  - system log
+  - run lock
+tags:
+  - operations
+  - troubleshooting
+  - system log
+sidebar_position: 4
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Find the cause of an unexpected result from the outcome, the <Terminology title="read-only results shown after Run Now or Dry Run" to="/docs/reference/terminology#command-output">Command Output</Terminology>, the <Terminology title="pfSense general log the package writes to" to="/docs/reference/terminology#system-log">system log</Terminology>, and pfSense's notices.
+
+## Where to Look
+
+- **Last Run** on the Status tab shows most outcomes.
+- **<Terminology title="read-only results shown after Run Now or Dry Run" to="/docs/reference/terminology#command-output">Command Output</Terminology>** appears after Run Now, <Terminology title="preview that never backs up or writes" to="/docs/reference/terminology#dry-run">Dry Run</Terminology>, or **Accept Current Prefix**. It also shows actions that never reach **Last Run**.
+- The <Terminology title="pfSense general log the package writes to" to="/docs/reference/terminology#system-log">system log</Terminology> under **Status → System Logs → System → General** holds the package's lines, each starting with `IPv6 Prefix Updater:`.
+- **<Terminology title="alert shown in the pfSense notices list" to="/docs/reference/terminology#webgui-notice">WebGUI notices</Terminology>** appear for <Terminology title="outcome: prefix changed, but no approved field matched" to="/docs/reference/terminology#warning">Warning</Terminology> and <Terminology title="outcome: a check or safety stage stopped the run" to="/docs/reference/terminology#failure">Failure</Terminology> outcomes and link to the Status tab.
+
+## Installation Fails
+
+- **`pkg` reports 404 Not Found**: the latest GitHub release has no package file. [Install the Package](/docs/installation#check-the-release) explains which releases contain one.
+- **`pkg` reports an ABI or OS version mismatch**: the package was built for a different FreeBSD version than your pfSense release. It is recommended not to force the installation.
+- **DNS, TLS, or certificate errors**: pfSense needs to resolve `github.com`, reach it over HTTPS, and keep the correct time for certificate checks.
+
+## Wrong Source Address
+
+When WAN receives only a <Terminology title="IPv6 network your ISP routes to the firewall" to="/docs/reference/terminology#delegated-prefix">delegated prefix</Terminology>, the address that carries it sits on a <Terminology title="interface addressed from another interface's delegated prefix" to="/docs/reference/terminology#tracked-interface">tracked interface</Terminology> such as LAN. That interface is then the right <Terminology title="interface whose address reveals the current prefix" to="/docs/reference/terminology#monitored-interface">Monitored Interface</Terminology>.
+
+The <Terminology title="setting for the ISP prefix size, /48 to /64" to="/docs/reference/terminology#delegated-prefix-length">Delegated Prefix Length</Terminology> doesn't change which address is read, so changing it won't fix a wrong <Terminology title="global address pfSense reports for the monitored interface" to="/docs/reference/terminology#source-address">source address</Terminology>. It is recommended to compare **<Terminology title="global address pfSense reports for the monitored interface" to="/docs/reference/terminology#source-address">Observed Source Address</Terminology>** with **Status → Interfaces** after each change.
+
+## Wrong Observed Prefix
+
+Compare the <Terminology title="setting for the ISP prefix size, /48 to /64" to="/docs/reference/terminology#delegated-prefix-length">Delegated Prefix Length</Terminology> with your ISP's service details or the DHCPv6 prefix delegation size on WAN. For lengths such as `/57` or `/63`, an IPv6 subnet calculator makes the comparison easier.
+
+:::warning
+
+Changing the length after the <Terminology title="starting prefix recorded without changing configuration" to="/docs/reference/terminology#baseline">baseline</Terminology> exists counts as a <Terminology title="change from the last successful prefix or length" to="/docs/reference/terminology#prefix-transition">prefix transition</Terminology> and can rewrite fields. [Changing the Prefix Length](/docs/configure/interface-and-prefix#changing-the-prefix-length) describes what happens.
+
+:::
+
+## Warning on Every Run
+
+The **Summary** of a <Terminology title="outcome: prefix changed, but no approved field matched" to="/docs/reference/terminology#warning">Warning</Terminology> names both prefixes, for example `Prefix changed from 2001:db8:abcd:7800::/56 to 2001:db8:abcd:8800::/56, but no approved fields matched the previous prefix.` The <Terminology title="starting prefix recorded without changing configuration" to="/docs/reference/terminology#baseline">baseline</Terminology> doesn't move, so the next run retries the same <Terminology title="change from the last successful prefix or length" to="/docs/reference/terminology#prefix-transition">prefix transition</Terminology> once the cause is fixed.
+
+Check these causes:
+
+- The old prefix in the message is the network your addresses still use.
+- The <Terminology title="group of fields with one switch on the Fields tab" to="/docs/reference/terminology#field-group">field group</Terminology> that holds the addresses is on, or the fields are ticked, on the Fields tab.
+- The values are literal IPv6 addresses or networks in <Terminology title="exact configuration field the package may rewrite" to="/docs/reference/terminology#approved-field">approved fields</Terminology>, including any you ticked under [Other Settings](/docs/configure/configuration-scopes#other-settings).
+- Nobody changed the addresses already, by hand or with the <Terminology title="original update.php script run by the Cron package" to="/docs/reference/terminology#legacy-updater">legacy updater</Terminology>.
+- An earlier <Terminology title="outcome: a check or safety stage stopped the run" to="/docs/reference/terminology#failure">Failure</Terminology> didn't already save the new values, as described in [Backups and Recovery](/docs/operate/backups-and-recovery#after-a-failed-run).
+- The <Terminology title="setting for the ISP prefix size, /48 to /64" to="/docs/reference/terminology#delegated-prefix-length">Delegated Prefix Length</Terminology> wasn't widened, as described in [Interface and Prefix](/docs/configure/interface-and-prefix#changing-the-prefix-length).
+
+If the saved addresses still use the old prefix, fix the cause and run the check again. If the saved addresses already use the active prefix, verify every affected address and service, then select **Status → Actions → Baseline Recovery → Accept Current Prefix** to make it the new <Terminology title="starting prefix recorded without changing configuration" to="/docs/reference/terminology#baseline">baseline</Terminology>.
+
+:::warning
+
+**Accept Current Prefix** does not inspect the saved addresses, write configuration, or reload services. Do not use it when any approved field still needs to be updated from the old prefix.
+
+:::
+
+## Run Failed
+
+Each failure gives its reason after `Run failed:` in **Summary**, the <Terminology title="alert shown in the pfSense notices list" to="/docs/reference/terminology#webgui-notice">WebGUI notice</Terminology>, and the <Terminology title="pfSense general log the package writes to" to="/docs/reference/terminology#system-log">system log</Terminology>. In <Terminology title="read-only results shown after Run Now or Dry Run" to="/docs/reference/terminology#command-output">Command Output</Terminology>, the reason follows `IPv6 Prefix Updater failed:`.
+
+| Message                                                                                  | Meaning                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+|------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `Interface "lan" has no active global IPv6 address.`                                     | The <Terminology title="interface whose address reveals the current prefix" to="/docs/reference/terminology#monitored-interface">Monitored Interface</Terminology> has no <Terminology title="public IPv6 address inside 2000::/3" to="/docs/reference/terminology#global-unicast-address">global address</Terminology> right now. It may have only a <Terminology title="fe80:: address that works only on one link" to="/docs/reference/terminology#link-local-address">link-local address</Terminology>, be down, or be a WAN that receives only a <Terminology title="IPv6 network your ISP routes to the firewall" to="/docs/reference/terminology#delegated-prefix">delegated prefix</Terminology>. |
+| `A suitable global unicast IPv6 address is required.`                                    | pfSense returned an address outside `2000::/3`, such as a unique local address.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `Configured interface "opt2" does not exist.`                                            | The saved <Terminology title="interface whose address reveals the current prefix" to="/docs/reference/terminology#monitored-interface">Monitored Interface</Terminology> was removed from pfSense.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `No configuration fields are selected. Select fields on the Fields tab.`                 | Every field group is off and no field is ticked, for example after **Clear All**. Nothing was read or changed.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `A monitored pfSense interface is required.`                                             | The package settings were never saved.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `IPv6 Prefix Updater state is invalid or unsupported.`                                   | The <Terminology title="package file holding the baseline and last run" to="/docs/reference/terminology#package-state">package state</Terminology> file is damaged or uses an unsupported format. When the file can't be read, the Status tab shows the same message in a red box.                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `Required pfSense dependency "/usr/local/pkg/wireguard/includes/wg.inc" is unavailable.` | <Terminology title="address assigned to a pfSense WireGuard tunnel" to="/docs/reference/terminology#wireguard-tunnel-address">WireGuard tunnel addresses</Terminology> need to change, but the WireGuard package isn't installed. Other names in this message point to a missing pfSense file or function.                                                                                                                                                                                                                                                                                                                                                                                                |
+| `Target ID "..." is duplicated.`                                                         | Two configuration entries of the same kind share the name or ID the package uses to tell them apart. Nothing was changed.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `Configuration path "..." changed outside the approved plan.`                            | A planned field changed between planning and saving, or held an unexpected value after the save.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `pfSense could not back up the current configuration.`                                   | The backup failed, so nothing was changed.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `pfSense could not write the planned configuration.`                                     | The write failed, and the package put the original values back in memory.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `filter reload failed after the configuration write.`                                    | The firewall filter didn't reload. The new values are already saved.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+
+Failures that happen before the <Terminology title="package file holding the baseline and last run" to="/docs/reference/terminology#package-state">package state</Terminology> is read don't update **Last Run**. That covers the address and settings messages above and a <Terminology title="package file holding the baseline and last run" to="/docs/reference/terminology#package-state">package state</Terminology> file that can't be read, which then appear only in <Terminology title="read-only results shown after Run Now or Dry Run" to="/docs/reference/terminology#command-output">Command Output</Terminology>, the <Terminology title="alert shown in the pfSense notices list" to="/docs/reference/terminology#webgui-notice">WebGUI notice</Terminology>, and the <Terminology title="pfSense general log the package writes to" to="/docs/reference/terminology#system-log">system log</Terminology>.
+
+For the WireGuard message, installing the WireGuard package or turning the WireGuard <Terminology title="group of fields with one switch on the Fields tab" to="/docs/reference/terminology#field-group">field group</Terminology> off lets the next run continue. Turning the group off also means those <Terminology title="address assigned to a pfSense WireGuard tunnel" to="/docs/reference/terminology#wireguard-tunnel-address">tunnel addresses</Terminology> are no longer updated.
+
+If the <Terminology title="package file holding the baseline and last run" to="/docs/reference/terminology#package-state">package state</Terminology> is damaged, removing `/cf/conf/ipv6-prefix-updater/state.json` from a shell lets the next run record a new <Terminology title="starting prefix recorded without changing configuration" to="/docs/reference/terminology#baseline">baseline</Terminology>. A new <Terminology title="starting prefix recorded without changing configuration" to="/docs/reference/terminology#baseline">baseline</Terminology> accepts the current prefix as it is, so addresses that still use an older prefix stay unchanged.
+
+For a failure after the save, fix the verification or reload problem first. Then either restore the pre-update revision and rerun the update, or verify that the saved new-prefix values and affected services are correct and select **Status → Actions → Baseline Recovery → Accept Current Prefix**.
+
+The accepted action updates only the package <Terminology title="starting prefix recorded without changing configuration" to="/docs/reference/terminology#baseline">baseline</Terminology>, records an **Accepted** outcome, and ends the repeated warning loop. [Backups and Recovery](/docs/operate/backups-and-recovery#after-a-failed-run) gives the full recovery procedure.
+
+## Repeated Failure Notices
+
+A <Terminology title="outcome: a check or safety stage stopped the run" to="/docs/reference/terminology#failure">Failure</Terminology> on a scheduled run adds a new <Terminology title="alert shown in the pfSense notices list" to="/docs/reference/terminology#webgui-notice">WebGUI notice</Terminology> every time the schedule runs. Fixing the cause, or clearing **<Terminology title="automatic checks run from a pfSense-managed cron entry" to="/docs/reference/terminology#scheduled-updates">Enable Scheduled Updates</Terminology>** until you can, stops new notices.
+
+## Another Run Owns the Lock
+
+The message `Another run owns the package lock; this invocation exited without reading configuration.` means a check was already running. The <Terminology title="guard that stops two checks running at once" to="/docs/reference/terminology#run-lock">run lock</Terminology> is released as soon as that check ends, even if it crashed, so the message clears on its own.
+
+To see whether a check is still running, run `ps ax | grep ipv6-prefix-updater` from a shell. The lock file stays on disk between runs by design, and deleting it isn't needed.
+
+## Report a Bug
+
+Bug reports go to the [GitHub issue tracker](https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/issues/new/choose). It is recommended to include:
+
+- The package version from `pkg info pfSense-pkg-Ipv6PrefixUpdater`.
+- The pfSense version.
+- Each <Terminology title="interface whose address reveals the current prefix" to="/docs/reference/terminology#monitored-interface">Monitored Interface</Terminology> with its <Terminology title="setting for the ISP prefix size, /48 to /64" to="/docs/reference/terminology#delegated-prefix-length">Delegated Prefix Length</Terminology>, and the <Terminology title="group of fields with one switch on the Fields tab" to="/docs/reference/terminology#field-group">field groups</Terminology> that are on.
+- A screenshot of the Status tab and the <Terminology title="read-only results shown after Run Now or Dry Run" to="/docs/reference/terminology#command-output">Command Output</Terminology>.
+- The matching <Terminology title="pfSense general log the package writes to" to="/docs/reference/terminology#system-log">system log</Terminology> lines.
+
+It is recommended to replace real public addresses with `2001:db8::` examples before posting.

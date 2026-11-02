@@ -1,0 +1,79 @@
+---
+id: how-updates-work
+title: Jak działają aktualizacje
+description: Prześledź jedno uruchomienie etap po etapie, od odczytu adresów interfejsów przez planowanie, kopię zapasową, jednokrotny zapis i ponowne załadowanie usług po zapisany wynik.
+keywords:
+  - pfsense ipv6 prefix updater
+  - proces aktualizacji
+  - plan zmian
+  - ponowne załadowanie usługi
+  - weryfikacja
+tags:
+  - safety
+  - update process
+  - service reload
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Prześledź jedno uruchomienie od odczytu adresów interfejsów do zapisania wyniku, łącznie z każdym miejscem, w którym może się zatrzymać.
+
+## 1. Odczyt i walidacja \{#1-read-and-validate}
+
+- Zaplanowane sprawdzenie od razu kończy się wynikiem <Terminology title="wynik: zaplanowane sprawdzenie pominięte przy wyłączonych aktualizacjach" to="/docs/reference/terminology#disabled">Wyłączone</Terminology>, gdy opcja **<Terminology title="automatyczne sprawdzenia z wpisu cron zarządzanego przez pfSense" to="/docs/reference/terminology#scheduled-updates">Włącz zaplanowane aktualizacje</Terminology>** jest wyłączona. <Terminology title="sprawdzenie uruchomione z karty Stan" to="/docs/reference/terminology#manual-run">Ręczne uruchomienie</Terminology> jest kontynuowane.
+- Uruchomienie ponownie sprawdza zapisane ustawienia, ponieważ mogły się zmienić od zapisania formularza.
+- Odczytuje na nowo <Terminology title="publiczny adres IPv6 z zakresu 2000::/3" to="/docs/reference/terminology#global-unicast-address">globalny adres</Terminology> każdego <Terminology title="interfejs, którego adres ujawnia bieżący prefiks" to="/docs/reference/terminology#monitored-interface">monitorowanego interfejsu</Terminology>, bez zastępczego użycia <Terminology title="adres fe80:: działający tylko w jednym łączu" to="/docs/reference/terminology#link-local-address">adresu link-local</Terminology>, i przekształca go do <Terminology title="najkrótszy standardowy zapis adresu małymi literami" to="/docs/reference/terminology#canonical-form">postaci kanonicznej</Terminology>.
+- Maskuje każdy adres do <Terminology title="ustawienie rozmiaru prefiksu od dostawcy, od /48 do /64" to="/docs/reference/terminology#delegated-prefix-length">długości delegowanego prefiksu</Terminology> z jego wiersza, aby uzyskać <Terminology title="adres źródłowy zamaskowany do długości prefiksu" to="/docs/reference/terminology#observed-prefix">zaobserwowany prefiks</Terminology>.
+
+## 2. Porównanie \{#2-compare}
+
+- Gdy dla interfejsu nie ma <Terminology title="prefiks startowy zapisany bez zmiany konfiguracji" to="/docs/reference/terminology#baseline">wartości bazowej</Terminology>, uruchomienie ją zapisuje i kończy się wynikiem <Terminology title="wynik: zapisano wartość bazową, konfiguracja bez zmian" to="/docs/reference/terminology#initialized">Zainicjowano</Terminology>.
+- Gdy prefiks i jego długość są zgodne z <Terminology title="prefiks, z którym porównuje następne sprawdzenie" to="/docs/reference/terminology#last-successful-prefix">ostatnim pomyślnym prefiksem</Terminology>, uruchomienie kończy się wynikiem <Terminology title="wynik: prefiks bez zmian, nic nie skanowano ani nie zapisano" to="/docs/reference/terminology#no-change">Brak zmian</Terminology> bez skanowania konfiguracji.
+- Inny prefiks lub inna długość to <Terminology title="różnica względem ostatniego pomyślnego prefiksu lub długości" to="/docs/reference/terminology#prefix-transition">zmiana prefiksu</Terminology> i uruchomienie jest kontynuowane.
+
+## 3. Planowanie \{#3-plan}
+
+- Uruchomienie odczytuje konfigurację przez funkcje konfiguracji pfSense i zachowuje tylko pola wybrane na karcie Pola. Wybrane pola, które już nie istnieją, są pomijane i wymieniane w wierszu **Pominięte pola**.
+- Każdy adres w <Terminology title="konkretne pole konfiguracji, które pakiet może przepisać" to="/docs/reference/terminology#approved-field">zatwierdzonym polu</Terminology>, który należy do starego prefiksu przy zapisanej długości, otrzymuje bity nowego prefiksu przy bieżącej długości i zachowuje swoją <Terminology title="bity adresu po delegowanym prefiksie" to="/docs/reference/terminology#host-portion">część hosta</Terminology>. Razem te zmiany tworzą kompletny <Terminology title="pełna lista zmian pól, tworzona przed zapisem" to="/docs/reference/terminology#change-plan">plan zmian</Terminology>.
+- Gdy nie ma nic do zmiany, uruchomienie kończy się wynikiem <Terminology title="wynik: prefiks się zmienił, ale żadne zatwierdzone pole nie pasowało" to="/docs/reference/terminology#warning">Ostrzeżenie</Terminology>. <Terminology title="podgląd bez kopii zapasowej i bez zapisu" to="/docs/reference/terminology#dry-run">Próba</Terminology> ze zmianami kończy się w tym miejscu wynikiem <Terminology title="podgląd bez kopii zapasowej i bez zapisu" to="/docs/reference/terminology#dry-run">Próba</Terminology>.
+
+## 4. Kontrola wstępna \{#4-preflight}
+
+- Uruchomienie potwierdza, że pfSense może ponownie załadować każdą usługę z planu. <Terminology title="adres przypisany do tunelu WireGuard w pfSense" to="/docs/reference/terminology#wireguard-tunnel-address">Adresy tuneli WireGuard</Terminology> wymagają do tego pakietu WireGuard.
+- Potwierdza, że każde zaplanowane pole nadal ma wartość, którą miało w chwili tworzenia planu.
+
+## 5. Kopia zapasowa i jednokrotny zapis \{#5-back-up-and-write-once}
+
+- pfSense tworzy <Terminology title="kopia konfiguracji wykonana przed zapisem" to="/docs/reference/terminology#configuration-backup">kopię zapasową konfiguracji</Terminology>, a uruchomienie zatrzymuje się, jeśli pfSense jej nie potwierdzi.
+- Uruchomienie stosuje wszystkie zmiany i zapisuje je jeden raz z opisem `Aktualizator prefiksu IPv6 zmienił <count> zatwierdzonych pól dla interfejsu <interface>`.
+- Jeśli pfSense zgłosi nieudany zapis, uruchomienie przywraca w pamięci pierwotne wartości i się zatrzymuje.
+
+## 6. Weryfikacja, ponowne załadowanie, weryfikacja \{#6-verify-reload-verify}
+
+- Uruchomienie sprawdza, czy zapisane wartości są zgodne z planem, ponownie ładuje usługi, których dotyczą zmiany, i ponownie sprawdza wartości.
+- Usługi są ponownie ładowane w stałej kolejności podanej w sekcji [Działania ponownego załadowania](/docs/reference/approved-fields#reload-actions), od usługi Interfejsy do usługi WireGuard. Po ponownym załadowaniu usługi Interfejsy następuje ponowne załadowanie filtra zapory, które potem nie jest powtarzane.
+- Ponowne załadowania filtra zapory, DNS Resolver i DNS Forwarder powodują błąd uruchomienia, gdy zwrócą niepowodzenie. Pozostałe ponowne załadowania powodują go tylko wtedy, gdy zgłoszą wyjątek.
+- Ustawienia innych pakietów są ponownie stosowane na końcu, po ponownym załadowaniu usług i jego weryfikacji. Pakiet, którego ustawień nie można ponownie zastosować, jest zgłaszany, a zapisane wartości zostają zachowane.
+- Błąd na tym etapie pozostawia nowe wartości zapisane.
+
+## 7. Zapis wyniku i powiadomienie \{#7-record-and-notify}
+
+- <Terminology title="prefiks startowy zapisany bez zmiany konfiguracji" to="/docs/reference/terminology#baseline">Wartość bazowa</Terminology> przechodzi na nowy prefiks, a sekcja **Ostatnie uruchomienie** zapisuje wynik <Terminology title="wynik: pola zaktualizowane, zapisane, ponownie załadowane i zweryfikowane" to="/docs/reference/terminology#success">Sukces</Terminology> z liczbą zmienionych pól i <Terminology title="akcja pfSense stosująca zmienione ustawienia" to="/docs/reference/terminology#service-reload">ponownie załadowanymi usługami</Terminology>.
+- Uruchomienie zapisuje wiersz w <Terminology title="ogólny dziennik pfSense, do którego zapisuje pakiet" to="/docs/reference/terminology#system-log">dzienniku systemowym</Terminology> i wysyła <Terminology title="alert wysyłany po zweryfikowanej udanej aktualizacji" to="/docs/reference/terminology#change-notification">powiadomienie o zmianie</Terminology>, jeśli je włączono. Nieudane powiadomienie nie zmienia wyniku.
+
+## Gdzie uruchomienie może się zatrzymać \{#where-a-run-can-stop}
+
+| Miejsce zatrzymania                                                                                                                                                                                                                                                                                           | Zapisano konfigurację          | Utworzono kopię zapasową | Zaktualizowano Ostatnie uruchomienie                                                                                                                                   |
+|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------|--------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Zaplanowane sprawdzenie z wynikiem <Terminology title="wynik: zaplanowane sprawdzenie pominięte przy wyłączonych aktualizacjach" to="/docs/reference/terminology#disabled">Wyłączone</Terminology>                                                                                                            | Nie                            | Nie                      | Nie                                                                                                                                                                    |
+| Ustawienia, adres lub nieczytelny <Terminology title="plik pakietu z wartością bazową i ostatnim uruchomieniem" to="/docs/reference/terminology#package-state">stan pakietu</Terminology>                                                                                                                     | Nie                            | Nie                      | Nie                                                                                                                                                                    |
+| <Terminology title="wynik: zapisano wartość bazową, konfiguracja bez zmian" to="/docs/reference/terminology#initialized">Zainicjowano</Terminology> lub <Terminology title="wynik: prefiks bez zmian, nic nie skanowano ani nie zapisano" to="/docs/reference/terminology#no-change">Brak zmian</Terminology> | Nie                            | Nie                      | Tak                                                                                                                                                                    |
+| <Terminology title="wynik: prefiks się zmienił, ale żadne zatwierdzone pole nie pasowało" to="/docs/reference/terminology#warning">Ostrzeżenie</Terminology> lub <Terminology title="podgląd bez kopii zapasowej i bez zapisu" to="/docs/reference/terminology#dry-run">Próba</Terminology>                   | Nie                            | Nie                      | Tak                                                                                                                                                                    |
+| Błąd kontroli wstępnej                                                                                                                                                                                                                                                                                        | Nie                            | Nie                      | Tak                                                                                                                                                                    |
+| Błąd kopii zapasowej                                                                                                                                                                                                                                                                                          | Nie                            | Nie                      | Tak                                                                                                                                                                    |
+| Błąd zapisu                                                                                                                                                                                                                                                                                                   | Nie, według zgłoszenia pfSense | Tak                      | Tak                                                                                                                                                                    |
+| Błąd weryfikacji lub ponownego załadowania                                                                                                                                                                                                                                                                    | Tak                            | Tak                      | Tak                                                                                                                                                                    |
+| Błąd powiadomienia                                                                                                                                                                                                                                                                                            | Tak                            | Tak                      | Tak, jako <Terminology title="wynik: pola zaktualizowane, zapisane, ponownie załadowane i zweryfikowane" to="/docs/reference/terminology#success">Sukces</Terminology> |
+
+Funkcję pfSense stojącą za każdym ponownym załadowaniem wymienia strona [Zatwierdzone pola](/docs/reference/approved-fields), a odzyskiwanie po błędzie omawia przewodnik [Kopie zapasowe i odzyskiwanie](/docs/operate/backups-and-recovery).

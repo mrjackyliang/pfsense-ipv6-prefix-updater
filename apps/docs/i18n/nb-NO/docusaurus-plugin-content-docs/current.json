@@ -1,0 +1,20 @@
+{
+  "sidebar.docs.category.Start Here": {
+    "message": "Kom i gang"
+  },
+  "sidebar.docs.category.Configure": {
+    "message": "Konfigurasjon"
+  },
+  "sidebar.docs.category.Operate": {
+    "message": "Drift"
+  },
+  "sidebar.docs.category.Safety": {
+    "message": "Sikkerhet"
+  },
+  "sidebar.docs.category.Reference": {
+    "message": "Referanse"
+  },
+  "sidebar.docs.category.Contributing": {
+    "message": "Bidra"
+  }
+}

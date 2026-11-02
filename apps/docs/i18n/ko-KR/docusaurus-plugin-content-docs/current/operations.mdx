@@ -1,0 +1,66 @@
+---
+id: operations
+title: 안전 모델
+description: 패키지가 pfSense를 변경하기 전에 수행하는 검사, 백업, 한 번의 쓰기와 쓰기를 하지 않는 실행, 그리고 여전히 트래픽에 영향을 줄 수 있는 요소를 확인합니다.
+keywords:
+  - pfsense ipv6 prefix updater
+  - 안전 모델
+  - 구성 백업
+  - 검증
+  - 서비스 다시 로드
+tags:
+  - safety
+  - backup
+  - verification
+sidebar_position: 6
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+패키지가 구성을 변경하기 전에 적용하는 보호 장치와 여전히 트래픽에 영향을 줄 수 있는 요소를 확인합니다.
+
+## 접두사가 바뀌면 일어나는 일 \{#what-happens-on-a-prefix-change}
+
+패키지는 <Terminology title="마지막 성공 접두사나 길이와 달라진 상태" to="/docs/reference/terminology#prefix-transition">접두사 전환</Terminology>을 찾으면 다음 순서로 작업합니다.
+
+1. 각 <Terminology title="주소로 현재 접두사를 알려 주는 인터페이스" to="/docs/reference/terminology#monitored-interface">모니터링할 인터페이스</Terminology>의 <Terminology title="2000::/3 범위의 공인 IPv6 주소" to="/docs/reference/terminology#global-unicast-address">글로벌 주소</Terminology>를 읽고 그 접두사를 계산합니다.
+2. 접두사를 <Terminology title="다음 확인이 비교 기준으로 삼는 접두사" to="/docs/reference/terminology#last-successful-prefix">마지막 성공 접두사</Terminology>와 비교합니다.
+3. 아직 이전 접두사를 쓰는 <Terminology title="패키지가 다시 쓸 수 있는 정확한 구성 필드" to="/docs/reference/terminology#approved-field">승인된 필드</Terminology>를 찾아 완전한 <Terminology title="쓰기 전에 만드는 전체 필드 변경 목록" to="/docs/reference/terminology#change-plan">변경 계획</Terminology>을 만듭니다.
+4. pfSense가 영향을 받는 모든 서비스를 다시 로드할 수 있는지, 그리고 계획된 필드가 읽은 뒤로 바뀌지 않았는지 확인합니다.
+5. <Terminology title="쓰기 전에 저장한 구성 사본" to="/docs/reference/terminology#configuration-backup">구성 백업</Terminology>을 저장합니다.
+6. 모든 변경을 적용하고 구성을 한 번 저장합니다.
+7. 저장된 값을 검사하고, 영향을 받는 서비스만 다시 로드한 뒤 값을 다시 검사합니다.
+8. <Terminology title="구성을 바꾸지 않고 기록한 시작 접두사" to="/docs/reference/terminology#baseline">기준선</Terminology>을 새 접두사로 옮기고 결과를 기록하며, 켜져 있으면 <Terminology title="검증된 업데이트가 성공한 뒤 보내는 알림" to="/docs/reference/terminology#change-notification">변경 알림</Terminology>을 보냅니다.
+
+백업 전의 단계 중 하나라도 실패하면 구성은 그대로 유지됩니다.
+
+## 쓰기가 절대 일어나지 않는 경우 \{#what-never-causes-a-write}
+
+다음 결과에서는 패키지가 구성을 변경하지 않습니다.
+
+- <Terminology title="결과: 기준선 기록, 구성 변경 없음" to="/docs/reference/terminology#initialized">초기화됨</Terminology> 및 <Terminology title="결과: 기준선이 생기기 전의 시험 실행" to="/docs/reference/terminology#initialization-preview">초기화 미리 보기</Terminology>.
+- <Terminology title="결과: 접두사 그대로, 검색이나 쓰기 없음" to="/docs/reference/terminology#no-change">변경 없음</Terminology>.
+- <Terminology title="백업도 쓰기도 하지 않는 미리 보기" to="/docs/reference/terminology#dry-run">시험 실행</Terminology>.
+- <Terminology title="결과: 접두사가 바뀌었지만 일치하는 승인된 필드 없음" to="/docs/reference/terminology#warning">경고</Terminology>.
+- 백업 전에 멈춘 <Terminology title="결과: 검사나 안전 단계가 실행을 중단함" to="/docs/reference/terminology#failure">실패</Terminology>.
+
+## 여전히 트래픽에 영향을 줄 수 있는 요소 \{#what-can-still-affect-traffic}
+
+- **<Terminology title="변경된 설정을 적용하는 pfSense 동작" to="/docs/reference/terminology#service-reload">서비스 다시 로드</Terminology>**: 정적 인터페이스나 <Terminology title="CARP나 IP Alias 같은 추가 인터페이스 주소" to="/docs/reference/terminology#virtual-ip">가상 IP</Terminology>를 변경하면 모든 인터페이스를 다시 로드한 다음 방화벽 필터를 다시 로드합니다. 게이트웨이와 정적 경로를 변경하면 라우팅과 필터를 다시 로드하고, OpenVPN을 변경하면 모든 OpenVPN 인스턴스를 다시 로드하고, DHCPv6, 라우터 알림, DNS를 변경하면 해당 서비스를 다시 시작합니다.
+- **저장 후 실패**: 저장 후 검사나 <Terminology title="변경된 설정을 적용하는 pfSense 동작" to="/docs/reference/terminology#service-reload">서비스 다시 로드</Terminology>가 실패하면 새 값은 저장된 채로 남고 아무것도 롤백되지 않습니다. [실행 결과](/docs/operate/run-outcomes#failures-after-the-save)에서 설명하듯이 <Terminology title="구성을 바꾸지 않고 기록한 시작 접두사" to="/docs/reference/terminology#baseline">기준선</Terminology>은 이전 접두사에 머뭅니다.
+- **선택을 기다리는 값**: 게이트웨이, 정적 경로, DNS 도메인 재정의, [기타 설정](/docs/configure/configuration-scopes#other-settings)의 그 밖의 값은 선택하기 전까지 이전 접두사를 그대로 유지하며, 꺼진 그룹의 필드도 마찬가지입니다.
+
+## 복구 경로 \{#recovery-path}
+
+모든 쓰기에는 그 직전 구성의 <Terminology title="쓰기 전에 저장한 구성 사본" to="/docs/reference/terminology#configuration-backup">구성 백업</Terminology>이 <Terminology title="저장된 구성 리비전을 보여 주는 pfSense 목록" to="/docs/reference/terminology#config-history">Config History</Terminology>에 남습니다. 패키지 이름이 붙은 리비전에는 업데이트된 구성이 들어 있으므로, 복원할 리비전은 [백업 및 복구](/docs/operate/backups-and-recovery)에서 확인합니다.
+
+평소 하던 장치 외부 pfSense 백업도 계속 유지하는 것을 권장합니다.
+
+## 확인할 수 있는 정보 \{#what-you-can-verify}
+
+상태 탭에는 최근 실행의 <Terminology title="pfSense가 모니터링할 인터페이스에 보고하는 글로벌 주소" to="/docs/reference/terminology#source-address">원본 주소</Terminology>, <Terminology title="접두사 길이로 마스킹한 원본 주소" to="/docs/reference/terminology#observed-prefix">관찰된 접두사</Terminology>, 결과, 변경된 필드 수, 백업 결과, <Terminology title="변경된 설정을 적용하는 pfSense 동작" to="/docs/reference/terminology#service-reload">다시 로드된 서비스</Terminology>, 시각, 요약이 표시됩니다. <Terminology title="상태 탭에서 시작한 확인" to="/docs/reference/terminology#manual-run">수동 실행</Terminology> 직후에는 <Terminology title="지금 실행이나 시험 실행 후 표시되는 읽기 전용 결과" to="/docs/reference/terminology#command-output">명령 출력</Terminology>에도 같은 세부 정보가 표시됩니다.
+
+## 더 알아보기 \{#learn-more}
+
+- **[업데이트 작동 방식](/docs/safety/how-updates-work)**: 실행의 각 단계와 실행이 멈출 수 있는 지점.
+- **[자동화 전 점검](/docs/safety/testing-and-verification)**: 일정을 켜기 전에 방화벽에서 수행할 점검 목록.

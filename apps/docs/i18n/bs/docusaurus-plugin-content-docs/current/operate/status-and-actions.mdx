@@ -1,0 +1,122 @@
+---
+id: status-and-actions
+title: Status i radnje
+description: Čitajte panele Trenutno stanje i Posljednje pokretanje, pokrećite provjere i preglede, oporavite početno stanje i razumijte Izlaz naredbe na kartici Status.
+keywords:
+  - pfsense ipv6 prefix updater
+  - kartica status
+  - pokreni sada
+  - probno pokretanje
+  - izlaz naredbe
+tags:
+  - operations
+  - status
+  - dry run
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import unchangedRun from './_assets_/status-and-actions-1.png';
+import changedRun from './_assets_/status-and-actions-2.png';
+import runByInterface from './_assets_/status-and-actions-3.png';
+
+Pogledajte šta su zabilježila trenutno početno stanje i posljednje pokretanje i pokrenite provjeru, pregled ili oporavak početnog stanja s kartice Status.
+
+## Trenutno stanje \{#current-state}
+
+Kartica **Status** u **Services → IPv6 Prefix Updater** počinje ovom tabelom, koja ima jedan red za svako nadzirano sučelje i opisuje <Terminology title="početni prefiks zabilježen bez promjene konfiguracije" to="/docs/reference/terminology#baseline">početno stanje</Terminology> s kojim se poredi sljedeća provjera:
+
+- **<Terminology title="sučelje čija adresa otkriva trenutni prefiks" to="/docs/reference/terminology#monitored-interface">Nadzirano sučelje</Terminology>**: opis sučelja, a zatim njegov interni pfSense naziv, na primjer `LAN (lan)`.
+- **<Terminology title="prefiks s kojim se poredi sljedeća provjera" to="/docs/reference/terminology#last-successful-prefix">Posljednji uspješni prefiks</Terminology>**: prefiks i njegova dužina, na primjer `2001:db8:abcd:7800::/56`.
+- **<Terminology title="globalna adresa koju pfSense prijavljuje za nadzirano sučelje" to="/docs/reference/terminology#source-address">Posljednja uspješna izvorna adresa</Terminology>**: adresa u <Terminology title="najkraći standardni zapis adrese malim slovima" to="/docs/reference/terminology#canonical-form">kanonskom obliku</Terminology>. Osvježava je i pokretanje s ishodom <Terminology title="ishod: prefiks nepromijenjen, ništa nije skenirano ni upisano" to="/docs/reference/terminology#no-change">Bez promjene</Terminology>.
+- **Posljednje uspješno ažuriranje**: UTC vrijeme kada je <Terminology title="početni prefiks zabilježen bez promjene konfiguracije" to="/docs/reference/terminology#baseline">početno stanje</Terminology> inicijalizirano, prihvaćeno ili pomjereno nakon posljednjeg ishoda <Terminology title="ishod: polja ažurirana, sačuvana, ponovo učitana i provjerena" to="/docs/reference/terminology#success">Uspjeh</Terminology>, na primjer `2026-10-24T14:00:00+00:00`.
+
+Prije prvog pokretanja za neko sučelje njegov red prikazuje `Nije inicijalizirano. Pokrenite normalnu provjeru jednom da postavite sigurno početno stanje.` Do prve provjere <Terminology title="početni prefiks zabilježen bez promjene konfiguracije" to="/docs/reference/terminology#baseline">početno stanje</Terminology> preuzeto od starog programa za ažuriranje prikazuje `Nije zabilježeno ovom verzijom paketa` kao izvornu adresu.
+
+## Posljednje pokretanje \{#last-run}
+
+Ovaj panel bilježi posljednje pokretanje. Kada nadzirete jedno sučelje, on direktno prikazuje rezultat tog sučelja:
+
+- **Ishod**: rezultat, objašnjen u uputstvu [Ishodi pokretanja](/docs/operate/run-outcomes).
+- **Vremenska oznaka (UTC)**: kada je pokretanje završeno.
+- **<Terminology title="globalna adresa koju pfSense prijavljuje za nadzirano sučelje" to="/docs/reference/terminology#source-address">Uočena izvorna adresa</Terminology>**: adresa koju je pfSense vratio za <Terminology title="sučelje čija adresa otkriva trenutni prefiks" to="/docs/reference/terminology#monitored-interface">nadzirano sučelje</Terminology>.
+- **<Terminology title="izvorna adresa maskirana na dužinu prefiksa" to="/docs/reference/terminology#observed-prefix">Uočeni prefiks</Terminology>**: mreža izračunata iz te adrese i <Terminology title="postavka veličine ISP prefiksa, od /48 do /64" to="/docs/reference/terminology#delegated-prefix-length">dužine dodijeljenog prefiksa</Terminology>.
+- **Promijenjena polja**: broj <Terminology title="tačno polje konfiguracije koje paket smije prepisati" to="/docs/reference/terminology#approved-field">odobrenih polja</Terminology> koja je pokretanje promijenilo ili bi promijenilo nakon <Terminology title="pregled bez sigurnosne kopije i bez upisa" to="/docs/reference/terminology#dry-run">probnog pokretanja</Terminology>.
+- **<Terminology title="kopija konfiguracije napravljena prije upisa" to="/docs/reference/terminology#configuration-backup">Napravljena sigurnosna kopija konfiguracije</Terminology>**: `Da` ili `Ne - ovo pokretanje nije upisalo konfiguraciju`.
+- **<Terminology title="pfSense radnja koja primjenjuje promijenjene postavke" to="/docs/reference/terminology#service-reload">Ponovo učitane usluge</Terminology>**: usluge koje je pokretanje ponovo učitalo ili bi ponovo učitalo nakon <Terminology title="pregled bez sigurnosne kopije i bez upisa" to="/docs/reference/terminology#dry-run">probnog pokretanja</Terminology>.
+- **Sažetak**: jedna rečenica o rezultatu, uključujući prethodni prefiks nakon <Terminology title="razlika u odnosu na posljednji uspješni prefiks ili dužinu" to="/docs/reference/terminology#prefix-transition">promjene prefiksa</Terminology>.
+- **Paketi**: prikazuje se kada je pokretanje promijenilo postavke drugog paketa, s jednim redom po paketu, na primjer `Postavke paketa <package> ponovo su primijenjene.` Stranica [Polja](/docs/configure/configuration-scopes#other-packages-settings) navodi svaku poruku.
+- **Preskočena polja**: prikazuje se kada označena polja više ne postoje, s porukom `Ova odabrana polja više ne postoje, pa ih je pokretanje preskočilo. Pregledajte ih na kartici Polja.` i identitetom svakog polja.
+
+Preporučuje se da prvo provjerite uočenu adresu i prefiks. Oni pokazuju da li je pfSense vratio željenu adresu i da li je dužina dala očekivanu mrežu.
+
+**Posljednje pokretanje** se ne ažurira kada <Terminology title="zaštita koja sprječava dvije istovremene provjere" to="/docs/reference/terminology#run-lock">zaključavanje pokretanja</Terminology> drži druga provjera ili kada se pokretanje zaustavi prije čitanja <Terminology title="datoteka paketa s početnim stanjem i posljednjim pokretanjem" to="/docs/reference/terminology#package-state">stanja paketa</Terminology>, na primjer kada nijedno nadzirano sučelje nema <Terminology title="javna IPv6 adresa unutar 2000::/3" to="/docs/reference/terminology#global-unicast-address">globalnu adresu</Terminology>. Ishod <Terminology title="ishod: kontrola ili sigurnosna faza zaustavila je pokretanje" to="/docs/reference/terminology#failure">Greška</Terminology> uvijek prikazuje `0` promijenjenih polja, kako objašnjava uputstvo [Ishodi pokretanja](/docs/operate/run-outcomes#failures-after-the-save).
+
+### Posljednje pokretanje po sučelju \{#last-run-by-interface}
+
+Kada nadzirete više od jednog sučelja, **Posljednje pokretanje** prikazuje ukupne vrijednosti, a **Sažetak** broji sučelja koja su ažurirana, nepromijenjena ili zahtijevaju pažnju. Tabela **Posljednje pokretanje po sučelju** ispod njega navodi svako sučelje s vlastitim ishodom, uočenim prefiksom, promijenjenim poljima i sažetkom.
+
+- Vrijednost **Promijenjena polja** u panelu **Posljednje pokretanje** broji svako polje samo jednom, čak i kada su ga planirala dva sučelja koja dijele <Terminology title="IPv6 mreža koju ISP usmjerava prema vatrozidu" to="/docs/reference/terminology#delegated-prefix">dodijeljeni prefiks</Terminology>.
+- Sučelje bez <Terminology title="javna IPv6 adresa unutar 2000::/3" to="/docs/reference/terminology#global-unicast-address">globalne adrese</Terminology> prijavljuje ishod <Terminology title="ishod: kontrola ili sigurnosna faza zaustavila je pokretanje" to="/docs/reference/terminology#failure">Greška</Terminology> u svom redu, dok se ostala sučelja i dalje provjeravaju.
+- Ako dva sučelja planiraju različite vrijednosti za isto polje, pokretanje se zaustavlja prije bilo kakvog upisa i prijavljuje za koje se polje vrijednosti ne slažu.
+
+## Radnje \{#actions}
+
+| Radnja                                                                                                                                  | Šta radi                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+|-----------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Pokreni sada                                                                                                                            | Izvršava punu provjeru, čak i dok su <Terminology title="automatske provjere iz cron unosa kojim upravlja pfSense" to="/docs/reference/terminology#scheduled-updates">zakazana ažuriranja</Terminology> isključena. Bilježi <Terminology title="početni prefiks zabilježen bez promjene konfiguracije" to="/docs/reference/terminology#baseline">početno stanje</Terminology> kada ono ne postoji i primjenjuje <Terminology title="razlika u odnosu na posljednji uspješni prefiks ili dužinu" to="/docs/reference/terminology#prefix-transition">promjenu prefiksa</Terminology> kada je pronađe. |
+| <Terminology title="pregled bez sigurnosne kopije i bez upisa" to="/docs/reference/terminology#dry-run">Probno pokretanje</Terminology> | Izvršava istu provjeru bez sigurnosne kopije i bez upisa. Prije nego što postoji <Terminology title="početni prefiks zabilježen bez promjene konfiguracije" to="/docs/reference/terminology#baseline">početno stanje</Terminology>, prijavljuje ishod <Terminology title="ishod: probno pokretanje prije postojanja početnog stanja" to="/docs/reference/terminology#initialization-preview">Pregled inicijalizacije</Terminology>.                                                                                                                                                                 |
+| Prihvati trenutni prefiks                                                                                                               | Nakon potvrde bilježi aktivnu izvornu adresu, prefiks i dužinu kao novo <Terminology title="početni prefiks zabilježen bez promjene konfiguracije" to="/docs/reference/terminology#baseline">početno stanje</Terminology>. Ne pregleda odobrena polja, ne pravi sigurnosnu kopiju, ne upisuje konfiguraciju i ne učitava ponovo usluge.                                                                                                                                                                                                                                                             |
+
+Pokreni sada i <Terminology title="pregled bez sigurnosne kopije i bez upisa" to="/docs/reference/terminology#dry-run">Probno pokretanje</Terminology> su <Terminology title="provjera pokrenuta s kartice Status" to="/docs/reference/terminology#manual-run">ručna pokretanja</Terminology>. **Prihvati trenutni prefiks** je radnja oporavka i treba je koristiti tek nakon što su sačuvane adrese i pogođene usluge provjerene.
+
+Svaka radnja prikazuje baner o završetku ili upozorenju. Potvrda za **Prihvati trenutni prefiks** posljednja je zaštita prije nego što paket zamijeni početno stanje s kojim poredi.
+
+Provjera koja pronađe drugo pokretanje u toku također prikazuje baner o završetku, pa se preporučuje da pročitate i <Terminology title="rezultati samo za čitanje nakon Pokreni sada ili Probnog pokretanja" to="/docs/reference/terminology#command-output">Izlaz naredbe</Terminology>.
+
+## Izlaz naredbe \{#command-output}
+
+Nakon radnje, u odjeljku **<Terminology title="rezultati samo za čitanje nakon Pokreni sada ili Probnog pokretanja" to="/docs/reference/terminology#command-output">Izlaz naredbe</Terminology>** pojavljuje se polje samo za čitanje **Najnovije pokretanje**:
+
+```text
+Status: Bez promjene
+Sučelje: lan
+Uočena izvorna adresa: 2001:db8:abcd:78aa::1
+Prethodni prefiks: 2001:db8:abcd:7800::
+Trenutni prefiks: 2001:db8:abcd:7800::/56
+Planirana ili promijenjena polja: 0
+Sigurnosna kopija konfiguracije: Nije napravljeno
+Ponovo učitane usluge: Nijedno
+Sažetak: Aktivni IPv6 prefiks nije promijenjen; nijedan odobreni cilj konfiguracije nije pročitan niti upisan.
+```
+
+Prethodni prefiks ispisuje se bez dužine. Neuspjelo pokretanje umjesto toga prikazuje jedan red koji počinje sa `Ažuriranje IPv6 prefiksa nije uspjelo:`.
+
+Nakon <Terminology title="pregled bez sigurnosne kopije i bez upisa" to="/docs/reference/terminology#dry-run">probnog pokretanja</Terminology> ili promjene slijedi `Promjene polja:` sa svakom adresom koju je pokretanje zamijenilo ili bi zamijenilo i poljem kojem ta adresa pripada:
+
+```text
+Promjene polja:
+- aliases/alias/0/address: 2001:db8:abcd:78aa::10 → 2001:db8:abcd:88aa::10
+```
+
+## Odabir polja \{#choosing-fields}
+
+Polja koja pokretanje ažurira biraju se na kartici **Polja**, koja navodi svaku adresu unutar prefiksa svakog <Terminology title="početni prefiks zabilježen bez promjene konfiguracije" to="/docs/reference/terminology#baseline">početnog stanja</Terminology>. Stranica [Polja](/docs/configure/configuration-scopes) objašnjava grupe, izuzetke za pojedinačna polja i grupu Ostale postavke.
+
+## Snimci ekrana \{#screenshots}
+
+Prvi snimak ekrana prikazuje rezultat <Terminology title="ishod: prefiks nepromijenjen, ništa nije skenirano ni upisano" to="/docs/reference/terminology#no-change">Bez promjene</Terminology> za dva nadzirana sučelja, bez promijenjenih polja i bez sigurnosne kopije.
+
+<img src={unchangedRun} alt="Kartica Status paketa IPv6 Prefix Updater s odjeljcima Posljednje pokretanje i Posljednje pokretanje po sučelju za dva nepromijenjena sučelja, bez promijenjenih polja i bez sigurnosne kopije" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+Drugi snimak ekrana prikazuje ishod <Terminology title="ishod: polja ažurirana, sačuvana, ponovo učitana i provjerena" to="/docs/reference/terminology#success">Uspjeh</Terminology> koji je promijenio jedno <Terminology title="tačno polje konfiguracije koje paket smije prepisati" to="/docs/reference/terminology#approved-field">odobreno polje</Terminology>, napravio <Terminology title="kopija konfiguracije napravljena prije upisa" to="/docs/reference/terminology#configuration-backup">sigurnosnu kopiju konfiguracije</Terminology> i ponovo učitao filter vatrozida.
+
+<img src={changedRun} alt="Kartica Status paketa IPv6 Prefix Updater s uspješnom promjenom /56 prefiksa za dva nadzirana sučelja, jednim promijenjenim poljem, sigurnosnom kopijom konfiguracije i ponovnim učitavanjem filtera vatrozida" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+Treći snimak ekrana prikazuje tabelu **Posljednje pokretanje po sučelju** za to pokretanje, u kojem LAN i LAB dijele jedan <Terminology title="IPv6 mreža koju ISP usmjerava prema vatrozidu" to="/docs/reference/terminology#delegated-prefix">dodijeljeni prefiks</Terminology> i svako prijavljuje isto promijenjeno polje.
+
+<img src={runByInterface} alt="Tabela Posljednje pokretanje po sučelju paketa IPv6 Prefix Updater u kojoj LAN i LAB prijavljuju ishod Uspjeh s jednim promijenjenim poljem iz iste promjene /56 prefiksa" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+Adrese `2001:db8::/32` na ovim snimcima ekrana su rezervisani dokumentacijski primjeri.
+
+Pregledajte uputstvo [Ishodi pokretanja](/docs/operate/run-outcomes) za svaki ishod i uputstvo [Sigurnosne kopije i oporavak](/docs/operate/backups-and-recovery) prije nego što se oslonite na pokretanje s promjenama.

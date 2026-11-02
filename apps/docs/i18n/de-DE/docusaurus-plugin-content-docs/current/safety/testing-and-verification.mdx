@@ -1,0 +1,63 @@
+---
+id: testing-and-verification
+title: Vor der Automatisierung prüfen
+description: Prüfen Sie Schnittstelle, Präfix, Wiederherstellungsweg und Benachrichtigungen auf Ihrer eigenen Firewall, bevor Sie das Paket unbeaufsichtigt nach Zeitplan laufen lassen.
+keywords:
+  - pfsense ipv6 prefix updater
+  - checkliste
+  - testlauf
+  - config history
+  - geplante aktualisierungen
+tags:
+  - safety
+  - checklist
+  - scheduled updates
+sidebar_position: 2
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Prüfen Sie Schnittstelle, Präfix, Wiederherstellungsweg und Benachrichtigungen auf Ihrer Firewall, bevor Sie das Paket nach Zeitplan laufen lassen.
+
+## 1. Quelle bestätigen \{#1-confirm-the-source}
+
+Speichern Sie die Einstellungen mit deaktiviertem **<Terminology title="automatische Prüfungen über einen von pfSense verwalteten Cron-Eintrag" to="/docs/reference/terminology#scheduled-updates">Geplante Aktualisierungen aktivieren</Terminology>** und wählen Sie einmal **Jetzt ausführen**. Prüfen Sie dann die Registerkarte Status:
+
+- **<Terminology title="Schnittstelle, deren Adresse das aktuelle Präfix verrät" to="/docs/reference/terminology#monitored-interface">Überwachte Schnittstelle</Terminology>** ist die gewünschte WAN- oder <Terminology title="Schnittstelle mit Adresse aus dem delegierten Präfix einer anderen" to="/docs/reference/terminology#tracked-interface">Track-Schnittstelle</Terminology>.
+- **<Terminology title="globale Adresse, die pfSense für die überwachte Schnittstelle meldet" to="/docs/reference/terminology#source-address">Letzte erfolgreiche Quelladresse</Terminology>** stimmt mit der Adresse unter **Status → Interfaces** überein.
+- **<Terminology title="Präfix, mit dem die nächste Prüfung vergleicht" to="/docs/reference/terminology#last-successful-prefix">Letztes erfolgreiches Präfix</Terminology>** stimmt mit dem Präfix überein, das Ihr Internetanbieter delegiert.
+- **Ergebnis** unter **Letzter Lauf** ist <Terminology title="Ergebnis: Basislinie aufgezeichnet, Konfiguration unverändert" to="/docs/reference/terminology#initialized">Initialisiert</Terminology>, und **Geänderte Felder** ist `0`.
+
+Wenn ein Wert unerwartet ist, empfiehlt es sich, ihn zu korrigieren, bevor Sie fortfahren. [Schnittstelle und Präfix](/docs/configure/interface-and-prefix#changing-the-interfaces) erklärt, was eine Änderung der Schnittstelle oder der Länge bewirkt, sobald eine <Terminology title="Ausgangspräfix, aufgezeichnet ohne Konfigurationsänderung" to="/docs/reference/terminology#baseline">Basislinie</Terminology> existiert.
+
+## 2. Vorschau ausführen \{#2-run-a-preview}
+
+Wählen Sie **<Terminology title="Vorschau, die nie sichert oder schreibt" to="/docs/reference/terminology#dry-run">Testlauf</Terminology>**. Bei unverändertem Präfix meldet er <Terminology title="Ergebnis: Präfix unverändert, nichts durchsucht oder geschrieben" to="/docs/reference/terminology#no-change">Keine Änderung</Terminology>, und **<Terminology title="Kopie der Konfiguration vor einem Schreibvorgang" to="/docs/reference/terminology#configuration-backup">Konfigurationssicherung erstellt</Terminology>** zeigt Nein.
+
+Ein <Terminology title="Vorschau, die nie sichert oder schreibt" to="/docs/reference/terminology#dry-run">Testlauf</Terminology> kann keine Präfixänderung simulieren, daher listet er geplante Felder erst nach einem echten <Terminology title="Abweichung vom letzten erfolgreichen Präfix oder dessen Länge" to="/docs/reference/terminology#prefix-transition">Präfixwechsel</Terminology> auf.
+
+## 3. Wiederherstellung prüfen \{#3-check-recovery}
+
+Öffnen Sie **Diagnostics → Backup & Restore → Config History** und prüfen Sie, ob pfSense einen Konfigurationsverlauf führt. Ein Lauf, der schreibt, speichert dort seine <Terminology title="Kopie der Konfiguration vor einem Schreibvorgang" to="/docs/reference/terminology#configuration-backup">Konfigurationssicherung</Terminology> vor der ersten Änderung.
+
+Es empfiehlt sich, jetzt [Richtige Revision finden](/docs/operate/backups-and-recovery#find-the-right-revision) zu lesen, weil die nach dem Paket benannte Revision die aktualisierte Konfiguration enthält. Eine externe Sicherung lohnt sich ebenfalls, weil die <Terminology title="pfSense-Liste gespeicherter Konfigurationsrevisionen" to="/docs/reference/terminology#config-history">Config History</Terminology> auf der Firewall liegt.
+
+## 4. Benachrichtigungen testen \{#4-test-notifications}
+
+Wenn **<Terminology title="Meldung nach einer verifizierten erfolgreichen Aktualisierung" to="/docs/reference/terminology#change-notification">Änderungsbenachrichtigungen senden</Terminology>** aktiviert ist, empfiehlt es sich, mit den eigenen Schaltflächen von pfSense unter **System → Advanced → Notifications** einen Test zu senden. Das Paket verwendet die dort bereits eingerichteten <Terminology title="in pfSense eingerichtete externe Benachrichtigungsdienste" to="/docs/reference/terminology#notification-channels">Benachrichtigungskanäle</Terminology>.
+
+Hinweise zu <Terminology title="Ergebnis: Präfix geändert, aber kein genehmigtes Feld passte" to="/docs/reference/terminology#warning">Warnung</Terminology> und <Terminology title="Ergebnis: eine Prüf- oder Sicherheitsstufe hat den Lauf gestoppt" to="/docs/reference/terminology#failure">Fehler</Terminology> bleiben in der WebGUI und nutzen diese Kanäle nicht.
+
+## 5. Zeitplan einschalten \{#5-turn-on-the-schedule}
+
+Aktivieren Sie **<Terminology title="automatische Prüfungen über einen von pfSense verwalteten Cron-Eintrag" to="/docs/reference/terminology#scheduled-updates">Geplante Aktualisierungen aktivieren</Terminology>**, sobald die obigen Schritte die erwartete Adresse und das erwartete Präfix zeigen. **Stündlich** ist der Standardwert für **Zeitplan**.
+
+Nach dem ersten geplanten Zeitpunkt empfiehlt es sich, **Zeitstempel (UTC)** und **Ergebnis** unter **Letzter Lauf** zu prüfen.
+
+## Was eine echte Präfixänderung erfordert \{#what-needs-a-real-prefix-change}
+
+Der <Terminology title="vollständige Liste der Feldänderungen, vor dem Schreiben erstellt" to="/docs/reference/terminology#change-plan">Änderungsplan</Terminology>, die <Terminology title="Kopie der Konfiguration vor einem Schreibvorgang" to="/docs/reference/terminology#configuration-backup">Konfigurationssicherung</Terminology>, das <Terminology title="pfSense-Aktion, die geänderte Einstellungen anwendet" to="/docs/reference/terminology#service-reload">Neuladen von Diensten</Terminology> und die <Terminology title="Meldung nach einer verifizierten erfolgreichen Aktualisierung" to="/docs/reference/terminology#change-notification">Änderungsbenachrichtigung</Terminology> finden erst nach einem echten <Terminology title="Abweichung vom letzten erfolgreichen Präfix oder dessen Länge" to="/docs/reference/terminology#prefix-transition">Präfixwechsel</Terminology> statt. Eine Labor-Firewall, deren Präfix sich ändern kann, ist der sicherste Ort, um einen vollständigen Lauf zu beobachten.
+
+Auf Ihrer eigenen Firewall empfiehlt es sich, die erste echte Änderung auf der Registerkarte Status zu prüfen, beginnend mit **Geänderte Felder**, **<Terminology title="pfSense-Aktion, die geänderte Einstellungen anwendet" to="/docs/reference/terminology#service-reload">Neu geladene Dienste</Terminology>** und **Zusammenfassung**.
+
+Lesen Sie [Status und Aktionen](/docs/operate/status-and-actions) zu allen Feldern, die nach einem Lauf angezeigt werden.

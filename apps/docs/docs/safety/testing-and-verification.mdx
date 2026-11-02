@@ -1,0 +1,63 @@
+---
+id: testing-and-verification
+title: Check Before Automation
+description: Verify the interface, prefix, recovery path, and notifications on your own firewall before letting the package run on a schedule without supervision.
+keywords:
+  - pfsense ipv6 prefix updater
+  - checklist
+  - dry run
+  - config history
+  - scheduled updates
+tags:
+  - safety
+  - checklist
+  - scheduled updates
+sidebar_position: 2
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Check the interface, prefix, recovery path, and notifications on your firewall before you let the package run on a schedule.
+
+## 1. Confirm the Source
+
+With **<Terminology title="automatic checks run from a pfSense-managed cron entry" to="/docs/reference/terminology#scheduled-updates">Enable Scheduled Updates</Terminology>** cleared, save Settings and select **Run Now** once. Then check the Status tab:
+
+- **<Terminology title="interface whose address reveals the current prefix" to="/docs/reference/terminology#monitored-interface">Monitored Interface</Terminology>** is the intended WAN or <Terminology title="interface addressed from another interface's delegated prefix" to="/docs/reference/terminology#tracked-interface">tracked interface</Terminology>.
+- **<Terminology title="global address pfSense reports for the monitored interface" to="/docs/reference/terminology#source-address">Last Successful Source Address</Terminology>** matches the address under **Status → Interfaces**.
+- **<Terminology title="prefix the next check compares against" to="/docs/reference/terminology#last-successful-prefix">Last Successful Prefix</Terminology>** matches the prefix your ISP delegates.
+- **Outcome** under **Last Run** is <Terminology title="outcome: baseline recorded, configuration unchanged" to="/docs/reference/terminology#initialized">Initialized</Terminology>, and **Changed Fields** is `0`.
+
+If any value is unexpected, it is recommended to correct it before you continue. [Interface and Prefix](/docs/configure/interface-and-prefix#changing-the-interfaces) explains what changing the interface or the length does once a <Terminology title="starting prefix recorded without changing configuration" to="/docs/reference/terminology#baseline">baseline</Terminology> exists.
+
+## 2. Run a Preview
+
+Select **<Terminology title="preview that never backs up or writes" to="/docs/reference/terminology#dry-run">Dry Run</Terminology>**. With the prefix unchanged it reports <Terminology title="outcome: prefix unchanged, nothing scanned or written" to="/docs/reference/terminology#no-change">No change</Terminology>, and **<Terminology title="copy of the configuration saved before a write" to="/docs/reference/terminology#configuration-backup">Configuration Backup Created</Terminology>** shows No.
+
+A <Terminology title="preview that never backs up or writes" to="/docs/reference/terminology#dry-run">dry run</Terminology> can't simulate a prefix change, so it lists planned fields only after a real <Terminology title="change from the last successful prefix or length" to="/docs/reference/terminology#prefix-transition">prefix transition</Terminology>.
+
+## 3. Check Recovery
+
+Open **Diagnostics → Backup & Restore → Config History** and confirm that pfSense keeps configuration history. A run that writes saves its <Terminology title="copy of the configuration saved before a write" to="/docs/reference/terminology#configuration-backup">configuration backup</Terminology> there before the first change.
+
+It is recommended to read [Find the Right Revision](/docs/operate/backups-and-recovery#find-the-right-revision) now, because the revision named after the package holds the updated configuration. An off-device backup is also worth downloading, because <Terminology title="pfSense list of saved configuration revisions" to="/docs/reference/terminology#config-history">Config History</Terminology> lives on the firewall.
+
+## 4. Test Notifications
+
+If **<Terminology title="alert sent after a verified successful update" to="/docs/reference/terminology#change-notification">Send Change Notifications</Terminology>** is selected, it is recommended to send a test with pfSense's own buttons under **System → Advanced → Notifications**. The package uses the <Terminology title="remote alert services configured in pfSense" to="/docs/reference/terminology#notification-channels">notification channels</Terminology> already set up there.
+
+<Terminology title="outcome: prefix changed, but no approved field matched" to="/docs/reference/terminology#warning">Warning</Terminology> and <Terminology title="outcome: a check or safety stage stopped the run" to="/docs/reference/terminology#failure">Failure</Terminology> notices stay in the WebGUI and don't use those channels.
+
+## 5. Turn On the Schedule
+
+Select **<Terminology title="automatic checks run from a pfSense-managed cron entry" to="/docs/reference/terminology#scheduled-updates">Enable Scheduled Updates</Terminology>** once the steps above show the expected address and prefix. **Hourly** is the default **Schedule**.
+
+After the first scheduled time, it is recommended to check **Timestamp (UTC)** and **Outcome** under **Last Run**.
+
+## What Needs a Real Prefix Change
+
+The <Terminology title="full list of field changes, built before writing" to="/docs/reference/terminology#change-plan">change plan</Terminology>, the <Terminology title="copy of the configuration saved before a write" to="/docs/reference/terminology#configuration-backup">configuration backup</Terminology>, the <Terminology title="pfSense action that applies changed settings" to="/docs/reference/terminology#service-reload">service reloads</Terminology>, and the <Terminology title="alert sent after a verified successful update" to="/docs/reference/terminology#change-notification">change notification</Terminology> happen only after a real <Terminology title="change from the last successful prefix or length" to="/docs/reference/terminology#prefix-transition">prefix transition</Terminology>. A lab firewall whose prefix can change is the safest place to watch a full run.
+
+On your own firewall, it is recommended to review the first real change on the Status tab, starting with **Changed Fields**, **<Terminology title="pfSense action that applies changed settings" to="/docs/reference/terminology#service-reload">Reloaded Services</Terminology>**, and **Summary**.
+
+Review [Status and Actions](/docs/operate/status-and-actions) for every field shown after a run.

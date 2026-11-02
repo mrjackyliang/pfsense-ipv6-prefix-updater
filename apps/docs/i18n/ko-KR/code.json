@@ -1,0 +1,173 @@
+{
+  "home.meta.description": {
+    "message": "위임된 접두사 변경을 감지하고 승인된 pfSense 필드만 업데이트하며 호스트 비트를 보존하고 모든 트랜잭션을 검증합니다."
+  },
+  "home.meta.title": {
+    "message": "IPv6 접두사 업데이터 - 동적 IPv6 접두사를 안전하게 일치시키세요."
+  },
+  "home.hero.eyebrow": {
+    "message": "pfSense 기본 패키지"
+  },
+  "home.hero.heading": {
+    "message": "동적 IPv6 접두사를 안전하게 일치시키세요."
+  },
+  "home.hero.tagline": {
+    "message": "위임된 접두사 변경을 감지하고 승인된 pfSense 필드만 업데이트하며 호스트 비트를 보존하고 모든 트랜잭션을 검증합니다."
+  },
+  "home.hero.primaryAction": {
+    "message": "설치 및 구성"
+  },
+  "home.hero.secondaryAction": {
+    "message": "안전 동작 검토"
+  },
+  "home.preview.ariaLabel": {
+    "message": "위임된 접두사 길이: /56"
+  },
+  "home.preview.dryRun": {
+    "message": "시험 실행"
+  },
+  "home.preview.detected": {
+    "message": "관찰된 원본 주소"
+  },
+  "home.preview.previous": {
+    "message": "이전 접두사"
+  },
+  "home.preview.current": {
+    "message": "현재 접두사"
+  },
+  "home.preview.prefixChanged": {
+    "message": "관찰된 접두사"
+  },
+  "home.preview.hostPreserved": {
+    "message": "위임된 접두사 길이"
+  },
+  "home.preview.result": {
+    "message": "시험 실행에서 2001:db8:abcd:8800::/56에 대한 승인된 필드 변경 2개를 찾았습니다. 구성은 수정되지 않았습니다."
+  },
+  "home.workflow.eyebrow": {
+    "message": "안전 및 운영"
+  },
+  "home.workflow.heading": {
+    "message": "안전한 트랜잭션"
+  },
+  "home.workflow.detect": {
+    "message": "관찰된 원본 주소"
+  },
+  "home.workflow.plan": {
+    "message": "변경된 필드"
+  },
+  "home.workflow.backup": {
+    "message": "구성 백업 생성됨"
+  },
+  "home.workflow.write": {
+    "message": "현재 접두사"
+  },
+  "home.workflow.verify": {
+    "message": "성공"
+  },
+  "home.workflow.notify": {
+    "message": "알림"
+  },
+  "home.features.interface.title": {
+    "message": "모니터링할 인터페이스"
+  },
+  "home.features.interface.description": {
+    "message": "기본 활성 전역 IPv6 주소에 위임된 접두사가 있는 인터페이스마다 한 행씩 추가하십시오. WAN에서 접두사만 받는 DHCPv6를 사용하면 다운스트림 추적 인터페이스를 선택하십시오. 접두사 길이 이후의 호스트 비트는 그대로 유지되며, pfSense가 각 인터페이스에 대해 선택한 주소는 상태 탭에 표시됩니다."
+  },
+  "home.features.prefix.title": {
+    "message": "위임된 접두사 길이"
+  },
+  "home.features.prefix.description": {
+    "message": "ISP가 위임한 접두사 경계를 입력하십시오. 이 경계 뒤의 호스트 비트는 정확히 보존됩니다."
+  },
+  "home.features.scopes.title": {
+    "message": "필드"
+  },
+  "home.features.scopes.description": {
+    "message": "필드 탭에서 접두사와 함께 변경할 구성 필드를 선택하십시오."
+  },
+  "home.features.dryRun.title": {
+    "message": "시험 실행"
+  },
+  "home.features.dryRun.description": {
+    "message": "지금 실행은 변경이 감지된 후 승인된 필드를 업데이트할 수 있습니다. 시험 실행은 미리 보기만 기록하며 방화벽 구성을 쓰지 않습니다."
+  },
+  "home.features.backup.title": {
+    "message": "구성 백업 생성됨"
+  },
+  "home.features.backup.description": {
+    "message": "구성 백업 생성됨: 예."
+  },
+  "home.features.notify.title": {
+    "message": "알림"
+  },
+  "home.features.notify.description": {
+    "message": "검증된 접두사 업데이트가 성공하면 구성된 pfSense 알림 채널을 사용합니다. 변경 없는 확인은 알림을 보내지 않습니다."
+  },
+  "home.stats.heading": {
+    "message": "안전 및 운영"
+  },
+  "home.stats.boundaries": {
+    "message": "위임된 접두사 길이"
+  },
+  "home.stats.backups": {
+    "message": "구성 백업 생성됨"
+  },
+  "home.stats.writes": {
+    "message": "변경된 필드"
+  },
+  "home.stats.noChange": {
+    "message": "활성 IPv6 접두사가 변경되지 않았습니다. 승인된 구성 대상을 읽거나 쓰지 않았습니다."
+  },
+  "home.routes.eyebrow": {
+    "message": "가이드"
+  },
+  "home.routes.heading": {
+    "message": "설치 및 구성"
+  },
+  "home.routes.install.title": {
+    "message": "패키지 설치"
+  },
+  "home.routes.install.description": {
+    "message": "pfSense shell에서 이 명령을 실행하여 GitHub에서 최신 릴리스를 직접 설치하십시오."
+  },
+  "home.routes.open": {
+    "message": "읽기 시작"
+  },
+  "home.routes.configure.title": {
+    "message": "모니터링할 인터페이스 / 위임된 접두사 길이"
+  },
+  "home.routes.configure.description": {
+    "message": "기본 활성 전역 IPv6 주소에 위임된 접두사가 있는 인터페이스마다 한 행씩 추가하십시오. WAN에서 접두사만 받는 DHCPv6를 사용하면 다운스트림 추적 인터페이스를 선택하십시오. 접두사 길이 이후의 호스트 비트는 그대로 유지되며, pfSense가 각 인터페이스에 대해 선택한 주소는 상태 탭에 표시됩니다."
+  },
+  "home.routes.status.title": {
+    "message": "상태 / 명령 출력"
+  },
+  "home.routes.status.description": {
+    "message": "지금 실행은 변경이 감지된 후 승인된 필드를 업데이트할 수 있습니다. 시험 실행은 미리 보기만 기록하며 방화벽 구성을 쓰지 않습니다."
+  },
+  "home.routes.troubleshoot.title": {
+    "message": "문제 해결"
+  },
+  "home.routes.troubleshoot.description": {
+    "message": "원본 주소가 잘못되면 실제 전역 주소가 있는 하위 추적 인터페이스를 선택하고 추측한 접두사 길이로 보정하지 마십시오."
+  },
+  "home.spotlight.heading": {
+    "message": "명령 출력"
+  },
+  "home.spotlight.description": {
+    "message": "상태 페이지에서 각 실행의 원본 주소, 계산된 접두사, 백업 결과와 최종 상태를 확인하십시오."
+  },
+  "home.spotlight.statusAction": {
+    "message": "상태 / 명령 출력"
+  },
+  "home.spotlight.testsAction": {
+    "message": "결과와 테스트"
+  },
+  "home.blogPreview.heading": {
+    "message": "블로그 소식"
+  },
+  "home.blogPreview.description": {
+    "message": "릴리스 노트, 구성 가이드, 동적 IPv6 접두사에 관한 글을 소개합니다."
+  }
+}

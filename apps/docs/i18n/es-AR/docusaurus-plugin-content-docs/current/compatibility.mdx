@@ -1,0 +1,60 @@
+---
+id: compatibility
+title: Compatibilidad
+description: Verificá los requisitos de pfSense, PHP, dirección y longitud del prefijo, la dependencia opcional de WireGuard y los límites conocidos antes de confiar en el paquete.
+keywords:
+  - pfsense ipv6 prefix updater
+  - compatibilidad
+  - requisitos
+  - dirección ipv6 global
+  - límites conocidos
+tags:
+  - setup
+  - compatibility
+  - ipv6
+sidebar_position: 4
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Verificá que tu firewall, tu interfaz y la delegación de tu ISP cumplan los requisitos del paquete antes de confiar en las <Terminology title="comprobaciones automáticas desde una entrada de cron administrada por pfSense" to="/docs/reference/terminology#scheduled-updates">actualizaciones programadas</Terminology>.
+
+## Versiones compatibles \{#supported-releases}
+
+- El proyecto todavía no publicó una lista de versiones de pfSense probadas.
+- El paquete no verifica la versión de pfSense. Cada ejecución comprueba que está corriendo en pfSense con los archivos y las funciones que usa, y se detiene antes de leer las opciones si faltan.
+- El código del paquete necesita PHP 8.1 o posterior.
+- El archivo `.pkg` tiene que estar compilado para la versión de FreeBSD sobre la que corre tu versión de pfSense; si no, `pkg` informa una incompatibilidad de ABI.
+
+## Requisitos de la dirección \{#address-requirements}
+
+- Cada <Terminology title="interfaz cuya dirección revela el prefijo actual" to="/docs/reference/terminology#monitored-interface">Interfaz supervisada</Terminology> necesita una <Terminology title="dirección IPv6 pública dentro de 2000::/3" to="/docs/reference/terminology#global-unicast-address">dirección de unidifusión global</Terminology> activa. El paquete nunca recurre a una <Terminology title="dirección fe80:: que solo funciona en un enlace" to="/docs/reference/terminology#link-local-address">dirección de enlace local</Terminology>.
+- Las direcciones locales únicas (`fc00::/7`), multicast, de loopback, no especificadas, mapeadas a IPv4 y con identificador de zona no pueden ser la <Terminology title="dirección global que pfSense informa para la interfaz supervisada" to="/docs/reference/terminology#source-address">dirección de origen</Terminology>.
+- La <Terminology title="opción del tamaño del prefijo del ISP, de /48 a /64" to="/docs/reference/terminology#delegated-prefix-length">Longitud del prefijo delegado</Terminology> tiene que estar entre `/48` y `/64`. También funcionan las longitudes que terminan dentro de un dígito hexadecimal, como `/57`.
+
+Cuando una dirección no cumple los requisitos, esa interfaz termina en <Terminology title="resultado: una verificación o etapa de seguridad detuvo la ejecución" to="/docs/reference/terminology#failure">Fallo</Terminology> con un motivo como `La interfaz «lan» no tiene una dirección IPv6 global activa.` [Solución de problemas](/docs/operate/troubleshooting#run-failed) enumera los mensajes.
+
+## Cuando la WAN no tiene dirección global \{#when-wan-has-no-global-address}
+
+Algunos ISP delegan un prefijo sin darle a la WAN una <Terminology title="dirección IPv6 pública dentro de 2000::/3" to="/docs/reference/terminology#global-unicast-address">dirección global</Terminology> propia. En ese caso, una <Terminology title="interfaz que toma su dirección del prefijo delegado de otra" to="/docs/reference/terminology#tracked-interface">interfaz rastreada</Terminology> como LAN lleva una dirección del <Terminology title="red IPv6 que tu ISP enruta al firewall" to="/docs/reference/terminology#delegated-prefix">prefijo delegado</Terminology> y es la que conviene supervisar.
+
+**Status → Interfaces** muestra qué interfaces tienen una <Terminology title="dirección IPv6 pública dentro de 2000::/3" to="/docs/reference/terminology#global-unicast-address">dirección global</Terminology>.
+
+## Qué reconoce el paquete \{#what-the-package-recognizes}
+
+El paquete actualiza direcciones y redes IPv6 literales en los <Terminology title="campo de configuración puntual que el paquete puede reescribir" to="/docs/reference/terminology#approved-field">campos aprobados</Terminology>. Los nombres de host, las URL, los valores IPv4 y el resto del texto quedan como están.
+
+Las direcciones que genera pfSense, como las de las <Terminology title="interfaz que toma su dirección del prefijo delegado de otra" to="/docs/reference/terminology#tracked-interface">interfaces rastreadas</Terminology>, nunca se modifican. Las direcciones que describen otros dispositivos, como las redes VPN remotas y los pares de WireGuard, solo cambian cuando las tildás en [Otra configuración](/docs/configure/configuration-scopes#other-settings).
+
+## Dependencias opcionales \{#optional-dependencies}
+
+- **Paquete WireGuard**: solo hace falta cuando tienen que cambiar <Terminology title="dirección asignada a un túnel WireGuard de pfSense" to="/docs/reference/terminology#wireguard-tunnel-address">direcciones de túnel WireGuard</Terminology>. Sin él, una ejecución real con cambios de WireGuard se detiene antes de la copia de seguridad.
+
+## Límites conocidos \{#known-limits}
+
+- Agregar una <Terminology title="interfaz cuya dirección revela el prefijo actual" to="/docs/reference/terminology#monitored-interface">Interfaz supervisada</Terminology>, o cambiar una fila a otra interfaz, registra una <Terminology title="prefijo inicial registrado sin cambiar la configuración" to="/docs/reference/terminology#baseline">referencia</Terminology> nueva para ella, y cambiar la <Terminology title="opción del tamaño del prefijo del ISP, de /48 a /64" to="/docs/reference/terminology#delegated-prefix-length">Longitud del prefijo delegado</Terminology> de una fila cuenta como un <Terminology title="cambio respecto del último prefijo o longitud correctos" to="/docs/reference/terminology#prefix-transition">cambio de prefijo</Terminology>.
+- Una <Terminology title="vista previa que nunca hace copias ni escribe" to="/docs/reference/terminology#dry-run">simulación</Terminology> no puede imitar un cambio de prefijo, así que los cambios previstos solo aparecen después de uno real.
+- Los pares de alta disponibilidad (CARP) no reciben ningún tratamiento especial.
+- Como es un <Terminology title="paquete instalado desde GitHub, no del repositorio de Netgate" to="/docs/reference/terminology#unofficial-package">paquete no oficial</Terminology>, las versiones nuevas se instalan con `pkg`, como se describe en [Actualizar o desinstalar](/docs/reference/package-lifecycle).
+
+Revisá [Interfaz y prefijo](/docs/configure/interface-and-prefix) para elegir el origen y [Campos](/docs/configure/configuration-scopes) para ver los campos que el paquete puede cambiar.

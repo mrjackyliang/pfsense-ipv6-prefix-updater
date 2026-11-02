@@ -1,0 +1,157 @@
+---
+id: approved-fields
+title: Odobrena polja
+description: Pregledajte tačne putanje pfSense konfiguracije koje svaka grupa polja može prepisati, kako se vrijednosti u njima podudaraju i koje ponovno učitavanje usluge pokreće svaka putanja.
+keywords:
+  - pfsense ipv6 prefix updater
+  - odobrena polja
+  - putanje konfiguracije
+  - config_get_path
+  - ponovno učitavanje usluge
+tags:
+  - reference
+  - approved fields
+  - configuration paths
+sidebar_position: 3
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Provjerite tačne putanje pfSense konfiguracije koje svaka <Terminology title="grupa polja s jednim prekidačem na kartici Polja" to="/docs/reference/terminology#field-group">grupa polja</Terminology> može prepisati i uslugu koju svaka od njih ponovo učitava.
+
+## Matrica polja \{#field-matrix}
+
+Putanje koriste pfSense sintaksu s kosim crtama za `config_get_path()` i `config_set_path()`. U putanjama ispod, `<index>` označava poziciju u listi, `<interface>` ključ sučelja, na primjer `lan`, `<boundary>` vrijednost `from` ili `to`, `<side>` vrijednost `source` ili `destination`, a `<section>` ključ postavki drugog paketa.
+
+| <Terminology title="grupa polja s jednim prekidačem na kartici Polja" to="/docs/reference/terminology#field-group">Grupa</Terminology>            | Putanja                                                                          | Uslov odabira                                                                                                    | Usluga                  |
+|---------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|-------------------------|
+| Aliasi                                                                                                                                            | `aliases/alias/<index>/address`                                                  | `type` je `host` ili `network`                                                                                   | `filter`                |
+| Statička sučelja                                                                                                                                  | `interfaces/<interface>/ipaddrv6`                                                | Vrijednost sadrži `:`                                                                                            | `interfaces`            |
+| <Terminology title="dodatna adresa sučelja, npr. CARP ili IP Alias" to="/docs/reference/terminology#virtual-ip">Virtualne IP adrese</Terminology> | `virtualip/vip/<index>/subnet`                                                   | `mode` je `carp` ili `ipalias`                                                                                   | `interfaces`            |
+| IPsec                                                                                                                                             | `ipsec/phase2/<index>/localid/address`                                           | `mode` je `tunnel6` ili `vti`, a `localid/type` je `address` ili `network`                                       | `ipsec`                 |
+| IPsec                                                                                                                                             | `ipsec/phase2/<index>/natlocalid/address`                                        | `mode` je `tunnel6` ili `vti`, a `natlocalid/type` je `address` ili `network`                                    | `ipsec`                 |
+| OpenVPN                                                                                                                                           | `openvpn/openvpn-server/<index>/tunnel_networkv6`                                | `tunnel_networkv6_type` nije `track6`                                                                            | `openvpn`               |
+| OpenVPN                                                                                                                                           | `openvpn/openvpn-server/<index>/local_networkv6`                                 | Uvijek                                                                                                           | `openvpn`               |
+| OpenVPN                                                                                                                                           | `openvpn/openvpn-client/<index>/tunnel_networkv6`                                | Uvijek                                                                                                           | `openvpn`               |
+| OpenVPN                                                                                                                                           | `openvpn/openvpn-csc/<index>/tunnel_networkv6`                                   | Uvijek                                                                                                           | `openvpn`               |
+| OpenVPN                                                                                                                                           | `openvpn/openvpn-csc/<index>/local_networkv6`                                    | Uvijek                                                                                                           | `openvpn`               |
+| WireGuard                                                                                                                                         | `installedpackages/wireguard/tunnels/item/<index>/addresses/row/<index>/address` | Uvijek                                                                                                           | `wireguard`             |
+| DHCPv6 server                                                                                                                                     | `dhcpdv6/<interface>/range/<boundary>`                                           | Uvijek                                                                                                           | `dhcpv6`                |
+| DHCPv6 server                                                                                                                                     | `dhcpdv6/<interface>/prefixrange/<boundary>`                                     | Uvijek                                                                                                           | `dhcpv6`                |
+| DHCPv6 server                                                                                                                                     | `dhcpdv6/<interface>/pool/<index>/range/<boundary>`                              | Uvijek                                                                                                           | `dhcpv6`                |
+| DHCPv6 server                                                                                                                                     | `dhcpdv6/<interface>/pool/<index>/prefixrange/<boundary>`                        | Uvijek                                                                                                           | `dhcpv6`                |
+| DHCPv6 server                                                                                                                                     | `dhcpdv6/<interface>/dnsserver/<index>`                                          | Uvijek, kao i unutar svakog poola                                                                                | `dhcpv6`                |
+| DHCPv6 server                                                                                                                                     | `dhcpdv6/<interface>/ntpserver/<index>`                                          | Uvijek, kao i unutar svakog poola                                                                                | `dhcpv6`                |
+| DHCPv6 server                                                                                                                                     | `dhcpdv6/<interface>/staticmap/<index>/ipaddrv6`                                 | Uvijek                                                                                                           | `dhcpv6`                |
+| Oglašavanje rutera                                                                                                                                | `dhcpdv6/<interface>/radnsserver/<index>`                                        | Uvijek                                                                                                           | `router_advertisements` |
+| Oglašavanje rutera                                                                                                                                | `dhcpdv6/<interface>/subnets/item/<index>`                                       | Uvijek                                                                                                           | `router_advertisements` |
+| DNS nadjačavanja hostova                                                                                                                          | `unbound/hosts/<index>/ip`                                                       | Uvijek                                                                                                           | `dns_resolver`          |
+| DNS nadjačavanja hostova                                                                                                                          | `dnsmasq/hosts/<index>/ip`                                                       | Uvijek                                                                                                           | `dns_forwarder`         |
+| Pravila vatrozida                                                                                                                                 | `filter/rule/<index>/<side>/address`                                             | Strana sadrži adresu umjesto `network` ili `any`                                                                 | `filter`                |
+| NAT i NPt                                                                                                                                         | `nat/rule/<index>/<side>/address`                                                | Uvijek                                                                                                           | `filter`                |
+| NAT i NPt                                                                                                                                         | `nat/rule/<index>/target`                                                        | Uvijek                                                                                                           | `filter`                |
+| NAT i NPt                                                                                                                                         | `nat/outbound/rule/<index>/<side>/network`                                       | Uvijek                                                                                                           | `filter`                |
+| NAT i NPt                                                                                                                                         | `nat/outbound/rule/<index>/target`                                               | Uvijek                                                                                                           | `filter`                |
+| NAT i NPt                                                                                                                                         | `nat/onetoone/<index>/external`                                                  | Uvijek                                                                                                           | `filter`                |
+| NAT i NPt                                                                                                                                         | `nat/onetoone/<index>/<side>/address`                                            | Uvijek                                                                                                           | `filter`                |
+| NAT i NPt                                                                                                                                         | `nat/npt/<index>/<side>/address`                                                 | Prefiks je upisan, a ne praćen sa sučelja                                                                        | `filter`                |
+| Postavke drugog paketa                                                                                                                            | `installedpackages/<section>/...`                                                | Vrijednost sadrži IPv6 adresu i na nju se ne odnosi nijedna vrsta iz odjeljka [Ostale postavke](#other-settings) | `package:<section>`     |
+
+Prazne vrijednosti se preskaču, a duplirani ID cilja ili putanja zaustavlja pokretanje prije bilo kakve promjene. Svaki cilj dobija ID iz identiteta svog zapisa, opisanog u odjeljku [Identiteti polja](#field-identities), ili iz svoje pozicije u listi kada zapis nema identitet. Polja drugog paketa nikada se ne odabiru automatski, kako objašnjava stranica [Polja](/docs/configure/configuration-scopes#other-packages-settings).
+
+## Formati vrijednosti \{#value-formats}
+
+- Svako polje sadrži jednu vrijednost, osim tri liste navedene ispod.
+- Alias `address` je lista razdvojena razmacima.
+- OpenVPN `local_networkv6` na serverima i u <Terminology title="OpenVPN postavke za jednog klijenta na serveru" to="/docs/reference/terminology#client-specific-override">klijentskim nadjačavanjima</Terminology> je lista razdvojena zarezima i razmacima.
+- `ip` nadjačavanja hosta u DNS Resolveru je lista razdvojena zarezima i razmacima.
+- Vrijednosti u postavkama drugog paketa i u grupi Ostale postavke su tekst. Svaka adresa u tekstu podudara se zasebno, a ostatak ostaje kako je zapisan.
+- Vrijednost sačuvana u Base64 dekodira se, podudara kao tekst i ponovo kodira kada se promijeni.
+- Razdjelnici ostaju tačno kako su zapisani, a tokeni koji nisu IPv6 adrese, na primjer nazivi aliasa, IPv4 mreže i nazivi hostova, prolaze nepromijenjeni.
+
+## Pravila podudaranja \{#matching-rules}
+
+- Token se može završavati CIDR sufiksom od `/0` do `/128`, koji se zadržava. Token s bilo kojim drugim sufiksom ostaje nepromijenjen.
+- Token se mijenja samo kada njegova adresa pripada prethodnom prefiksu pri prethodnoj <Terminology title="broj vodećih mrežnih bitova, npr. /56" to="/docs/reference/terminology#prefix-length">dužini prefiksa</Terminology>.
+- Nova vrijednost uzima vodeće bitove iz trenutne <Terminology title="globalna adresa koju pfSense prijavljuje za nadzirano sučelje" to="/docs/reference/terminology#source-address">izvorne adrese</Terminology> pri trenutnoj <Terminology title="broj vodećih mrežnih bitova, npr. /56" to="/docs/reference/terminology#prefix-length">dužini prefiksa</Terminology>, a sve ostale bitove iz tokena. Upisuje se u <Terminology title="najkraći standardni zapis adrese malim slovima" to="/docs/reference/terminology#canonical-form">kanonskom obliku</Terminology>.
+- Tokeni koji nisu <Terminology title="javna IPv6 adresa unutar 2000::/3" to="/docs/reference/terminology#global-unicast-address">globalne unicast adrese</Terminology> prolaze nepromijenjeni, uključujući sufikse u obliku `::1000` koje DHCPv6 postavke sadrže na <Terminology title="sučelje adresirano iz dodijeljenog prefiksa drugog sučelja" to="/docs/reference/terminology#tracked-interface">sučelju tipa Track Interface</Terminology>.
+- Polje čija je nova vrijednost jednaka staroj ne računa se kao promjena.
+
+## Identiteti polja \{#field-identities}
+
+Svaki <Terminology title="pojedinačno polje označeno ili neoznačeno suprotno prekidaču svoje grupe" to="/docs/reference/terminology#field-exception">izuzetak polja</Terminology> na kartici Polja čuva se kao identitet koji imenuje unos umjesto njegove pozicije u listi:
+
+| Unos                      | Identitet polja                                                                                                                                                                             |
+|---------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Alias                     | `alias:<name>`                                                                                                                                                                              |
+| Statičko sučelje          | `interface:<interface>`                                                                                                                                                                     |
+| Virtualna IP adresa       | `virtual-ip:<uniqid or description>`                                                                                                                                                        |
+| IPsec faza 2              | `ipsec:<uniqid, reqid, or ikeid>:<localid or natlocalid>`                                                                                                                                   |
+| OpenVPN                   | `openvpn-server:<vpnid>:<tunnel or local>`, `openvpn-client:<vpnid>:tunnel` ili `openvpn-override:<common name>:<tunnel or local>`                                                          |
+| WireGuard tunel           | `wireguard:<tunnel name>:addresses`, koji obuhvata svaki red adrese                                                                                                                         |
+| DHCPv6 server             | `dhcpv6:<interface>:<field>`, gdje `<field>` imenuje postavku, na primjer `range-from`, `dns-servers` ili `ntp-servers`                                                                     |
+| DHCPv6 pool               | `dhcpv6-pool:<interface>:<description>:<field>`                                                                                                                                             |
+| Statičko DHCPv6 mapiranje | `dhcpv6-static-mapping:<interface>:<DUID>`                                                                                                                                                  |
+| Oglašavanje rutera        | `router-advertisements:<interface>:<dns-servers or subnets>`                                                                                                                                |
+| Host u DNS Resolveru      | `dns-resolver-host:<host>:<domain>:<inet, inet6, or inet46>`                                                                                                                                |
+| Host u DNS Forwarderu     | `dns-forwarder-host:<host>:<domain>:<inet, inet6, or inet46>`                                                                                                                               |
+| Pravilo vatrozida         | `firewall-rule:<tracker>:<side>`                                                                                                                                                            |
+| Prosljeđivanje porta      | `port-forward:<created time>:<source, destination, or target>`                                                                                                                              |
+| Pravilo odlaznog NAT-a    | `outbound-nat:<created time>:<source, destination, or target>`                                                                                                                              |
+| 1:1 NAT unos              | `one-to-one-nat:<description>:<external, source, or destination>`                                                                                                                           |
+| NPt unos                  | `npt:<description>:<side>`                                                                                                                                                                  |
+| Postavka drugog paketa    | `package:<section>:<path>`, gdje svaka pozicija u listi unutar putanje postaje `<field>=<value>` iz polja koje jedinstveno imenuje unos, ili `0` za jedini zapis postavki paketa            |
+| Ostale postavke           | `other:<path>`, izgrađen na isti način iz polja koje ne sadrži adresu, na primjer `name=<gateway name>`. Obična lista, kao što je `system/dnsserver`, zadržava jedan identitet za sve unose |
+
+- Dijelovi identiteta su URL-kodirani, pa se opis kao što je `Web forward` pojavljuje kao `Web%20forward`.
+- Zapis čiji identitet nedostaje ili ga dijeli s drugim zapisom u istoj listi ne dobija potvrdni okvir, a njegova polja prate samo prekidač svoje grupe.
+- Izuzeci se čuvaju pod `installedpackages/ipv6prefixupdater/fields`, pored zapisa postavki koji kartica Postavke zamjenjuje pri svakom čuvanju, kako opisuje stranica [Komandna linija i datoteke](/docs/reference/command-line-and-files#field-selection).
+- Svako pokretanje ponovo provjerava sačuvane identitete i zanemaruje neispravne. Označeno polje koje ne postoji ni u jednom trenutnom unosu preskače se i navodi pod **Preskočena polja** na kartici Status. Identitet može imenovati samo polje iz matrice ili iz grupe Ostale postavke.
+
+## Radnje ponovnog učitavanja \{#reload-actions}
+
+| Usluga                  | Oznaka na kartici Status | pfSense poziv                                                                                             |
+|-------------------------|--------------------------|-----------------------------------------------------------------------------------------------------------|
+| `interfaces`            | Sučelja                  | `interfaces_configure()`, zatim `filter_configure()`                                                      |
+| `routing`               | Usmjeravanje             | `system_routing_configure()` i `setup_gateways_monitor()`, zatim `filter_configure()`                     |
+| `filter`                | Filter vatrozida         | `filter_configure()`, preskače se kada ga je `interfaces` već pokrenuo                                    |
+| `dhcpv6`                | DHCPv6 server            | `services_dhcpd_configure('inet6')`, koji ponovo pokreće i radvd                                          |
+| `router_advertisements` | Oglašavanje rutera       | `services_radvd_configure()`, preskače se nakon `dhcpv6`                                                  |
+| `dns`                   | DNS serveri              | `system_resolvconf_generate()`, zatim ponovna učitavanja DNS Resolvera i DNS Forwardera kada su omogućeni |
+| `dns_resolver`          | DNS Resolver             | `services_unbound_configure(false)`                                                                       |
+| `dns_forwarder`         | DNS Forwarder            | `services_dnsmasq_configure(false)`                                                                       |
+| `ipsec`                 | IPsec                    | `ipsec_configure()`                                                                                       |
+| `openvpn`               | OpenVPN                  | `openvpn_resync_all()`                                                                                    |
+| `wireguard`             | WireGuard                | `wg_resync()`                                                                                             |
+| `package:<section>`     | Navodi se pod **Paketi** | `sync_package()` za instalirani paket čiji XML `<name>` odgovara odjeljku                                 |
+
+Usluge se ponovo učitavaju redoslijedom iz ove tabele, a postavke drugih paketa ponovo se primjenjuju na kraju, nakon ponovnih učitavanja i njihove provjere. Prije ponovnih učitavanja, svaka mreža statičke rute koju je pokretanje zamijenilo uklanja se iz tabele usmjeravanja pomoću `/sbin/route delete`, jer `system_routing_configure()` samo dodaje i mijenja rute. Isto radi i dugme **Apply Changes** na stranici Static Routes. U pfSense-u 2.7.2, `interfaces_configure()` već ponovo pokreće DHCPv6, radvd i obje DNS usluge, pa se ta ponovna učitavanja nakon njega preskaču.
+
+Kada DNS Forwarder ili DNS Resolver registruje statička DHCP mapiranja, `dhcpv6` umjesto toga pokreće ponovno učitavanje te usluge, koje ponovo pokreće i DHCP. To odgovara dugmetu **Apply Changes** na stranici DHCPv6 Server.
+
+`sync_package()` pokreće naredbu za ponovnu sinhronizaciju paketa, kao što to radi njegovo dugme **Save**, a njen izlaz se odbacuje. Odjeljak koji ne pripada nijednom instaliranom paketu prijavljuje se umjesto da se primijeni, a greška se prijavljuje za taj paket. Ni u jednom slučaju sačuvane vrijednosti se ne poništavaju.
+
+Prije sigurnosne kopije, korak prethodne provjere učitava svaku potrebnu funkciju iz fiksne datoteke, na primjer `/etc/inc/filter.inc`, `/etc/inc/pkg-utils.inc` ili `/usr/local/pkg/wireguard/includes/wg.inc`, i zaustavlja pokretanje kada neka nedostaje. `filter_configure()`, `services_unbound_configure()` i `services_dnsmasq_configure()` uzrokuju neuspjeh pokretanja kada vrate `false` ili cijeli broj različit od nule, a ostali pozivi samo kada izbace izuzetak.
+
+## Ostale postavke \{#other-settings}
+
+Svaka druga putanja konfiguracije čija vrijednost sadrži IPv6 adresu, kao tekst ili u Base64, pripada grupi **Ostale postavke**. Na početku je isključena, a vrijednost u njoj mijenja se samo kada je označena ili kada je grupa uključena. Redovi navode ove vrste:
+
+- IPsec `remoteid` identiteti i udaljeni mrežni prolazi faze 1 te OpenVPN `remote_networkv6` mreže i adrese servera na klijentima.
+- WireGuard peerovi, uključujući njihove dozvoljene IP adrese i krajnje tačke.
+- Mrežni prolazi i statičke rute.
+- Certifikati, ključevi, lozinke i ostale tajne, čije vrijednosti kartica skriva.
+- Svaka druga vrijednost sačuvana u Base64.
+- Opisi.
+- U postavkama drugog paketa, vrijednosti čiji naziv označava certifikat, ključ, lozinku, tajnu, hash ili opis.
+
+Tipovi aliasa osim `host` i `network`, načini rada <Terminology title="dodatna adresa sučelja, npr. CARP ili IP Alias" to="/docs/reference/terminology#virtual-ip">virtualnih IP adresa</Terminology> osim `carp` i `ipalias` i svaka druga putanja izvan matrice umjesto toga prikazuju naziv svoje postavke. Ponovno učitavanje zavisi od putanje: `gateways` i `staticroutes` koriste `routing`, `system/dnsserver` koristi `dns`, `unbound` i `dnsmasq` koriste svoju DNS uslugu, `ipsec`, `openvpn`, `filter`, `aliases`, `nat`, `dhcpdv6`, `interfaces` i `virtualip` koriste gore navedena ponovna učitavanja, odjeljak drugog paketa ponovo se primjenjuje, a opisi, certifikati i svaka druga putanja ne učitavaju ništa ponovo.
+
+## Upis i provjera \{#write-and-verification}
+
+- Prije sigurnosne kopije svaka planirana putanja mora sadržavati svoju planiranu staru vrijednost.
+- Zatim se pokreće `backup_config()`, koji mora vratiti `true`.
+- Plan se primjenjuje pomoću `config_set_path()` i čuva jednom pomoću `write_config($description, false, true)`, što preskače drugu sigurnosnu kopiju i nepovezanu sinhronizaciju.
+- Nakon upisa, i ponovo nakon ponovnog učitavanja, svaka planirana putanja mora sadržavati svoju planiranu novu vrijednost.
+
+Neusklađenost zaustavlja pokretanje porukom `Putanja konfiguracije „<path>” promijenjena je izvan odobrenog plana.` Greška nakon upisa ostavlja nove vrijednosti sačuvane, kako opisuje uputstvo [Ishodi pokretanja](/docs/operate/run-outcomes#failures-after-the-save).

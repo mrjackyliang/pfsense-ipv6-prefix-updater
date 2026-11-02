@@ -1,0 +1,17 @@
+{
+  "item.label.Home": {
+    "message": "首頁"
+  },
+  "item.label.Guides": {
+    "message": "文件"
+  },
+  "item.label.Safety": {
+    "message": "安全與操作"
+  },
+  "item.label.Troubleshooting": {
+    "message": "疑難排解"
+  },
+  "item.label.Blog": {
+    "message": "網誌"
+  }
+}

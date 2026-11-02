@@ -1,0 +1,174 @@
+---
+id: command-line-and-files
+title: Opdrachtregel en bestanden
+description: Voer /usr/local/sbin/ipv6-prefix-updater uit vanuit een shell en zoek de opties, exitcodes, uitvoerregels, bestanden, logboeken en WebGUI-meldingen op.
+keywords:
+  - pfsense ipv6 prefix updater
+  - opdrachtregel
+  - exitcodes
+  - statusbestand
+  - file_notice
+tags:
+  - reference
+  - command line
+  - files
+sidebar_position: 4
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Voer de pakketopdracht uit vanuit een shell en vind de bestanden, logboeken en meldingen die ze gebruikt.
+
+## Gebruik \{#usage}
+
+```shell
+/usr/local/sbin/ipv6-prefix-updater [--manual] [--dry-run] [--accept-current-prefix [--interface=NAME]] [--migrate-legacy] [--help]
+```
+
+De door pfSense beheerde cronjob voert de opdracht uit als `root`, zonder opties. Vóór elke controle verplaatst de opdracht ook alle restanten van de <Terminology title="oorspronkelijk update.php-script, uitgevoerd via het Cron-pakket" to="/docs/reference/terminology#legacy-updater">legacy-updater</Terminology> naar het pakket. Het tabblad Status gebruikt `--manual` voor **Nu uitvoeren**, `--dry-run` voor **<Terminology title="voorbeeld dat nooit een back-up maakt of schrijft" to="/docs/reference/terminology#dry-run">Testuitvoering</Terminology>** en `--accept-current-prefix` voor het herstel van de baseline, en het tabblad Opruimen gebruikt `--migrate-legacy`.
+
+Zonder opties gedraagt de opdracht zich als een geplande controle en meldt ze <Terminology title="resultaat: geplande controle overgeslagen omdat updates uit staan" to="/docs/reference/terminology#disabled">Uitgeschakeld</Terminology> als **<Terminology title="automatische controles via een door pfSense beheerde cronjob" to="/docs/reference/terminology#scheduled-updates">Geplande updates inschakelen</Terminology>** uit staat.
+
+## Opties \{#options}
+
+| Optie                     | Beschrijving                                                                                                                                                                                                                                                                                                                |
+|---------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `--manual`                | Draait ook als <Terminology title="automatische controles via een door pfSense beheerde cronjob" to="/docs/reference/terminology#scheduled-updates">geplande updates</Terminology> uit staan.                                                                                                                               |
+| `--dry-run`               | Toont een voorbeeld zonder back-up en zonder schrijfactie, en impliceert `--manual`.                                                                                                                                                                                                                                        |
+| `--accept-current-prefix` | Legt het actieve bronadres, de prefix en de lengte vast als baseline, zonder goedgekeurde velden te scannen, een back-up te maken, de configuratie te schrijven of services te herladen. Impliceert `--manual` en kan niet worden gecombineerd met `--dry-run`.                                                             |
+| `--interface=NAME`        | Beperkt `--accept-current-prefix` tot één bewaakte interface, aangeduid met de interne naam, zoals `lan`. Zonder deze optie wordt elke bewaakte interface met een adres geaccepteerd.                                                                                                                                       |
+| `--migrate-legacy`        | Verplaatst de <Terminology title="oorspronkelijk update.php-script, uitgevoerd via het Cron-pakket" to="/docs/reference/terminology#legacy-updater">legacy-updater</Terminology> meteen naar het pakket en toont elke stap, zonder een prefixcontrole uit te voeren. Stopt met `2` als de overstap een waarschuwing meldde. |
+| `--help`                  | Toont de gebruiksregel en stopt met `0`. De gebruiksregel noemt `--help` zelf niet.                                                                                                                                                                                                                                         |
+
+Elke andere optie schrijft `Onbekende optie: <option>` naar standaardfout en stopt met `64`. De combinatie van `--accept-current-prefix` en `--dry-run` stopt ook met `64`.
+
+## Exitcodes \{#exit-codes}
+
+| Code | Betekenis                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+|------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `0`  | <Terminology title="resultaat: baseline vastgelegd, configuratie ongewijzigd" to="/docs/reference/terminology#initialized">Geïnitialiseerd</Terminology>, <Terminology title="resultaat: testuitvoering voordat er een baseline bestaat" to="/docs/reference/terminology#initialization-preview">Voorbeeld van initialisatie</Terminology>, <Terminology title="resultaat: prefix ongewijzigd, niets gescand of geschreven" to="/docs/reference/terminology#no-change">Geen wijziging</Terminology>, <Terminology title="voorbeeld dat nooit een back-up maakt of schrijft" to="/docs/reference/terminology#dry-run">Testuitvoering</Terminology>, **Geaccepteerd**, <Terminology title="resultaat: velden bijgewerkt, opgeslagen, herladen en geverifieerd" to="/docs/reference/terminology#success">Geslaagd</Terminology> of <Terminology title="resultaat: geplande controle overgeslagen omdat updates uit staan" to="/docs/reference/terminology#disabled">Uitgeschakeld</Terminology>. Wordt ook teruggegeven als een andere controle de <Terminology title="vergrendeling die twee gelijktijdige controles voorkomt" to="/docs/reference/terminology#run-lock">uitvoeringsvergrendeling</Terminology> vasthoudt, en na `--help`. |
+| `1`  | <Terminology title="resultaat: een controle of veiligheidsstap stopte de uitvoering" to="/docs/reference/terminology#failure">Mislukt</Terminology>. Standaardfout krijgt één regel, `IPv6-prefixupdater mislukt: <reason>`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `2`  | <Terminology title="resultaat: prefix gewijzigd, maar geen goedgekeurd veld kwam overeen" to="/docs/reference/terminology#warning">Waarschuwing</Terminology>.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `64` | Onbekende optie.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+
+## Uitvoer \{#output}
+
+Een voltooide uitvoering die één interface bewaakt, schrijft negen regels naar standaarduitvoer, en na een <Terminology title="voorbeeld dat nooit een back-up maakt of schrijft" to="/docs/reference/terminology#dry-run">testuitvoering</Terminology> of het resultaat <Terminology title="resultaat: velden bijgewerkt, opgeslagen, herladen en geverifieerd" to="/docs/reference/terminology#success">Geslaagd</Terminology> volgen daarop de veldwijzigingen:
+
+```text
+Status: Geslaagd
+Interface: lan
+Waargenomen bronadres: 2001:db8:abcd:88aa::1
+Vorige prefix: 2001:db8:abcd:7800::
+Huidige prefix: 2001:db8:abcd:8800::/56
+Geplande of gewijzigde velden: 1
+Configuratieback-up: Gemaakt
+Opnieuw geladen services: Firewallfilter
+Samenvatting: 1 goedgekeurde veld(en) bijgewerkt van 2001:db8:abcd:7800::/56 naar 2001:db8:abcd:8800::/56 op interface lan.
+Veldwijzigingen:
+- aliases/alias/0/address: 2001:db8:abcd:78aa::10 → 2001:db8:abcd:88aa::10
+```
+
+- `Vorige prefix` heeft geen lengte en toont `Niet beschikbaar` na <Terminology title="resultaat: baseline vastgelegd, configuratie ongewijzigd" to="/docs/reference/terminology#initialized">Geïnitialiseerd</Terminology> of <Terminology title="resultaat: testuitvoering voordat er een baseline bestaat" to="/docs/reference/terminology#initialization-preview">Voorbeeld van initialisatie</Terminology>.
+- `Opnieuw geladen services` toont de labels van het tabblad Status of `Geen`. Na een <Terminology title="voorbeeld dat nooit een back-up maakt of schrijft" to="/docs/reference/terminology#dry-run">testuitvoering</Terminology> toont het de services die zouden worden herladen.
+- `Veldwijzigingen` heeft één regel per vervangen adres, geschreven als `- <path>: <old> → <new>`, voor maximaal 200 velden.
+- Heeft de uitvoering de instellingen van een ander pakket opnieuw toegepast of een aangevinkt veld overgeslagen dat niet meer bestaat, dan volgt voor elk daarvan één regel, met dezelfde tekst als op het tabblad Status.
+- Houdt een andere controle de <Terminology title="vergrendeling die twee gelijktijdige controles voorkomt" to="/docs/reference/terminology#run-lock">uitvoeringsvergrendeling</Terminology> vast, dan is de enige uitvoer `Een andere uitvoering bezit de pakketvergrendeling; deze aanroep is gestopt zonder de configuratie te lezen.`
+- Bij meerdere bewaakte interfaces begint de uitvoer met de algemene `Status`, de `Samenvatting` en de regels over pakketten en overgeslagen velden, gevolgd door de regels van elke interface, gescheiden door lege regels.
+- Vond er vóór de controle een overstap van de <Terminology title="oorspronkelijk update.php-script, uitgevoerd via het Cron-pakket" to="/docs/reference/terminology#legacy-updater">legacy-updater</Terminology> plaats, dan worden de stappen daarvan eerst getoond.
+- Labels en meldingen volgen de taalinstelling van pfSense.
+
+## Bestanden en paden \{#files-and-paths}
+
+| Pad                                                       | Beschrijving                                                                                                                                                                                                                                                                                                                         |
+|-----------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `/usr/local/sbin/ipv6-prefix-updater`                     | De opdracht, een PHP-script.                                                                                                                                                                                                                                                                                                         |
+| `/usr/local/pkg/ipv6-prefix-updater.xml`                  | De definitie van de pagina Instellingen en de bijbehorende lifecycle-hooks.                                                                                                                                                                                                                                                          |
+| `/usr/local/pkg/ipv6-prefix-updater.inc`                  | Functies voor installatie, synchronisatie van instellingen, verwijdering en formuliervalidatie.                                                                                                                                                                                                                                      |
+| `/usr/local/pkg/ipv6-prefix-updater/`                     | Runtimeklassen en vertalingen.                                                                                                                                                                                                                                                                                                       |
+| `/usr/local/www/ipv6-prefix-updater-status.php`           | Het tabblad Status.                                                                                                                                                                                                                                                                                                                  |
+| `/usr/local/www/ipv6-prefix-updater-fields.php`           | Het tabblad Velden.                                                                                                                                                                                                                                                                                                                  |
+| `/usr/local/www/ipv6-prefix-updater-backups.php`          | Het tabblad Back-ups.                                                                                                                                                                                                                                                                                                                |
+| `/usr/local/www/ipv6-prefix-updater-cleanup.php`          | Het tabblad Opruimen.                                                                                                                                                                                                                                                                                                                |
+| `/usr/local/share/pfSense-pkg-Ipv6PrefixUpdater/info.xml` | Het pakketmanifest.                                                                                                                                                                                                                                                                                                                  |
+| `/cf/conf/ipv6-prefix-updater/state.json`                 | De <Terminology title="pakketbestand met de baseline en de laatste uitvoering" to="/docs/reference/terminology#package-state">pakketstatus</Terminology>. De map heeft `0700`, het bestand `0600`, elke schrijfactie vervangt het bestand atomair, en het blijft behouden na herstarts, RAM-disks en het verwijderen van het pakket. |
+| `/cf/conf/ipv6-prefix-updater/backups/`                   | De kopieën van het tabblad **Back-ups**, elk met één configuratie `<id>.xml` en één beschrijving `<id>.json`, allemaal `0600`.                                                                                                                                                                                                       |
+| `/var/run/ipv6-prefix-updater.lock`                       | De <Terminology title="vergrendeling die twee gelijktijdige controles voorkomt" to="/docs/reference/terminology#run-lock">uitvoeringsvergrendeling</Terminology>, vastgehouden met een niet-blokkerende `flock` en met de proces-ID van het draaiende proces als inhoud. Het bestand blijft tussen uitvoeringen op de schijf staan.  |
+
+## Indeling van de pakketstatus \{#package-state-format}
+
+| Sleutel               | Beschrijving                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+|-----------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `schema_version`      | Altijd `1`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `targets.<interface>` | Eén <Terminology title="startprefix, vastgelegd zonder de configuratie te wijzigen" to="/docs/reference/terminology#baseline">baseline</Terminology> per bewaakte interface, met de interne naam als sleutel en met `interface`, `source_address`, `prefix`, `prefix_length` en `updated_at`. Een baseline die van de <Terminology title="oorspronkelijk update.php-script, uitgevoerd via het Cron-pakket" to="/docs/reference/terminology#legacy-updater">legacy-updater</Terminology> is overgenomen, heeft ook `source` met de waarde `legacy_cache`. |
+| `last_run`            | De laatst vastgelegde uitvoering, met `status`, `timestamp`, `interface`, `observed_address`, `previous_prefix`, `current_prefix`, `current_prefix_length`, `change_count`, `backup_created`, `services`, `message`, `message_key` en `message_arguments`.                                                                                                                                                                                                                                                                                                |
+| `legacy_migration`    | Aanwezig na een overstap van de <Terminology title="oorspronkelijk update.php-script, uitgevoerd via het Cron-pakket" to="/docs/reference/terminology#legacy-updater">legacy-updater</Terminology>, met `status`, `steps`, `warnings` en `recorded_at`. Het tabblad Opruimen toont deze gegevens.                                                                                                                                                                                                                                                         |
+
+- `status` is een van `initialized`, `initialization_preview`, `no_change`, `dry_run`, `warning`, `accepted`, `success` of `failure`.
+- Na het resultaat <Terminology title="resultaat: velden bijgewerkt, opgeslagen, herladen en geverifieerd" to="/docs/reference/terminology#success">Geslaagd</Terminology> is `last_run.notification` gelijk aan `disabled` als meldingen uit staan, of `sent` of `failed` na een bezorgpoging.
+- Na een <Terminology title="voorbeeld dat nooit een back-up maakt of schrijft" to="/docs/reference/terminology#dry-run">testuitvoering</Terminology> of het resultaat <Terminology title="resultaat: velden bijgewerkt, opgeslagen, herladen en geverifieerd" to="/docs/reference/terminology#success">Geslaagd</Terminology> heeft elk resultaat ook `changes`, met het `path` en de `replacements` van maximaal 200 velden, waarbij elke vervanging uit een oud en een nieuw adres bestaat.
+- `package_reapply` bevat de `section`, het `package`, de `status` en de `error` van elk pakket waarvan de uitvoering de instellingen opnieuw heeft toegepast, en `skipped_fields` bevat de aangevinkte velden die niet meer bestaan. Elk van beide verschijnt alleen als het niet leeg is.
+- Bij meerdere bewaakte interfaces bevat `last_run` de totalen en een lijst `targets` met één resultaat per interface.
+- Tijdstempels gebruiken ISO 8601 in UTC. Een bestand dat niet kan worden geparsed of een andere schemaversie heeft, stopt elke uitvoering met `De status van IPv6 Prefix Updater is ongeldig of wordt niet ondersteund.`
+
+## Opslag van instellingen \{#settings-storage}
+
+De instellingen staan in de pfSense-configuratie onder `installedpackages/ipv6prefixupdater/config/0`.
+
+| Sleutel            | Beschrijving                                                                                                                                                                                              |
+|--------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `enabled`          | **<Terminology title="automatische controles via een door pfSense beheerde cronjob" to="/docs/reference/terminology#scheduled-updates">Geplande updates inschakelen</Terminology>**, `on` als aangevinkt. |
+| `row`              | **Bewaakte interfaces**, een lijst met per rij één `interface` (een interfacesleutel zoals `lan`) en één `prefix_length` (`48` tot en met `64`).                                                          |
+| `update_frequency` | **Schema**, een van `every_fifteen_minutes`, `hourly`, `every_six_hours` of `daily`.                                                                                                                      |
+| `notifications`    | **<Terminology title="melding na een geverifieerde, geslaagde update" to="/docs/reference/terminology#change-notification">Wijzigingsmeldingen verzenden</Terminology>**, `on` als aangevinkt.            |
+
+### Veldselectie \{#field-selection}
+
+De keuzes op het tabblad Velden staan naast het instellingenrecord, onder `installedpackages/ipv6prefixupdater/fields`, dus het opslaan van het tabblad Instellingen, dat `config/0` vervangt, wist ze nooit.
+
+| Sleutel                | Beschrijving                                                                                                                                 |
+|------------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
+| `schema`               | Altijd `1`. Markeert een selectie die vanaf het tabblad Velden is opgeslagen, ook een lege.                                                  |
+| `enabled_groups/item`  | Groepen die aan staan, zoals `firewall_rules`, `dhcpv6` of `package:<section>` voor de instellingen van een ander pakket.                    |
+| `disabled_groups/item` | pfSense-groepen die uit staan. Een pfSense-groep die in geen van beide lijsten staat, staat aan, en de groep van een ander pakket staat uit. |
+| `include/item`         | Identiteiten van velden die zijn aangevinkt in een groep die uit staat.                                                                      |
+| `exclude/item`         | Identiteiten van velden die zijn uitgevinkt in een groep die aan staat.                                                                      |
+
+- De sleutels van de pfSense-groepen zijn `interfaces`, `virtual_ips`, `aliases`, `firewall_rules`, `nat`, `dhcpv6`, `router_advertisements`, `dns_host_overrides`, `ipsec`, `openvpn` en `wireguard`.
+- `include` en `exclude` bewaren elk maximaal 1.000 identiteiten, en elke identiteit volgt [Veldidentiteiten](/docs/reference/approved-fields#field-identities).
+
+## Cronjob \{#cron-entry}
+
+Bij het opslaan van de instellingen wordt elk bestaand item voor de opdracht verwijderd en, als `enabled` op `on` staat, met `install_cron_job()` van pfSense een nieuw item voor `root` geïnstalleerd.
+
+| Schemawaarde            | Cronvelden     |
+|-------------------------|----------------|
+| `every_fifteen_minutes` | `*/15 * * * *` |
+| `hourly`                | `0 * * * *`    |
+| `every_six_hours`       | `0 */6 * * *`  |
+| `daily`                 | `0 0 * * *`    |
+
+Een onbekende waarde valt terug op de velden voor elk uur. Zolang een overstap van de <Terminology title="oorspronkelijk update.php-script, uitgevoerd via het Cron-pakket" to="/docs/reference/terminology#legacy-updater">legacy-updater</Terminology> wacht tot het legacy-script klaar is, houdt het pakket een item met `*/15 * * * *` aan, zodat de overstap opnieuw wordt geprobeerd, ook als geplande updates uit staan.
+
+## Logboeken en meldingen \{#logs-and-notices}
+
+Elke regel in het <Terminology title="algemeen pfSense-logboek waarin het pakket schrijft" to="/docs/reference/terminology#system-log">systeemlogboek</Terminology> wordt geschreven met `log_error()` van pfSense en begint met `IPv6 Prefix Updater:`. Meldingen worden gemaakt met `file_notice()` en linken naar `/ipv6-prefix-updater-status.php`, behalve de migratiemelding, die naar `/ipv6-prefix-updater-cleanup.php` linkt.
+
+| Meldings-ID                             | Gemaakt bij                                                                                                                                                                                                                                                                          | Bezorging                                                                                                                                                                  |
+|-----------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `ipv6-prefix-updater-success`           | <Terminology title="resultaat: velden bijgewerkt, opgeslagen, herladen en geverifieerd" to="/docs/reference/terminology#success">Geslaagd</Terminology>, met `notifications` op `on`                                                                                                 | WebGUI en <Terminology title="externe meldingsdiensten die in pfSense zijn ingesteld" to="/docs/reference/terminology#notification-channels">meldingskanalen</Terminology> |
+| `ipv6-prefix-updater-no-matches`        | <Terminology title="resultaat: prefix gewijzigd, maar geen goedgekeurd veld kwam overeen" to="/docs/reference/terminology#warning">Waarschuwing</Terminology>                                                                                                                        | Alleen WebGUI                                                                                                                                                              |
+| `ipv6-prefix-updater-failure`           | <Terminology title="resultaat: een controle of veiligheidsstap stopte de uitvoering" to="/docs/reference/terminology#failure">Mislukt</Terminology>                                                                                                                                  | Alleen WebGUI                                                                                                                                                              |
+| `ipv6-prefix-updater-package-<section>` | Een uitvoering heeft de instellingen van een ander pakket gewijzigd, en geen geïnstalleerd pakket is eigenaar van de sectie of het opnieuw toepassen van de instellingen is mislukt                                                                                                  | Alleen WebGUI                                                                                                                                                              |
+| `ipv6-prefix-updater-legacy-migration`  | Een overstap van de <Terminology title="oorspronkelijk update.php-script, uitgevoerd via het Cron-pakket" to="/docs/reference/terminology#legacy-updater">legacy-updater</Terminology> die minstens één stap heeft uitgevoerd, of een overstap die tijdens de installatie is mislukt | Alleen WebGUI                                                                                                                                                              |
+
+Mislukt de eigen omgevingscontrole van de opdracht, of kan het vergrendelingsbestand niet worden geopend, dan gaat de reden alleen naar standaardfout. Elke uitvoering die schrijft, slaat ook een configuratierevisie op met de beschrijving `IPv6-prefixupdater wijzigde <count> goedgekeurde veld(en) voor interface <interface>`.
+
+## Paginarechten \{#page-privileges}
+
+Elke pakketpagina declareert een eigen pfSense-recht, zodat je toegang per pagina kunt verlenen:
+
+- **Status**: `page-services-ipv6-prefix-updater-status`, met de naam `Services: IPv6 Prefix Updater: Status`.
+- **Velden**: `page-services-ipv6-prefix-updater-fields`, met de naam `Services: IPv6 Prefix Updater: Fields`. Met dit recht kun je wijzigen welke velden een uitvoering herschrijft, dus het is aan te raden om het alleen aan beheerders te verlenen.
+- **Back-ups**: `page-services-ipv6-prefix-updater-backups`, met de naam `Services: IPv6 Prefix Updater: Backups`. Dit recht maakt het downloaden van volledige configuratiekopieën mogelijk, dus het is aan te raden om het alleen aan beheerders te verlenen.
+- **Opruimen**: `page-services-ipv6-prefix-updater-cleanup`, met de naam `Services: IPv6 Prefix Updater: Cleanup`.

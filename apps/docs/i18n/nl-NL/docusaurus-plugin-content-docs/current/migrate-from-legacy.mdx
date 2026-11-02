@@ -1,0 +1,85 @@
+---
+id: migrate-from-legacy
+title: Migreren vanaf het script
+description: Installeer het pakket over het oude update.php-script heen, laat het de Cron-items, opgeslagen prefixen en back-ups voor je verplaatsen en bekijk daarna het resultaat op het tabblad Opruimen.
+keywords:
+  - pfsense ipv6 prefix updater
+  - legacy-updater
+  - migratie
+  - update.php
+  - cron-pakket
+  - opruimen
+tags:
+  - setup
+  - migration
+  - legacy updater
+sidebar_position: 5
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import cleanupBefore from './_assets_/migrate-from-legacy-1.png';
+import cleanupAfter from './_assets_/migrate-from-legacy-2.png';
+
+Stap over van de <Terminology title="oorspronkelijk update.php-script, uitgevoerd via het Cron-pakket" to="/docs/reference/terminology#legacy-updater">legacy-updater</Terminology> naar het pakket door het pakket te installeren; het neemt de interfaces, opgeslagen prefixen en back-ups van het script vanzelf over.
+
+## Wat er verandert \{#what-changes}
+
+| Onderdeel         | <Terminology title="oorspronkelijk update.php-script, uitgevoerd via het Cron-pakket" to="/docs/reference/terminology#legacy-updater">Legacy-updater</Terminology> | Pakket                                                                                                                                                                                                                                                                                                                                                                            |
+|-------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Installatie       | `install.sh` kopieert bestanden naar `/root/pfsense-ipv6-prefix-updater`                                                                                           | `pkg add` installeert een pfSense-pakket                                                                                                                                                                                                                                                                                                                                          |
+| Planning          | Een item in het Cron-pakket dat je zelf aanmaakt                                                                                                                   | De instelling **Schema**, met een cronjob die pfSense beheert                                                                                                                                                                                                                                                                                                                     |
+| Interfaces        | Eén Cron-item per apparaat van het besturingssysteem, zoals `igb1`                                                                                                 | Eén rij in **Bewaakte interfaces** per pfSense-interface, zoals LAN, allemaal gecontroleerd in één uitvoering                                                                                                                                                                                                                                                                     |
+| Wat er verandert  | De oude prefixtekst overal in de configuratie, ook in base64-gecodeerde waarden                                                                                    | <Terminology title="exact configuratieveld dat het pakket mag herschrijven" to="/docs/reference/terminology#approved-field">Goedgekeurde velden</Terminology> die je op het tabblad **Velden** selecteert                                                                                                                                                                         |
+| Back-ups          | Voor iedereen leesbare kopieën in `/root/pfsense-ipv6-prefix-updater-backups`                                                                                      | Een <Terminology title="kopie van de configuratie van vóór een schrijfactie" to="/docs/reference/terminology#configuration-backup">configuratieback-up</Terminology> in <Terminology title="pfSense-lijst met opgeslagen configuratierevisies" to="/docs/reference/terminology#config-history">Config History</Terminology> en op het tabblad **Back-ups** vóór elke schrijfactie |
+| Opgeslagen prefix | `/root/pfsense-ipv6-prefix-updater-cache`                                                                                                                          | De <Terminology title="pakketbestand met de baseline en de laatste uitvoering" to="/docs/reference/terminology#package-state">pakketstatus</Terminology>, die tijdens de overstap wordt gevuld vanuit de legacy-cache                                                                                                                                                             |
+| Meldingen         | Na elke wijziging verstuurd                                                                                                                                        | Een optionele <Terminology title="melding na een geverifieerde, geslaagde update" to="/docs/reference/terminology#change-notification">wijzigingsmelding</Terminology> na het resultaat <Terminology title="resultaat: velden bijgewerkt, opgeslagen, herladen en geverifieerd" to="/docs/reference/terminology#success">Geslaagd</Terminology>                                   |
+
+## Het pakket installeren \{#install-the-package}
+
+[Installeer het pakket](/docs/installation) met `pkg add` terwijl de legacy-updater nog aanwezig is. Je hoeft vooraf niets te verwijderen, en het is aan te raden om de Cron-items en de mappen in `/root` niet zelf te verwijderen, omdat het pakket ze tijdens de overstap leest.
+
+Voer je de oude installatieopdracht opnieuw uit, dan wordt het script niet opnieuw geïnstalleerd. Vanaf versie 2 toont die een foutmelding met de opdracht `pkg add` en verandert er niets.
+
+## Wat er automatisch gebeurt \{#what-happens-automatically}
+
+De installatiestap vindt de legacy-updater en verplaatst die in deze volgorde naar het pakket:
+
+1. **Back-up**: slaat een <Terminology title="kopie van de configuratie van vóór een schrijfactie" to="/docs/reference/terminology#configuration-backup">configuratieback-up</Terminology> op voordat er iets verandert.
+2. **Interfaces**: maakt van elk Cron-item een rij in **Bewaakte interfaces** door het apparaat ervan, zoals `igb1.10`, te koppelen aan de pfSense-interface die het gebruikt, en behoudt de <Terminology title="aantal voorloopbits van het netwerk, zoals /56" to="/docs/reference/terminology#prefix-length">prefixlengte</Terminology> ervan.
+3. **Schema**: kiest het **Schema** van het pakket dat minstens zo vaak controleert als de Cron-items deden, en schakelt <Terminology title="automatische controles via een door pfSense beheerde cronjob" to="/docs/reference/terminology#scheduled-updates">geplande updates</Terminology> in.
+4. **Baselines**: legt elke opgeslagen prefix vast als <Terminology title="startprefix, vastgelegd zonder de configuratie te wijzigen" to="/docs/reference/terminology#baseline">baseline</Terminology> voor de bijbehorende interface, zodat er geen prefixwijziging verloren gaat.
+5. **Cron-items**: verwijdert alleen de items die `update.php` uitvoeren, in dezelfde schrijfactie naar de configuratie als de nieuwe instellingen, zodat de twee updaters nooit tegelijk draaien.
+6. **Back-ups**: kopieert elke legacy-back-up naar het tabblad **Back-ups**, alleen leesbaar voor root, en verwijdert het origineel nadat de kopie is geverifieerd.
+7. **Oude bestanden**: verwijdert het script, de opgeslagen prefixen, het gedownloade archief en het opgeslagen installatieprogramma uit `/root`.
+
+Een WebGUI-melding linkt naar het tabblad Opruimen zodra de overstap klaar is. Draait het legacy-script op dat moment, dan wacht het pakket en rondt het de overstap af bij de volgende geplande controle.
+
+### Meerdere Cron-items \{#several-cron-entries}
+
+Elk Cron-item dat een ander apparaat noemt, wordt een eigen rij, en één uitvoering controleert ze allemaal. Interfaces die één <Terminology title="IPv6-netwerk dat je ISP naar de firewall routeert" to="/docs/reference/terminology#delegated-prefix">gedelegeerde prefix</Terminology> delen, werken gedeelde velden één keer bij, in één schrijfactie met back-up.
+
+Een Cron-item waarvan het apparaat niet meer bij een pfSense-interface hoort, wordt verwijderd en als waarschuwing vermeld, omdat het script er niets mee had kunnen bijwerken.
+
+### Verouderde opgeslagen prefixen \{#saved-prefixes-that-are-out-of-date}
+
+Heeft de ISP de prefix gewijzigd nadat de legacy-updater voor het laatst draaide, dan blijft de opgeslagen prefix ervan de <Terminology title="startprefix, vastgelegd zonder de configuratie te wijzigen" to="/docs/reference/terminology#baseline">baseline</Terminology>. De eerste controle van het pakket vindt dan de velden die nog op de oude prefix staan en werkt ze bij.
+
+Gebruikt geen enkel goedgekeurd veld een oude opgeslagen prefix, dan wordt in plaats daarvan de huidige prefix de baseline, zodat de eerste controle geen <Terminology title="resultaat: prefix gewijzigd, maar geen goedgekeurd veld kwam overeen" to="/docs/reference/terminology#warning">Waarschuwing</Terminology> meldt.
+
+## Het tabblad Opruimen bekijken \{#review-the-cleanup-tab}
+
+Open **Services → IPv6 Prefix Updater → Opruimen** om elk restant van de legacy-updater te zien en wat ermee is gebeurd.
+
+<img src={cleanupBefore} alt="Tabblad Opruimen van IPv6 Prefix Updater met twee legacy-Cron-items, het legacy-script, opgeslagen prefixen voor twee apparaten, één legacy-back-up en twee gedownloade installatiebestanden vóór het opruimen" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+- **1.x-restanten**: de Cron-items, het script, de opgeslagen prefixen, de back-ups, de gedownloade installatiebestanden en de vergrendeling van het script, elk gemarkeerd als **Gevonden** of **Niet aanwezig**.
+- **Laatste opruiming**: elke stap van de overstap en elke waarschuwing, zoals een apparaat dat niet aan een interface is toegewezen.
+- **Nu opruimen**: voert dezelfde overstap meteen uit in plaats van te wachten op de volgende geplande controle. Andere Cron-items worden nooit aangeraakt.
+
+<img src={cleanupAfter} alt="Tabblad Opruimen van IPv6 Prefix Updater na Nu opruimen, met de back-up, de verwijderde Cron-items, de verplaatste back-up en de verwijderde legacy-bestanden" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Dekking controleren \{#check-coverage}
+
+Vergelijk na de eerste echte <Terminology title="afwijking van de laatste geslaagde prefix of lengte" to="/docs/reference/terminology#prefix-transition">prefixwissel</Terminology> **Gewijzigde velden** en **Samenvatting** met wat de <Terminology title="oorspronkelijk update.php-script, uitgevoerd via het Cron-pakket" to="/docs/reference/terminology#legacy-updater">legacy-updater</Terminology> vroeger wijzigde. De legacy-updater herschreef ook gateways, statische routes, beschrijvingen en Base64-gecodeerde waarden. Het pakket wijzigt die alleen als ze onder **Overige instellingen** op het tabblad **Velden** zijn aangevinkt, dus het is aan te raden om ze vóór de prefixwijziging aan te vinken.
+
+Na een overstap staan alle <Terminology title="groep velden met één schakelaar op het tabblad Velden" to="/docs/reference/terminology#field-group">veldgroepen</Terminology> van pfSense aan, zoals **Automatisch selecteren** ze instelt. [Velden](/docs/configure/configuration-scopes) toont elke groep en hoe je die uitzet.

@@ -1,0 +1,90 @@
+---
+id: intro
+title: 概述
+description: 让 pfSense 别名、接口和 VPN 地址在 ISP 委派新前缀时自动跟随当前 IPv6 前缀，并在每次更改前先创建备份。
+keywords:
+  - pfsense ipv6 prefix updater
+  - 概述
+  - IPv6 前缀委派
+  - 动态前缀
+  - pfSense 软件包
+tags:
+  - setup
+  - overview
+  - ipv6
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+让 pfSense 中保存的 IPv6 地址在 ISP 分配新的<Terminology title="ISP 路由到防火墙的 IPv6 网络" to="/docs/reference/terminology#delegated-prefix">委派前缀</Terminology>后继续使用当前前缀。
+
+## 功能简介 \{#what-it-does}
+
+pfSense IPv6 Prefix Updater（中文界面中显示为“IPv6 前缀更新器”）是一个 pfSense 软件包，它会监视你选择的各个接口上是否出现新前缀。前缀变化时，它会改写你所选字段中的匹配地址，并保留每个地址的<Terminology title="委派前缀之后的地址位" to="/docs/reference/terminology#host-portion">主机部分</Terminology>。
+
+## 为什么使用这个软件包？ \{#why-use-this-package}
+
+1. 保留每个地址的<Terminology title="委派前缀之后的地址位" to="/docs/reference/terminology#host-portion">主机部分</Terminology>，前缀变化后每台设备的地址后缀保持不变。
+2. 只更改你在“字段”选项卡中选择的<Terminology title="软件包可改写的具体配置字段" to="/docs/reference/terminology#approved-field">已批准字段</Terminology>，远程 VPN 网络、对等端、网关和路由都保持你设置的原样。
+3. 每次写入前都会保存<Terminology title="写入前保存的配置副本" to="/docs/reference/terminology#configuration-backup">配置备份</Terminology>，之前的配置随时可在<Terminology title="pfSense 已保存配置修订版本的列表" to="/docs/reference/terminology#config-history">配置历史</Terminology>中找到。
+4. 按 pfSense 管理的计划运行，无需 Cron 软件包，也无需在主目录中放置脚本。
+5. 在“状态”选项卡中显示每次运行的结果，方便你查看改了什么、哪些服务已重新加载，以及是否创建了备份。
+
+## 会更新的内容 \{#what-it-updates}
+
+- **别名**：主机别名和网络别名中的地址和网络。
+- **静态接口**：配置类型为 Static IPv6 的接口地址。
+- **<Terminology title="额外的接口地址，如 CARP 或 IP Alias" to="/docs/reference/terminology#virtual-ip">虚拟 IP 地址</Terminology>**：CARP 和 IP Alias 类型的<Terminology title="额外的接口地址，如 CARP 或 IP Alias" to="/docs/reference/terminology#virtual-ip">虚拟 IP</Terminology>。
+- **IPsec**：Tunnel IPv6 和 Routed (VTI) 模式<Terminology title="描述本地和远程网络的 IPsec 条目" to="/docs/reference/terminology#ipsec-phase-2">阶段 2</Terminology> 条目的本地端。
+- **OpenVPN**：服务器和<Terminology title="服务器上针对单个客户端的 OpenVPN 设置" to="/docs/reference/terminology#client-specific-override">客户端特定覆盖</Terminology>中的 IPv6 隧道网络和本地网络，以及客户端中的 IPv6 隧道网络。
+- **WireGuard**：<Terminology title="分配给 pfSense WireGuard 隧道的地址" to="/docs/reference/terminology#wireguard-tunnel-address">隧道地址</Terminology>（需已安装 WireGuard 软件包）。
+- **DHCPv6 服务器**：地址范围、前缀委派范围和地址池范围、静态映射，以及分配给客户端的 DNS 和 NTP 服务器。
+- **路由器通告**：通告的 DNS 服务器和 RA 子网。
+- **DNS 主机覆盖**：DNS 解析器和 DNS 转发器中的主机覆盖。
+- **防火墙规则**：规则中直接填写的源地址和目标地址。
+- **NAT 和 NPt**：端口转发、出站 NAT 和 1:1 NAT 中直接填写的地址，以及 NPt 前缀。
+- **其他软件包的设置**：仅限你勾选的字段，更改后会重新应用所属软件包的设置。
+
+**字段** 选项卡会列出你的前缀内的每个地址，每个<Terminology title="“字段”选项卡上由一个开关控制的一组字段" to="/docs/reference/terminology#field-group">字段组</Terminology>都有一个开关，每个字段都有一个复选框。
+
+## 等待你勾选的内容 \{#what-waits-for-you}
+
+**其他设置** 组默认关闭，因此这些值只有在你勾选后才会更改：
+
+- VPN 的远程端，例如 IPsec 和 OpenVPN 的远程网络，以及 WireGuard 的对等端、允许的 IP 和端点。
+- 网关、静态路由、DNS 域覆盖、证书、机密、Base64 编码的值和描述。
+- 端口、URL 及其他类型的别名。
+
+通过 DHCPv6、SLAAC 或 <Terminology title="地址来自另一接口委派前缀的接口" to="/docs/reference/terminology#tracked-interface">Track Interface</Terminology> 获取地址的接口绝不会被更改，因为这些地址由 pfSense 生成。IPv4 地址、主机名以及不属于旧前缀的 IPv6 地址也同样不会被更改。完整列表见[其他设置](/docs/configure/configuration-scopes#other-settings)。
+
+## 检查如何进行 \{#how-a-check-works}
+
+1. 读取每个<Terminology title="其地址可反映当前前缀的接口" to="/docs/reference/terminology#monitored-interface">监控接口</Terminology>的<Terminology title="位于 2000::/3 内的公网 IPv6 地址" to="/docs/reference/terminology#global-unicast-address">全局地址</Terminology>并计算其前缀。
+2. 与<Terminology title="下次检查用于比较的前缀" to="/docs/reference/terminology#last-successful-prefix">上次成功前缀</Terminology>比较，两者一致时以<Terminology title="结果：前缀未变化，未扫描或写入任何内容" to="/docs/reference/terminology#no-change">无变化</Terminology>结束。
+3. 出现<Terminology title="与上次成功前缀或长度不同" to="/docs/reference/terminology#prefix-transition">前缀变化</Terminology>时，为仍在使用旧前缀的<Terminology title="软件包可改写的具体配置字段" to="/docs/reference/terminology#approved-field">已批准字段</Terminology>生成<Terminology title="写入前生成的完整字段变更列表" to="/docs/reference/terminology#change-plan">变更计划</Terminology>。
+4. 保存<Terminology title="写入前保存的配置副本" to="/docs/reference/terminology#configuration-backup">配置备份</Terminology>，一次性保存所有更改，只重新加载受影响的服务，然后再次检查这些值。
+5. 在“状态”选项卡中记录结果，并在已开启时发送<Terminology title="更新经验证成功后发送的提醒" to="/docs/reference/terminology#change-notification">变化通知</Terminology>。
+
+[安全模型](/docs/operations)介绍了每一步的保护措施。
+
+## 开始之前 \{#before-you-start}
+
+:::warning
+
+pfSense IPv6 Prefix Updater 是<Terminology title="从 GitHub 而非 Netgate 软件包仓库安装的软件包" to="/docs/reference/terminology#unofficial-package">非官方软件包</Terminology>。它通过 `pkg` 从 GitHub 安装，Netgate 不会审核或支持它。
+
+:::
+
+软件包版本发布在项目的 GitHub Releases 页面上。1.x 版本只包含<Terminology title="由 Cron 软件包运行的原 update.php 脚本" to="/docs/reference/terminology#legacy-updater">旧版更新器</Terminology>，不包含此软件包。
+
+## 语言 \{#languages}
+
+软件包的所有选项卡、<Terminology title="立即运行或试运行后显示的只读结果" to="/docs/reference/terminology#command-output">命令输出</Terminology>以及软件包的消息都会跟随 pfSense 中选择的语言。软件包内置 18 种 pfSense 语言选项的翻译，其他语言则回退为英语。
+
+## 后续步骤 \{#next-steps}
+
+- **[安装软件包](/docs/installation)**：从 GitHub 发布版本添加软件包。
+- **[建立基线](/docs/first-run)**：在开启计划更新前记录并检查当前前缀。
+- **[从脚本迁移](/docs/migrate-from-legacy)**：从 1.x 版脚本切换过来。
+- **[安全模型](/docs/operations)**：了解软件包保护哪些内容，以及仍可能影响哪些内容。

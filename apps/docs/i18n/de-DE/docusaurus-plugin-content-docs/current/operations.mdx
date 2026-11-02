@@ -1,0 +1,66 @@
+---
+id: operations
+title: Sicherheitsmodell
+description: Sehen Sie, welche Prüfungen, welche Sicherung und welchen einzelnen Schreibvorgang das Paket vor einer Änderung an pfSense ausführt, welche Läufe nie schreiben und was den Datenverkehr dennoch beeinflussen kann.
+keywords:
+  - pfsense ipv6 prefix updater
+  - sicherheitsmodell
+  - konfigurationssicherung
+  - verifizierung
+  - neuladen von diensten
+tags:
+  - safety
+  - backup
+  - verification
+sidebar_position: 6
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Sehen Sie, welche Schutzmaßnahmen das Paket anwendet, bevor es Ihre Konfiguration ändert, und was den Datenverkehr dennoch beeinflussen kann.
+
+## Was bei einer Präfixänderung passiert \{#what-happens-on-a-prefix-change}
+
+Wenn das Paket einen <Terminology title="Abweichung vom letzten erfolgreichen Präfix oder dessen Länge" to="/docs/reference/terminology#prefix-transition">Präfixwechsel</Terminology> feststellt, arbeitet es in dieser Reihenfolge:
+
+1. Liest die <Terminology title="öffentliche IPv6-Adresse innerhalb von 2000::/3" to="/docs/reference/terminology#global-unicast-address">globale Adresse</Terminology> jeder <Terminology title="Schnittstelle, deren Adresse das aktuelle Präfix verrät" to="/docs/reference/terminology#monitored-interface">überwachten Schnittstelle</Terminology> und berechnet ihr Präfix.
+2. Vergleicht das Präfix mit dem <Terminology title="Präfix, mit dem die nächste Prüfung vergleicht" to="/docs/reference/terminology#last-successful-prefix">letzten erfolgreichen Präfix</Terminology>.
+3. Sucht die <Terminology title="exaktes Konfigurationsfeld, das das Paket umschreiben darf" to="/docs/reference/terminology#approved-field">genehmigten Felder</Terminology>, die noch das alte Präfix verwenden, und erstellt den vollständigen <Terminology title="vollständige Liste der Feldänderungen, vor dem Schreiben erstellt" to="/docs/reference/terminology#change-plan">Änderungsplan</Terminology>.
+4. Bestätigt, dass pfSense jeden betroffenen Dienst neu laden kann und dass sich kein geplantes Feld seit dem Lesen geändert hat.
+5. Speichert eine <Terminology title="Kopie der Konfiguration vor einem Schreibvorgang" to="/docs/reference/terminology#configuration-backup">Konfigurationssicherung</Terminology>.
+6. Wendet alle Änderungen an und speichert die Konfiguration einmal.
+7. Prüft die gespeicherten Werte, lädt nur die betroffenen Dienste neu und prüft die Werte erneut.
+8. Verschiebt die <Terminology title="Ausgangspräfix, aufgezeichnet ohne Konfigurationsänderung" to="/docs/reference/terminology#baseline">Basislinie</Terminology> auf das neue Präfix, zeichnet das Ergebnis auf und sendet eine <Terminology title="Meldung nach einer verifizierten erfolgreichen Aktualisierung" to="/docs/reference/terminology#change-notification">Änderungsbenachrichtigung</Terminology>, sofern diese eingeschaltet ist.
+
+Schlägt ein Schritt vor der Sicherung fehl, bleibt die Konfiguration unverändert.
+
+## Was nie zu einem Schreibvorgang führt \{#what-never-causes-a-write}
+
+Bei diesen Ergebnissen ändert das Paket die Konfiguration nicht:
+
+- <Terminology title="Ergebnis: Basislinie aufgezeichnet, Konfiguration unverändert" to="/docs/reference/terminology#initialized">Initialisiert</Terminology> und <Terminology title="Ergebnis: Testlauf, bevor eine Basislinie existiert" to="/docs/reference/terminology#initialization-preview">Initialisierungsvorschau</Terminology>.
+- <Terminology title="Ergebnis: Präfix unverändert, nichts durchsucht oder geschrieben" to="/docs/reference/terminology#no-change">Keine Änderung</Terminology>.
+- <Terminology title="Vorschau, die nie sichert oder schreibt" to="/docs/reference/terminology#dry-run">Testlauf</Terminology>.
+- <Terminology title="Ergebnis: Präfix geändert, aber kein genehmigtes Feld passte" to="/docs/reference/terminology#warning">Warnung</Terminology>.
+- Ein <Terminology title="Ergebnis: eine Prüf- oder Sicherheitsstufe hat den Lauf gestoppt" to="/docs/reference/terminology#failure">Fehler</Terminology>, der vor der Sicherung stoppt.
+
+## Was den Datenverkehr dennoch beeinflussen kann \{#what-can-still-affect-traffic}
+
+- **<Terminology title="pfSense-Aktion, die geänderte Einstellungen anwendet" to="/docs/reference/terminology#service-reload">Neuladen von Diensten</Terminology>**: Änderungen an statischen Schnittstellen oder <Terminology title="zusätzliche Schnittstellenadresse wie CARP oder IP Alias" to="/docs/reference/terminology#virtual-ip">virtuellen IPs</Terminology> laden alle Schnittstellen und danach den Firewallfilter neu. Änderungen an Gateways und statischen Routen laden das Routing und den Filter neu, OpenVPN-Änderungen laden jede OpenVPN-Instanz neu, und Änderungen an DHCPv6, Router Advertisements und DNS starten diese Dienste neu.
+- **Fehler nach dem Speichern**: Wenn eine Prüfung oder das <Terminology title="pfSense-Aktion, die geänderte Einstellungen anwendet" to="/docs/reference/terminology#service-reload">Neuladen eines Dienstes</Terminology> nach dem Speichern fehlschlägt, bleiben die neuen Werte gespeichert, und nichts wird zurückgesetzt. Die <Terminology title="Ausgangspräfix, aufgezeichnet ohne Konfigurationsänderung" to="/docs/reference/terminology#baseline">Basislinie</Terminology> bleibt auf dem alten Präfix, wie [Laufergebnisse](/docs/operate/run-outcomes#failures-after-the-save) erklärt.
+- **Werte, die auf Sie warten**: Gateways, statische Routen, DNS-Domainüberschreibungen und die anderen Werte unter [Weitere Einstellungen](/docs/configure/configuration-scopes#other-settings) behalten das alte Präfix, bis Sie sie ankreuzen, ebenso Felder in einer ausgeschalteten Gruppe.
+
+## Weg zur Wiederherstellung \{#recovery-path}
+
+Zu jedem Schreibvorgang gibt es in der <Terminology title="pfSense-Liste gespeicherter Konfigurationsrevisionen" to="/docs/reference/terminology#config-history">Config History</Terminology> eine <Terminology title="Kopie der Konfiguration vor einem Schreibvorgang" to="/docs/reference/terminology#configuration-backup">Konfigurationssicherung</Terminology> der Konfiguration davor. Die nach dem Paket benannte Revision enthält die aktualisierte Konfiguration, daher zeigt [Sicherung und Wiederherstellung](/docs/operate/backups-and-recovery), welche Revision Sie wiederherstellen.
+
+Es empfiehlt sich, zusätzlich Ihre üblichen externen pfSense-Sicherungen aufzubewahren.
+
+## Was Sie überprüfen können \{#what-you-can-verify}
+
+Die Registerkarte Status zeigt <Terminology title="globale Adresse, die pfSense für die überwachte Schnittstelle meldet" to="/docs/reference/terminology#source-address">Quelladresse</Terminology>, <Terminology title="Quelladresse, auf die Präfixlänge maskiert" to="/docs/reference/terminology#observed-prefix">beobachtetes Präfix</Terminology>, Ergebnis, Anzahl geänderter Felder, Sicherungsergebnis, <Terminology title="pfSense-Aktion, die geänderte Einstellungen anwendet" to="/docs/reference/terminology#service-reload">neu geladene Dienste</Terminology>, Zeit und Zusammenfassung des letzten Laufs. Die <Terminology title="schreibgeschützte Ergebnisse nach Jetzt ausführen oder Testlauf" to="/docs/reference/terminology#command-output">Befehlsausgabe</Terminology> zeigt dieselben Details direkt nach einem <Terminology title="Prüfung, die auf der Registerkarte Status gestartet wird" to="/docs/reference/terminology#manual-run">manuellen Lauf</Terminology>.
+
+## Mehr erfahren \{#learn-more}
+
+- **[So funktionieren Aktualisierungen](/docs/safety/how-updates-work)**: jede Stufe eines Laufs und wo er stoppen kann.
+- **[Vor der Automatisierung prüfen](/docs/safety/testing-and-verification)**: eine Checkliste für Ihre Firewall, bevor Sie den Zeitplan einschalten.

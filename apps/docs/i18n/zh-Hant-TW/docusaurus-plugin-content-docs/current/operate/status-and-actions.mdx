@@ -1,0 +1,122 @@
+---
+id: status-and-actions
+title: 狀態與動作
+description: 在「狀態」分頁查看「目前狀態」與「上次執行」面板，執行檢查與預覽，復原基準，並看懂命令輸出。
+keywords:
+  - pfsense ipv6 prefix updater
+  - 狀態分頁
+  - 立即執行
+  - 試執行
+  - 命令輸出
+tags:
+  - operations
+  - status
+  - dry run
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import unchangedRun from './_assets_/status-and-actions-1.png';
+import changedRun from './_assets_/status-and-actions-2.png';
+import runByInterface from './_assets_/status-and-actions-3.png';
+
+查看目前基準與最近一次執行記錄的內容，並從「狀態」分頁啟動檢查、預覽或基準復原。
+
+## 目前狀態 \{#current-state}
+
+**Services → IPv6 Prefix Updater** 下的 **狀態** 分頁以此表格開頭，表格中每個監控介面各有一列，描述下一次檢查用來比較的<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>：
+
+- **<Terminology title="其位址可反映目前前綴的介面" to="/docs/reference/terminology#monitored-interface">監控介面</Terminology>**：介面描述，後接 pfSense 對該介面的內部名稱，例如 `LAN (lan)`。
+- **<Terminology title="下次檢查用來比較的前綴" to="/docs/reference/terminology#last-successful-prefix">上次成功前綴</Terminology>**：前綴及其長度，例如 `2001:db8:abcd:7800::/56`。
+- **<Terminology title="pfSense 回報的監控介面全域位址" to="/docs/reference/terminology#source-address">上次成功來源位址</Terminology>**：<Terminology title="位址的小寫、最短標準寫法" to="/docs/reference/terminology#canonical-form">標準形式</Terminology>的位址。結果為<Terminology title="結果：前綴未變更，未掃描或寫入任何內容" to="/docs/reference/terminology#no-change">無變更</Terminology>的執行也會更新此值。
+- **上次成功更新**：<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>被初始化、被接受，或在上次<Terminology title="結果：欄位已更新、儲存、重新載入並驗證" to="/docs/reference/terminology#success">成功</Terminology>後移動的 UTC 時間，例如 `2026-10-24T14:00:00+00:00`。
+
+某個介面第一次執行之前，其所在的列會顯示 `尚未初始化。請執行一次正常檢查以建立安全基準。` 從舊版更新器接手的<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>在第一次檢查之前，其來源位址會顯示為 `此套件版本未記錄`。
+
+## 上次執行 \{#last-run}
+
+此面板記錄最近一次執行。只監控一個介面時，它會直接顯示該介面的結果：
+
+- **結果**：執行的結果，詳見[執行結果](/docs/operate/run-outcomes)。
+- **時間戳記 (UTC)**：執行結束的時間。
+- **<Terminology title="pfSense 回報的監控介面全域位址" to="/docs/reference/terminology#source-address">觀察到的來源位址</Terminology>**：pfSense 為<Terminology title="其位址可反映目前前綴的介面" to="/docs/reference/terminology#monitored-interface">監控介面</Terminology>傳回的位址。
+- **<Terminology title="依前綴長度遮罩後的來源位址" to="/docs/reference/terminology#observed-prefix">觀察到的前綴</Terminology>**：依該位址與<Terminology title="ISP 前綴大小設定，/48 至 /64" to="/docs/reference/terminology#delegated-prefix-length">委派前綴長度</Terminology>計算出的網路。
+- **已變更欄位**：這次執行變更的<Terminology title="套件可改寫的確切設定欄位" to="/docs/reference/terminology#approved-field">已核准欄位</Terminology>數量；若為<Terminology title="不備份也不寫入的預覽" to="/docs/reference/terminology#dry-run">試執行</Terminology>，則是將會變更的數量。
+- **<Terminology title="寫入前儲存的設定副本" to="/docs/reference/terminology#configuration-backup">已建立設定備份</Terminology>**：`是`，或 `否 — 此次執行未寫入設定`。
+- **<Terminology title="套用已變更設定的 pfSense 動作" to="/docs/reference/terminology#service-reload">已重新載入的服務</Terminology>**：這次執行重新載入的服務；若為<Terminology title="不備份也不寫入的預覽" to="/docs/reference/terminology#dry-run">試執行</Terminology>，則是將會重新載入的服務。
+- **摘要**：以一句話描述結果；發生<Terminology title="與上次成功前綴或長度不同" to="/docs/reference/terminology#prefix-transition">前綴變更</Terminology>時會包含先前的前綴。
+- **套件**：執行變更了其他套件的設定時顯示，每個套件一行，例如 `已重新套用 <package> 套件的設定。` 每則訊息請見[欄位](/docs/configure/configuration-scopes#other-packages-settings)頁面。
+- **略過的欄位**：已勾選的欄位已不存在時顯示，內容為 `這些已選取的欄位已不存在，因此執行略過了它們。請在「欄位」分頁中檢查它們。` 以及每個欄位的識別碼。
+
+建議先檢查觀察到的位址與前綴。它們能顯示 pfSense 傳回的是否為預期位址，以及該長度是否得出預期的網路。
+
+當另一個檢查持有<Terminology title="防止兩個檢查同時執行的保護機制" to="/docs/reference/terminology#run-lock">執行鎖定</Terminology>，或執行在讀取<Terminology title="保存基準與上次執行的套件檔案" to="/docs/reference/terminology#package-state">套件狀態</Terminology>之前就已停止（例如沒有任何監控介面具有<Terminology title="位於 2000::/3 內的公用 IPv6 位址" to="/docs/reference/terminology#global-unicast-address">全域位址</Terminology>）時，**上次執行** 不會更新。如[執行結果](/docs/operate/run-outcomes#failures-after-the-save)所述，<Terminology title="結果：檢查或安全階段中止了執行" to="/docs/reference/terminology#failure">失敗</Terminology>的已變更欄位數一律顯示為 `0`。
+
+### 各介面的上次執行 \{#last-run-by-interface}
+
+監控多個介面時，**上次執行** 會顯示總計，**摘要** 則會統計已更新、未變更與需要注意的介面數量。其下方的 **各介面的上次執行** 表格會列出每個介面各自的結果、觀察到的前綴、已變更欄位與摘要。
+
+- **上次執行** 中的 **已變更欄位** 對每個欄位只計算一次，即使共用同一個<Terminology title="ISP 路由到防火牆的 IPv6 網路" to="/docs/reference/terminology#delegated-prefix">委派前綴</Terminology>的兩個介面都規劃了它。
+- 沒有<Terminology title="位於 2000::/3 內的公用 IPv6 位址" to="/docs/reference/terminology#global-unicast-address">全域位址</Terminology>的介面會在自己的列中回報<Terminology title="結果：檢查或安全階段中止了執行" to="/docs/reference/terminology#failure">失敗</Terminology>，其他介面仍會照常檢查。
+- 如果兩個介面為同一個欄位規劃了不同的值，執行會在寫入任何內容之前停止，並回報是哪個欄位不一致。
+
+## 動作 \{#actions}
+
+| 動作                                                                                         | 作用                                                                                                                                                                                                                                                                                                                                                                  |
+|--------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 立即執行                                                                                       | 執行一次完整檢查，即使<Terminology title="由 pfSense 管理的 cron 項目執行的自動檢查" to="/docs/reference/terminology#scheduled-updates">排程更新</Terminology>已關閉也會執行。沒有<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>時會記錄一個基準，發現<Terminology title="與上次成功前綴或長度不同" to="/docs/reference/terminology#prefix-transition">前綴變更</Terminology>時會套用該變更。 |
+| <Terminology title="不備份也不寫入的預覽" to="/docs/reference/terminology#dry-run">試執行</Terminology> | 執行相同的檢查，但不備份也不寫入。<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>尚不存在時，它會回報<Terminology title="結果：尚無基準時的試執行" to="/docs/reference/terminology#initialization-preview">初始化預覽</Terminology>。                                                                                                                              |
+| 接受目前前綴                                                                                     | 確認後，將目前作用中的來源位址、前綴與長度記錄為新的<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>。它不會檢查已核准欄位、建立備份、寫入設定或重新載入服務。                                                                                                                                                                                                                |
+
+立即執行與<Terminology title="不備份也不寫入的預覽" to="/docs/reference/terminology#dry-run">試執行</Terminology>都屬於<Terminology title="從「狀態」分頁啟動的檢查" to="/docs/reference/terminology#manual-run">手動執行</Terminology>。**接受目前前綴** 是一項復原動作，應該只在核對過已儲存的位址與受影響的服務之後使用。
+
+每個動作都會顯示完成橫幅或警告橫幅。**接受目前前綴** 的確認提示，是套件取代其比較基準之前的最後一道保護。
+
+發現另一個執行正在進行的檢查同樣會顯示完成橫幅，因此建議同時查看<Terminology title="立即執行或試執行後顯示的唯讀結果" to="/docs/reference/terminology#command-output">命令輸出</Terminology>。
+
+## 命令輸出 \{#command-output}
+
+執行動作後，**<Terminology title="立即執行或試執行後顯示的唯讀結果" to="/docs/reference/terminology#command-output">命令輸出</Terminology>** 下會出現一個唯讀的 **最新執行** 文字方塊：
+
+```text
+狀態: 無變更
+介面: lan
+觀察到的來源位址: 2001:db8:abcd:78aa::1
+先前前綴: 2001:db8:abcd:7800::
+目前前綴: 2001:db8:abcd:7800::/56
+計畫或已變更欄位: 0
+設定備份: 未建立
+已重新載入的服務: 無
+摘要: 作用中 IPv6 前綴未變更；未讀取或寫入任何已核准的設定目標。
+```
+
+先前的前綴在輸出時不含長度。執行失敗時則只會顯示一行，以 `IPv6 前綴更新器失敗：` 開頭。
+
+<Terminology title="不備份也不寫入的預覽" to="/docs/reference/terminology#dry-run">試執行</Terminology>或變更之後，接著會出現 `欄位變更:`，列出這次執行已取代或將取代的每個位址及其所屬欄位：
+
+```text
+欄位變更:
+- aliases/alias/0/address: 2001:db8:abcd:78aa::10 → 2001:db8:abcd:88aa::10
+```
+
+## 選擇欄位 \{#choosing-fields}
+
+執行會更新哪些欄位，是在 **欄位** 分頁中選擇的；該分頁會列出每個<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>前綴內的所有位址。群組、單一欄位例外以及「其他設定」群組，請參閱[欄位](/docs/configure/configuration-scopes)頁面。
+
+## 螢幕截圖 \{#screenshots}
+
+第一張螢幕截圖顯示的是兩個監控介面的<Terminology title="結果：前綴未變更，未掃描或寫入任何內容" to="/docs/reference/terminology#no-change">無變更</Terminology>結果：沒有欄位被變更，也沒有建立備份。
+
+<img src={unchangedRun} alt="IPv6 Prefix Updater 的「狀態」分頁，顯示兩個未變更介面的「上次執行」與「各介面的上次執行」，已變更欄位為零且未建立備份" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+第二張螢幕截圖顯示的是一次<Terminology title="結果：欄位已更新、儲存、重新載入並驗證" to="/docs/reference/terminology#success">成功</Terminology>：變更了一個<Terminology title="套件可改寫的確切設定欄位" to="/docs/reference/terminology#approved-field">已核准欄位</Terminology>，建立了<Terminology title="寫入前儲存的設定副本" to="/docs/reference/terminology#configuration-backup">設定備份</Terminology>，並重新載入了防火牆篩選器。
+
+<img src={changedRun} alt="IPv6 Prefix Updater 的「狀態」分頁，顯示兩個監控介面的一次成功 /56 前綴變更：一個欄位已變更、已建立設定備份，並重新載入了防火牆篩選器" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+第三張螢幕截圖顯示的是該次執行的 **各介面的上次執行** 表格：LAN 與 LAB 共用同一個<Terminology title="ISP 路由到防火牆的 IPv6 網路" to="/docs/reference/terminology#delegated-prefix">委派前綴</Terminology>，並各自回報了同一個已變更欄位。
+
+<img src={runByInterface} alt="IPv6 Prefix Updater 的「各介面的上次執行」表格，顯示 LAN 與 LAB 都因同一次 /56 前綴變更而回報成功，且各有一個已變更欄位" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+這些螢幕截圖中的 `2001:db8::/32` 位址都是保留的文件範例位址。
+
+各種結果的意義請參閱[執行結果](/docs/operate/run-outcomes)；在倚賴一次變更了設定的執行之前，請先閱讀[備份與復原](/docs/operate/backups-and-recovery)。

@@ -1,0 +1,76 @@
+---
+id: first-run
+title: Создание базового значения
+description: Записывает текущий префикс IPv6 как базовое значение кнопкой «Запустить сейчас», проверяет показанные адрес и префикс, просматривает вкладку «Поля» и только затем включает обновления по расписанию.
+keywords:
+  - pfsense ipv6 prefix updater
+  - первый запуск
+  - базовое значение
+  - запустить сейчас
+  - инициализировано
+tags:
+  - setup
+  - baseline
+  - status
+sidebar_position: 3
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Запишите текущий префикс как <Terminology title="начальный префикс, записанный без изменения конфигурации" to="/docs/reference/terminology#baseline">базовое значение</Terminology> и проверьте его, прежде чем включать <Terminology title="автоматические проверки через запись cron под управлением pfSense" to="/docs/reference/terminology#scheduled-updates">обновления по расписанию</Terminology>.
+
+## Сохранение начальных настроек \{#save-the-initial-settings}
+
+1. Откройте **Services → IPv6 Prefix Updater**, затем вкладку **Настройки**.
+2. Оставьте флажок **<Terminology title="автоматические проверки через запись cron под управлением pfSense" to="/docs/reference/terminology#scheduled-updates">Включить обновления по расписанию</Terminology>** снятым.
+3. Добавьте в поле **<Terminology title="интерфейс, по адресу которого определяется текущий префикс" to="/docs/reference/terminology#monitored-interface">Контролируемые интерфейсы</Terminology>** строку для каждого интерфейса, <Terminology title="публичный IPv6-адрес из диапазона 2000::/3" to="/docs/reference/terminology#global-unicast-address">глобальный адрес</Terminology> которого получен из <Terminology title="сеть IPv6, которую провайдер направляет на межсетевой экран" to="/docs/reference/terminology#delegated-prefix">делегированного префикса</Terminology>, как описано в разделе [Интерфейс и префикс](/docs/configure/interface-and-prefix).
+4. В каждой строке в поле **<Terminology title="размер префикса провайдера, от /48 до /64" to="/docs/reference/terminology#delegated-prefix-length">Длина делегированного префикса</Terminology>** выберите длину, которую делегирует ваш провайдер.
+5. Сохраните настройки и убедитесь, что появилось сообщение `Настройки сохранены.`
+
+## Запуск первой проверки \{#run-the-first-check}
+
+На вкладке **Состояние** выберите **Запустить сейчас**. Поскольку <Terminology title="начальный префикс, записанный без изменения конфигурации" to="/docs/reference/terminology#baseline">базового значения</Terminology> ещё нет, запуск записывает <Terminology title="глобальный адрес контролируемого интерфейса по данным pfSense" to="/docs/reference/terminology#source-address">исходный адрес</Terminology> и префикс каждого интерфейса и сообщает результат «<Terminology title="результат: базовое значение записано, конфигурация не изменена" to="/docs/reference/terminology#initialized">Инициализировано</Terminology>».
+
+Запись <Terminology title="начальный префикс, записанный без изменения конфигурации" to="/docs/reference/terminology#baseline">базового значения</Terminology> не изменяет конфигурацию, не создаёт резервную копию и не отправляет уведомление.
+
+## Проверка результата \{#verify-the-result}
+
+Проверьте эти значения в каждой строке раздела **Текущее состояние**:
+
+- **<Terminology title="интерфейс, по адресу которого определяется текущий префикс" to="/docs/reference/terminology#monitored-interface">Контролируемый интерфейс</Terminology>** показывает нужный интерфейс по описанию и внутреннему имени, например `LAN (lan)`.
+- **<Terminology title="глобальный адрес контролируемого интерфейса по данным pfSense" to="/docs/reference/terminology#source-address">Последний успешный исходный адрес</Terminology>** совпадает с адресом этого интерфейса в **Status → Interfaces**.
+- **<Terminology title="префикс, с которым сравнивает следующая проверка" to="/docs/reference/terminology#last-successful-prefix">Последний успешный префикс</Terminology>** совпадает с префиксом, который делегирует ваш провайдер.
+- **Последнее успешное обновление** показывает время этого запуска в UTC.
+
+«<Terminology title="результаты только для чтения после ручного или пробного запуска" to="/docs/reference/terminology#command-output">Вывод команды</Terminology>» должен показывать `Состояние: Инициализировано`, `Запланированные или изменённые поля: 0` и `Резервная копия конфигурации: Не создана`. Например, адрес для документации `2001:db8:abcd:78aa::1` при длине `/56` относится к сети `2001:db8:abcd:7800::/56`.
+
+:::warning
+
+Если интерфейс или длина указаны неверно, рекомендуется исправить настройки до включения расписания. Другой интерфейс приводит к записи нового <Terminology title="начальный префикс, записанный без изменения конфигурации" to="/docs/reference/terminology#baseline">базового значения</Terminology>, а другая длина считается <Terminology title="отличие от последнего успешного префикса или длины" to="/docs/reference/terminology#prefix-transition">сменой префикса</Terminology>, как объясняется в разделе [Интерфейс и префикс](/docs/configure/interface-and-prefix#changing-the-prefix-length).
+
+:::
+
+## Просмотр полей \{#review-the-fields}
+
+Откройте вкладку **Поля**. Когда <Terminology title="начальный префикс, записанный без изменения конфигурации" to="/docs/reference/terminology#baseline">базовое значение</Terminology> записано, она перечисляет все адреса внутри префикса и показывает, какие из них обновит следующее изменение.
+
+1. Выключите <Terminology title="группа полей с одним переключателем на вкладке «Поля»" to="/docs/reference/terminology#field-group">группы полей</Terminology>, которые межсетевой экран не использует. Все одиннадцать групп pfSense изначально включены.
+2. Снимите отметку с отдельных полей, которые должны сохранить своё значение, и отметьте поля других пакетов, которые должны следовать за префиксом.
+3. Отметьте в группе **Другие настройки** поля, которые должны следовать за префиксом, например шлюз или статический маршрут.
+4. Выберите **Сохранить** и убедитесь, что появилось сообщение `Выбор полей сохранён.`
+
+Каждая группа и каждый элемент управления описаны в разделе [Поля](/docs/configure/configuration-scopes).
+
+## Что сейчас показывает пробный запуск \{#what-a-dry-run-shows-now}
+
+Пока префикс не изменился, **<Terminology title="предварительный просмотр без резервной копии и записи" to="/docs/reference/terminology#dry-run">Пробный запуск</Terminology>** сообщает «<Terminology title="результат: префикс прежний, ничего не просмотрено и не записано" to="/docs/reference/terminology#no-change">Без изменений</Terminology>», не просматривая конфигурацию, потому что планирование начинается только после реальной <Terminology title="отличие от последнего успешного префикса или длины" to="/docs/reference/terminology#prefix-transition">смены префикса</Terminology>. Какие поля затронет будущее изменение, показывает вкладка «Поля».
+
+<Terminology title="предварительный просмотр без резервной копии и записи" to="/docs/reference/terminology#dry-run">Пробный запуск</Terminology>, выполненный до появления <Terminology title="начальный префикс, записанный без изменения конфигурации" to="/docs/reference/terminology#baseline">базового значения</Terminology>, сообщает «<Terminology title="результат: пробный запуск до появления базового значения" to="/docs/reference/terminology#initialization-preview">Предварительная инициализация</Terminology>» и ничего не записывает.
+
+## Включение расписания \{#turn-on-the-schedule}
+
+Когда значения совпадают, установите флажок **<Terminology title="автоматические проверки через запись cron под управлением pfSense" to="/docs/reference/terminology#scheduled-updates">Включить обновления по расписанию</Terminology>**, выберите **Расписание** и сохраните настройки. Каждый вариант описан в разделе [Расписание и уведомления](/docs/configure/schedule-and-notifications).
+
+После первого запланированного времени поле **Время (UTC)** в разделе **Последний запуск** показывает, когда выполнилась эта проверка.
+
+Полный контрольный список приведён в разделе [Проверка перед автоматизацией](/docs/safety/testing-and-verification).

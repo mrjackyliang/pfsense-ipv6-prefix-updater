@@ -1,0 +1,120 @@
+---
+id: backups-and-recovery
+title: Back-ups en herstel
+description: Vind de configuratie van vóór een pakketupdate op het tabblad Back-ups of in Config History, zet die terug met pfSense en herstel na een uitvoering die na het opslaan is mislukt.
+keywords:
+  - pfsense ipv6 prefix updater
+  - configuratieback-up
+  - config history
+  - terugzetten
+  - herstel
+tags:
+  - operations
+  - backup
+  - recovery
+  - config history
+sidebar_position: 3
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import backupList from './_assets_/backups-and-recovery-1.png';
+
+Vind de configuratie van vóór een update op het tabblad **Back-ups** of in <Terminology title="pfSense-lijst met opgeslagen configuratierevisies" to="/docs/reference/terminology#config-history">Config History</Terminology> van pfSense en zet die terug met de eigen tools van pfSense.
+
+## Wanneer er een back-up wordt gemaakt \{#when-a-backup-is-created}
+
+Het pakket maakt alleen een <Terminology title="kopie van de configuratie van vóór een schrijfactie" to="/docs/reference/terminology#configuration-backup">configuratieback-up</Terminology> bij een uitvoering die schrijft, direct voordat het een veld wijzigt. **<Terminology title="kopie van de configuratie van vóór een schrijfactie" to="/docs/reference/terminology#configuration-backup">Configuratieback-up gemaakt</Terminology>** op het tabblad Status laat zien of de laatste uitvoering er een heeft gemaakt.
+
+Er wordt geen back-up gemaakt als een uitvoering eindigt met:
+
+- <Terminology title="resultaat: baseline vastgelegd, configuratie ongewijzigd" to="/docs/reference/terminology#initialized">Geïnitialiseerd</Terminology> of <Terminology title="resultaat: testuitvoering voordat er een baseline bestaat" to="/docs/reference/terminology#initialization-preview">Voorbeeld van initialisatie</Terminology>.
+- <Terminology title="resultaat: prefix ongewijzigd, niets gescand of geschreven" to="/docs/reference/terminology#no-change">Geen wijziging</Terminology>.
+- <Terminology title="voorbeeld dat nooit een back-up maakt of schrijft" to="/docs/reference/terminology#dry-run">Testuitvoering</Terminology>.
+- **Geaccepteerd**, omdat het accepteren van de huidige prefix alleen de <Terminology title="pakketbestand met de baseline en de laatste uitvoering" to="/docs/reference/terminology#package-state">pakketstatus</Terminology> van het pakket wijzigt.
+- <Terminology title="resultaat: prefix gewijzigd, maar geen goedgekeurd veld kwam overeen" to="/docs/reference/terminology#warning">Waarschuwing</Terminology>.
+- <Terminology title="resultaat: een controle of veiligheidsstap stopte de uitvoering" to="/docs/reference/terminology#failure">Mislukt</Terminology> vóór de back-upfase, zoals bij een probleem met de instellingen, het adres of de mogelijkheid om te herladen.
+
+## Tabblad Back-ups \{#backups-tab}
+
+**Services → IPv6 Prefix Updater → Back-ups** toont de eigen kopieën van `config.xml` van het pakket, de nieuwste eerst. Ze blijven beschikbaar nadat pfSense oudere revisies uit <Terminology title="pfSense-lijst met opgeslagen configuratierevisies" to="/docs/reference/terminology#config-history">Config History</Terminology> heeft verwijderd.
+
+<img src={backupList} alt="Tabblad Back-ups van IPv6 Prefix Updater met pakketback-ups van vóór prefixupdates en van vóór een legacy-migratie, plus back-ups die uit de legacy-updater zijn geïmporteerd, elk met de acties Downloaden en Verwijderen" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+- **Vóór prefixupdate**: gemaakt direct voordat een uitvoering schrijft. **Details** noemt per interface de oude en de nieuwe prefix.
+- **Vóór 1.x-overstap**: gemaakt voordat het pakket [de legacy-updater naar zijn instellingen verplaatste](/docs/migrate-from-legacy).
+- **1.x-script**: een back-up die de <Terminology title="oorspronkelijk update.php-script, uitgevoerd via het Cron-pakket" to="/docs/reference/terminology#legacy-updater">legacy-updater</Terminology> heeft gemaakt, geïmporteerd met de oorspronkelijke naam en tijd.
+
+Alleen de 10 nieuwste pakketback-ups worden bewaard, terwijl geïmporteerde legacy-back-ups blijven tot je ze verwijdert. Elke back-up staat in `/cf/conf/ipv6-prefix-updater/backups`, is alleen leesbaar voor root en blijft behouden na herstarts en het verwijderen van het pakket.
+
+Selecteer **Downloaden** om er een terug te zetten en upload het bestand daarna onder **Diagnostics → Backup & Restore → Restore Backup**. Terugzetten vervangt de hele configuratie, dus de waarschuwingen hieronder gelden ook voor deze bestanden.
+
+## Hoe de revisies zijn gelabeld \{#how-the-revisions-are-labelled}
+
+Elke update laat twee revisies achter in <Terminology title="pfSense-lijst met opgeslagen configuratierevisies" to="/docs/reference/terminology#config-history">Config History</Terminology>, en alleen de oudste maakt de update ongedaan:
+
+- **De configuratie vóór de update**: de <Terminology title="kopie van de configuratie van vóór een schrijfactie" to="/docs/reference/terminology#configuration-backup">configuratieback-up</Terminology> is een kopie van deze revisie. Ze houdt de beschrijving van de wijziging die vóór de update is opgeslagen.
+- **De bijgewerkte configuratie**: het pakket slaat zijn wijziging op als nieuwe revisie met de beschrijving `IPv6-prefixupdater wijzigde <count> goedgekeurde veld(en) voor interface <interface>`.
+
+:::warning
+
+De revisie met de beschrijving van het pakket bevat de bijgewerkte configuratie. Zet je die terug, dan wordt de update niet ongedaan gemaakt.
+
+:::
+
+## De juiste revisie vinden \{#find-the-right-revision}
+
+1. Open **Diagnostics → Backup & Restore → Config History**.
+2. Zoek de nieuwste revisie met de beschrijving `IPv6-prefixupdater wijzigde ... voor interface ...`. Is er na de update niets opgeslagen, dan is dat de huidige configuratie.
+3. Kies de revisie die direct daarvoor is opgeslagen; dat is de configuratie van vóór de update.
+4. Vergelijk de twee revisies in de diff-weergave. Afgezien van de revisiegegevens horen alleen de velden die onder **Gewijzigde velden** zijn geteld te verschillen.
+5. Controleer of er na de update nog andere wijzigingen zijn opgeslagen, want het terugzetten van een oudere revisie verwijdert die ook.
+
+## De revisie terugzetten \{#restore-the-revision}
+
+1. Gebruik de terugzetactie van pfSense op de revisie van vóór de update en volg de aanwijzingen.
+2. Open **Services → IPv6 Prefix Updater → Instellingen** en controleer **<Terminology title="automatische controles via een door pfSense beheerde cronjob" to="/docs/reference/terminology#scheduled-updates">Geplande updates inschakelen</Terminology>**, omdat de teruggezette revisie de pakketinstellingen van dat moment terugbrengt.
+3. Selecteer op het tabblad Status **<Terminology title="voorbeeld dat nooit een back-up maakt of schrijft" to="/docs/reference/terminology#dry-run">Testuitvoering</Terminology>** om te zien wat de volgende uitvoering zou doen.
+
+Wat de volgende uitvoering doet, hangt af van het resultaat dat je ongedaan maakt:
+
+- **Na <Terminology title="resultaat: een controle of veiligheidsstap stopte de uitvoering" to="/docs/reference/terminology#failure">Mislukt</Terminology>**: de <Terminology title="startprefix, vastgelegd zonder de configuratie te wijzigen" to="/docs/reference/terminology#baseline">baseline</Terminology> bevat nog de oude prefix, dus de volgende uitvoering plant dezelfde update opnieuw.
+- **Na <Terminology title="resultaat: velden bijgewerkt, opgeslagen, herladen en geverifieerd" to="/docs/reference/terminology#success">Geslaagd</Terminology>**: de <Terminology title="startprefix, vastgelegd zonder de configuratie te wijzigen" to="/docs/reference/terminology#baseline">baseline</Terminology> bevat al de nieuwe prefix, dus latere uitvoeringen melden <Terminology title="resultaat: prefix ongewijzigd, niets gescand of geschreven" to="/docs/reference/terminology#no-change">Geen wijziging</Terminology> en passen de update niet opnieuw toe. De teruggezette adressen houden de oude prefix totdat je ze wijzigt.
+
+:::warning
+
+Het terugzetten van een revisie vervangt de hele configuratie, inclusief elke wijziging die na die revisie is opgeslagen.
+
+:::
+
+## Na een mislukte uitvoering \{#after-a-failed-run}
+
+Begin met **<Terminology title="kopie van de configuratie van vóór een schrijfactie" to="/docs/reference/terminology#configuration-backup">Configuratieback-up gemaakt</Terminology>** en **Samenvatting** in het paneel **Laatste uitvoering**. Het resultaat <Terminology title="resultaat: een controle of veiligheidsstap stopte de uitvoering" to="/docs/reference/terminology#failure">Mislukt</Terminology> toont onder **Gewijzigde velden** altijd `0`, ook als er al velden zijn geschreven.
+
+- **<Terminology title="kopie van de configuratie van vóór een schrijfactie" to="/docs/reference/terminology#configuration-backup">Configuratieback-up gemaakt</Terminology> toont Nee**: de uitvoering stopte vóór het schrijven, dus de configuratie is ongewijzigd. [Probleemoplossing](/docs/operate/troubleshooting#run-failed) noemt de oorzaken.
+- **Samenvatting luidt `Uitvoering mislukt: pfSense kon de geplande configuratie niet schrijven.`**: pfSense meldde dat het schrijven is mislukt. Het pakket zette de oorspronkelijke waarden in het geheugen terug voordat het stopte.
+- **Elke andere fout met een back-up**: de nieuwe waarden zijn al opgeslagen en er is niets teruggedraaid. De <Terminology title="startprefix, vastgelegd zonder de configuratie te wijzigen" to="/docs/reference/terminology#baseline">baseline</Terminology> bevat nog de oude prefix, dus latere uitvoeringen melden <Terminology title="resultaat: prefix gewijzigd, maar geen goedgekeurd veld kwam overeen" to="/docs/reference/terminology#warning">Waarschuwing</Terminology>, omdat de opgeslagen waarden er niet meer bij horen.
+
+Kies in het laatste geval het herstel dat bij de opgeslagen configuratie past:
+
+- **De update opnieuw toepassen**: los de mislukte controle of het mislukte herladen op, zet de revisie van vóór de update terug, voer een <Terminology title="voorbeeld dat nooit een back-up maakt of schrijft" to="/docs/reference/terminology#dry-run">Testuitvoering</Terminology> uit en selecteer daarna **Nu uitvoeren**.
+- **De opgeslagen waarden met de nieuwe prefix behouden**: controleer eerst zelf de goedgekeurde adressen en betrokken services. Open daarna **Status → Acties → Baselinerstel**, selecteer **Huidig prefix accepteren** en bevestig de actie.
+
+**Huidig prefix accepteren** legt het actieve bronadres, de prefix en de prefixlengte vast als nieuwe <Terminology title="startprefix, vastgelegd zonder de configuratie te wijzigen" to="/docs/reference/terminology#baseline">baseline</Terminology>. Het scant de firewallconfiguratie niet, maakt geen back-up, schrijft geen configuratie en herlaadt geen service; het resultaat is **Geaccepteerd**, en de volgende gewone controle hoort <Terminology title="resultaat: prefix ongewijzigd, niets gescand of geschreven" to="/docs/reference/terminology#no-change">Geen wijziging</Terminology> te melden.
+
+:::warning
+
+Accepteer de huidige prefix niet alleen om een waarschuwing weg te werken. Accepteer hem pas nadat je hebt bevestigd dat elk adres dat de nieuwe prefix moet gebruiken al klopt en, na een mislukt herladen, dat de betrokken service met de opgeslagen configuratie werkt.
+
+:::
+
+Is **Laatste uitvoering** helemaal niet veranderd, dan stopte de uitvoering voordat ze de <Terminology title="pakketbestand met de baseline en de laatste uitvoering" to="/docs/reference/terminology#package-state">pakketstatus</Terminology> las. De reden staat in de <Terminology title="alleen-lezen resultaten na Nu uitvoeren of Testuitvoering" to="/docs/reference/terminology#command-output">Opdrachtuitvoer</Terminology> en het <Terminology title="algemeen pfSense-logboek waarin het pakket schrijft" to="/docs/reference/terminology#system-log">systeemlogboek</Terminology>.
+
+## Externe back-ups bewaren \{#keep-off-device-backups}
+
+<Terminology title="pfSense-lijst met opgeslagen configuratierevisies" to="/docs/reference/terminology#config-history">Config History</Terminology> staat op de firewall zelf. Het is aan te raden om ook een back-up te downloaden via **Diagnostics → Backup & Restore** voordat je het pakket installeert of bijwerkt of <Terminology title="automatische controles via een door pfSense beheerde cronjob" to="/docs/reference/terminology#scheduled-updates">geplande updates</Terminology> inschakelt.
+
+## Bewijs vastleggen \{#preserve-evidence}
+
+Het is aan te raden om vóór het terugzetten het paneel **Laatste uitvoering**, de <Terminology title="alleen-lezen resultaten na Nu uitvoeren of Testuitvoering" to="/docs/reference/terminology#command-output">Opdrachtuitvoer</Terminology> en de regels in het <Terminology title="algemeen pfSense-logboek waarin het pakket schrijft" to="/docs/reference/terminology#system-log">systeemlogboek</Terminology> die met `IPv6 Prefix Updater:` beginnen te kopiëren. Samen laten ze zien welke fase stopte en of de configuratie is geschreven.
+
+Lees [Probleemoplossing](/docs/operate/troubleshooting) voor foutmeldingen en [Controleren vóór automatisering](/docs/safety/testing-and-verification) voordat je het schema weer inschakelt.

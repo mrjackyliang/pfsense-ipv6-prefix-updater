@@ -1,0 +1,120 @@
+---
+id: backups-and-recovery
+title: Sicherung und Wiederherstellung
+description: Finden Sie die Konfiguration von vor einer Paketaktualisierung auf der Registerkarte Sicherungen oder in der Config History, stellen Sie sie mit pfSense wieder her und beheben Sie einen Lauf, der nach dem Speichern fehlschlug.
+keywords:
+  - pfsense ipv6 prefix updater
+  - konfigurationssicherung
+  - config history
+  - rücksicherung
+  - wiederherstellung
+tags:
+  - operations
+  - backup
+  - recovery
+  - config history
+sidebar_position: 3
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import backupList from './_assets_/backups-and-recovery-1.png';
+
+Finden Sie die Konfiguration von vor einer Aktualisierung auf der Registerkarte **Sicherungen** oder in der <Terminology title="pfSense-Liste gespeicherter Konfigurationsrevisionen" to="/docs/reference/terminology#config-history">Config History</Terminology> von pfSense und stellen Sie sie mit den eigenen Werkzeugen von pfSense wieder her.
+
+## Wann eine Sicherung erstellt wird \{#when-a-backup-is-created}
+
+Das Paket erstellt eine <Terminology title="Kopie der Konfiguration vor einem Schreibvorgang" to="/docs/reference/terminology#configuration-backup">Konfigurationssicherung</Terminology> nur bei einem Lauf, der schreibt, unmittelbar bevor es ein Feld ändert. **<Terminology title="Kopie der Konfiguration vor einem Schreibvorgang" to="/docs/reference/terminology#configuration-backup">Konfigurationssicherung erstellt</Terminology>** auf der Registerkarte Status zeigt, ob der letzte Lauf eine erstellt hat.
+
+Es wird keine Sicherung erstellt, wenn ein Lauf so endet:
+
+- <Terminology title="Ergebnis: Basislinie aufgezeichnet, Konfiguration unverändert" to="/docs/reference/terminology#initialized">Initialisiert</Terminology> oder <Terminology title="Ergebnis: Testlauf, bevor eine Basislinie existiert" to="/docs/reference/terminology#initialization-preview">Initialisierungsvorschau</Terminology>.
+- <Terminology title="Ergebnis: Präfix unverändert, nichts durchsucht oder geschrieben" to="/docs/reference/terminology#no-change">Keine Änderung</Terminology>.
+- <Terminology title="Vorschau, die nie sichert oder schreibt" to="/docs/reference/terminology#dry-run">Testlauf</Terminology>.
+- **Übernommen**, weil die Übernahme des aktuellen Präfixes nur den <Terminology title="Paketdatei mit Basislinie und letztem Lauf" to="/docs/reference/terminology#package-state">Paketzustand</Terminology> des Pakets ändert.
+- <Terminology title="Ergebnis: Präfix geändert, aber kein genehmigtes Feld passte" to="/docs/reference/terminology#warning">Warnung</Terminology>.
+- <Terminology title="Ergebnis: eine Prüf- oder Sicherheitsstufe hat den Lauf gestoppt" to="/docs/reference/terminology#failure">Fehler</Terminology> vor der Sicherungsstufe, etwa bei einem Problem mit Einstellungen, Adresse oder der Fähigkeit zum Neuladen.
+
+## Registerkarte Sicherungen \{#backups-tab}
+
+**Services → IPv6 Prefix Updater → Sicherungen** listet die eigenen Kopien von `config.xml` des Pakets auf, die neueste zuerst. Sie bleiben auch dann verfügbar, wenn pfSense ältere Revisionen aus der <Terminology title="pfSense-Liste gespeicherter Konfigurationsrevisionen" to="/docs/reference/terminology#config-history">Config History</Terminology> entfernt.
+
+<img src={backupList} alt="Registerkarte Sicherungen von IPv6 Prefix Updater mit Paketsicherungen von vor Präfixaktualisierungen und von vor einer Legacy-Migration sowie aus dem Legacy-Updater importierten Sicherungen, jeweils mit den Aktionen Herunterladen und Löschen" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+- **Vor Präfixaktualisierung**: erstellt direkt, bevor ein Lauf schreibt. **Details** nennt für jede Schnittstelle das alte und das neue Präfix.
+- **Vor 1.x-Umstellung**: erstellt, bevor das Paket [den Legacy-Updater in seine Einstellungen übernommen hat](/docs/migrate-from-legacy).
+- **1.x-Skript**: eine Sicherung, die der <Terminology title="ursprüngliches update.php-Skript, ausgeführt vom Cron-Paket" to="/docs/reference/terminology#legacy-updater">Legacy-Updater</Terminology> erstellt hat, importiert mit ihrem ursprünglichen Namen und ihrer ursprünglichen Zeit.
+
+Nur die 10 neuesten Paketsicherungen werden behalten, während importierte Legacy-Sicherungen bleiben, bis Sie sie löschen. Jede Sicherung liegt in `/cf/conf/ipv6-prefix-updater/backups`, ist nur für root lesbar und übersteht Neustarts und die Entfernung des Pakets.
+
+Um eine davon wiederherzustellen, wählen Sie **Herunterladen** und laden Sie die Datei dann unter **Diagnostics → Backup & Restore → Restore Backup** hoch. Die Wiederherstellung ersetzt die gesamte Konfiguration, daher gelten die Warnungen weiter unten auch für diese Dateien.
+
+## Wie die Revisionen beschriftet sind \{#how-the-revisions-are-labelled}
+
+Jede Aktualisierung hinterlässt zwei Revisionen in der <Terminology title="pfSense-Liste gespeicherter Konfigurationsrevisionen" to="/docs/reference/terminology#config-history">Config History</Terminology>, und nur die ältere macht die Aktualisierung rückgängig:
+
+- **Die Konfiguration vor der Aktualisierung**: Die <Terminology title="Kopie der Konfiguration vor einem Schreibvorgang" to="/docs/reference/terminology#configuration-backup">Konfigurationssicherung</Terminology> ist eine Kopie dieser Revision. Sie behält die Beschreibung der Änderung, die vor der Aktualisierung gespeichert wurde.
+- **Die aktualisierte Konfiguration**: Das Paket speichert seine Änderung als neue Revision mit der Beschreibung `Die IPv6-Präfixaktualisierung änderte <count> genehmigte(s) Feld(er) für Schnittstelle <interface>`.
+
+:::warning
+
+Die Revision mit der Beschreibung des Pakets enthält die aktualisierte Konfiguration. Wenn Sie sie wiederherstellen, wird die Aktualisierung nicht rückgängig gemacht.
+
+:::
+
+## Richtige Revision finden \{#find-the-right-revision}
+
+1. Öffnen Sie **Diagnostics → Backup & Restore → Config History**.
+2. Suchen Sie die neueste Revision mit der Beschreibung `Die IPv6-Präfixaktualisierung änderte ... für Schnittstelle ...`. Wenn nach der Aktualisierung nichts gespeichert wurde, ist sie die aktuelle Konfiguration.
+3. Wählen Sie die Revision, die direkt davor gespeichert wurde; sie ist die Konfiguration von vor der Aktualisierung.
+4. Vergleichen Sie die beiden Revisionen in der Diff-Ansicht. Abgesehen von den Revisionsdetails sollten sich nur die unter **Geänderte Felder** gezählten Felder unterscheiden.
+5. Prüfen Sie, ob nach der Aktualisierung weitere Änderungen gespeichert wurden, denn die Wiederherstellung einer älteren Revision entfernt auch diese.
+
+## Revision wiederherstellen \{#restore-the-revision}
+
+1. Verwenden Sie die Wiederherstellungsaktion von pfSense für die Revision von vor der Aktualisierung und folgen Sie ihren Aufforderungen.
+2. Öffnen Sie **Services → IPv6 Prefix Updater → Einstellungen** und prüfen Sie **<Terminology title="automatische Prüfungen über einen von pfSense verwalteten Cron-Eintrag" to="/docs/reference/terminology#scheduled-updates">Geplante Aktualisierungen aktivieren</Terminology>**, weil die wiederhergestellte Revision die Paketeinstellungen von damals zurückbringt.
+3. Wählen Sie auf der Registerkarte Status **<Terminology title="Vorschau, die nie sichert oder schreibt" to="/docs/reference/terminology#dry-run">Testlauf</Terminology>**, um zu sehen, was der nächste Lauf tun würde.
+
+Was der nächste Lauf tut, hängt vom Ergebnis ab, das Sie rückgängig machen:
+
+- **Nach einem <Terminology title="Ergebnis: eine Prüf- oder Sicherheitsstufe hat den Lauf gestoppt" to="/docs/reference/terminology#failure">Fehler</Terminology>**: Die <Terminology title="Ausgangspräfix, aufgezeichnet ohne Konfigurationsänderung" to="/docs/reference/terminology#baseline">Basislinie</Terminology> enthält noch das alte Präfix, daher plant der nächste Lauf dieselbe Aktualisierung erneut.
+- **Nach einem <Terminology title="Ergebnis: Felder aktualisiert, gespeichert, neu geladen und verifiziert" to="/docs/reference/terminology#success">Erfolg</Terminology>**: Die <Terminology title="Ausgangspräfix, aufgezeichnet ohne Konfigurationsänderung" to="/docs/reference/terminology#baseline">Basislinie</Terminology> enthält bereits das neue Präfix, daher melden spätere Läufe <Terminology title="Ergebnis: Präfix unverändert, nichts durchsucht oder geschrieben" to="/docs/reference/terminology#no-change">Keine Änderung</Terminology> und wenden die Aktualisierung nicht erneut an. Die wiederhergestellten Adressen behalten das alte Präfix, bis Sie sie ändern.
+
+:::warning
+
+Die Wiederherstellung einer Revision ersetzt die gesamte Konfiguration, einschließlich aller Änderungen, die nach dieser Revision gespeichert wurden.
+
+:::
+
+## Nach einem fehlgeschlagenen Lauf \{#after-a-failed-run}
+
+Beginnen Sie mit **<Terminology title="Kopie der Konfiguration vor einem Schreibvorgang" to="/docs/reference/terminology#configuration-backup">Konfigurationssicherung erstellt</Terminology>** und **Zusammenfassung** im Abschnitt **Letzter Lauf**. Ein <Terminology title="Ergebnis: eine Prüf- oder Sicherheitsstufe hat den Lauf gestoppt" to="/docs/reference/terminology#failure">Fehler</Terminology> zeigt unter **Geänderte Felder** immer `0`, selbst wenn bereits Felder geschrieben wurden.
+
+- **<Terminology title="Kopie der Konfiguration vor einem Schreibvorgang" to="/docs/reference/terminology#configuration-backup">Konfigurationssicherung erstellt</Terminology> zeigt Nein**: Der Lauf stoppte vor dem Schreiben, daher ist die Konfiguration unverändert. [Fehlerbehebung](/docs/operate/troubleshooting#run-failed) listet die Ursachen auf.
+- **Zusammenfassung lautet `Lauf fehlgeschlagen: pfSense konnte die geplante Konfiguration nicht schreiben.`**: pfSense hat den Schreibvorgang als fehlgeschlagen gemeldet. Das Paket hat die ursprünglichen Werte im Speicher wiederhergestellt, bevor es stoppte.
+- **Jeder andere Fehler mit Sicherung**: Die neuen Werte sind bereits gespeichert, und nichts wurde zurückgesetzt. Die <Terminology title="Ausgangspräfix, aufgezeichnet ohne Konfigurationsänderung" to="/docs/reference/terminology#baseline">Basislinie</Terminology> enthält noch das alte Präfix, daher melden spätere Läufe <Terminology title="Ergebnis: Präfix geändert, aber kein genehmigtes Feld passte" to="/docs/reference/terminology#warning">Warnung</Terminology>, weil die gespeicherten Werte nicht mehr dazu gehören.
+
+Wählen Sie im letzten Fall den Weg, der zur gespeicherten Konfiguration passt:
+
+- **Aktualisierung erneut anwenden**: Beheben Sie die fehlgeschlagene Prüfung oder das fehlgeschlagene Neuladen, stellen Sie die Revision von vor der Aktualisierung wieder her, führen Sie einen <Terminology title="Vorschau, die nie sichert oder schreibt" to="/docs/reference/terminology#dry-run">Testlauf</Terminology> aus und wählen Sie dann **Jetzt ausführen**.
+- **Gespeicherte Werte mit neuem Präfix behalten**: Prüfen Sie zuerst selbst die genehmigten Adressen und betroffenen Dienste. Öffnen Sie dann **Status → Aktionen → Wiederherstellung der Basislinie**, wählen Sie **Aktuelles Präfix übernehmen** und bestätigen Sie die Aktion.
+
+**Aktuelles Präfix übernehmen** zeichnet die aktive Quelladresse, das Präfix und die Präfixlänge als neue <Terminology title="Ausgangspräfix, aufgezeichnet ohne Konfigurationsänderung" to="/docs/reference/terminology#baseline">Basislinie</Terminology> auf. Dabei wird die Firewallkonfiguration nicht durchsucht, keine Sicherung erstellt, keine Konfiguration geschrieben und kein Dienst neu geladen; das Ergebnis ist **Übernommen**, und die nächste normale Prüfung sollte <Terminology title="Ergebnis: Präfix unverändert, nichts durchsucht oder geschrieben" to="/docs/reference/terminology#no-change">Keine Änderung</Terminology> melden.
+
+:::warning
+
+Übernehmen Sie das aktuelle Präfix nicht nur, um eine Warnung zu beseitigen. Übernehmen Sie es erst, nachdem Sie bestätigt haben, dass jede Adresse, die das neue Präfix verwenden soll, bereits korrekt ist und nach einem Neuladefehler der betroffene Dienst mit der gespeicherten Konfiguration arbeitet.
+
+:::
+
+Wenn sich **Letzter Lauf** gar nicht geändert hat, stoppte der Lauf, bevor er seinen <Terminology title="Paketdatei mit Basislinie und letztem Lauf" to="/docs/reference/terminology#package-state">Paketzustand</Terminology> las. Der Grund steht in der <Terminology title="schreibgeschützte Ergebnisse nach Jetzt ausführen oder Testlauf" to="/docs/reference/terminology#command-output">Befehlsausgabe</Terminology> und im <Terminology title="allgemeines pfSense-Protokoll, in das das Paket schreibt" to="/docs/reference/terminology#system-log">Systemprotokoll</Terminology>.
+
+## Externe Sicherungen aufbewahren \{#keep-off-device-backups}
+
+Die <Terminology title="pfSense-Liste gespeicherter Konfigurationsrevisionen" to="/docs/reference/terminology#config-history">Config History</Terminology> liegt auf der Firewall selbst. Es empfiehlt sich, zusätzlich unter **Diagnostics → Backup & Restore** eine Sicherung herunterzuladen, bevor Sie das Paket installieren oder aktualisieren oder <Terminology title="automatische Prüfungen über einen von pfSense verwalteten Cron-Eintrag" to="/docs/reference/terminology#scheduled-updates">geplante Aktualisierungen</Terminology> einschalten.
+
+## Belege festhalten \{#preserve-evidence}
+
+Vor einer Wiederherstellung empfiehlt es sich, den Abschnitt **Letzter Lauf**, die <Terminology title="schreibgeschützte Ergebnisse nach Jetzt ausführen oder Testlauf" to="/docs/reference/terminology#command-output">Befehlsausgabe</Terminology> und die Zeilen im <Terminology title="allgemeines pfSense-Protokoll, in das das Paket schreibt" to="/docs/reference/terminology#system-log">Systemprotokoll</Terminology> zu kopieren, die mit `IPv6 Prefix Updater:` beginnen. Zusammen zeigen sie, welche Stufe gestoppt hat und ob die Konfiguration geschrieben wurde.
+
+Lesen Sie [Fehlerbehebung](/docs/operate/troubleshooting) zu Fehlermeldungen und [Vor der Automatisierung prüfen](/docs/safety/testing-and-verification), bevor Sie den Zeitplan wieder einschalten.

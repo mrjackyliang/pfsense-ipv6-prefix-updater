@@ -1,0 +1,121 @@
+---
+id: troubleshooting
+title: 故障排除
+description: 借助“状态”选项卡、命令输出和系统日志，解决安装错误、地址或前缀错误、反复出现的警告、运行失败以及运行锁消息。
+keywords:
+  - pfsense ipv6 prefix updater
+  - 故障排除
+  - 错误消息
+  - 系统日志
+  - 运行锁
+tags:
+  - operations
+  - troubleshooting
+  - system log
+sidebar_position: 4
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+根据运行结果、<Terminology title="立即运行或试运行后显示的只读结果" to="/docs/reference/terminology#command-output">命令输出</Terminology>、<Terminology title="软件包写入的 pfSense 常规日志" to="/docs/reference/terminology#system-log">系统日志</Terminology>和 pfSense 的通知，找出意外结果的原因。
+
+## 从哪里查看 \{#where-to-look}
+
+- “状态”选项卡上的 **上次运行** 显示大多数结果。
+- **<Terminology title="立即运行或试运行后显示的只读结果" to="/docs/reference/terminology#command-output">命令输出</Terminology>** 会在立即运行、<Terminology title="不备份也不写入的预览" to="/docs/reference/terminology#dry-run">试运行</Terminology>或 **接受当前前缀** 之后出现。它还会显示那些从未写入 **上次运行** 的操作。
+- **Status → System Logs → System → General**（状态 → 系统日志 → 系统 → 常规）下的<Terminology title="软件包写入的 pfSense 常规日志" to="/docs/reference/terminology#system-log">系统日志</Terminology>中保存着软件包写入的行，每行都以 `IPv6 Prefix Updater:` 开头。
+- **<Terminology title="显示在 pfSense 通知列表中的提醒" to="/docs/reference/terminology#webgui-notice">WebGUI 通知</Terminology>** 会在出现<Terminology title="结果：前缀已变化，但没有匹配的已批准字段" to="/docs/reference/terminology#warning">警告</Terminology>和<Terminology title="结果：检查或安全阶段中止了运行" to="/docs/reference/terminology#failure">失败</Terminology>结果时显示，并链接到“状态”选项卡。
+
+## 安装失败 \{#installation-fails}
+
+- **`pkg` 报告 404 Not Found**：最新的 GitHub 发布版本中没有软件包文件。[安装软件包](/docs/installation#check-the-release)说明了哪些版本包含软件包文件。
+- **`pkg` 报告 ABI 或操作系统版本不匹配**：软件包是针对与你的 pfSense 版本不同的 FreeBSD 版本构建的。建议不要强制安装。
+- **DNS、TLS 或证书错误**：pfSense 需要能够解析 `github.com`、通过 HTTPS 访问它，并保持正确的时间以便检查证书。
+
+## 源地址错误 \{#wrong-source-address}
+
+当 WAN 只获得<Terminology title="ISP 路由到防火墙的 IPv6 网络" to="/docs/reference/terminology#delegated-prefix">委派前缀</Terminology>时，承载该前缀的地址位于 LAN 等<Terminology title="地址来自另一接口委派前缀的接口" to="/docs/reference/terminology#tracked-interface">跟踪接口</Terminology>上。这时，该接口才是正确的<Terminology title="其地址可反映当前前缀的接口" to="/docs/reference/terminology#monitored-interface">监控接口</Terminology>。
+
+<Terminology title="ISP 前缀大小设置，/48 至 /64" to="/docs/reference/terminology#delegated-prefix-length">委派前缀长度</Terminology>不影响读取哪个地址，因此更改它无法修正错误的<Terminology title="pfSense 为监控接口报告的全局地址" to="/docs/reference/terminology#source-address">源地址</Terminology>。建议每次更改后，将 **<Terminology title="pfSense 为监控接口报告的全局地址" to="/docs/reference/terminology#source-address">观察到的源地址</Terminology>** 与 **Status → Interfaces**（状态 → 接口）进行比较。
+
+## 观察到的前缀错误 \{#wrong-observed-prefix}
+
+将<Terminology title="ISP 前缀大小设置，/48 至 /64" to="/docs/reference/terminology#delegated-prefix-length">委派前缀长度</Terminology>与 ISP 的服务说明或 WAN 上的 DHCPv6 前缀委派大小进行比较。对于 `/57` 或 `/63` 这类长度，借助 IPv6 子网计算器比较起来更方便。
+
+:::warning
+
+在<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>已存在后更改长度，会被视为一次<Terminology title="与上次成功前缀或长度不同" to="/docs/reference/terminology#prefix-transition">前缀变化</Terminology>，并可能改写字段。具体影响见[更改前缀长度](/docs/configure/interface-and-prefix#changing-the-prefix-length)。
+
+:::
+
+## 每次运行都出现警告 \{#warning-on-every-run}
+
+<Terminology title="结果：前缀已变化，但没有匹配的已批准字段" to="/docs/reference/terminology#warning">警告</Terminology>的 **摘要** 会列出两个前缀，例如 `前缀已从 2001:db8:abcd:7800::/56 变为 2001:db8:abcd:8800::/56，但没有已批准字段匹配旧前缀。` <Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>不会移动，因此原因解决后，下一次运行会重试同一<Terminology title="与上次成功前缀或长度不同" to="/docs/reference/terminology#prefix-transition">前缀变化</Terminology>。
+
+请检查以下原因：
+
+- 消息中的旧前缀确实是你的地址仍在使用的网络。
+- 在“字段”选项卡中，包含这些地址的<Terminology title="“字段”选项卡上由一个开关控制的一组字段" to="/docs/reference/terminology#field-group">字段组</Terminology>已开启，或相应字段已勾选。
+- 这些值是<Terminology title="软件包可改写的具体配置字段" to="/docs/reference/terminology#approved-field">已批准字段</Terminology>中以字面形式写出的 IPv6 地址或网络，包括你在[其他设置](/docs/configure/configuration-scopes#other-settings)中勾选的字段。
+- 没有人已经手动或通过<Terminology title="由 Cron 软件包运行的原 update.php 脚本" to="/docs/reference/terminology#legacy-updater">旧版更新器</Terminology>更改过这些地址。
+- 之前的<Terminology title="结果：检查或安全阶段中止了运行" to="/docs/reference/terminology#failure">失败</Terminology>没有提前保存新值，详见[备份与恢复](/docs/operate/backups-and-recovery#after-a-failed-run)。
+- <Terminology title="ISP 前缀大小设置，/48 至 /64" to="/docs/reference/terminology#delegated-prefix-length">委派前缀长度</Terminology>没有被改短（网络变宽），详见[接口与前缀](/docs/configure/interface-and-prefix#changing-the-prefix-length)。
+
+如果已保存的地址仍在使用旧前缀，请解决原因后再次运行检查。如果已保存的地址已在使用当前活动前缀，请核实每个受影响的地址和服务，然后选择 **状态 → 操作 → 基线恢复 → 接受当前前缀**，将其设为新的<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>。
+
+:::warning
+
+**接受当前前缀** 不会检查已保存的地址、写入配置或重新加载服务。如果仍有已批准字段需要从旧前缀更新，请不要使用它。
+
+:::
+
+## 运行失败 \{#run-failed}
+
+每次失败都会在 **摘要**、<Terminology title="显示在 pfSense 通知列表中的提醒" to="/docs/reference/terminology#webgui-notice">WebGUI 通知</Terminology>和<Terminology title="软件包写入的 pfSense 常规日志" to="/docs/reference/terminology#system-log">系统日志</Terminology>中的 `运行失败：` 之后给出原因。在<Terminology title="立即运行或试运行后显示的只读结果" to="/docs/reference/terminology#command-output">命令输出</Terminology>中，原因跟在 `IPv6 前缀更新器失败：` 之后。
+
+| 消息                                                              | 含义                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+|-----------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `接口“lan”没有活动的全局 IPv6 地址。`                                       | <Terminology title="其地址可反映当前前缀的接口" to="/docs/reference/terminology#monitored-interface">监控接口</Terminology>当前没有<Terminology title="位于 2000::/3 内的公网 IPv6 地址" to="/docs/reference/terminology#global-unicast-address">全局地址</Terminology>。它可能只有<Terminology title="仅在单条链路上有效的 fe80:: 地址" to="/docs/reference/terminology#link-local-address">链路本地地址</Terminology>、处于关闭状态，或者是只获得<Terminology title="ISP 路由到防火墙的 IPv6 网络" to="/docs/reference/terminology#delegated-prefix">委派前缀</Terminology>的 WAN。 |
+| `需要合适的全局单播 IPv6 地址。`                                            | pfSense 返回的地址不在 `2000::/3` 内，例如唯一本地地址。                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `已配置的接口“opt2”不存在。`                                              | 已保存的<Terminology title="其地址可反映当前前缀的接口" to="/docs/reference/terminology#monitored-interface">监控接口</Terminology>已从 pfSense 中删除。                                                                                                                                                                                                                                                                                                                                                                   |
+| `未选择任何配置字段。请在“字段”选项卡中选择字段。`                                     | 所有字段组都已关闭，且没有勾选任何字段，例如在执行 **全部清除** 之后。没有读取或更改任何内容。                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `必须指定要监控的 pfSense 接口。`                                          | 软件包设置从未保存过。                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `IPv6 前缀更新器状态无效或不受支持。`                                          | <Terminology title="保存基线和上次运行的软件包文件" to="/docs/reference/terminology#package-state">软件包状态</Terminology>文件已损坏或使用了不受支持的格式。如果该文件无法读取，“状态”选项卡会在红色框中显示同样的消息。                                                                                                                                                                                                                                                                                                                                         |
+| `所需的 pfSense 依赖项“/usr/local/pkg/wireguard/includes/wg.inc”不可用。` | <Terminology title="分配给 pfSense WireGuard 隧道的地址" to="/docs/reference/terminology#wireguard-tunnel-address">WireGuard 隧道地址</Terminology>需要更改，但未安装 WireGuard 软件包。如果此消息中出现其他名称，则表示缺少相应的 pfSense 文件或函数。                                                                                                                                                                                                                                                                                             |
+| `目标 ID“...”重复。`                                                 | 两个同类配置条目使用了相同的名称或 ID，而软件包正是靠它来区分这些条目。没有更改任何内容。                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `配置路径“...”在已批准计划之外发生了变化。`                                       | 某个计划中的字段在规划与保存之间被更改，或在保存后出现了意外的值。                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `pfSense 无法备份当前配置。`                                             | 备份失败，因此没有更改任何内容。                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `pfSense 无法写入计划的配置。`                                            | 写入失败，软件包已将原始值恢复到内存中。                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `写入配置后，filter 重新加载失败。`                                          | 防火墙过滤器未能重新加载。新值已经保存。                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+
+在读取<Terminology title="保存基线和上次运行的软件包文件" to="/docs/reference/terminology#package-state">软件包状态</Terminology>之前发生的失败不会更新 **上次运行**。上表中有关地址和设置的消息，以及<Terminology title="保存基线和上次运行的软件包文件" to="/docs/reference/terminology#package-state">软件包状态</Terminology>文件无法读取的情况都属于此类，它们只会出现在<Terminology title="立即运行或试运行后显示的只读结果" to="/docs/reference/terminology#command-output">命令输出</Terminology>、<Terminology title="显示在 pfSense 通知列表中的提醒" to="/docs/reference/terminology#webgui-notice">WebGUI 通知</Terminology>和<Terminology title="软件包写入的 pfSense 常规日志" to="/docs/reference/terminology#system-log">系统日志</Terminology>中。
+
+对于 WireGuard 相关消息，安装 WireGuard 软件包或关闭 WireGuard <Terminology title="“字段”选项卡上由一个开关控制的一组字段" to="/docs/reference/terminology#field-group">字段组</Terminology>，都能让下一次运行继续进行。但关闭该组也意味着这些<Terminology title="分配给 pfSense WireGuard 隧道的地址" to="/docs/reference/terminology#wireguard-tunnel-address">隧道地址</Terminology>将不再被更新。
+
+如果<Terminology title="保存基线和上次运行的软件包文件" to="/docs/reference/terminology#package-state">软件包状态</Terminology>已损坏，可在 shell 中删除 `/cf/conf/ipv6-prefix-updater/state.json`，让下一次运行记录新的<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>。新<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>会按原样接受当前前缀，因此仍在使用更旧前缀的地址将保持不变。
+
+对于保存后的失败，请先解决验证或重新加载问题。然后，要么恢复更新前的修订版本并重新运行更新，要么核实已保存的新前缀值和受影响的服务均正确无误，再选择 **状态 → 操作 → 基线恢复 → 接受当前前缀**。
+
+接受操作只更新软件包的<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>，记录一个 **已接受** 结果，并结束反复警告的循环。完整的恢复步骤见[备份与恢复](/docs/operate/backups-and-recovery#after-a-failed-run)。
+
+## 反复出现的失败通知 \{#repeated-failure-notices}
+
+计划运行中的<Terminology title="结果：检查或安全阶段中止了运行" to="/docs/reference/terminology#failure">失败</Terminology>会在每次按计划运行时添加一条新的 <Terminology title="显示在 pfSense 通知列表中的提醒" to="/docs/reference/terminology#webgui-notice">WebGUI 通知</Terminology>。解决原因，或在解决之前先取消勾选 **<Terminology title="由 pfSense 管理的 cron 条目运行的自动检查" to="/docs/reference/terminology#scheduled-updates">启用计划更新</Terminology>**，即可停止产生新通知。
+
+## 另一次运行持有锁 \{#another-run-owns-the-lock}
+
+消息 `另一次运行持有软件包锁；本次调用未读取配置便已退出。` 表示已有一个检查正在运行。该检查一结束（即使是崩溃退出），<Terminology title="防止两个检查同时运行的保护机制" to="/docs/reference/terminology#run-lock">运行锁</Terminology>就会释放，因此这条消息会自行消失。
+
+要查看检查是否仍在运行，可在 shell 中运行 `ps ax | grep ipv6-prefix-updater`。锁文件在两次运行之间保留在磁盘上是有意的设计，无需删除。
+
+## 报告错误 \{#report-a-bug}
+
+请将错误报告提交到 [GitHub Issues](https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/issues/new/choose)。建议包含以下内容：
+
+- `pkg info pfSense-pkg-Ipv6PrefixUpdater` 输出的软件包版本。
+- pfSense 版本。
+- 每个<Terminology title="其地址可反映当前前缀的接口" to="/docs/reference/terminology#monitored-interface">监控接口</Terminology>及其<Terminology title="ISP 前缀大小设置，/48 至 /64" to="/docs/reference/terminology#delegated-prefix-length">委派前缀长度</Terminology>，以及处于开启状态的<Terminology title="“字段”选项卡上由一个开关控制的一组字段" to="/docs/reference/terminology#field-group">字段组</Terminology>。
+- “状态”选项卡和<Terminology title="立即运行或试运行后显示的只读结果" to="/docs/reference/terminology#command-output">命令输出</Terminology>的截图。
+- 相应的<Terminology title="软件包写入的 pfSense 常规日志" to="/docs/reference/terminology#system-log">系统日志</Terminology>行。
+
+建议在发布前将真实的公网地址替换为 `2001:db8::` 示例地址。

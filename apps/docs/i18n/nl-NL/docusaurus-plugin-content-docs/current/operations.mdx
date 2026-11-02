@@ -1,0 +1,66 @@
+---
+id: operations
+title: Veiligheidsmodel
+description: Bekijk welke controles, back-up en enkele schrijfactie het pakket uitvoert voordat het pfSense wijzigt, welke uitvoeringen nooit schrijven en wat het verkeer toch kan beïnvloeden.
+keywords:
+  - pfsense ipv6 prefix updater
+  - veiligheidsmodel
+  - configuratieback-up
+  - verificatie
+  - herladen van services
+tags:
+  - safety
+  - backup
+  - verification
+sidebar_position: 6
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Bekijk welke beveiligingen het pakket toepast voordat het je configuratie wijzigt en wat het verkeer toch kan beïnvloeden.
+
+## Wat er gebeurt bij een prefixwijziging \{#what-happens-on-a-prefix-change}
+
+Als het pakket een <Terminology title="afwijking van de laatste geslaagde prefix of lengte" to="/docs/reference/terminology#prefix-transition">prefixwissel</Terminology> vindt, werkt het in deze volgorde:
+
+1. Leest het <Terminology title="openbaar IPv6-adres binnen 2000::/3" to="/docs/reference/terminology#global-unicast-address">globale adres</Terminology> van elke <Terminology title="interface waarvan het adres de huidige prefix verraadt" to="/docs/reference/terminology#monitored-interface">bewaakte interface</Terminology> en berekent de prefix ervan.
+2. Vergelijkt de prefix met de <Terminology title="prefix waarmee de volgende controle vergelijkt" to="/docs/reference/terminology#last-successful-prefix">laatste geslaagde prefix</Terminology>.
+3. Zoekt de <Terminology title="exact configuratieveld dat het pakket mag herschrijven" to="/docs/reference/terminology#approved-field">goedgekeurde velden</Terminology> die nog de oude prefix gebruiken en stelt het volledige <Terminology title="volledige lijst met veldwijzigingen, opgesteld vóór het schrijven" to="/docs/reference/terminology#change-plan">wijzigingsplan</Terminology> op.
+4. Bevestigt dat pfSense elke betrokken service kan herladen en dat geen gepland veld is gewijzigd sinds het werd gelezen.
+5. Slaat een <Terminology title="kopie van de configuratie van vóór een schrijfactie" to="/docs/reference/terminology#configuration-backup">configuratieback-up</Terminology> op.
+6. Past alle wijzigingen toe en slaat de configuratie één keer op.
+7. Controleert de opgeslagen waarden, herlaadt alleen de betrokken services en controleert de waarden opnieuw.
+8. Verplaatst de <Terminology title="startprefix, vastgelegd zonder de configuratie te wijzigen" to="/docs/reference/terminology#baseline">baseline</Terminology> naar de nieuwe prefix, legt het resultaat vast en verstuurt een <Terminology title="melding na een geverifieerde, geslaagde update" to="/docs/reference/terminology#change-notification">wijzigingsmelding</Terminology> als die aan staat.
+
+Mislukt een stap vóór de back-up, dan blijft de configuratie zoals ze was.
+
+## Wat nooit tot schrijven leidt \{#what-never-causes-a-write}
+
+Bij deze resultaten wijzigt het pakket de configuratie niet:
+
+- <Terminology title="resultaat: baseline vastgelegd, configuratie ongewijzigd" to="/docs/reference/terminology#initialized">Geïnitialiseerd</Terminology> en <Terminology title="resultaat: testuitvoering voordat er een baseline bestaat" to="/docs/reference/terminology#initialization-preview">Voorbeeld van initialisatie</Terminology>.
+- <Terminology title="resultaat: prefix ongewijzigd, niets gescand of geschreven" to="/docs/reference/terminology#no-change">Geen wijziging</Terminology>.
+- <Terminology title="voorbeeld dat nooit een back-up maakt of schrijft" to="/docs/reference/terminology#dry-run">Testuitvoering</Terminology>.
+- <Terminology title="resultaat: prefix gewijzigd, maar geen goedgekeurd veld kwam overeen" to="/docs/reference/terminology#warning">Waarschuwing</Terminology>.
+- Een resultaat <Terminology title="resultaat: een controle of veiligheidsstap stopte de uitvoering" to="/docs/reference/terminology#failure">Mislukt</Terminology> dat vóór de back-up stopt.
+
+## Wat het verkeer toch kan beïnvloeden \{#what-can-still-affect-traffic}
+
+- **<Terminology title="pfSense-actie die gewijzigde instellingen toepast" to="/docs/reference/terminology#service-reload">Herladen van services</Terminology>**: wijzigingen aan statische interfaces of <Terminology title="extra interfaceadres, zoals CARP of IP Alias" to="/docs/reference/terminology#virtual-ip">virtuele IP's</Terminology> herladen alle interfaces en daarna het firewallfilter. Wijzigingen aan gateways en statische routes herladen de routering en het filter, OpenVPN-wijzigingen herladen elke OpenVPN-instantie, en wijzigingen aan DHCPv6, router advertisements en DNS starten die services opnieuw.
+- **Fouten na het opslaan**: mislukt een controle of het <Terminology title="pfSense-actie die gewijzigde instellingen toepast" to="/docs/reference/terminology#service-reload">herladen van een service</Terminology> na het opslaan, dan blijven de nieuwe waarden opgeslagen en wordt er niets teruggedraaid. De <Terminology title="startprefix, vastgelegd zonder de configuratie te wijzigen" to="/docs/reference/terminology#baseline">baseline</Terminology> blijft op de oude prefix staan, zoals [Uitvoeringsresultaten](/docs/operate/run-outcomes#failures-after-the-save) uitlegt.
+- **Waarden die op je wachten**: gateways, statische routes, DNS-domeinoverschrijvingen en de andere waarden in [Overige instellingen](/docs/configure/configuration-scopes#other-settings) houden de oude prefix totdat je ze aanvinkt, net als velden in een groep die uit staat.
+
+## Herstelroute \{#recovery-path}
+
+Voor elke schrijfactie staat een <Terminology title="kopie van de configuratie van vóór een schrijfactie" to="/docs/reference/terminology#configuration-backup">configuratieback-up</Terminology> van de configuratie van daarvoor in <Terminology title="pfSense-lijst met opgeslagen configuratierevisies" to="/docs/reference/terminology#config-history">Config History</Terminology>. De revisie die naar het pakket is genoemd, bevat de bijgewerkte configuratie, dus [Back-ups en herstel](/docs/operate/backups-and-recovery) laat zien welke revisie je terugzet.
+
+Het is aan te raden om daarnaast je gebruikelijke externe back-ups van pfSense te blijven maken.
+
+## Wat je kunt verifiëren \{#what-you-can-verify}
+
+Het tabblad Status toont het <Terminology title="globaal adres dat pfSense voor de bewaakte interface meldt" to="/docs/reference/terminology#source-address">bronadres</Terminology>, de <Terminology title="bronadres, gemaskeerd op de prefixlengte" to="/docs/reference/terminology#observed-prefix">waargenomen prefix</Terminology>, het resultaat, het aantal gewijzigde velden, het back-upresultaat, de <Terminology title="pfSense-actie die gewijzigde instellingen toepast" to="/docs/reference/terminology#service-reload">opnieuw geladen services</Terminology>, het tijdstip en de samenvatting van de laatste uitvoering. De <Terminology title="alleen-lezen resultaten na Nu uitvoeren of Testuitvoering" to="/docs/reference/terminology#command-output">Opdrachtuitvoer</Terminology> toont dezelfde details direct na een <Terminology title="controle die je start vanaf het tabblad Status" to="/docs/reference/terminology#manual-run">handmatige uitvoering</Terminology>.
+
+## Meer informatie \{#learn-more}
+
+- **[Zo werken updates](/docs/safety/how-updates-work)**: elke fase van een uitvoering en waar die kan stoppen.
+- **[Controleren vóór automatisering](/docs/safety/testing-and-verification)**: een checklist voor je firewall voordat je het schema inschakelt.

@@ -1,0 +1,66 @@
+---
+id: operations
+title: Model bezpieczeństwa
+description: Poznaj kontrole, kopię zapasową i jednokrotny zapis, które pakiet wykonuje przed zmianą pfSense, uruchomienia, które nigdy nie zapisują, i to, co nadal może wpływać na ruch.
+keywords:
+  - pfsense ipv6 prefix updater
+  - model bezpieczeństwa
+  - kopia zapasowa konfiguracji
+  - weryfikacja
+  - ponowne załadowanie usługi
+tags:
+  - safety
+  - backup
+  - verification
+sidebar_position: 6
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Poznaj zabezpieczenia, które pakiet stosuje przed zmianą konfiguracji, oraz to, co nadal może wpływać na ruch.
+
+## Co się dzieje przy zmianie prefiksu \{#what-happens-on-a-prefix-change}
+
+Gdy pakiet wykryje <Terminology title="różnica względem ostatniego pomyślnego prefiksu lub długości" to="/docs/reference/terminology#prefix-transition">zmianę prefiksu</Terminology>, działa w tej kolejności:
+
+1. Odczytuje <Terminology title="publiczny adres IPv6 z zakresu 2000::/3" to="/docs/reference/terminology#global-unicast-address">globalny adres</Terminology> każdego <Terminology title="interfejs, którego adres ujawnia bieżący prefiks" to="/docs/reference/terminology#monitored-interface">monitorowanego interfejsu</Terminology> i oblicza jego prefiks.
+2. Porównuje prefiks z <Terminology title="prefiks, z którym porównuje następne sprawdzenie" to="/docs/reference/terminology#last-successful-prefix">ostatnim pomyślnym prefiksem</Terminology>.
+3. Znajduje <Terminology title="konkretne pole konfiguracji, które pakiet może przepisać" to="/docs/reference/terminology#approved-field">zatwierdzone pola</Terminology>, które nadal używają starego prefiksu, i tworzy kompletny <Terminology title="pełna lista zmian pól, tworzona przed zapisem" to="/docs/reference/terminology#change-plan">plan zmian</Terminology>.
+4. Potwierdza, że pfSense może ponownie załadować każdą usługę, której dotyczą zmiany, i że żadne zaplanowane pole nie zmieniło się od chwili odczytu.
+5. Tworzy <Terminology title="kopia konfiguracji wykonana przed zapisem" to="/docs/reference/terminology#configuration-backup">kopię zapasową konfiguracji</Terminology>.
+6. Stosuje wszystkie zmiany i zapisuje konfigurację jeden raz.
+7. Sprawdza zapisane wartości, ponownie ładuje tylko usługi, których dotyczą zmiany, i ponownie sprawdza wartości.
+8. Przenosi <Terminology title="prefiks startowy zapisany bez zmiany konfiguracji" to="/docs/reference/terminology#baseline">wartość bazową</Terminology> na nowy prefiks, zapisuje wynik i wysyła <Terminology title="alert wysyłany po zweryfikowanej udanej aktualizacji" to="/docs/reference/terminology#change-notification">powiadomienie o zmianie</Terminology>, jeśli je włączono.
+
+Jeśli którykolwiek krok przed utworzeniem kopii zapasowej się nie powiedzie, konfiguracja pozostaje bez zmian.
+
+## Co nigdy nie powoduje zapisu \{#what-never-causes-a-write}
+
+Pakiet nie zmienia konfiguracji przy tych wynikach:
+
+- <Terminology title="wynik: zapisano wartość bazową, konfiguracja bez zmian" to="/docs/reference/terminology#initialized">Zainicjowano</Terminology> i <Terminology title="wynik: próba przed ustaleniem wartości bazowej" to="/docs/reference/terminology#initialization-preview">Podgląd inicjalizacji</Terminology>.
+- <Terminology title="wynik: prefiks bez zmian, nic nie skanowano ani nie zapisano" to="/docs/reference/terminology#no-change">Brak zmian</Terminology>.
+- <Terminology title="podgląd bez kopii zapasowej i bez zapisu" to="/docs/reference/terminology#dry-run">Próba</Terminology>.
+- <Terminology title="wynik: prefiks się zmienił, ale żadne zatwierdzone pole nie pasowało" to="/docs/reference/terminology#warning">Ostrzeżenie</Terminology>.
+- <Terminology title="wynik: kontrola lub etap bezpieczeństwa zatrzymał uruchomienie" to="/docs/reference/terminology#failure">Błąd</Terminology>, który zatrzymuje uruchomienie przed utworzeniem kopii zapasowej.
+
+## Co nadal może wpływać na ruch \{#what-can-still-affect-traffic}
+
+- **<Terminology title="akcja pfSense stosująca zmienione ustawienia" to="/docs/reference/terminology#service-reload">Ponowne załadowanie usług</Terminology>**: zmiany interfejsów statycznych lub <Terminology title="dodatkowy adres interfejsu, np. CARP lub IP Alias" to="/docs/reference/terminology#virtual-ip">wirtualnych adresów IP</Terminology> powodują ponowne załadowanie wszystkich interfejsów, a następnie filtra zapory. Zmiany bram i tras statycznych powodują ponowne załadowanie routingu i filtra, zmiany OpenVPN powodują ponowne załadowanie wszystkich instancji OpenVPN, a zmiany DHCPv6, ogłoszeń routera i DNS powodują ponowne uruchomienie tych usług.
+- **Błędy po zapisie**: jeśli kontrola lub <Terminology title="akcja pfSense stosująca zmienione ustawienia" to="/docs/reference/terminology#service-reload">ponowne załadowanie usługi</Terminology> nie powiedzie się po zapisie, nowe wartości pozostają zapisane i nic nie jest wycofywane. <Terminology title="prefiks startowy zapisany bez zmiany konfiguracji" to="/docs/reference/terminology#baseline">Wartość bazowa</Terminology> pozostaje na starym prefiksie, co wyjaśnia przewodnik [Wyniki uruchomień](/docs/operate/run-outcomes#failures-after-the-save).
+- **Wartości, które na ciebie czekają**: bramy, trasy statyczne, nadpisania domen DNS i pozostałe wartości z grupy [Inne ustawienia](/docs/configure/configuration-scopes#other-settings) zachowują stary prefiks, dopóki ich nie zaznaczysz, podobnie jak pola w wyłączonej grupie.
+
+## Ścieżka odzyskiwania \{#recovery-path}
+
+Dla każdego zapisu w <Terminology title="lista zapisanych rewizji konfiguracji w pfSense" to="/docs/reference/terminology#config-history">Config History</Terminology> istnieje <Terminology title="kopia konfiguracji wykonana przed zapisem" to="/docs/reference/terminology#configuration-backup">kopia zapasowa konfiguracji</Terminology> sprzed tego zapisu. Rewizja nazwana od pakietu zawiera zaktualizowaną konfigurację, dlatego przewodnik [Kopie zapasowe i odzyskiwanie](/docs/operate/backups-and-recovery) pokazuje, którą rewizję przywrócić.
+
+Zaleca się również utrzymywanie zwykłych kopii zapasowych pfSense poza urządzeniem.
+
+## Co możesz zweryfikować \{#what-you-can-verify}
+
+Karta Stan pokazuje <Terminology title="globalny adres zgłaszany przez pfSense dla monitorowanego interfejsu" to="/docs/reference/terminology#source-address">adres źródłowy</Terminology>, <Terminology title="adres źródłowy zamaskowany do długości prefiksu" to="/docs/reference/terminology#observed-prefix">zaobserwowany prefiks</Terminology>, wynik, liczbę zmienionych pól, stan kopii zapasowej, <Terminology title="akcja pfSense stosująca zmienione ustawienia" to="/docs/reference/terminology#service-reload">ponownie załadowane usługi</Terminology>, czas i podsumowanie ostatniego uruchomienia. <Terminology title="wyniki tylko do odczytu po Uruchom teraz lub Próbie" to="/docs/reference/terminology#command-output">Wynik polecenia</Terminology> pokazuje te same szczegóły zaraz po <Terminology title="sprawdzenie uruchomione z karty Stan" to="/docs/reference/terminology#manual-run">ręcznym uruchomieniu</Terminology>.
+
+## Więcej informacji \{#learn-more}
+
+- **[Jak działają aktualizacje](/docs/safety/how-updates-work)**: każdy etap uruchomienia i miejsca, w których może się ono zatrzymać.
+- **[Kontrola przed automatyzacją](/docs/safety/testing-and-verification)**: lista kontrolna do wykonania na zaporze przed włączeniem harmonogramu.

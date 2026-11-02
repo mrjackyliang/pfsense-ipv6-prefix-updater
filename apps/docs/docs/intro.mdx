@@ -1,0 +1,90 @@
+---
+id: intro
+title: Overview
+description: Keep pfSense aliases, interfaces, and VPN addresses on your current IPv6 prefix when your ISP delegates a new one, with a backup before each change.
+keywords:
+  - pfsense ipv6 prefix updater
+  - overview
+  - ipv6 prefix delegation
+  - dynamic prefix
+  - pfsense package
+tags:
+  - setup
+  - overview
+  - ipv6
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Keep the IPv6 addresses saved in pfSense on your current prefix when your ISP assigns a new <Terminology title="IPv6 network your ISP routes to the firewall" to="/docs/reference/terminology#delegated-prefix">delegated prefix</Terminology>.
+
+## What It Does
+
+pfSense IPv6 Prefix Updater is a pfSense package that watches the interfaces you choose for a new prefix. When the prefix changes, it rewrites the matching addresses in the fields you select and keeps the <Terminology title="address bits after the delegated prefix" to="/docs/reference/terminology#host-portion">host portion</Terminology> of each one.
+
+## Why Use This Package?
+
+1. Keeps the <Terminology title="address bits after the delegated prefix" to="/docs/reference/terminology#host-portion">host portion</Terminology> of every address so each device keeps the same suffix after a prefix change.
+2. Changes only the <Terminology title="exact configuration field the package may rewrite" to="/docs/reference/terminology#approved-field">approved fields</Terminology> you select on the Fields tab so remote VPN networks, peers, gateways, and routes stay as you set them.
+3. Saves a <Terminology title="copy of the configuration saved before a write" to="/docs/reference/terminology#configuration-backup">configuration backup</Terminology> before every write so the previous configuration is ready in <Terminology title="pfSense list of saved configuration revisions" to="/docs/reference/terminology#config-history">Config History</Terminology>.
+4. Runs on a schedule that pfSense manages so you don't need the Cron package or a script in a home directory.
+5. Shows every result on the Status tab so you can see what changed, which services reloaded, and whether a backup was made.
+
+## What It Updates
+
+- **Aliases**: addresses and networks in Host and Network aliases.
+- **Static Interfaces**: addresses of interfaces set to Static IPv6.
+- **<Terminology title="extra interface address such as CARP or IP Alias" to="/docs/reference/terminology#virtual-ip">Virtual IP Addresses</Terminology>**: CARP and IP Alias <Terminology title="extra interface address such as CARP or IP Alias" to="/docs/reference/terminology#virtual-ip">virtual IPs</Terminology>.
+- **IPsec**: the local side of Tunnel IPv6 and Routed (VTI) <Terminology title="IPsec entry describing local and remote networks" to="/docs/reference/terminology#ipsec-phase-2">Phase 2</Terminology> entries.
+- **OpenVPN**: IPv6 tunnel and local networks on servers and <Terminology title="per-client OpenVPN settings on a server" to="/docs/reference/terminology#client-specific-override">client specific overrides</Terminology>, and IPv6 tunnel networks on clients.
+- **WireGuard**: <Terminology title="address assigned to a pfSense WireGuard tunnel" to="/docs/reference/terminology#wireguard-tunnel-address">tunnel addresses</Terminology>, when the WireGuard package is installed.
+- **DHCPv6 Server**: address, prefix delegation, and pool ranges, static mappings, and the DNS and NTP servers handed to clients.
+- **Router Advertisements**: advertised DNS servers and RA subnets.
+- **DNS Host Overrides**: host overrides in the DNS Resolver and DNS Forwarder.
+- **Firewall Rules**: source and destination addresses typed into rules.
+- **NAT and NPt**: typed addresses in port forwards, outbound NAT, and 1:1 NAT, and NPt prefixes.
+- **Other packages' settings**: only the fields you tick, after which the package applies that package's settings again.
+
+The **Fields** tab lists every address inside your prefix with a switch for each <Terminology title="group of fields with one switch on the Fields tab" to="/docs/reference/terminology#field-group">field group</Terminology> and a checkbox for each field.
+
+## What Waits for You
+
+The **Other Settings** group starts off, so these values change only when you tick them:
+
+- The remote side of a VPN, such as IPsec and OpenVPN remote networks and WireGuard peers, allowed IPs, and endpoints.
+- Gateways, static routes, DNS domain overrides, certificates, secrets, Base64-encoded values, and descriptions.
+- Port, URL, and other alias types.
+
+Interfaces that get their address from DHCPv6, SLAAC, or <Terminology title="interface addressed from another interface's delegated prefix" to="/docs/reference/terminology#tracked-interface">Track Interface</Terminology> are never changed, because pfSense generates those addresses. Neither are IPv4 addresses, host names, and IPv6 addresses outside the old prefix. [Other Settings](/docs/configure/configuration-scopes#other-settings) has the full list.
+
+## How a Check Works
+
+1. Reads the <Terminology title="public IPv6 address inside 2000::/3" to="/docs/reference/terminology#global-unicast-address">global address</Terminology> of each <Terminology title="interface whose address reveals the current prefix" to="/docs/reference/terminology#monitored-interface">Monitored Interface</Terminology> and calculates its prefix.
+2. Compares it with the <Terminology title="prefix the next check compares against" to="/docs/reference/terminology#last-successful-prefix">last successful prefix</Terminology> and stops with <Terminology title="outcome: prefix unchanged, nothing scanned or written" to="/docs/reference/terminology#no-change">No change</Terminology> if they match.
+3. On a <Terminology title="change from the last successful prefix or length" to="/docs/reference/terminology#prefix-transition">prefix transition</Terminology>, builds a <Terminology title="full list of field changes, built before writing" to="/docs/reference/terminology#change-plan">change plan</Terminology> for the <Terminology title="exact configuration field the package may rewrite" to="/docs/reference/terminology#approved-field">approved fields</Terminology> that still use the old prefix.
+4. Saves a <Terminology title="copy of the configuration saved before a write" to="/docs/reference/terminology#configuration-backup">configuration backup</Terminology>, writes every change in one save, reloads only the affected services, and checks the values again.
+5. Records the result on the Status tab and sends a <Terminology title="alert sent after a verified successful update" to="/docs/reference/terminology#change-notification">change notification</Terminology> if it's turned on.
+
+[Safety Model](/docs/operations) covers the protections at each step.
+
+## Before You Start
+
+:::warning
+
+pfSense IPv6 Prefix Updater is an <Terminology title="package installed from GitHub, not Netgate's repository" to="/docs/reference/terminology#unofficial-package">unofficial package</Terminology>. You install it from GitHub with `pkg`, and Netgate doesn't review or support it.
+
+:::
+
+Package releases are published on the project's GitHub Releases page. Version 1.x releases contain only the <Terminology title="original update.php script run by the Cron package" to="/docs/reference/terminology#legacy-updater">legacy updater</Terminology>, not this package.
+
+## Languages
+
+Every tab of the package, the <Terminology title="read-only results shown after Run Now or Dry Run" to="/docs/reference/terminology#command-output">Command Output</Terminology>, and the package's messages follow the language selected in pfSense. The package includes translations for 18 pfSense language choices and falls back to English for any other language.
+
+## Next Steps
+
+- **[Install the Package](/docs/installation)**: add the package from a GitHub release.
+- **[Establish the Baseline](/docs/first-run)**: record and check the current prefix before you turn on the schedule.
+- **[Migrate From the Script](/docs/migrate-from-legacy)**: switch over from the version 1.x script.
+- **[Safety Model](/docs/operations)**: see what the package protects and what it can still affect.

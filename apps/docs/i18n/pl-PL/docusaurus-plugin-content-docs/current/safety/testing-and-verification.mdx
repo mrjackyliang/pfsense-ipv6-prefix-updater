@@ -1,0 +1,63 @@
+---
+id: testing-and-verification
+title: Kontrola przed automatyzacją
+description: Zweryfikuj interfejs, prefiks, ścieżkę odzyskiwania i powiadomienia na własnej zaporze, zanim pozwolisz pakietowi działać według harmonogramu bez nadzoru.
+keywords:
+  - pfsense ipv6 prefix updater
+  - lista kontrolna
+  - próba
+  - config history
+  - zaplanowane aktualizacje
+tags:
+  - safety
+  - checklist
+  - scheduled updates
+sidebar_position: 2
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Sprawdź interfejs, prefiks, ścieżkę odzyskiwania i powiadomienia na zaporze, zanim pozwolisz pakietowi działać według harmonogramu.
+
+## 1. Potwierdzenie źródła \{#1-confirm-the-source}
+
+Przy odznaczonej opcji **<Terminology title="automatyczne sprawdzenia z wpisu cron zarządzanego przez pfSense" to="/docs/reference/terminology#scheduled-updates">Włącz zaplanowane aktualizacje</Terminology>** zapisz ustawienia i raz wybierz **Uruchom teraz**. Następnie sprawdź kartę Stan:
+
+- **<Terminology title="interfejs, którego adres ujawnia bieżący prefiks" to="/docs/reference/terminology#monitored-interface">Monitorowany interfejs</Terminology>** to zamierzony WAN lub <Terminology title="interfejs adresowany z delegowanego prefiksu innego interfejsu" to="/docs/reference/terminology#tracked-interface">śledzony interfejs</Terminology>.
+- **<Terminology title="globalny adres zgłaszany przez pfSense dla monitorowanego interfejsu" to="/docs/reference/terminology#source-address">Ostatni pomyślny adres źródłowy</Terminology>** jest zgodny z adresem w **Status → Interfaces**.
+- **<Terminology title="prefiks, z którym porównuje następne sprawdzenie" to="/docs/reference/terminology#last-successful-prefix">Ostatni pomyślny prefiks</Terminology>** jest zgodny z prefiksem delegowanym przez dostawcę internetu.
+- **Wynik** w sekcji **Ostatnie uruchomienie** to <Terminology title="wynik: zapisano wartość bazową, konfiguracja bez zmian" to="/docs/reference/terminology#initialized">Zainicjowano</Terminology>, a **Zmienione pola** to `0`.
+
+Jeśli któraś wartość jest nieoczekiwana, zaleca się poprawić ją przed kontynuowaniem. Przewodnik [Interfejs i prefiks](/docs/configure/interface-and-prefix#changing-the-interfaces) wyjaśnia, co powoduje zmiana interfejsu lub długości, gdy istnieje już <Terminology title="prefiks startowy zapisany bez zmiany konfiguracji" to="/docs/reference/terminology#baseline">wartość bazowa</Terminology>.
+
+## 2. Uruchomienie podglądu \{#2-run-a-preview}
+
+Wybierz **<Terminology title="podgląd bez kopii zapasowej i bez zapisu" to="/docs/reference/terminology#dry-run">Próba</Terminology>**. Przy niezmienionym prefiksie zgłasza wynik <Terminology title="wynik: prefiks bez zmian, nic nie skanowano ani nie zapisano" to="/docs/reference/terminology#no-change">Brak zmian</Terminology>, a pole **<Terminology title="kopia konfiguracji wykonana przed zapisem" to="/docs/reference/terminology#configuration-backup">Utworzono kopię zapasową konfiguracji</Terminology>** pokazuje Nie.
+
+<Terminology title="podgląd bez kopii zapasowej i bez zapisu" to="/docs/reference/terminology#dry-run">Próba</Terminology> nie może zasymulować zmiany prefiksu, więc wymienia zaplanowane pola dopiero po rzeczywistej <Terminology title="różnica względem ostatniego pomyślnego prefiksu lub długości" to="/docs/reference/terminology#prefix-transition">zmianie prefiksu</Terminology>.
+
+## 3. Sprawdzenie odzyskiwania \{#3-check-recovery}
+
+Otwórz **Diagnostics → Backup & Restore → Config History** i potwierdź, że pfSense przechowuje historię konfiguracji. Uruchomienie, które zapisuje, umieszcza tam swoją <Terminology title="kopia konfiguracji wykonana przed zapisem" to="/docs/reference/terminology#configuration-backup">kopię zapasową konfiguracji</Terminology> przed pierwszą zmianą.
+
+Zaleca się już teraz przeczytać sekcję [Znalezienie właściwej rewizji](/docs/operate/backups-and-recovery#find-the-right-revision), ponieważ rewizja nazwana od pakietu zawiera zaktualizowaną konfigurację. Warto też pobrać kopię zapasową poza urządzenie, ponieważ <Terminology title="lista zapisanych rewizji konfiguracji w pfSense" to="/docs/reference/terminology#config-history">Config History</Terminology> znajduje się na zaporze.
+
+## 4. Test powiadomień \{#4-test-notifications}
+
+Jeśli opcja **<Terminology title="alert wysyłany po zweryfikowanej udanej aktualizacji" to="/docs/reference/terminology#change-notification">Wysyłaj powiadomienia o zmianach</Terminology>** jest zaznaczona, zaleca się wysłać test za pomocą przycisków pfSense w **System → Advanced → Notifications**. Pakiet korzysta z <Terminology title="zdalne usługi alertów skonfigurowane w pfSense" to="/docs/reference/terminology#notification-channels">kanałów powiadomień</Terminology> już tam skonfigurowanych.
+
+Komunikaty o wynikach <Terminology title="wynik: prefiks się zmienił, ale żadne zatwierdzone pole nie pasowało" to="/docs/reference/terminology#warning">Ostrzeżenie</Terminology> i <Terminology title="wynik: kontrola lub etap bezpieczeństwa zatrzymał uruchomienie" to="/docs/reference/terminology#failure">Błąd</Terminology> pozostają w WebGUI i nie korzystają z tych kanałów.
+
+## 5. Włączenie harmonogramu \{#5-turn-on-the-schedule}
+
+Zaznacz **<Terminology title="automatyczne sprawdzenia z wpisu cron zarządzanego przez pfSense" to="/docs/reference/terminology#scheduled-updates">Włącz zaplanowane aktualizacje</Terminology>**, gdy powyższe kroki pokażą oczekiwany adres i prefiks. Domyślną wartością pola **Harmonogram** jest **Co godzinę**.
+
+Po pierwszym zaplanowanym terminie zaleca się sprawdzić pola **Znacznik czasu (UTC)** i **Wynik** w sekcji **Ostatnie uruchomienie**.
+
+## Co wymaga rzeczywistej zmiany prefiksu \{#what-needs-a-real-prefix-change}
+
+<Terminology title="pełna lista zmian pól, tworzona przed zapisem" to="/docs/reference/terminology#change-plan">Plan zmian</Terminology>, <Terminology title="kopia konfiguracji wykonana przed zapisem" to="/docs/reference/terminology#configuration-backup">kopia zapasowa konfiguracji</Terminology>, <Terminology title="akcja pfSense stosująca zmienione ustawienia" to="/docs/reference/terminology#service-reload">ponowne załadowanie usług</Terminology> i <Terminology title="alert wysyłany po zweryfikowanej udanej aktualizacji" to="/docs/reference/terminology#change-notification">powiadomienie o zmianie</Terminology> następują tylko po rzeczywistej <Terminology title="różnica względem ostatniego pomyślnego prefiksu lub długości" to="/docs/reference/terminology#prefix-transition">zmianie prefiksu</Terminology>. Najbezpieczniej obserwować pełne uruchomienie na zaporze laboratoryjnej, której prefiks może się zmienić.
+
+Na własnej zaporze zaleca się przejrzeć pierwszą rzeczywistą zmianę na karcie Stan, zaczynając od pól **Zmienione pola**, **<Terminology title="akcja pfSense stosująca zmienione ustawienia" to="/docs/reference/terminology#service-reload">Ponownie załadowane usługi</Terminology>** i **Podsumowanie**.
+
+Każde pole widoczne po uruchomieniu opisuje przewodnik [Stan i działania](/docs/operate/status-and-actions).

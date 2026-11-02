@@ -1,0 +1,174 @@
+---
+id: command-line-and-files
+title: 命令列與檔案
+description: 在 shell 中執行 /usr/local/sbin/ipv6-prefix-updater，並查閱其選項、結束代碼、輸出行、檔案、記錄與 WebGUI 通知。
+keywords:
+  - pfsense ipv6 prefix updater
+  - 命令列
+  - 結束代碼
+  - 狀態檔案
+  - file_notice
+tags:
+  - reference
+  - command line
+  - files
+sidebar_position: 4
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+在 shell 中執行套件命令，並找出它使用的檔案、記錄與通知。
+
+## 用法 \{#usage}
+
+```shell
+/usr/local/sbin/ipv6-prefix-updater [--manual] [--dry-run] [--accept-current-prefix [--interface=NAME]] [--migrate-legacy] [--help]
+```
+
+由 pfSense 管理的 cron 項目會以 `root` 身分不帶選項執行該命令。每次檢查之前，它也會將<Terminology title="由 Cron 套件執行的原始 update.php 指令碼" to="/docs/reference/terminology#legacy-updater">舊版更新器</Terminology>的所有遺留內容遷移到套件中。「狀態」分頁在 **立即執行** 時使用 `--manual`，在 **<Terminology title="不備份也不寫入的預覽" to="/docs/reference/terminology#dry-run">試執行</Terminology>** 時使用 `--dry-run`，在基準復原時使用 `--accept-current-prefix`；「清理」分頁則使用 `--migrate-legacy`。
+
+不帶選項時，該命令的行為與排程檢查相同；**<Terminology title="由 pfSense 管理的 cron 項目執行的自動檢查" to="/docs/reference/terminology#scheduled-updates">啟用排程更新</Terminology>** 關閉時會回報<Terminology title="結果：更新關閉時略過的排程檢查" to="/docs/reference/terminology#disabled">已停用</Terminology>。
+
+## 選項 \{#options}
+
+| 參數                        | 說明                                                                                                                                                                |
+|---------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `--manual`                | 即使<Terminology title="由 pfSense 管理的 cron 項目執行的自動檢查" to="/docs/reference/terminology#scheduled-updates">排程更新</Terminology>已關閉也會執行。                                 |
+| `--dry-run`               | 只預覽，不備份也不寫入，並隱含 `--manual`。                                                                                                                                       |
+| `--accept-current-prefix` | 將目前作用中的來源位址、前綴與長度記錄為基準，不會掃描已核准欄位、建立備份、寫入設定或重新載入服務。它隱含 `--manual`，且不能與 `--dry-run` 同時使用。                                                                           |
+| `--interface=NAME`        | 將 `--accept-current-prefix` 限定於一個監控介面，以其內部名稱（例如 `lan`）指定。不使用此選項時，所有具有位址的監控介面都會被接受。                                                                                |
+| `--migrate-legacy`        | 立即將<Terminology title="由 Cron 套件執行的原始 update.php 指令碼" to="/docs/reference/terminology#legacy-updater">舊版更新器</Terminology>遷移到套件中並列印每個步驟，不會執行前綴檢查。遷移回報警告時會以 `2` 結束。 |
+| `--help`                  | 列印用法說明行並以 `0` 結束。用法說明行本身不會列出 `--help`。                                                                                                                            |
+
+任何其他選項都會向標準錯誤輸出 `未知選項：<option>`，並以 `64` 結束。將 `--accept-current-prefix` 與 `--dry-run` 一起使用同樣會以 `64` 結束。
+
+## 結束代碼 \{#exit-codes}
+
+| 代碼   | 意義                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+|------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `0`  | <Terminology title="結果：已記錄基準，設定未變更" to="/docs/reference/terminology#initialized">已初始化</Terminology>、<Terminology title="結果：尚無基準時的試執行" to="/docs/reference/terminology#initialization-preview">初始化預覽</Terminology>、<Terminology title="結果：前綴未變更，未掃描或寫入任何內容" to="/docs/reference/terminology#no-change">無變更</Terminology>、<Terminology title="不備份也不寫入的預覽" to="/docs/reference/terminology#dry-run">試執行</Terminology>、**已接受**、<Terminology title="結果：欄位已更新、儲存、重新載入並驗證" to="/docs/reference/terminology#success">成功</Terminology>或<Terminology title="結果：更新關閉時略過的排程檢查" to="/docs/reference/terminology#disabled">已停用</Terminology>。另一個檢查持有<Terminology title="防止兩個檢查同時執行的保護機制" to="/docs/reference/terminology#run-lock">執行鎖定</Terminology>時以及執行 `--help` 之後，也會傳回此代碼。 |
+| `1`  | <Terminology title="結果：檢查或安全階段中止了執行" to="/docs/reference/terminology#failure">失敗</Terminology>。標準錯誤會輸出一行 `IPv6 前綴更新器失敗：<reason>`。                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `2`  | <Terminology title="結果：前綴已變更，但沒有符合的已核准欄位" to="/docs/reference/terminology#warning">警告</Terminology>。                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `64` | 未知選項。                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+
+## 輸出 \{#output}
+
+監控一個介面的執行完成後，會在標準輸出列印九行；在<Terminology title="不備份也不寫入的預覽" to="/docs/reference/terminology#dry-run">試執行</Terminology>或<Terminology title="結果：欄位已更新、儲存、重新載入並驗證" to="/docs/reference/terminology#success">成功</Terminology>之後，還會接著列出欄位變更：
+
+```text
+狀態: 成功
+介面: lan
+觀察到的來源位址: 2001:db8:abcd:88aa::1
+先前前綴: 2001:db8:abcd:7800::
+目前前綴: 2001:db8:abcd:8800::/56
+計畫或已變更欄位: 1
+設定備份: 已建立
+已重新載入的服務: 防火牆篩選器
+摘要: 已在介面 lan 將 1 個已核准欄位從 2001:db8:abcd:7800::/56 更新為 2001:db8:abcd:8800::/56。
+欄位變更:
+- aliases/alias/0/address: 2001:db8:abcd:78aa::10 → 2001:db8:abcd:88aa::10
+```
+
+- `先前前綴`不含長度；在<Terminology title="結果：已記錄基準，設定未變更" to="/docs/reference/terminology#initialized">已初始化</Terminology>或<Terminology title="結果：尚無基準時的試執行" to="/docs/reference/terminology#initialization-preview">初始化預覽</Terminology>之後，它會顯示為 `無法使用`。
+- `已重新載入的服務`會列出各服務的狀態標籤，沒有時則顯示 `無`。<Terminology title="不備份也不寫入的預覽" to="/docs/reference/terminology#dry-run">試執行</Terminology>之後，它列出的是將會重新載入的服務。
+- `欄位變更`中每個被取代的位址各占一行，格式為 `- <path>: <old> → <new>`，最多列出 200 個欄位。
+- 如果執行重新套用了其他套件的設定，或略過了已不存在的已勾選欄位，每一項都會接著輸出一行，措辭與「狀態」分頁上相同。
+- 當另一個檢查持有<Terminology title="防止兩個檢查同時執行的保護機制" to="/docs/reference/terminology#run-lock">執行鎖定</Terminology>時，唯一的輸出是 `另一個執行程序持有套件鎖定；此次呼叫未讀取設定便已結束。`
+- 監控多個介面時，輸出會以整體的 `狀態`、`摘要`、套件與略過欄位的各行開頭，接著是每個介面各自的各行內容，各組之間以空白行分隔。
+- 如果檢查之前進行了<Terminology title="由 Cron 套件執行的原始 update.php 指令碼" to="/docs/reference/terminology#legacy-updater">舊版更新器</Terminology>遷移，會先列印遷移的各個步驟。
+- 標籤與訊息會依照 pfSense 的語言設定顯示。
+
+## 檔案與路徑 \{#files-and-paths}
+
+| 路徑                                                        | 說明                                                                                                                                                                            |
+|-----------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `/usr/local/sbin/ipv6-prefix-updater`                     | 命令本身，是一個 PHP 指令碼。                                                                                                                                                             |
+| `/usr/local/pkg/ipv6-prefix-updater.xml`                  | 「設定」頁面的定義及其生命週期掛鉤。                                                                                                                                                            |
+| `/usr/local/pkg/ipv6-prefix-updater.inc`                  | 安裝、設定同步、移除與表單驗證函式。                                                                                                                                                            |
+| `/usr/local/pkg/ipv6-prefix-updater/`                     | 執行階段類別與翻譯。                                                                                                                                                                    |
+| `/usr/local/www/ipv6-prefix-updater-status.php`           | 「狀態」分頁。                                                                                                                                                                       |
+| `/usr/local/www/ipv6-prefix-updater-fields.php`           | 「欄位」分頁。                                                                                                                                                                       |
+| `/usr/local/www/ipv6-prefix-updater-backups.php`          | 「備份」分頁。                                                                                                                                                                       |
+| `/usr/local/www/ipv6-prefix-updater-cleanup.php`          | 「清理」分頁。                                                                                                                                                                       |
+| `/usr/local/share/pfSense-pkg-Ipv6PrefixUpdater/info.xml` | 套件資訊清單。                                                                                                                                                                       |
+| `/cf/conf/ipv6-prefix-updater/state.json`                 | <Terminology title="保存基準與上次執行的套件檔案" to="/docs/reference/terminology#package-state">套件狀態</Terminology>。其目錄權限為 `0700`，檔案權限為 `0600`，每次寫入都會以原子方式取代該檔案，且在重新開機、啟用 RAM 磁碟與移除套件後都會保留。 |
+| `/cf/conf/ipv6-prefix-updater/backups/`                   | **備份** 分頁中的副本，每份包含一個 `<id>.xml` 設定檔與一個 `<id>.json` 描述檔，權限皆為 `0600`。                                                                                                           |
+| `/var/run/ipv6-prefix-updater.lock`                       | <Terminology title="防止兩個檢查同時執行的保護機制" to="/docs/reference/terminology#run-lock">執行鎖定</Terminology>，以非阻塞的 `flock` 持有，並記錄執行中的處理程序 ID。它在兩次執行之間會保留在磁碟上。                            |
+
+## 套件狀態格式 \{#package-state-format}
+
+| 鍵                     | 說明                                                                                                                                                                                                                                                                                                                                                   |
+|-----------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `schema_version`      | 一律為 `1`。                                                                                                                                                                                                                                                                                                                                             |
+| `targets.<interface>` | 每個監控介面一個<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>，以介面的內部名稱為鍵，包含 `interface`、`source_address`、`prefix`、`prefix_length` 與 `updated_at`。從<Terminology title="由 Cron 套件執行的原始 update.php 指令碼" to="/docs/reference/terminology#legacy-updater">舊版更新器</Terminology>接手的基準還會將 `source` 設為 `legacy_cache`。 |
+| `last_run`            | 最近記錄的一次執行，包含 `status`、`timestamp`、`interface`、`observed_address`、`previous_prefix`、`current_prefix`、`current_prefix_length`、`change_count`、`backup_created`、`services`、`message`、`message_key` 與 `message_arguments`。                                                                                                                                |
+| `legacy_migration`    | 在<Terminology title="由 Cron 套件執行的原始 update.php 指令碼" to="/docs/reference/terminology#legacy-updater">舊版更新器</Terminology>遷移之後出現，包含 `status`、`steps`、`warnings` 與 `recorded_at`。「清理」分頁會顯示它。                                                                                                                                                             |
+
+- `status` 的值為 `initialized`、`initialization_preview`、`no_change`、`dry_run`、`warning`、`accepted`、`success` 或 `failure` 之一。
+- <Terminology title="結果：欄位已更新、儲存、重新載入並驗證" to="/docs/reference/terminology#success">成功</Terminology>之後，如果通知已關閉，`last_run.notification` 為 `disabled`；嘗試傳送後則為 `sent` 或 `failed`。
+- <Terminology title="不備份也不寫入的預覽" to="/docs/reference/terminology#dry-run">試執行</Terminology>或<Terminology title="結果：欄位已更新、儲存、重新載入並驗證" to="/docs/reference/terminology#success">成功</Terminology>之後，每筆結果還會包含 `changes`，列出最多 200 個欄位的 `path` 與 `replacements`，其中每個取代項目都是一組舊位址與新位址。
+- `package_reapply` 會列出這次執行重新套用了其設定的每個套件的 `section`、`package`、`status` 與 `error`，`skipped_fields` 則列出已不存在的已勾選欄位。兩者都只會在不為空時出現。
+- 監控多個介面時，`last_run` 會保存總計以及一個 `targets` 清單，其中每個介面各有一筆結果。
+- 時間戳記採用 UTC 的 ISO 8601 格式。如果檔案無法解析，或其結構版本不同，每次執行都會停止，並顯示 `IPv6 前綴更新器狀態無效或不受支援。`
+
+## 設定的儲存位置 \{#settings-storage}
+
+設定儲存在 pfSense 設定中的 `installedpackages/ipv6prefixupdater/config/0`。
+
+| 鍵                  | 說明                                                                                                                                       |
+|--------------------|------------------------------------------------------------------------------------------------------------------------------------------|
+| `enabled`          | **<Terminology title="由 pfSense 管理的 cron 項目執行的自動檢查" to="/docs/reference/terminology#scheduled-updates">啟用排程更新</Terminology>**，勾選時為 `on`。 |
+| `row`              | **監控介面**，一份清單，每一列包含一個 `interface`（介面鍵，例如 `lan`）與一個 `prefix_length`（`48` 到 `64`）。                                                         |
+| `update_frequency` | **排程**，值為 `every_fifteen_minutes`、`hourly`、`every_six_hours` 或 `daily` 之一。                                                               |
+| `notifications`    | **<Terminology title="更新驗證成功後傳送的警示" to="/docs/reference/terminology#change-notification">傳送變更通知</Terminology>**，勾選時為 `on`。               |
+
+### 欄位選取 \{#field-selection}
+
+「欄位」分頁上的選擇儲存在設定記錄旁的 `installedpackages/ipv6prefixupdater/fields`，因此儲存「設定」分頁（會取代 `config/0`）絕不會清除它們。
+
+| 鍵                      | 說明                                                                 |
+|------------------------|--------------------------------------------------------------------|
+| `schema`               | 一律為 `1`。它表示這是從「欄位」分頁儲存的選取，即使是空的選取也一樣。                              |
+| `enabled_groups/item`  | 開啟的群組，例如 `firewall_rules`、`dhcpv6`，或代表其他套件設定的 `package:<section>`。 |
+| `disabled_groups/item` | 關閉的 pfSense 群組。不在任何一份清單中的 pfSense 群組為開啟，其他套件的群組則為關閉。               |
+| `include/item`         | 在關閉的群組中已勾選欄位的識別碼。                                                  |
+| `exclude/item`         | 在開啟的群組中已取消勾選欄位的識別碼。                                                |
+
+- pfSense 群組的鍵為 `interfaces`、`virtual_ips`、`aliases`、`firewall_rules`、`nat`、`dhcpv6`、`router_advertisements`、`dns_host_overrides`、`ipsec`、`openvpn` 與 `wireguard`。
+- `include` 與 `exclude` 各最多保存 1,000 個識別碼，每個識別碼都遵循[欄位識別碼](/docs/reference/approved-fields#field-identities)中的格式。
+
+## Cron 項目 \{#cron-entry}
+
+儲存設定時會移除該命令既有的項目；當 `enabled` 為 `on` 時，會透過 pfSense 的 `install_cron_job()` 為 `root` 安裝新的項目。
+
+| 排程值                     | Cron 欄位        |
+|-------------------------|----------------|
+| `every_fifteen_minutes` | `*/15 * * * *` |
+| `hourly`                | `0 * * * *`    |
+| `every_six_hours`       | `0 */6 * * *`  |
+| `daily`                 | `0 0 * * *`    |
+
+未知的值會改用每小時一次的欄位。在<Terminology title="由 Cron 套件執行的原始 update.php 指令碼" to="/docs/reference/terminology#legacy-updater">舊版更新器</Terminology>遷移等待舊版指令碼執行結束期間，套件會保留一個 `*/15 * * * *` 項目，讓遷移即使在排程更新關閉時也會重試。
+
+## 記錄與通知 \{#logs-and-notices}
+
+每一行<Terminology title="套件寫入的 pfSense 一般記錄" to="/docs/reference/terminology#system-log">系統記錄</Terminology>都會透過 pfSense 的 `log_error()` 寫入，並以 `IPv6 Prefix Updater:` 開頭。通知則透過 `file_notice()` 建立，並連結到 `/ipv6-prefix-updater-status.php`；遷移通知除外，它會連結到 `/ipv6-prefix-updater-cleanup.php`。
+
+| 通知 ID                                   | 建立時機                                                                                                                                           | 傳送方式                                                                                                                        |
+|-----------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
+| `ipv6-prefix-updater-success`           | <Terminology title="結果：欄位已更新、儲存、重新載入並驗證" to="/docs/reference/terminology#success">成功</Terminology>且 `notifications` 設為 `on`                    | WebGUI 與<Terminology title="在 pfSense 中設定的遠端警示服務" to="/docs/reference/terminology#notification-channels">通知管道</Terminology> |
+| `ipv6-prefix-updater-no-matches`        | <Terminology title="結果：前綴已變更，但沒有符合的已核准欄位" to="/docs/reference/terminology#warning">警告</Terminology>                                            | 僅 WebGUI                                                                                                                    |
+| `ipv6-prefix-updater-failure`           | <Terminology title="結果：檢查或安全階段中止了執行" to="/docs/reference/terminology#failure">失敗</Terminology>                                                 | 僅 WebGUI                                                                                                                    |
+| `ipv6-prefix-updater-package-<section>` | 執行變更了其他套件的設定，且沒有任何已安裝套件擁有該區段，或重新套用其設定失敗                                                                                                        | 僅 WebGUI                                                                                                                    |
+| `ipv6-prefix-updater-legacy-migration`  | 至少執行了一個步驟的<Terminology title="由 Cron 套件執行的原始 update.php 指令碼" to="/docs/reference/terminology#legacy-updater">舊版更新器</Terminology>遷移，或在安裝期間失敗的遷移 | 僅 WebGUI                                                                                                                    |
+
+如果命令本身的環境檢查失敗，或無法開啟其鎖定檔案，原因只會輸出到標準錯誤。每次需要寫入的執行還會儲存一個設定修訂版本，描述為 `IPv6 前綴更新器為介面 <interface> 變更了 <count> 個已核准欄位`。
+
+## 頁面權限 \{#page-privileges}
+
+套件的每個頁面都宣告了各自的 pfSense 權限，因此可以逐頁授予存取權：
+
+- **狀態**：`page-services-ipv6-prefix-updater-status`，其名稱為 `Services: IPv6 Prefix Updater: Status`。
+- **欄位**：`page-services-ipv6-prefix-updater-fields`，其名稱為 `Services: IPv6 Prefix Updater: Fields`。它可以變更執行會改寫哪些欄位，因此建議只授予管理員。
+- **備份**：`page-services-ipv6-prefix-updater-backups`，其名稱為 `Services: IPv6 Prefix Updater: Backups`。它允許下載完整的設定副本，因此建議只授予管理員。
+- **清理**：`page-services-ipv6-prefix-updater-cleanup`，其名稱為 `Services: IPv6 Prefix Updater: Cleanup`。

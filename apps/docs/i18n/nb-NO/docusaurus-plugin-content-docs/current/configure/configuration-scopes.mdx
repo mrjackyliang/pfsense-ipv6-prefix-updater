@@ -1,0 +1,153 @@
+---
+id: configuration-scopes
+title: Felt
+description: Velg i fanen Felt hvilke konfigurasjonsfelt som endres med det delegerte prefikset, angi unntak, gå gjennom innstillingene til andre pakker, og velg selv om andre verdier skal tas med.
+keywords:
+  - pfsense ipv6 prefix updater
+  - felt-fanen
+  - feltgrupper
+  - brannmurregler
+  - dhcpv6
+  - pakkeinnstillinger
+tags:
+  - configuration
+  - fields
+  - safety
+sidebar_position: 2
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import fieldsTab from './_assets_/configuration-scopes-1.png';
+import fieldException from './_assets_/configuration-scopes-2.png';
+import otherSettings from './_assets_/configuration-scopes-3.png';
+
+Velg hvilke konfigurasjonsfelt som endres når prefikset endres.
+
+## Fanen Felt \{#the-fields-tab}
+
+Fanen **Felt** under **Services → IPv6 Prefix Updater** viser alle adresser innenfor prefikset til hver <Terminology title="startprefiks registrert uten å endre konfigurasjonen" to="/docs/reference/terminology#baseline">grunnlinje</Terminology>, gruppert etter type. Linjen **Grunnlinjer** viser prefiksene fanen sammenligner med. Før den første kontrollen har registrert en grunnlinje, viser fanen bare gruppebryterne.
+
+<img src={fieldsTab} alt="Fanen Felt i IPv6 Prefix Updater med knappene Velg automatisk og Fjern alle, et søkefelt, et filter og gruppen Statiske grensesnitt, som viser adressene til LAN og LAB med prefiksdelen uthevet" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+Hver rad viser:
+
+- **Avkrysningsboks**: avkrysset når neste <Terminology title="endring fra siste vellykkede prefiks eller lengde" to="/docs/reference/terminology#prefix-transition">prefiksovergang</Terminology> vil oppdatere feltet.
+- **Felt**: oppføringen, for eksempel en regelbeskrivelse eller et aliasnavn, etterfulgt av feltetiketten og konfigurasjonsbanen.
+- **Nåværende verdi**: verdien med prefiksdelen av hver adresse uthevet. Bare den uthevede delen endres, og <Terminology title="adressebitene etter det delegerte prefikset" to="/docs/reference/terminology#host-portion">vertsdelen</Terminology> blir værende.
+
+## Gruppebrytere og unntak \{#group-switches-and-exceptions}
+
+Hver <Terminology title="gruppe av felt med én bryter i fanen Felt" to="/docs/reference/terminology#field-group">feltgruppe</Terminology> har en bryter i overskriften:
+
+- **På**: hvert felt av den typen endres med prefikset, også felt som legges til senere, unntatt dem du fjerner haken fra.
+- **Av**: bare feltene du krysser av, endres.
+
+En avkrysning som avviker fra gruppebryteren, er et <Terminology title="enkeltfelt der avkrysningen avviker fra gruppebryteren" to="/docs/reference/terminology#field-exception">feltunntak</Terminology>. Så lenge en gruppe har unntak, viser overskriften en strek, og **N av M valgt** teller de avkryssede feltene. Et klikk på overskriften slår gruppen på eller av og tilbakestiller alle avkrysningene i den slik at de samsvarer med bryteren. Velg **Lagre** for å beholde endringene.
+
+<img src={fieldException} alt="Fanen Felt med gruppen Brannmurregler slått på, én regel uten hake slik at overskriften viser en strek og 2 av 3 valgt, og en regel uten sporings-ID som følger gruppebryteren" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+Et valg følger oppføringen, ikke posisjonen i en liste, så det havner ikke på en annen oppføring når andre oppføringer flyttes eller slettes. Pakken gjenkjenner hver oppføring ut fra:
+
+- **Brannmurregler**: sporings-ID-en til regelen.
+- **Aliaser**: aliasnavnet.
+- **Statiske DHCPv6-tilordninger**: DUID-en, fordi pfSense identifiserer DHCPv6-tilordninger med DUID i stedet for MAC-adresse.
+- **Portvideresendinger og utgående NAT**: tidspunktet regelen ble opprettet.
+- **1:1-NAT- og NPt-oppføringer og DHCPv6-pooler**: beskrivelsen.
+- **DNS-vertsoverstyringer**: verten, domenet og om oppføringen har IPv4-, IPv6- eller begge typer adresser.
+- **Innstillinger for andre pakker**: et felt som identifiserer hver listeoppføring entydig, for eksempel navnet eller beskrivelsen.
+- **Andre innstillinger**: et felt som identifiserer hver listeoppføring entydig og ikke inneholder noen adresse, for eksempel navnet på en gateway. Ett valg gjelder alle oppføringene i en enkel liste, for eksempel DNS-serverne under **System → General Setup**.
+- **Andre oppføringer**: grensesnittet, navnet eller pfSense-ID-en. Ett valg dekker alle DNS-serverne, NTP-serverne eller RA-subnettene til et grensesnitt.
+
+En rad der oppføringen mangler en slik identifikator eller deler den med en annen oppføring, har ingen avkrysningsboks og viser `Ingen stabil identifikator, så dette feltet følger gruppebryteren.` Valgene lagres atskilt fra innstillingene, så de fjernes ikke når du lagrer fanen Innstillinger.
+
+## pfSense-grupper \{#pfsense-groups}
+
+Elleve grupper dekker innstillingene til pfSense selv. En ny installasjon og en flytting fra det <Terminology title="opprinnelig update.php-skript kjørt av Cron-pakken" to="/docs/reference/terminology#legacy-updater">eldre oppdateringsskriptet</Terminology> starter med alle slått på.
+
+| Gruppe                                                                                                                                                           | Hva den dekker                                                                                                                                                                                                                                                                                                                                                                                                                                |
+|------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Statiske grensesnitt                                                                                                                                             | Adresser på grensesnitt som er satt til Static IPv6. DHCPv6, SLAAC, <Terminology title="grensesnitt adressert fra et annet grensesnitts delegerte prefiks" to="/docs/reference/terminology#tracked-interface">Track Interface</Terminology> og andre moduser hoppes over.                                                                                                                                                                     |
+| <Terminology title="ekstra grensesnittadresse, for eksempel CARP eller IP Alias" to="/docs/reference/terminology#virtual-ip">Virtuelle IP-adresser</Terminology> | <Terminology title="ekstra grensesnittadresse, for eksempel CARP eller IP Alias" to="/docs/reference/terminology#virtual-ip">Virtuelle IP-er</Terminology> av typen CARP og IP Alias. Typene Proxy ARP og Other hører til gruppen Andre innstillinger, og CIDR-masken forblir som den er.                                                                                                                                                     |
+| Aliaser                                                                                                                                                          | Adresser og nettverk i verts- og nettverksaliaser. Port-, URL-, URL Table- og andre aliastyper hører til gruppen Andre innstillinger.                                                                                                                                                                                                                                                                                                         |
+| Brannmurregler                                                                                                                                                   | Inntastede kilde- og måladresser i brannmurregler, inkludert flytende regler. Aliaser, grensesnittnettverk som **LAN subnets** og **any** hoppes over.                                                                                                                                                                                                                                                                                        |
+| NAT og NPt                                                                                                                                                       | Inntastede adresser i portvideresendinger, utgående NAT og 1:1-NAT, og prefiksene i NPt-oppføringer. NPt-oppføringer som sporer et grensesnitt, hoppes over.                                                                                                                                                                                                                                                                                  |
+| DHCPv6-server                                                                                                                                                    | Adresseintervaller, intervaller for prefiksdelegering og intervaller i ekstra pooler, adresser for statiske tilordninger og DNS- og NTP-serverne som deles ut til klienter.                                                                                                                                                                                                                                                                   |
+| Ruterannonseringer                                                                                                                                               | DNS-serverne og RA-subnettene som hvert grensesnitt annonserer.                                                                                                                                                                                                                                                                                                                                                                               |
+| DNS-vertsoverstyringer                                                                                                                                           | Adresser i vertsoverstyringer for DNS Resolver og DNS Forwarder, inkludert hver adresse i en kommadelt liste. Domeneoverstyringer hører til gruppen Andre innstillinger.                                                                                                                                                                                                                                                                      |
+| IPsec                                                                                                                                                            | Feltene Local Network og NAT/BINAT translation i <Terminology title="IPsec-oppføring som beskriver lokale og eksterne nettverk" to="/docs/reference/terminology#ipsec-phase-2">fase 2</Terminology>-oppføringer i modusene Tunnel IPv6 og Routed (VTI), når typen er Address eller Network. Eksterne nettverk hører til gruppen Andre innstillinger.                                                                                          |
+| OpenVPN                                                                                                                                                          | IPv6-tunnelnettverk og lokale IPv6-nettverk på servere, IPv6-tunnelnettverk på klienter og IPv6-tunnelnettverk og lokale IPv6-nettverk på <Terminology title="OpenVPN-innstillinger per klient på en server" to="/docs/reference/terminology#client-specific-override">klientspesifikke overstyringer</Terminology>. Eksterne nettverk hører til gruppen Andre innstillinger, og servertunnelnettverk som sporer et grensesnitt, hoppes over. |
+| WireGuard                                                                                                                                                        | <Terminology title="adresse tildelt en WireGuard-tunnel i pfSense" to="/docs/reference/terminology#wireguard-tunnel-address">Tunneladresser</Terminology> på WireGuard-tunneler i pfSense. Noder, tillatte IP-er og endepunkter hører til gruppen Andre innstillinger.                                                                                                                                                                        |
+
+Hvis du slår av gruppene brannmuren ikke bruker, holder du uventede verdier unna en <Terminology title="fullstendig liste over feltendringer, bygget før skriving" to="/docs/reference/terminology#change-plan">endringsplan</Terminology>.
+
+## Knapper, søk og filtre \{#buttons-search-and-filters}
+
+- **Velg automatisk**: slår på alle pfSense-grupper og krysser av alle feltene i dem. Gruppen Andre innstillinger og innstillingene til andre pakker forblir som de er.
+- **Fjern alle**: slår av alle grupper og fjerner alle haker.
+- **Søk i felt**: viser bare radene der gruppen, oppføringen, etiketten, verdien eller banen inneholder teksten.
+- **Filter**: viser alle rader, bare valgte rader eller bare rader fra andre pakker.
+
+**Velg automatisk** og **Fjern alle** endrer bare siden til du velger **Lagre**. Når et utvalg der ingenting er valgt, er lagret, viser fanen en advarsel, og kjøringer stopper med `Ingen konfigurasjonsfelt er valgt. Velg felt på Felt-fanen.` til du velger felt igjen.
+
+Når fanen viser mer enn 40 felt, starter gruppene lukket. Velg navnet på en gruppe for å åpne den.
+
+## Innstillinger for andre pakker \{#other-packages-settings}
+
+Innstillinger som andre pakker lagrer under `installedpackages`, får en egen gruppe som er oppkalt etter den installerte pakken som eier dem, eller etter seksjonen når ingen pakke gjør det. Pakken kan ikke vite hva disse feltene betyr, så de starter uten hake, og **Velg automatisk** velger dem aldri. Kryss bare av et felt etter at du har kontrollert hva det gjør i den pakken.
+
+Når en kjøring endrer et av disse feltene, bruker den innstillingene for den pakken på nytt, slik pakkens egen **Save**-knapp gjør. **Siste kjøring** i fanen Status viser hvert resultat under **Pakker**:
+
+- `Innstillingene for pakken <package> ble brukt på nytt.`
+- `Ingen installert pakke eier innstillingene <section>. Start tjenesten som bruker dem, på nytt manuelt.` Verdiene lagres likevel. Dette skjer også når en pakke lagrer noen av innstillingene sine under en seksjon med et annet navn.
+- `Kunne ikke bruke innstillingene for pakken <package> på nytt: <reason>` De nye verdiene forblir lagret, og ingenting rulles tilbake.
+
+Begge problemene legger også til et <Terminology title="varsel vist i listen over varsler i pfSense" to="/docs/reference/terminology#webgui-notice">WebGUI-varsel</Terminology>.
+
+## Felt som ikke lenger finnes \{#fields-that-no-longer-exist}
+
+Når oppføringen bak et avkrysset felt slettes, vises feltet under **Manglende felt** øverst i fanen. Kjøringer hopper over det og viser det under **Felt som ble hoppet over** i fanen Status. **Glem manglende felt** fjerner disse avkrysningene.
+
+## Andre innstillinger \{#other-settings}
+
+Gruppen **Andre innstillinger** viser alle andre adresser innenfor prefikset til en grunnlinje. Den starter slått av, så en verdi i den endres bare når du krysser den av, eller når du slår på gruppen, noe som også gjelder verdier som legges til senere. Hver rad oppgir sin type:
+
+- Den eksterne siden av alle VPN-er: eksterne nettverk og eksterne gatewayer i IPsec, og eksterne nettverk og serveradresser i OpenVPN.
+- WireGuard-noder, inkludert tillatte IP-er og endepunkter.
+- Gatewayer og statiske ruter.
+- Sertifikater, private nøkler, passord og forhåndsdelte nøkler, der verdiene vises som `Verdien er skjult`.
+- Verdier som er lagret i Base64, for eksempel de egendefinerte alternativene i DNS Resolver. De dekodes, skrives om og kodes på nytt.
+- Beskrivelser.
+- Alle andre innstillinger, som i stedet viser navnet på innstillingen, for eksempel domeneoverstyringer i DNS Resolver og DNS-serverne under **System → General Setup**.
+
+<img src={otherSettings} alt="Gruppen Andre innstillinger i fanen Felt, som viser en statisk rute, en aliasbeskrivelse, Base64-kodede egendefinerte alternativer for DNS Resolver, en domeneoverstyring og en gateway, hver med sin type" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+Når en kjøring har endret en av disse verdiene, laster den inn på nytt det pfSense laster inn på nytt når du lagrer den innstillingen:
+
+- **Gatewayer og statiske ruter**: rutingen, deretter brannmurfilteret.
+- **DNS-servere under System → General Setup**: systemets DNS-innstillinger, deretter DNS Resolver eller DNS Forwarder.
+- **Verdier for DNS Resolver, DNS Forwarder, IPsec, OpenVPN og WireGuard**: den aktuelle tjenesten.
+- **Verdier for en annen pakke**: innstillingene til den pakken, slik [Innstillinger for andre pakker](#other-packages-settings) beskriver.
+- **Beskrivelser, sertifikater og verdier uten kjent tjeneste**: ingenting. Den nye verdien blir bare lagret.
+
+Det anbefales å krysse av disse feltene mens grunnlinjen fortsatt er det gamle prefikset, siden fanen sammenligner med det nye prefikset etter en endring. Eksterne VPN-noder har sin egen konfigurasjon, så en node som peker på en endret adresse, må oppdateres på sin side.
+
+## Slik sammenlignes verdier \{#how-values-are-matched}
+
+- En adresse endres bare når den hører til det <Terminology title="prefikset neste kontroll sammenligner med" to="/docs/reference/terminology#last-successful-prefix">siste vellykkede prefikset</Terminology>, med lengden som er lagret i <Terminology title="startprefiks registrert uten å endre konfigurasjonen" to="/docs/reference/terminology#baseline">grunnlinjen</Terminology>. Adresser fra andre nettverk, IPv4-adresser, vertsnavn og aliasnavn forblir som de er, og fanen viser dem ikke.
+- I lister, for eksempel aliasoppføringer, lokale OpenVPN-nettverk og vertsoverstyringer i DNS Resolver, kontrolleres hvert element for seg, og skilletegnene forblir slik de er skrevet.
+- I innstillingene til andre pakker og i gruppen Andre innstillinger kontrolleres hver adresse i teksten for seg, og resten av teksten forblir slik den er skrevet.
+- Et CIDR-suffiks som `/64` forblir slik det er skrevet, og <Terminology title="adressebitene etter det delegerte prefikset" to="/docs/reference/terminology#host-portion">vertsdelen</Terminology> av hver adresse beholdes.
+- På et <Terminology title="grensesnitt adressert fra et annet grensesnitts delegerte prefiks" to="/docs/reference/terminology#tracked-interface">sporet grensesnitt</Terminology> inneholder DHCPv6-intervaller og statiske tilordninger vertssuffikser som `::1000`, og de forblir som de er.
+- Omskrevne adresser lagres i <Terminology title="korteste standardskrivemåte for en adresse, med små bokstaver" to="/docs/reference/terminology#canonical-form">kanonisk form</Terminology>, så skrivemåten kan avvike fra det som ble skrevet inn.
+
+## Forhåndsvise endringer \{#previewing-changes}
+
+En <Terminology title="forhåndsvisning som aldri sikkerhetskopierer eller skriver" to="/docs/reference/terminology#dry-run">testkjøring</Terminology> leser de valgte feltene bare etter en <Terminology title="endring fra siste vellykkede prefiks eller lengde" to="/docs/reference/terminology#prefix-transition">prefiksovergang</Terminology>. Så lenge prefikset er uendret, rapporterer den <Terminology title="resultat: prefiks uendret, ingenting gjennomsøkt eller skrevet" to="/docs/reference/terminology#no-change">Ingen endring</Terminology>, så fanen Felt er måten å forhåndsvise et nytt utvalg på. Etter en overgang viser <Terminology title="skrivebeskyttede resultater vist etter Kjør nå eller Testkjøring" to="/docs/reference/terminology#command-output">Kommandoutdata</Terminology> fra testkjøringen hver adresse den ville ha erstattet, under `Feltendringer`.
+
+En <Terminology title="forhåndsvisning som aldri sikkerhetskopierer eller skriver" to="/docs/reference/terminology#dry-run">testkjøring</Terminology> hopper også over kontrollen av at pfSense kan laste inn de berørte tjenestene på nytt. En manglende WireGuard-pakke viser seg derfor bare i en reell kjøring.
+
+## WireGuard-pakken \{#wireguard-package}
+
+For å oppdatere <Terminology title="adresse tildelt en WireGuard-tunnel i pfSense" to="/docs/reference/terminology#wireguard-tunnel-address">WireGuard-tunneladresser</Terminology> trengs WireGuard-pakken. Hvis disse adressene må endres og pakken ikke er installert, stopper en reell kjøring før sikkerhetskopien med `Den nødvendige pfSense-avhengigheten «/usr/local/pkg/wireguard/includes/wg.inc» er ikke tilgjengelig.`
+
+[Godkjente felt](/docs/reference/approved-fields) viser de nøyaktige konfigurasjonsbanene bak hver gruppe og identiteten hvert valg lagres under.

@@ -1,0 +1,20 @@
+{
+  "sidebar.docs.category.Start Here": {
+    "message": "시작하기"
+  },
+  "sidebar.docs.category.Configure": {
+    "message": "구성"
+  },
+  "sidebar.docs.category.Operate": {
+    "message": "운영"
+  },
+  "sidebar.docs.category.Safety": {
+    "message": "안전"
+  },
+  "sidebar.docs.category.Reference": {
+    "message": "참조"
+  },
+  "sidebar.docs.category.Contributing": {
+    "message": "기여하기"
+  }
+}

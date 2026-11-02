@@ -1,0 +1,85 @@
+---
+id: migrate-from-legacy
+title: Migrer fra skriptet
+description: Installer pakken over det eldre update.php-skriptet, la den flytte Cron-oppføringene, de lagrede prefiksene og sikkerhetskopiene for deg, og se deretter gjennom resultatet i fanen Opprydding.
+keywords:
+  - pfsense ipv6 prefix updater
+  - eldre oppdateringsskript
+  - migrering
+  - update.php
+  - cron-pakke
+  - opprydding
+tags:
+  - setup
+  - migration
+  - legacy updater
+sidebar_position: 5
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import cleanupBefore from './_assets_/migrate-from-legacy-1.png';
+import cleanupAfter from './_assets_/migrate-from-legacy-2.png';
+
+Gå over fra det <Terminology title="opprinnelig update.php-skript kjørt av Cron-pakken" to="/docs/reference/terminology#legacy-updater">eldre oppdateringsskriptet</Terminology> til pakken ved å installere den, så overtar pakken grensesnittene, de lagrede prefiksene og sikkerhetskopiene til skriptet av seg selv.
+
+## Hva som endres \{#what-changes}
+
+| Område           | <Terminology title="opprinnelig update.php-skript kjørt av Cron-pakken" to="/docs/reference/terminology#legacy-updater">Eldre oppdateringsskript</Terminology> | Pakke                                                                                                                                                                                                                                                                                                                                                                             |
+|------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Installasjon     | `install.sh` kopierer filer til `/root/pfsense-ipv6-prefix-updater`                                                                                            | `pkg add` installerer en pfSense-pakke                                                                                                                                                                                                                                                                                                                                            |
+| Planlegging      | En oppføring i Cron-pakken som du oppretter                                                                                                                    | Innstillingen **Tidsplan**, med en cron-oppføring som pfSense styrer                                                                                                                                                                                                                                                                                                              |
+| Grensesnitt      | Én Cron-oppføring per enhet i operativsystemet, for eksempel `igb1`                                                                                            | Én rad i **Overvåkede grensesnitt** per pfSense-grensesnitt, for eksempel LAN, og alle kontrolleres i én kjøring                                                                                                                                                                                                                                                                  |
+| Hva som endres   | Den gamle prefiksteksten hvor som helst i konfigurasjonen, inkludert base64-kodede verdier                                                                     | <Terminology title="eksakt konfigurasjonsfelt som pakken kan skrive om" to="/docs/reference/terminology#approved-field">Godkjente felt</Terminology> du velger i fanen **Felt**                                                                                                                                                                                                   |
+| Sikkerhetskopier | Kopier i `/root/pfsense-ipv6-prefix-updater-backups` som alle kan lese                                                                                         | En <Terminology title="kopi av konfigurasjonen lagret før en skriving" to="/docs/reference/terminology#configuration-backup">konfigurasjonssikkerhetskopi</Terminology> i <Terminology title="pfSense-liste over lagrede konfigurasjonsrevisjoner" to="/docs/reference/terminology#config-history">Config History</Terminology> og i fanen **Sikkerhetskopier** før hver skriving |
+| Lagret prefiks   | `/root/pfsense-ipv6-prefix-updater-cache`                                                                                                                      | <Terminology title="pakkefil med grunnlinjen og siste kjøring" to="/docs/reference/terminology#package-state">Pakketilstanden</Terminology>, som fylles fra den eldre hurtigbufferen under flyttingen                                                                                                                                                                             |
+| Varsler          | Sendes etter hver endring                                                                                                                                      | Et valgfritt <Terminology title="varsel sendt etter en verifisert vellykket oppdatering" to="/docs/reference/terminology#change-notification">endringsvarsel</Terminology> etter resultatet <Terminology title="resultat: felt oppdatert, lagret, lastet inn igjen og verifisert" to="/docs/reference/terminology#success">Vellykket</Terminology>                                |
+
+## Installer pakken \{#install-the-package}
+
+[Installer pakken](/docs/installation) med `pkg add` mens det eldre oppdateringsskriptet fortsatt er på plass. Du trenger ikke å fjerne noe først, og det anbefales at du ikke sletter Cron-oppføringene eller mappene i `/root` selv, fordi pakken leser dem under flyttingen.
+
+Hvis du kjører den gamle installasjonskommandoen på nytt, installeres ikke skriptet igjen. Fra og med versjon 2 skriver den ut en feilmelding med `pkg add`-kommandoen og endrer ingenting.
+
+## Hva som skjer automatisk \{#what-happens-automatically}
+
+Installasjonstrinnet finner det eldre oppdateringsskriptet og flytter det inn i pakken i denne rekkefølgen:
+
+1. **Sikkerhetskopi**: lagrer en <Terminology title="kopi av konfigurasjonen lagret før en skriving" to="/docs/reference/terminology#configuration-backup">konfigurasjonssikkerhetskopi</Terminology> før noe endres.
+2. **Grensesnitt**: gjør hver Cron-oppføring om til en rad i **Overvåkede grensesnitt** ved å knytte enheten, for eksempel `igb1.10`, til pfSense-grensesnittet som bruker den, og beholder <Terminology title="antall innledende nettverksbiter, for eksempel /56" to="/docs/reference/terminology#prefix-length">prefikslengden</Terminology>.
+3. **Tidsplan**: setter **Tidsplan** i pakken til et valg som kontrollerer minst like ofte som Cron-oppføringene gjorde, og slår på <Terminology title="automatiske kontroller fra en cron-oppføring styrt av pfSense" to="/docs/reference/terminology#scheduled-updates">planlagte oppdateringer</Terminology>.
+4. **Grunnlinjer**: registrerer hvert lagrede prefiks som <Terminology title="startprefiks registrert uten å endre konfigurasjonen" to="/docs/reference/terminology#baseline">grunnlinje</Terminology> for grensesnittet sitt, slik at ingen prefiksendring går tapt.
+5. **Cron-oppføringer**: fjerner bare oppføringene som kjører `update.php`, i den samme konfigurasjonsskrivingen som de nye innstillingene, slik at de to oppdateringsverktøyene aldri kjører samtidig.
+6. **Sikkerhetskopier**: kopierer hver sikkerhetskopi fra det eldre skriptet til fanen **Sikkerhetskopier**, der bare root kan lese dem, og sletter originalen når kopien er verifisert.
+7. **Gamle filer**: sletter skriptet, de lagrede prefiksene, det nedlastede arkivet og det lagrede installasjonsprogrammet fra `/root`.
+
+Når flyttingen er ferdig, lenker et WebGUI-varsel til fanen Opprydding. Hvis det eldre skriptet kjører akkurat da, venter pakken og fullfører flyttingen ved neste planlagte kontroll.
+
+### Flere Cron-oppføringer \{#several-cron-entries}
+
+Hver Cron-oppføring som angir en annen enhet, blir en egen rad, og én kjøring kontrollerer alle. Grensesnitt som deler ett <Terminology title="IPv6-nettverket internettleverandøren ruter til brannmuren" to="/docs/reference/terminology#delegated-prefix">delegert prefiks</Terminology>, oppdaterer felles felt én gang, i én enkelt skriving med sikkerhetskopi.
+
+En Cron-oppføring der enheten ikke lenger hører til noe pfSense-grensesnitt, fjernes og vises som en advarsel, fordi skriptet ikke kunne ha oppdatert noe gjennom den.
+
+### Utdaterte lagrede prefikser \{#saved-prefixes-that-are-out-of-date}
+
+Hvis internettleverandøren endret prefikset etter at det eldre oppdateringsskriptet sist kjørte, forblir det lagrede prefikset <Terminology title="startprefiks registrert uten å endre konfigurasjonen" to="/docs/reference/terminology#baseline">grunnlinjen</Terminology>. Den første kontrollen i pakken finner da feltene som fortsatt bruker det gamle prefikset, og oppdaterer dem.
+
+Når ingen godkjente felt bruker et gammelt lagret prefiks, blir det gjeldende prefikset grunnlinjen i stedet, slik at den første kontrollen ikke rapporterer <Terminology title="resultat: prefiks endret, men ingen godkjente felt samsvarte" to="/docs/reference/terminology#warning">Advarsel</Terminology>.
+
+## Se gjennom fanen Opprydding \{#review-the-cleanup-tab}
+
+Åpne **Services → IPv6 Prefix Updater → Opprydding** for å se alle restene etter det eldre skriptet og hva som skjedde med hver av dem.
+
+<img src={cleanupBefore} alt="Fanen Opprydding i IPv6 Prefix Updater før oppryddingen, med to Cron-oppføringer fra det eldre skriptet, selve skriptet, lagrede prefikser for to enheter, én eldre sikkerhetskopi og to nedlastede installasjonsfiler" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+- **Rester etter 1.x**: Cron-oppføringene, skriptet, de lagrede prefiksene, sikkerhetskopiene, de nedlastede installasjonsfilene og låsefilen for skriptet, hver merket med **Funnet** eller **Finnes ikke**.
+- **Siste opprydding**: hvert trinn i flyttingen og eventuelle advarsler, for eksempel om en enhet som ikke er tilordnet et grensesnitt.
+- **Rydd opp nå**: kjører den samme flyttingen med en gang i stedet for å vente på neste planlagte kontroll. Andre Cron-oppføringer berøres aldri.
+
+<img src={cleanupAfter} alt="Fanen Opprydding i IPv6 Prefix Updater etter Rydd opp nå, med sikkerhetskopien, de fjernede Cron-oppføringene, den flyttede sikkerhetskopien og de slettede filene fra det eldre skriptet" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Kontroller dekningen \{#check-coverage}
+
+Etter den første reelle <Terminology title="endring fra siste vellykkede prefiks eller lengde" to="/docs/reference/terminology#prefix-transition">prefiksovergangen</Terminology> sammenligner du **Endrede felt** og **Sammendrag** med endringene det <Terminology title="opprinnelig update.php-skript kjørt av Cron-pakken" to="/docs/reference/terminology#legacy-updater">eldre oppdateringsskriptet</Terminology> pleide å gjøre. Det eldre oppdateringsskriptet skrev også om gatewayer, statiske ruter, beskrivelser og Base64-kodede verdier. Pakken endrer dem bare når de er krysset av under **Andre innstillinger** i fanen **Felt**, så det anbefales å krysse dem av før prefikset endres.
+
+En flytting starter med alle <Terminology title="gruppe av felt med én bryter i fanen Felt" to="/docs/reference/terminology#field-group">feltgrupper</Terminology> for pfSense slått på, slik **Velg automatisk** setter dem. [Felt](/docs/configure/configuration-scopes) viser alle gruppene og hvordan du slår av en gruppe.

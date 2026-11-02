@@ -1,0 +1,174 @@
+---
+id: command-line-and-files
+title: 명령줄 및 파일
+description: 셸에서 /usr/local/sbin/ipv6-prefix-updater를 실행하고 옵션, 종료 코드, 출력 줄, 파일, 로그, WebGUI 알림을 찾아봅니다.
+keywords:
+  - pfsense ipv6 prefix updater
+  - 명령줄
+  - 종료 코드
+  - 상태 파일
+  - file_notice
+tags:
+  - reference
+  - command line
+  - files
+sidebar_position: 4
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+셸에서 패키지 명령을 실행하고, 명령이 사용하는 파일, 로그, 알림을 찾습니다.
+
+## 사용법 \{#usage}
+
+```shell
+/usr/local/sbin/ipv6-prefix-updater [--manual] [--dry-run] [--accept-current-prefix [--interface=NAME]] [--migrate-legacy] [--help]
+```
+
+pfSense가 관리하는 cron 항목은 이 명령을 옵션 없이 `root`로 실행합니다. 명령은 각 확인 전에 <Terminology title="Cron 패키지로 실행하던 원래 update.php 스크립트" to="/docs/reference/terminology#legacy-updater">레거시 업데이터</Terminology>의 남은 항목도 패키지로 옮깁니다. 상태 탭은 **지금 실행**에 `--manual`을, **<Terminology title="백업도 쓰기도 하지 않는 미리 보기" to="/docs/reference/terminology#dry-run">시험 실행</Terminology>**에 `--dry-run`을, 기준선 복구에 `--accept-current-prefix`를 사용하고, 정리 탭은 `--migrate-legacy`를 사용합니다.
+
+옵션 없이 실행하면 명령은 예약 확인처럼 동작하며, **<Terminology title="pfSense가 관리하는 cron 항목으로 실행하는 자동 확인" to="/docs/reference/terminology#scheduled-updates">예약 업데이트 사용</Terminology>**이 꺼져 있으면 <Terminology title="결과: 업데이트가 꺼져 있어 예약 확인을 건너뜀" to="/docs/reference/terminology#disabled">사용 안 함</Terminology>을 보고합니다.
+
+## 옵션 \{#options}
+
+| 플래그                       | 설명                                                                                                                                                                                                |
+|---------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `--manual`                | <Terminology title="pfSense가 관리하는 cron 항목으로 실행하는 자동 확인" to="/docs/reference/terminology#scheduled-updates">예약 업데이트</Terminology>가 꺼져 있어도 실행합니다.                                                   |
+| `--dry-run`               | 백업이나 쓰기 없이 미리 보며, `--manual`을 포함합니다.                                                                                                                                                              |
+| `--accept-current-prefix` | 승인된 필드 검색, 백업 생성, 구성 쓰기, 서비스 다시 로드 없이 활성 원본 주소, 접두사, 길이를 기준선으로 기록합니다. `--manual`을 포함하며 `--dry-run`과 함께 사용할 수 없습니다.                                                                                |
+| `--interface=NAME`        | `--accept-current-prefix`를 모니터링하는 인터페이스 하나로 제한하며, 인터페이스는 `lan` 같은 내부 이름으로 지정합니다. 이 옵션이 없으면 모니터링하는 인터페이스 중 주소가 있는 인터페이스를 모두 수락합니다.                                                                 |
+| `--migrate-legacy`        | 접두사 확인을 실행하지 않고 <Terminology title="Cron 패키지로 실행하던 원래 update.php 스크립트" to="/docs/reference/terminology#legacy-updater">레거시 업데이터</Terminology>를 즉시 패키지로 옮기며 각 단계를 출력합니다. 전환에서 경고가 보고되면 `2`로 종료합니다. |
+| `--help`                  | 사용법 줄을 출력하고 `0`으로 종료합니다. 사용법 줄에는 `--help` 자체가 나열되지 않습니다.                                                                                                                                          |
+
+그 밖의 옵션은 표준 오류에 `알 수 없는 옵션: <option>`을 출력하고 `64`로 종료합니다. `--accept-current-prefix`를 `--dry-run`과 함께 사용해도 `64`로 종료합니다.
+
+## 종료 코드 \{#exit-codes}
+
+| 코드   | 의미                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+|------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `0`  | <Terminology title="결과: 기준선 기록, 구성 변경 없음" to="/docs/reference/terminology#initialized">초기화됨</Terminology>, <Terminology title="결과: 기준선이 생기기 전의 시험 실행" to="/docs/reference/terminology#initialization-preview">초기화 미리 보기</Terminology>, <Terminology title="결과: 접두사 그대로, 검색이나 쓰기 없음" to="/docs/reference/terminology#no-change">변경 없음</Terminology>, <Terminology title="백업도 쓰기도 하지 않는 미리 보기" to="/docs/reference/terminology#dry-run">시험 실행</Terminology>, **수락됨**, <Terminology title="결과: 필드 업데이트, 저장, 다시 로드, 검증 완료" to="/docs/reference/terminology#success">성공</Terminology>, <Terminology title="결과: 업데이트가 꺼져 있어 예약 확인을 건너뜀" to="/docs/reference/terminology#disabled">사용 안 함</Terminology>. 다른 확인이 <Terminology title="두 확인이 동시에 실행되지 않게 막는 잠금" to="/docs/reference/terminology#run-lock">실행 잠금</Terminology>을 잡고 있을 때와 `--help` 후에도 반환됩니다. |
+| `1`  | <Terminology title="결과: 검사나 안전 단계가 실행을 중단함" to="/docs/reference/terminology#failure">실패</Terminology>. 표준 오류에 `IPv6 접두사 업데이터 실패: <reason>` 한 줄이 출력됩니다.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `2`  | <Terminology title="결과: 접두사가 바뀌었지만 일치하는 승인된 필드 없음" to="/docs/reference/terminology#warning">경고</Terminology>.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `64` | 알 수 없는 옵션.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+
+## 출력 \{#output}
+
+인터페이스 하나를 모니터링하는 완료된 실행은 표준 출력에 아홉 줄을 출력하며, <Terminology title="백업도 쓰기도 하지 않는 미리 보기" to="/docs/reference/terminology#dry-run">시험 실행</Terminology>이나 <Terminology title="결과: 필드 업데이트, 저장, 다시 로드, 검증 완료" to="/docs/reference/terminology#success">성공</Terminology> 후에는 그 뒤에 필드 변경이 이어집니다.
+
+```text
+상태: 성공
+인터페이스: lan
+관찰된 원본 주소: 2001:db8:abcd:88aa::1
+이전 접두사: 2001:db8:abcd:7800::
+현재 접두사: 2001:db8:abcd:8800::/56
+계획되었거나 변경된 필드: 1
+구성 백업: 생성됨
+다시 로드된 서비스: 방화벽 필터
+요약: 인터페이스 lan에서 승인된 필드 1개를 2001:db8:abcd:7800::/56에서 2001:db8:abcd:8800::/56(으)로 업데이트했습니다.
+필드 변경:
+- aliases/alias/0/address: 2001:db8:abcd:78aa::10 → 2001:db8:abcd:88aa::10
+```
+
+- `이전 접두사`에는 길이가 없으며, <Terminology title="결과: 기준선 기록, 구성 변경 없음" to="/docs/reference/terminology#initialized">초기화됨</Terminology> 또는 <Terminology title="결과: 기준선이 생기기 전의 시험 실행" to="/docs/reference/terminology#initialization-preview">초기화 미리 보기</Terminology> 후에는 `사용할 수 없음`이 표시됩니다.
+- `다시 로드된 서비스`에는 상태 레이블이나 `없음`이 표시됩니다. <Terminology title="백업도 쓰기도 하지 않는 미리 보기" to="/docs/reference/terminology#dry-run">시험 실행</Terminology> 후에는 다시 로드될 서비스가 나열됩니다.
+- `필드 변경`에는 바뀐 주소마다 `- <path>: <old> → <new>` 형식으로 한 줄씩 표시되며, 최대 200개 필드까지 나옵니다.
+- 실행이 다른 패키지의 설정을 다시 적용했거나 더 이상 존재하지 않는 선택된 필드를 건너뛰었다면, 각각에 대해 상태 탭과 같은 문구의 줄이 하나씩 이어집니다.
+- 다른 확인이 <Terminology title="두 확인이 동시에 실행되지 않게 막는 잠금" to="/docs/reference/terminology#run-lock">실행 잠금</Terminology>을 잡고 있으면 `다른 실행이 패키지 잠금을 소유하고 있어 구성을 읽지 않고 이 호출을 종료했습니다.`만 출력됩니다.
+- 모니터링하는 인터페이스가 여러 개이면 출력은 전체 `상태`, `요약`, 패키지 줄, 건너뛴 필드 줄로 시작하고, 그 뒤에 인터페이스마다 그 인터페이스의 줄이 빈 줄로 구분되어 이어집니다.
+- 확인 전에 <Terminology title="Cron 패키지로 실행하던 원래 update.php 스크립트" to="/docs/reference/terminology#legacy-updater">레거시 업데이터</Terminology> 전환이 이루어졌다면 그 단계가 먼저 출력됩니다.
+- 레이블과 메시지는 pfSense 언어 설정을 따릅니다.
+
+## 파일 및 경로 \{#files-and-paths}
+
+| 경로                                                        | 설명                                                                                                                                                                                                             |
+|-----------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `/usr/local/sbin/ipv6-prefix-updater`                     | PHP 스크립트로 된 명령입니다.                                                                                                                                                                                             |
+| `/usr/local/pkg/ipv6-prefix-updater.xml`                  | 설정 페이지 정의와 수명 주기 후크입니다.                                                                                                                                                                                        |
+| `/usr/local/pkg/ipv6-prefix-updater.inc`                  | 설치, 설정 동기화, 제거, 양식 유효성 검사 함수입니다.                                                                                                                                                                               |
+| `/usr/local/pkg/ipv6-prefix-updater/`                     | 런타임 클래스와 번역입니다.                                                                                                                                                                                                |
+| `/usr/local/www/ipv6-prefix-updater-status.php`           | 상태 탭입니다.                                                                                                                                                                                                       |
+| `/usr/local/www/ipv6-prefix-updater-fields.php`           | 필드 탭입니다.                                                                                                                                                                                                       |
+| `/usr/local/www/ipv6-prefix-updater-backups.php`          | 백업 탭입니다.                                                                                                                                                                                                       |
+| `/usr/local/www/ipv6-prefix-updater-cleanup.php`          | 정리 탭입니다.                                                                                                                                                                                                       |
+| `/usr/local/share/pfSense-pkg-Ipv6PrefixUpdater/info.xml` | 패키지 매니페스트입니다.                                                                                                                                                                                                  |
+| `/cf/conf/ipv6-prefix-updater/state.json`                 | <Terminology title="기준선과 마지막 실행을 담은 패키지 파일" to="/docs/reference/terminology#package-state">패키지 상태</Terminology>입니다. 디렉터리는 `0700`, 파일은 `0600`이며, 쓸 때마다 파일이 원자적으로 교체되고, 재부팅이나 패키지 제거 후에도, RAM 디스크를 사용할 때도 유지됩니다. |
+| `/cf/conf/ipv6-prefix-updater/backups/`                   | **백업** 탭의 사본으로, 각각 `<id>.xml` 구성 하나와 `<id>.json` 설명 하나로 이루어지며 모두 `0600`입니다.                                                                                                                                    |
+| `/var/run/ipv6-prefix-updater.lock`                       | 비차단 `flock`으로 잡는 <Terminology title="두 확인이 동시에 실행되지 않게 막는 잠금" to="/docs/reference/terminology#run-lock">실행 잠금</Terminology>으로, 실행 중인 프로세스 ID를 담습니다. 실행 사이에도 디스크에 남아 있습니다.                                      |
+
+## 패키지 상태 형식 \{#package-state-format}
+
+| 키                     | 설명                                                                                                                                                                                                                                                                                                                                                                                                          |
+|-----------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `schema_version`      | 항상 `1`입니다.                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `targets.<interface>` | 모니터링하는 인터페이스마다 하나씩 있는 <Terminology title="구성을 바꾸지 않고 기록한 시작 접두사" to="/docs/reference/terminology#baseline">기준선</Terminology>으로, 내부 이름을 키로 사용하며 `interface`, `source_address`, `prefix`, `prefix_length`, `updated_at`을 포함합니다. <Terminology title="Cron 패키지로 실행하던 원래 update.php 스크립트" to="/docs/reference/terminology#legacy-updater">레거시 업데이터</Terminology>에서 가져온 기준선에는 `legacy_cache`로 설정된 `source`도 있습니다. |
+| `last_run`            | `status`, `timestamp`, `interface`, `observed_address`, `previous_prefix`, `current_prefix`, `current_prefix_length`, `change_count`, `backup_created`, `services`, `message`, `message_key`, `message_arguments`를 포함하는 최근 기록된 실행입니다.                                                                                                                                                                       |
+| `legacy_migration`    | <Terminology title="Cron 패키지로 실행하던 원래 update.php 스크립트" to="/docs/reference/terminology#legacy-updater">레거시 업데이터</Terminology> 전환 후에 생기며 `status`, `steps`, `warnings`, `recorded_at`을 포함합니다. 정리 탭에 표시됩니다.                                                                                                                                                                                                   |
+
+- `status`는 `initialized`, `initialization_preview`, `no_change`, `dry_run`, `warning`, `accepted`, `success`, `failure` 중 하나입니다.
+- <Terminology title="결과: 필드 업데이트, 저장, 다시 로드, 검증 완료" to="/docs/reference/terminology#success">성공</Terminology> 후 `last_run.notification`은 알림이 꺼져 있으면 `disabled`이고, 전달을 시도한 뒤에는 `sent` 또는 `failed`입니다.
+- <Terminology title="백업도 쓰기도 하지 않는 미리 보기" to="/docs/reference/terminology#dry-run">시험 실행</Terminology>이나 <Terminology title="결과: 필드 업데이트, 저장, 다시 로드, 검증 완료" to="/docs/reference/terminology#success">성공</Terminology> 후에는 각 결과에 `changes`도 있으며, 최대 200개 필드의 `path`와 `replacements`를 나열합니다. 각 교체 항목은 이전 주소와 새 주소로 이루어집니다.
+- `package_reapply`는 실행이 설정을 다시 적용한 각 패키지의 `section`, `package`, `status`, `error`를 나열하고, `skipped_fields`는 더 이상 존재하지 않는 선택된 필드를 나열합니다. 둘 다 비어 있지 않을 때만 나타납니다.
+- 모니터링하는 인터페이스가 여러 개이면 `last_run`에는 합계와, 인터페이스마다 결과가 하나씩 담긴 `targets` 목록이 들어 있습니다.
+- 타임스탬프는 UTC 기준 ISO 8601 형식입니다. 구문 분석할 수 없거나 스키마 버전이 다른 파일이 있으면 각 실행이 `IPv6 접두사 업데이터 상태가 잘못되었거나 지원되지 않습니다.` 메시지와 함께 멈춥니다.
+
+## 설정 저장소 \{#settings-storage}
+
+설정은 pfSense 구성의 `installedpackages/ipv6prefixupdater/config/0`에 저장됩니다.
+
+| 키                  | 설명                                                                                                                                                       |
+|--------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `enabled`          | **<Terminology title="pfSense가 관리하는 cron 항목으로 실행하는 자동 확인" to="/docs/reference/terminology#scheduled-updates">예약 업데이트 사용</Terminology>**이며, 선택하면 `on`입니다. |
+| `row`              | **모니터링할 인터페이스**이며, 행마다 `interface`(`lan` 같은 인터페이스 키) 하나와 `prefix_length`(`48`부터 `64`까지) 하나가 있는 목록입니다.                                                    |
+| `update_frequency` | **일정**이며, `every_fifteen_minutes`, `hourly`, `every_six_hours`, `daily` 중 하나입니다.                                                                         |
+| `notifications`    | **<Terminology title="검증된 업데이트가 성공한 뒤 보내는 알림" to="/docs/reference/terminology#change-notification">변경 알림 보내기</Terminology>**이며, 선택하면 `on`입니다.            |
+
+### 필드 선택 \{#field-selection}
+
+필드 탭의 선택은 설정 레코드 옆의 `installedpackages/ipv6prefixupdater/fields`에 저장되므로, `config/0`을 교체하는 설정 탭 저장이 이 선택을 지우는 일은 없습니다.
+
+| 키                      | 설명                                                                                     |
+|------------------------|----------------------------------------------------------------------------------------|
+| `schema`               | 항상 `1`입니다. 비어 있더라도 필드 탭에서 저장한 선택임을 나타냅니다.                                              |
+| `enabled_groups/item`  | 켜진 그룹입니다. `firewall_rules`, `dhcpv6`, 또는 다른 패키지의 설정을 나타내는 `package:<section>` 같은 값입니다. |
+| `disabled_groups/item` | 꺼진 pfSense 그룹입니다. 두 목록 어디에도 없는 pfSense 그룹은 켜져 있고, 다른 패키지의 그룹은 꺼져 있습니다.                 |
+| `include/item`         | 꺼진 그룹에서 선택한 필드의 식별자입니다.                                                                |
+| `exclude/item`         | 켜진 그룹에서 선택을 해제한 필드의 식별자입니다.                                                            |
+
+- pfSense 그룹 키는 `interfaces`, `virtual_ips`, `aliases`, `firewall_rules`, `nat`, `dhcpv6`, `router_advertisements`, `dns_host_overrides`, `ipsec`, `openvpn`, `wireguard`입니다.
+- `include`와 `exclude`는 각각 최대 1,000개의 식별자를 보관하며, 모든 식별자는 [필드 식별자](/docs/reference/approved-fields#field-identities) 형식을 따릅니다.
+
+## Cron 항목 \{#cron-entry}
+
+설정을 저장하면 이 명령의 기존 항목을 모두 제거하고, `enabled`가 `on`이면 pfSense의 `install_cron_job()`으로 `root`용 새 항목을 설치합니다.
+
+| 일정 값                    | Cron 필드        |
+|-------------------------|----------------|
+| `every_fifteen_minutes` | `*/15 * * * *` |
+| `hourly`                | `0 * * * *`    |
+| `every_six_hours`       | `0 */6 * * *`  |
+| `daily`                 | `0 0 * * *`    |
+
+알 수 없는 값은 매시간 필드로 대체됩니다. <Terminology title="Cron 패키지로 실행하던 원래 update.php 스크립트" to="/docs/reference/terminology#legacy-updater">레거시 업데이터</Terminology> 전환이 레거시 스크립트가 끝나기를 기다리는 동안에는, 예약 업데이트가 꺼져 있어도 전환을 다시 시도하도록 패키지가 `*/15 * * * *` 항목을 유지합니다.
+
+## 로그 및 알림 \{#logs-and-notices}
+
+모든 <Terminology title="패키지가 기록하는 pfSense 일반 로그" to="/docs/reference/terminology#system-log">시스템 로그</Terminology> 줄은 pfSense의 `log_error()`로 기록되며 `IPv6 Prefix Updater:`로 시작합니다. 알림은 `file_notice()`로 생성되며 `/ipv6-prefix-updater-status.php`로 연결됩니다. 단, 마이그레이션 알림은 `/ipv6-prefix-updater-cleanup.php`로 연결됩니다.
+
+| 알림 ID                                   | 생성 조건                                                                                                                                                           | 전달                                                                                                                              |
+|-----------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------|
+| `ipv6-prefix-updater-success`           | `notifications`가 `on`인 상태에서 <Terminology title="결과: 필드 업데이트, 저장, 다시 로드, 검증 완료" to="/docs/reference/terminology#success">성공</Terminology>                        | WebGUI 및 <Terminology title="pfSense에 구성된 원격 알림 서비스" to="/docs/reference/terminology#notification-channels">알림 채널</Terminology> |
+| `ipv6-prefix-updater-no-matches`        | <Terminology title="결과: 접두사가 바뀌었지만 일치하는 승인된 필드 없음" to="/docs/reference/terminology#warning">경고</Terminology>                                                    | WebGUI만                                                                                                                         |
+| `ipv6-prefix-updater-failure`           | <Terminology title="결과: 검사나 안전 단계가 실행을 중단함" to="/docs/reference/terminology#failure">실패</Terminology>                                                           | WebGUI만                                                                                                                         |
+| `ipv6-prefix-updater-package-<section>` | 다른 패키지의 설정을 변경한 실행에서, 그 섹션을 소유한 설치된 패키지가 없거나 설정을 다시 적용하지 못함                                                                                                     | WebGUI만                                                                                                                         |
+| `ipv6-prefix-updater-legacy-migration`  | 단계를 하나 이상 수행한 <Terminology title="Cron 패키지로 실행하던 원래 update.php 스크립트" to="/docs/reference/terminology#legacy-updater">레거시 업데이터</Terminology> 전환, 또는 설치 중에 실패한 전환 | WebGUI만                                                                                                                         |
+
+명령 자체의 환경 검사가 실패하거나 잠금 파일을 열 수 없으면 이유는 표준 오류에만 출력됩니다. 쓰기를 하는 각 실행은 `IPv6 접두사 업데이터가 인터페이스 <interface>의 승인된 필드 <count>개를 변경했습니다`라는 설명의 구성 리비전도 저장합니다.
+
+## 페이지 권한 \{#page-privileges}
+
+각 패키지 페이지는 자체 pfSense 권한을 선언하므로 페이지별로 접근 권한을 부여할 수 있습니다.
+
+- **상태**: `page-services-ipv6-prefix-updater-status`이며, 이름은 `Services: IPv6 Prefix Updater: Status`입니다.
+- **필드**: `page-services-ipv6-prefix-updater-fields`이며, 이름은 `Services: IPv6 Prefix Updater: Fields`입니다. 실행이 다시 쓰는 필드를 바꿀 수 있으므로 관리자에게만 부여하는 것을 권장합니다.
+- **백업**: `page-services-ipv6-prefix-updater-backups`이며, 이름은 `Services: IPv6 Prefix Updater: Backups`입니다. 전체 구성 사본을 다운로드할 수 있으므로 관리자에게만 부여하는 것을 권장합니다.
+- **정리**: `page-services-ipv6-prefix-updater-cleanup`이며, 이름은 `Services: IPv6 Prefix Updater: Cleanup`입니다.

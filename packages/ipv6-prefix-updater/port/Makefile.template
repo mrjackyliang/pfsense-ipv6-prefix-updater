@@ -1,0 +1,89 @@
+PORTNAME=	pfSense-pkg-Ipv6PrefixUpdater
+DISTVERSION=	%%NOVA_PORTVERSION%%
+CATEGORIES=	sysutils
+MASTER_SITES=	# empty
+DISTFILES=	# empty
+EXTRACT_ONLY=	# empty
+
+MAINTAINER?=	maintainer@example.invalid
+COMMENT=	IPv6 Prefix Updater package for pfSense
+
+LICENSE=	MIT
+
+NO_ARCH=	yes
+NO_BUILD=	yes
+NO_MTREE=	yes
+
+SUB_FILES=	pkg-install pkg-deinstall
+SUB_LIST=	PORTNAME=${PORTNAME}
+
+do-extract:
+	${MKDIR} ${WRKSRC}
+
+do-install:
+	${MKDIR} ${STAGEDIR}${PREFIX}/pkg
+	${MKDIR} ${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
+	${MKDIR} ${STAGEDIR}${PREFIX}/sbin
+	${MKDIR} ${STAGEDIR}${PREFIX}/www
+	${MKDIR} ${STAGEDIR}${DATADIR}
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater.inc \
+		${STAGEDIR}${PREFIX}/pkg
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater.xml \
+		${STAGEDIR}${PREFIX}/pkg
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/BackupStore.php \
+		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/ConfigurationChangePlanner.php \
+		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/ConfigurationFieldDetector.php \
+		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/ConfigurationTargetScanner.php \
+		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/FieldSelection.php \
+		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/FieldTranslations.php \
+		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/FileLock.php \
+		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/Ipv6Prefix.php \
+		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/LegacyInstallation.php \
+		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/LegacyMigrator.php \
+		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/MigrationTranslations.php \
+		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/MonitoredInterfaces.php \
+		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/PackagePaths.php \
+		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/PfSenseAdapter.php \
+		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/PlatformAdapter.php \
+		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/PrefixChangePlanner.php \
+		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/PrefixUpdater.php \
+		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/StateStore.php \
+		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/Translations.php \
+		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/Translator.php \
+		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
+	${INSTALL_SCRIPT} ${FILESDIR}${PREFIX}/sbin/ipv6-prefix-updater \
+		${STAGEDIR}${PREFIX}/sbin
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/www/ipv6-prefix-updater-backups.php \
+		${STAGEDIR}${PREFIX}/www
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/www/ipv6-prefix-updater-cleanup.php \
+		${STAGEDIR}${PREFIX}/www
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/www/ipv6-prefix-updater-fields.php \
+		${STAGEDIR}${PREFIX}/www
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/www/ipv6-prefix-updater-status.php \
+		${STAGEDIR}${PREFIX}/www
+	${INSTALL_DATA} ${FILESDIR}${DATADIR}/info.xml \
+		${STAGEDIR}${DATADIR}
+	@${REINPLACE_CMD} -e "s|%%PKGVERSION%%|${PKGVERSION}|" \
+		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater.xml \
+		${STAGEDIR}${DATADIR}/info.xml
+
+.include <bsd.port.mk>

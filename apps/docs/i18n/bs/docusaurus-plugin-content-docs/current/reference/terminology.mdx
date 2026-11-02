@@ -1,0 +1,203 @@
+---
+id: terminology
+title: Terminologija
+description: Upoznajte se s definicijama pojmova o adresama, prefiksima, postavkama, ishodima pokretanja i pfSense-u koji se koriste na karticama Postavke, Status i Polja i u cijeloj dokumentaciji.
+keywords:
+  - pfsense ipv6 prefix updater
+  - terminologija
+  - pojmovnik
+  - dodijeljeni prefiks
+  - početno stanje
+  - ishodi pokretanja
+tags:
+  - reference
+  - terminology
+  - glossary
+sidebar_position: 1
+---
+
+Upoznajte pojmove za adrese, prefikse, pokretanja i pfSense funkcije koje koriste kartice Postavke, Status i Polja i ovi vodiči.
+
+## Dodijeljeni prefiks \{#delegated-prefix}
+
+IPv6 mreža koju ISP usmjerava prema vatrozidu, obično putem DHCPv6 Prefix Delegation. Paket prati ovaj prefiks, ali ga nikada ne traži, ne obnavlja niti mijenja.
+
+## Dužina prefiksa \{#prefix-length}
+
+Broj vodećih bitova koji određuju mrežu, zapisan kao kosa crta i broj, na primjer `/56`. CIDR sufiks na podešenoj vrijednosti, na primjer `/64`, ostaje kako je zapisan kada paket prepiše adresu.
+
+## Dužina dodijeljenog prefiksa \{#delegated-prefix-length}
+
+Postavka **Dužina dodijeljenog prefiksa**, koja sadrži veličinu prefiksa koji dodjeljuje ISP, od `/48` do `/64`. Zadana vrijednost je `/56`, paket je nikada ne otkriva sam, a njena promjena nakon što postoji početno stanje računa se kao promjena prefiksa.
+
+## Globalna unicast adresa \{#global-unicast-address}
+
+IPv6 adresa unutar `2000::/3`, jedina vrsta adrese koju paket čita kao izvor ili prepisuje. Link-local, unique local (`fc00::/7`), multicast, loopback, neodređene i IPv4-mapirane adrese odbacuju se kao izvor i ostaju nepromijenjene u konfiguraciji.
+
+## Link-local adresa \{#link-local-address}
+
+Adresa koja radi samo na jednoj mrežnoj vezi i počinje sa `fe80`. Paket je nikada ne koristi kao zamjenu, pa sučelje bez globalne adrese dovodi do neuspjeha pokretanja.
+
+## Dio hosta \{#host-portion}
+
+Svi bitovi adrese nakon dužine dodijeljenog prefiksa, koji se nazivaju i bitovi hosta. Paket kopira ove bitove nepromijenjene u novu adresu, čak i kada granica pada unutar heksadecimalne cifre.
+
+## Kanonski oblik \{#canonical-form}
+
+Standardni, najkraći zapis IPv6 adrese malim slovima, na primjer `2001:db8::1` umjesto `2001:0DB8:0:0::1`. Paket poredi adrese u ovom obliku i tako upisuje prepisane vrijednosti, pa vrijednost može izgledati drugačije iako označava istu adresu.
+
+## Sučelje tipa Track Interface \{#tracked-interface}
+
+pfSense sučelje čija IPv6 adresa dolazi iz dodijeljenog prefiksa drugog sučelja putem tipa konfiguracije **Track Interface**. Često je pravo nadzirano sučelje kada WAN nema globalnu adresu, a paket nikada ne prepisuje njegovu adresu jer je generiše pfSense.
+
+## Nadzirano sučelje \{#monitored-interface}
+
+Jedan red postavke **Nadzirana sučelja**, koji određuje sučelje čija globalna adresa otkriva trenutni prefiks. Kartica Status prikazuje opis sučelja, a zatim njegov interni pfSense naziv, na primjer `LAN (lan)`.
+
+Dodavanje sučelja čini da sljedeće pokretanje za njega zabilježi novo početno stanje umjesto poređenja prefiksa.
+
+## Izvorna adresa \{#source-address}
+
+Primarna globalna adresa koju pfSense prijavljuje za nadzirano sučelje, pročitana iznova pri svakom pokretanju. Kartica Status prikazuje je u kanonskom obliku kao **Uočena izvorna adresa** i **Posljednja uspješna izvorna adresa**.
+
+## Uočeni prefiks \{#observed-prefix}
+
+Mreža izračunata iz izvorne adrese i dužine dodijeljenog prefiksa, prikazana na kartici Status zajedno s dužinom. Svako pokretanje poredi je s posljednjim uspješnim prefiksom.
+
+## Početno stanje \{#baseline}
+
+Prefiks i izvorna adresa koje paket bilježi kao polaznu tačku, bez promjene konfiguracije. Početno stanje se bilježi pri prvom pokretanju za svako nadzirano sučelje, kad god stanje paketa nedostaje, kada operater izričito prihvati aktivni prefiks i tokom migracije iz prefiksa koji je sačuvao stari program za ažuriranje.
+
+## Posljednji uspješni prefiks \{#last-successful-prefix}
+
+Sačuvani prefiks i dužina s kojima se poredi sljedeća provjera. Mijenjaju ga samo ishodi Inicijalizirano, Prihvaćeno i Uspjeh, a svaki drugi ishod ostavlja ga nepromijenjenim.
+
+## Promjena prefiksa \{#prefix-transition}
+
+Razlika između posljednjeg uspješnog prefiksa i uočenog prefiksa, uključujući istu mrežu s drugačijom dužinom prefiksa. Samo promjena prefiksa navodi paket da skenira konfiguraciju, planira izmjene i izvrši upis.
+
+## Grupa polja \{#field-group}
+
+Grupa polja s jednim prekidačem na kartici Polja. Postoji jedanaest pfSense grupa, koje su po zadanim postavkama uključene: Statička sučelja, Virtualne IP adrese, Aliasi, Pravila vatrozida, NAT i NPt, DHCPv6 server, Oglašavanje rutera, DNS nadjačavanja hostova, IPsec, OpenVPN i WireGuard. Postavke svakog drugog paketa dobijaju vlastitu grupu, koja je po zadanim postavkama isključena, a svaka druga vrijednost nalazi se u grupi Ostale postavke, koja je također isključena. Uključena grupa pokriva svako polje svoje vrste, uključujući kasnije dodana polja.
+
+## Odobreno polje \{#approved-field}
+
+Tačno određeno polje konfiguracije koje paket smije prepisati: polje u uključenoj grupi s kojeg nije uklonjena kvačica ili označeno polje u isključenoj grupi. Vrijednosti izvan odobrenih polja nikada se ne mijenjaju.
+
+## Izuzetak polja \{#field-exception}
+
+Pojedinačno polje čije stanje kvačice na kartici Polja odstupa od prekidača njegove grupe: neoznačeno polje u uključenoj grupi ili označeno polje u isključenoj grupi. Svaki izuzetak imenuje svoj unos, na primjer tracker ID pravila vatrozida, umjesto pozicije u listi.
+
+## Plan promjena \{#change-plan}
+
+Potpuna lista odobrenih polja koja će se promijeniti, sa svakom starom vrijednošću, novom vrijednošću i uslugom koju treba ponovo učitati. Paket sastavlja cijeli plan prije nego što bilo šta promijeni.
+
+## Zakazana ažuriranja \{#scheduled-updates}
+
+Automatske provjere kojima upravljaju opcija **Omogući zakazana ažuriranja**, po zadanim postavkama isključena, i postavka **Raspored**, čija je zadana vrijednost Svaki sat. Čuvanje postavki dodaje ili uklanja cron unos kojim upravlja pfSense, pa Cron paket nije potreban.
+
+## Ručno pokretanje \{#manual-run}
+
+Provjera pokrenuta dugmetom **Pokreni sada** ili **Probno pokretanje** na kartici Status. Radi čak i kada su zakazana ažuriranja isključena.
+
+## Probno pokretanje \{#dry-run}
+
+Pregled pokrenut dugmetom **Probno pokretanje** koji nikada ne pravi sigurnosnu kopiju niti upisuje konfiguraciju. Kada pronađe promjenu prefiksa s poljima za izmjenu, njegov ishod je **Probno pokretanje** i navodi broj planiranih polja.
+
+Uz nepromijenjen prefiks, probno pokretanje prijavljuje ishod Bez promjene bez skeniranja konfiguracije.
+
+## Izlaz naredbe \{#command-output}
+
+Polje samo za čitanje **Najnovije pokretanje** u odjeljku **Izlaz naredbe**, koje se pojavljuje nakon radnji Pokreni sada, Probno pokretanje ili Prihvati trenutni prefiks. Prikazuje redove pokretanja od `Status` do `Sažetak`, nakon kojih, poslije probnog pokretanja ili ishoda Uspjeh, slijedi `Promjene polja`, ili jedan red kada radnja ne uspije ili zaključavanje drži drugo pokretanje.
+
+## Zaključavanje pokretanja \{#run-lock}
+
+Zaključavanje koje dozvoljava da u isto vrijeme radi samo jedna provjera. Druga provjera završava bez čitanja konfiguracije, a zaključavanje se oslobađa čim se tekuća provjera završi.
+
+## Stanje paketa \{#package-state}
+
+Datoteka `/cf/conf/ipv6-prefix-updater/state.json` u kojoj paket čuva svako početno stanje i posljednje pokretanje izvan pfSense konfiguracije. Može je čitati samo root, a preživljava ponovna pokretanja sistema, RAM diskove i uklanjanje paketa, pa ponovna instalacija zadržava svako početno stanje.
+
+## Inicijalizirano \{#initialized}
+
+Ishod pokretanja koje bilježi novo početno stanje. Ne pravi sigurnosnu kopiju, ne mijenja konfiguraciju i ne šalje obavještenje.
+
+## Pregled inicijalizacije \{#initialization-preview}
+
+Ishod probnog pokretanja izvršenog dok početno stanje još ne postoji. Prikazuje početno stanje koje bi normalno pokretanje zabilježilo, ali ga ne bilježi.
+
+## Bez promjene \{#no-change}
+
+Ishod kada uočeni prefiks i njegova dužina odgovaraju posljednjem uspješnom prefiksu; naziva se i pokretanje bez operacija (no-op). Takvo pokretanje ne skenira konfiguraciju, ne pravi sigurnosnu kopiju, ne učitava ponovo usluge i ne šalje obavještenje.
+
+## Upozorenje \{#warning}
+
+Ishod kada je pronađena promjena prefiksa, ali nijedno odobreno polje ne pripada starom prefiksu. Ništa se ne upisuje, početno stanje ostaje gdje je bilo, a svako Upozorenje dodaje WebGUI obavijest.
+
+## Prihvaćeno \{#accepted}
+
+Ishod nakon što operater odabere **Prihvati trenutni prefiks** i potvrdi da sačuvane adrese već koriste aktivni prefiks. Paket pomjera početno stanje bez skeniranja odobrenih polja, pravljenja sigurnosne kopije, upisa konfiguracije ili ponovnog učitavanja usluga.
+
+## Uspjeh \{#success}
+
+Ishod nakon što se završe sigurnosna kopija, jedan upis konfiguracije, ponovno učitavanje usluga i provjere vrijednosti. Početno stanje prelazi na novi prefiks, a obavještenje o promjeni šalje se ako je uključeno.
+
+## Greška \{#failure}
+
+Ishod kada kontrola ili sigurnosna faza zaustavi pokretanje. Ako do zaustavljanja dođe nakon što je konfiguracija sačuvana, nove vrijednosti ostaju sačuvane, a početno stanje ostaje na starom prefiksu.
+
+## Onemogućeno \{#disabled}
+
+Ishod zakazane provjere koja se pokrene dok je opcija **Omogući zakazana ažuriranja** isključena. Zaustavlja se prije čitanja bilo kojeg sučelja ili stanja paketa i pojavljuje se samo u izlazu same naredbe.
+
+## Obavještenje o promjeni \{#change-notification}
+
+Poruka koja se šalje nakon ishoda Uspjeh kada je označena opcija **Šalji obavještenja o promjenama**, što je zadana postavka. Ide na kanale obavještenja podešene u pfSense-u i pojavljuje se i kao WebGUI obavijest.
+
+## Kanali obavještenja \{#notification-channels}
+
+Udaljene usluge obavještavanja podešene u **System → Advanced → Notifications**, na primjer e-pošta. Obavještenja o promjenama koriste ove kanale, dok obavijesti o ishodima Upozorenje i Greška ostaju lokalne.
+
+## WebGUI obavijest \{#webgui-notice}
+
+Stavka na listi obavijesti pfSense WebGUI-ja koja vodi na karticu Status paketa, ili na karticu Čišćenje nakon premještanja starog programa za ažuriranje. Ishodi Upozorenje i Greška uvijek je dodaju, čak i kada opcija **Šalji obavještenja o promjenama** nije označena.
+
+## Sistemski dnevnik \{#system-log}
+
+Opći pfSense dnevnik u **Status → System Logs → System → General**. Svaki red koji paket upiše počinje sa `IPv6 Prefix Updater:`.
+
+## Sigurnosna kopija konfiguracije \{#configuration-backup}
+
+Kopija konfiguracije kakva je bila prije upisa, napravljena pfSense funkcijom za sigurnosne kopije i također čuvana na kartici **Sigurnosne kopije**. Paket je pravi pri svakom pokretanju koje upisuje, prije promjene bilo kojeg polja, a pri pokretanjima bez upisa ne pravi nijednu.
+
+## Config History (historija konfiguracije) \{#config-history}
+
+Lista sačuvanih revizija konfiguracije u **Diagnostics → Backup & Restore → Config History**. Revizija s opisom `Ažuriranje IPv6 prefiksa promijenilo je ...` sadrži ažuriranu konfiguraciju, pa treba vratiti reviziju sačuvanu prije nje.
+
+## Ponovno učitavanje usluge \{#service-reload}
+
+pfSense radnja koja primjenjuje promijenjene postavke na pokrenutu uslugu. Paket ponovo učitava samo usluge čija su se polja promijenila i navodi ih pod **Ponovo učitane usluge**.
+
+## Virtualna IP adresa \{#virtual-ip}
+
+Dodatna adresa dodijeljena sučelju u **Firewall → Virtual IPs**. Grupa Virtualne IP adrese ažurira samo CARP i IP Alias unose.
+
+## IPsec faza 2 \{#ipsec-phase-2}
+
+IPsec unos koji definiše lokalne i udaljene mreže tunela. Grupa IPsec obuhvata lokalnu stranu unosa tipa Tunnel IPv6 i Routed (VTI), a udaljena strana nalazi se u grupi Ostale postavke.
+
+## Klijentsko nadjačavanje \{#client-specific-override}
+
+OpenVPN unos u **VPN → OpenVPN → Client Specific Overrides** koji postavlja opcije za jednog klijenta. Paket može ažurirati njegovu IPv6 mrežu tunela i njegove lokalne IPv6 mreže.
+
+## Adresa WireGuard tunela \{#wireguard-tunnel-address}
+
+Adresa sučelja dodijeljena WireGuard tunelu na pfSense-u. Za njeno ažuriranje potreban je WireGuard paket, a dozvoljene IP adrese i krajnje tačke peerova nalaze se u grupi Ostale postavke.
+
+## Stari program za ažuriranje \{#legacy-updater}
+
+Verzija 1.x ovog projekta: skripta `update.php` instalirana u `/root` i pokretana putem unosa Cron paketa. Zamjenjivala je tekst starog prefiksa bilo gdje u konfiguraciji.
+
+## Nezvanični paket \{#unofficial-package}
+
+Paket instaliran naredbom `pkg add` s GitHuba umjesto iz Netgate repozitorija paketa. Netgate ga ne pregleda niti podržava, a njegova ažuriranja instalirate sami.

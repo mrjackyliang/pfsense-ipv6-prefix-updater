@@ -1,0 +1,17 @@
+{
+  "item.label.Home": {
+    "message": "Главная"
+  },
+  "item.label.Guides": {
+    "message": "Документация"
+  },
+  "item.label.Safety": {
+    "message": "Безопасность и работа"
+  },
+  "item.label.Troubleshooting": {
+    "message": "Устранение неполадок"
+  },
+  "item.label.Blog": {
+    "message": "Блог"
+  }
+}

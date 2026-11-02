@@ -1,0 +1,122 @@
+---
+id: status-and-actions
+title: 状态与操作
+description: 在“状态”选项卡中查看“当前状态”和“上次运行”面板，运行检查和预览，恢复基线，并读懂命令输出。
+keywords:
+  - pfsense ipv6 prefix updater
+  - 状态选项卡
+  - 立即运行
+  - 试运行
+  - 命令输出
+tags:
+  - operations
+  - status
+  - dry run
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import unchangedRun from './_assets_/status-and-actions-1.png';
+import changedRun from './_assets_/status-and-actions-2.png';
+import runByInterface from './_assets_/status-and-actions-3.png';
+
+查看当前基线和最近一次运行记录的内容，并从“状态”选项卡启动检查、预览或基线恢复。
+
+## 当前状态 \{#current-state}
+
+**Services → IPv6 Prefix Updater** 下的 **状态** 选项卡以此表格开头，表格中每个监控接口占一行，描述下一次检查用于比较的<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>：
+
+- **<Terminology title="其地址可反映当前前缀的接口" to="/docs/reference/terminology#monitored-interface">监控接口</Terminology>**：接口描述，后接 pfSense 对该接口的内部名称，如 `LAN (lan)`。
+- **<Terminology title="下次检查用于比较的前缀" to="/docs/reference/terminology#last-successful-prefix">上次成功前缀</Terminology>**：前缀及其长度，如 `2001:db8:abcd:7800::/56`。
+- **<Terminology title="pfSense 为监控接口报告的全局地址" to="/docs/reference/terminology#source-address">上次成功源地址</Terminology>**：<Terminology title="地址的小写、最短标准写法" to="/docs/reference/terminology#canonical-form">规范形式</Terminology>的地址。结果为<Terminology title="结果：前缀未变化，未扫描或写入任何内容" to="/docs/reference/terminology#no-change">无变化</Terminology>的运行也会刷新此值。
+- **上次成功更新**：<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>被初始化、被接受或在上次<Terminology title="结果：字段已更新、保存、重新加载并验证" to="/docs/reference/terminology#success">成功</Terminology>后移动的 UTC 时间，如 `2026-10-24T14:00:00+00:00`。
+
+某个接口首次运行之前，其所在行显示 `尚未初始化。请执行一次正常检查以建立安全基线。` 从旧版更新器接管的<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>在首次检查之前，其源地址显示为 `此软件包版本未记录`。
+
+## 上次运行 \{#last-run}
+
+此面板记录最近一次运行。只监控一个接口时，它会直接显示该接口的结果：
+
+- **结果**：运行的结果，详见[运行结果](/docs/operate/run-outcomes)。
+- **时间戳 (UTC)**：运行结束的时间。
+- **<Terminology title="pfSense 为监控接口报告的全局地址" to="/docs/reference/terminology#source-address">观察到的源地址</Terminology>**：pfSense 为<Terminology title="其地址可反映当前前缀的接口" to="/docs/reference/terminology#monitored-interface">监控接口</Terminology>返回的地址。
+- **<Terminology title="按前缀长度掩码后的源地址" to="/docs/reference/terminology#observed-prefix">观察到的前缀</Terminology>**：根据该地址和<Terminology title="ISP 前缀大小设置，/48 至 /64" to="/docs/reference/terminology#delegated-prefix-length">委派前缀长度</Terminology>计算出的网络。
+- **已更改字段**：此次运行更改的<Terminology title="软件包可改写的具体配置字段" to="/docs/reference/terminology#approved-field">已批准字段</Terminology>数量；若为<Terminology title="不备份也不写入的预览" to="/docs/reference/terminology#dry-run">试运行</Terminology>，则是将会更改的数量。
+- **<Terminology title="写入前保存的配置副本" to="/docs/reference/terminology#configuration-backup">已创建配置备份</Terminology>**：`是`，或 `否 — 本次运行未写入配置`。
+- **<Terminology title="让更改后的设置生效的 pfSense 操作" to="/docs/reference/terminology#service-reload">已重新加载的服务</Terminology>**：此次运行重新加载的服务；若为<Terminology title="不备份也不写入的预览" to="/docs/reference/terminology#dry-run">试运行</Terminology>，则是将会重新加载的服务。
+- **摘要**：用一句话描述结果；发生<Terminology title="与上次成功前缀或长度不同" to="/docs/reference/terminology#prefix-transition">前缀变化</Terminology>时会包含旧前缀。
+- **软件包**：运行更改了另一个软件包的设置时显示，每个软件包一行，例如 `已重新应用 <package> 软件包的设置。` [字段](/docs/configure/configuration-scopes#other-packages-settings)列出了每条消息。
+- **跳过的字段**：已勾选的字段已不存在时显示，内容为 `这些已选择的字段已不存在，因此运行跳过了它们。请在“字段”选项卡中检查它们。` 以及每个字段的标识。
+
+建议先检查观察到的地址和前缀。它们能说明 pfSense 返回的是否为预期地址，以及该长度是否得出了预期的网络。
+
+当另一个检查持有<Terminology title="防止两个检查同时运行的保护机制" to="/docs/reference/terminology#run-lock">运行锁</Terminology>，或运行在读取<Terminology title="保存基线和上次运行的软件包文件" to="/docs/reference/terminology#package-state">软件包状态</Terminology>之前就已停止（例如没有任何监控接口具有<Terminology title="位于 2000::/3 内的公网 IPv6 地址" to="/docs/reference/terminology#global-unicast-address">全局地址</Terminology>）时，**上次运行** 不会更新。如[运行结果](/docs/operate/run-outcomes#failures-after-the-save)所述，<Terminology title="结果：检查或安全阶段中止了运行" to="/docs/reference/terminology#failure">失败</Terminology>的已更改字段数始终显示为 `0`。
+
+### 按接口的上次运行 \{#last-run-by-interface}
+
+监控多个接口时，**上次运行** 显示总计，**摘要** 统计已更新、未更改和需要注意的接口数量。其下方的 **按接口的上次运行** 表格会列出每个接口各自的结果、观察到的前缀、已更改字段和摘要。
+
+- **上次运行** 中的 **已更改字段** 对每个字段只计一次，即使共用同一个<Terminology title="ISP 路由到防火墙的 IPv6 网络" to="/docs/reference/terminology#delegated-prefix">委派前缀</Terminology>的两个接口都计划更改它。
+- 没有<Terminology title="位于 2000::/3 内的公网 IPv6 地址" to="/docs/reference/terminology#global-unicast-address">全局地址</Terminology>的接口会在自己的行中报告<Terminology title="结果：检查或安全阶段中止了运行" to="/docs/reference/terminology#failure">失败</Terminology>，其他接口仍会照常检查。
+- 如果两个接口为同一字段计划了不同的值，运行会在写入任何内容之前停止，并报告是哪个字段出现了分歧。
+
+## 操作 \{#actions}
+
+| 操作                                                                                         | 作用                                                                                                                                                                                                                                                                                                                                                                  |
+|--------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 立即运行                                                                                       | 运行一次完整检查，即使<Terminology title="由 pfSense 管理的 cron 条目运行的自动检查" to="/docs/reference/terminology#scheduled-updates">计划更新</Terminology>已关闭也会运行。没有<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>时会记录一个基线，发现<Terminology title="与上次成功前缀或长度不同" to="/docs/reference/terminology#prefix-transition">前缀变化</Terminology>时会应用该变化。 |
+| <Terminology title="不备份也不写入的预览" to="/docs/reference/terminology#dry-run">试运行</Terminology> | 运行相同的检查，但不备份也不写入。<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>尚不存在时，它会报告<Terminology title="结果：尚无基线时的试运行" to="/docs/reference/terminology#initialization-preview">初始化预览</Terminology>。                                                                                                                              |
+| 接受当前前缀                                                                                     | 确认后，将当前活动的源地址、前缀和长度记录为新的<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>。它不会检查已批准字段、创建备份、写入配置或重新加载服务。                                                                                                                                                                                                                  |
+
+立即运行和<Terminology title="不备份也不写入的预览" to="/docs/reference/terminology#dry-run">试运行</Terminology>都属于<Terminology title="从“状态”选项卡启动的检查" to="/docs/reference/terminology#manual-run">手动运行</Terminology>。**接受当前前缀** 是一项恢复操作，只应在核实已保存的地址和受影响的服务之后使用。
+
+每项操作都会显示完成横幅或警告横幅。**接受当前前缀** 的确认提示是软件包替换其比较基线之前的最后一道保护。
+
+发现另一个运行正在进行的检查同样会显示完成横幅，因此建议同时查看<Terminology title="立即运行或试运行后显示的只读结果" to="/docs/reference/terminology#command-output">命令输出</Terminology>。
+
+## 命令输出 \{#command-output}
+
+执行操作后，**<Terminology title="立即运行或试运行后显示的只读结果" to="/docs/reference/terminology#command-output">命令输出</Terminology>** 下会出现一个只读的 **最新运行** 文本框：
+
+```text
+状态: 无变化
+接口: lan
+观察到的源地址: 2001:db8:abcd:78aa::1
+旧前缀: 2001:db8:abcd:7800::
+当前前缀: 2001:db8:abcd:7800::/56
+计划或已更改字段: 0
+配置备份: 未创建
+已重新加载的服务: 无
+摘要: 活动 IPv6 前缀未变化；未读取或写入任何已批准的配置目标。
+```
+
+旧前缀输出时不带长度。运行失败时则只显示一行，以 `IPv6 前缀更新器失败：` 开头。
+
+在<Terminology title="不备份也不写入的预览" to="/docs/reference/terminology#dry-run">试运行</Terminology>或实际更改之后，接下来是 `字段变更:`，列出运行已替换（或将会替换）的每个地址及其所属字段：
+
+```text
+字段变更:
+- aliases/alias/0/address: 2001:db8:abcd:78aa::10 → 2001:db8:abcd:88aa::10
+```
+
+## 选择字段 \{#choosing-fields}
+
+运行会更新哪些字段，是在 **字段** 选项卡中选择的；该选项卡会列出每个<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>前缀内的所有地址。[字段](/docs/configure/configuration-scopes)介绍了各个组、单个字段的例外，以及“其他设置”组。
+
+## 截图 \{#screenshots}
+
+第一张截图显示的是两个监控接口的<Terminology title="结果：前缀未变化，未扫描或写入任何内容" to="/docs/reference/terminology#no-change">无变化</Terminology>结果：没有字段被更改，也没有创建备份。
+
+<img src={unchangedRun} alt="IPv6 Prefix Updater 的“状态”选项卡，显示两个未变化接口的“上次运行”和“按接口的上次运行”，已更改字段为零且未创建备份" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+第二张截图显示的是一次<Terminology title="结果：字段已更新、保存、重新加载并验证" to="/docs/reference/terminology#success">成功</Terminology>：更改了一个<Terminology title="软件包可改写的具体配置字段" to="/docs/reference/terminology#approved-field">已批准字段</Terminology>，创建了<Terminology title="写入前保存的配置副本" to="/docs/reference/terminology#configuration-backup">配置备份</Terminology>，并重新加载了防火墙过滤器。
+
+<img src={changedRun} alt="IPv6 Prefix Updater 的“状态”选项卡，显示两个监控接口的一次成功的 /56 前缀变化：一个字段已更改、已创建配置备份，并重新加载了防火墙过滤器" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+第三张截图显示的是该次运行的 **按接口的上次运行** 表格：LAN 和 LAB 共用同一个<Terminology title="ISP 路由到防火墙的 IPv6 网络" to="/docs/reference/terminology#delegated-prefix">委派前缀</Terminology>，并各自报告了同一个已更改字段。
+
+<img src={runByInterface} alt="IPv6 Prefix Updater 的“按接口的上次运行”表格，显示 LAN 和 LAB 都因同一次 /56 前缀变化报告成功，且各有一个已更改字段" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+这些截图中的 `2001:db8::/32` 地址都是保留的文档示例地址。
+
+各种结果的含义请参阅[运行结果](/docs/operate/run-outcomes)；在依赖一次更改了配置的运行之前，请先阅读[备份与恢复](/docs/operate/backups-and-recovery)。

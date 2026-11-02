@@ -1,0 +1,95 @@
+---
+id: interface-and-prefix
+title: Grensesnitt og prefiks
+description: Velg de overvåkede grensesnittene som bærer de delegerte prefiksene, angi prefikslengden fra internettleverandøren for hvert av dem, og se hva det gjør å endre grensesnitt eller lengde senere.
+keywords:
+  - pfsense ipv6 prefix updater
+  - overvåket grensesnitt
+  - lengde på delegert prefiks
+  - dhcpv6-prefiksdelegering
+  - vertsbiter
+tags:
+  - configuration
+  - interface
+  - prefix length
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import monitoredInterfaces from './_assets_/interface-and-prefix-1.png';
+
+Velg grensesnittene som avslører de gjeldende prefiksene, og angi <Terminology title="antall innledende nettverksbiter, for eksempel /56" to="/docs/reference/terminology#prefix-length">prefikslengden</Terminology> internettleverandøren delegerer for hvert av dem.
+
+## Velg de overvåkede grensesnittene \{#choose-the-monitored-interfaces}
+
+Legg til en rad i **Overvåkede grensesnitt** for hvert grensesnitt der den <Terminology title="offentlig IPv6-adresse innenfor 2000::/3" to="/docs/reference/terminology#global-unicast-address">globale adressen</Terminology> kommer fra det <Terminology title="IPv6-nettverket internettleverandøren ruter til brannmuren" to="/docs/reference/terminology#delegated-prefix">delegerte prefikset</Terminology>. Pakken leser hver adresse på nytt ved hver kjøring og faller aldri tilbake til en <Terminology title="fe80::-adresse som bare virker på én lenke" to="/docs/reference/terminology#link-local-address">link-local-adresse</Terminology>.
+
+Hvis WAN bare mottar et <Terminology title="IPv6-nettverket internettleverandøren ruter til brannmuren" to="/docs/reference/terminology#delegated-prefix">delegert prefiks</Terminology>, har vanligvis et <Terminology title="grensesnitt adressert fra et annet grensesnitts delegerte prefiks" to="/docs/reference/terminology#tracked-interface">sporet grensesnitt</Terminology> som LAN en <Terminology title="offentlig IPv6-adresse innenfor 2000::/3" to="/docs/reference/terminology#global-unicast-address">global adresse</Terminology> fra det, og da er det grensesnittet riktig valg.
+
+<img src={monitoredInterfaces} alt="Fanen Innstillinger i IPv6 Prefix Updater med to rader for overvåkede grensesnitt, LAN og LAB, begge satt til en delegert prefikslengde på /56, og en henvisning til fanen Felt" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+- **Legg til**: legger til en rad. Hvert grensesnitt kan bare stå i én rad, og lagring uten rader avvises.
+- **Slett**: fjerner en rad. pfSense skjuler knappen så lenge det bare er én rad igjen.
+- **Én kjøring for alle rader**: hver planlagte kontroll leser alle overvåkede grensesnitt og lagrer endringene deres i én skriving med sikkerhetskopi.
+
+De fleste brannmurer trenger bare én rad. Legg til flere når flere grensesnitt mottar hvert sitt delegerte prefiks, for eksempel ved to WAN-tilkoblinger, eller når du vil kontrollere adressen til hvert LAN-segment.
+
+Slik bekrefter du valget:
+
+1. Lagre innstillingene med **<Terminology title="automatiske kontroller fra en cron-oppføring styrt av pfSense" to="/docs/reference/terminology#scheduled-updates">Aktiver planlagte oppdateringer</Terminology>** umerket.
+2. Velg **Kjør nå** i fanen Status.
+3. Sammenlign **<Terminology title="global adresse pfSense rapporterer for det overvåkede grensesnittet" to="/docs/reference/terminology#source-address">Observert kildeadresse</Terminology>** med adressen under **Status → Interfaces**.
+4. Hvis adressen hører til feil nettverk, velger du et annet grensesnitt og gjentar trinnene.
+
+Status viser beskrivelsen av hvert grensesnitt etterfulgt av det interne navnet pfSense bruker, for eksempel `LAN (lan)`.
+
+## Angi lengden på det delegerte prefikset \{#enter-the-delegated-prefix-length}
+
+Velg lengden ut fra tjenesteopplysningene fra internettleverandøren eller størrelsen på DHCPv6-prefiksdelegeringen på WAN-grensesnittet. **<Terminology title="innstilling for leverandørens prefiksstørrelse, /48 til /64" to="/docs/reference/terminology#delegated-prefix-length">Lengde på delegert prefiks</Terminology>** godtar `/48` til `/64`, starter på `/56` og blir aldri oppdaget automatisk.
+
+:::tip
+
+Det anbefales å bekrefte lengden før den første kjøringen med **Kjør nå**, fordi <Terminology title="startprefiks registrert uten å endre konfigurasjonen" to="/docs/reference/terminology#baseline">grunnlinjen</Terminology> lagrer lengden sammen med prefikset.
+
+:::
+
+## Kontroller det beregnede nettverket \{#check-the-calculated-network}
+
+Etter en kjøring viser **<Terminology title="kildeadressen maskert ved prefikslengden" to="/docs/reference/terminology#observed-prefix">Observert prefiks</Terminology>** det beregnede nettverket. Lengder som slutter inne i et heksadesimalt siffer, for eksempel `/57` eller `/63`, fungerer på samme måte, fordi pakken maskerer adressene bit for bit.
+
+For en `/56`-delegering som endres fra `2001:db8:abcd:7800::/56` til `2001:db8:abcd:8800::/56`:
+
+```text
+Source address:    2001:db8:abcd:88aa::1
+Current prefix:    2001:db8:abcd:8800::/56
+Previous address:  2001:db8:abcd:78aa::42
+Updated address:   2001:db8:abcd:88aa::42
+```
+
+Bare de første 56 bitene endres, og <Terminology title="adressebitene etter det delegerte prefikset" to="/docs/reference/terminology#host-portion">vertsdelen</Terminology> `aa::42` forblir den samme. Adresser under `2001:db8::/32` i disse veiledningene er dokumentasjonseksempler.
+
+## Endre grensesnittene \{#changing-the-interfaces}
+
+:::warning
+
+Hvis du legger til et <Terminology title="grensesnittet der adressen avslører gjeldende prefiks" to="/docs/reference/terminology#monitored-interface">overvåket grensesnitt</Terminology> eller bytter en rad til et annet grensesnitt, registrerer neste kjøring en ny <Terminology title="startprefiks registrert uten å endre konfigurasjonen" to="/docs/reference/terminology#baseline">grunnlinje</Terminology> for det uten å endre konfigurasjonen. Hvis prefikset til grensesnittet hadde endret seg og pakken ennå ikke hadde tatt endringen i bruk, hoppes den endringen over.
+
+:::
+
+Når du sletter en rad, beholdes <Terminology title="startprefiks registrert uten å endre konfigurasjonen" to="/docs/reference/terminology#baseline">grunnlinjen</Terminology> for det grensesnittet i <Terminology title="pakkefil med grunnlinjen og siste kjøring" to="/docs/reference/terminology#package-state">pakketilstanden</Terminology>. Hvis du legger til grensesnittet igjen senere, sammenlignes det med den lagrede grunnlinjen i stedet for at en ny registreres.
+
+## Endre prefikslengden \{#changing-the-prefix-length}
+
+Å endre **<Terminology title="innstilling for leverandørens prefiksstørrelse, /48 til /64" to="/docs/reference/terminology#delegated-prefix-length">Lengde på delegert prefiks</Terminology>** etter at <Terminology title="startprefiks registrert uten å endre konfigurasjonen" to="/docs/reference/terminology#baseline">grunnlinjen</Terminology> finnes, regnes som en <Terminology title="endring fra siste vellykkede prefiks eller lengde" to="/docs/reference/terminology#prefix-transition">prefiksovergang</Terminology>, selv når selve nettverket er det samme. Pakken finner samsvarende adresser ut fra lengden som er lagret i <Terminology title="startprefiks registrert uten å endre konfigurasjonen" to="/docs/reference/terminology#baseline">grunnlinjen</Terminology>, og erstatter biter ut fra den nye lengden.
+
+:::danger
+
+Når du snevrer inn lengden, overskrives subnettbitene i alle samsvarende adresser. Med <Terminology title="global adresse pfSense rapporterer for det overvåkede grensesnittet" to="/docs/reference/terminology#source-address">kildeadressen</Terminology> `2001:db8:1234:ab00::1` og en <Terminology title="startprefiks registrert uten å endre konfigurasjonen" to="/docs/reference/terminology#baseline">grunnlinje</Terminology> på `/56` gjør en endring til `/64` at `2001:db8:1234:abcc::42` blir til `2001:db8:1234:ab00::42`.
+
+:::
+
+Når du utvider lengden, for eksempel fra `/64` til `/56`, kan kjøringen bli stående uten noe å endre. Den rapporterer da <Terminology title="resultat: prefiks endret, men ingen godkjente felt samsvarte" to="/docs/reference/terminology#warning">Advarsel</Terminology> ved hver kjøring til selve prefikset endres, eller til du kontrollerer de lagrede adressene og [godtar det gjeldende prefikset](/docs/operate/backups-and-recovery#after-a-failed-run) som ny grunnlinje.
+
+Før du endrer lengden, anbefales det å fjerne merket for **<Terminology title="automatiske kontroller fra en cron-oppføring styrt av pfSense" to="/docs/reference/terminology#scheduled-updates">Aktiver planlagte oppdateringer</Terminology>** i den samme lagringen. En **<Terminology title="forhåndsvisning som aldri sikkerhetskopierer eller skriver" to="/docs/reference/terminology#dry-run">Testkjøring</Terminology>** viser da antall planlagte felt, hver planlagte endring under `Feltendringer` og **Sammendrag** før du velger **Kjør nå**.
+
+[Opprett grunnlinjen](/docs/first-run) som neste steg, og velg deretter feltene i fanen [Felt](/docs/configure/configuration-scopes).

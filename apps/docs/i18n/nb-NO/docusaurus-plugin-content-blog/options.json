@@ -1,0 +1,11 @@
+{
+  "title": {
+    "message": "Blogg"
+  },
+  "description": {
+    "message": "Utgivelsesmerknader, oppsettsveiledninger og innlegg om å holde pfSense-adresser oppdatert når IPv6-prefikset endres."
+  },
+  "sidebar.title": {
+    "message": "Siste innlegg"
+  }
+}

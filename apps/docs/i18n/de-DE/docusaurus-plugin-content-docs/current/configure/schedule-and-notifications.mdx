@@ -1,0 +1,71 @@
+---
+id: schedule-and-notifications
+title: Zeitplan und Benachrichtigungen
+description: Legen Sie fest, wie oft pfSense das Präfix prüft, schalten Sie geplante Aktualisierungen ein und entscheiden Sie, ob nach jeder erfolgreichen Aktualisierung eine Änderungsbenachrichtigung gesendet wird.
+keywords:
+  - pfsense ipv6 prefix updater
+  - zeitplan
+  - cron
+  - änderungsbenachrichtigungen
+  - webgui-hinweise
+tags:
+  - configuration
+  - scheduling
+  - notifications
+sidebar_position: 3
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Legen Sie fest, wie oft pfSense Ihr Präfix prüft und ob Sie nach einer erfolgreichen Aktualisierung eine <Terminology title="Meldung nach einer verifizierten erfolgreichen Aktualisierung" to="/docs/reference/terminology#change-notification">Änderungsbenachrichtigung</Terminology> erhalten.
+
+## Zeitplan wählen \{#choose-a-schedule}
+
+| Zeitplan               | Ausführung                                         |
+|------------------------|----------------------------------------------------|
+| Alle 15 Minuten        | Zu den Minuten 0, 15, 30 und 45 jeder Stunde       |
+| Stündlich              | Zur Minute 0 jeder Stunde, die Standardeinstellung |
+| Alle 6 Stunden         | Um 00:00, 06:00, 12:00 und 18:00 Uhr               |
+| Täglich um Mitternacht | Um 00:00 Uhr                                       |
+
+Die Zeiten folgen der Zeitzone der Firewall, während die Registerkarte Status UTC anzeigt.
+
+## Geplante Aktualisierungen einschalten \{#turn-on-scheduled-updates}
+
+**<Terminology title="automatische Prüfungen über einen von pfSense verwalteten Cron-Eintrag" to="/docs/reference/terminology#scheduled-updates">Geplante Aktualisierungen aktivieren</Terminology>** ist nach der Installation deaktiviert. Beim Speichern der Einstellungen wird ein von pfSense verwalteter Cron-Eintrag hinzugefügt oder entfernt, daher brauchen Sie weder das Cron-Paket noch einen von Hand geschriebenen Cron-Job.
+
+Ist das Kontrollkästchen deaktiviert, läuft keine Prüfung von selbst, während **Jetzt ausführen** und **<Terminology title="Vorschau, die nie sichert oder schreibt" to="/docs/reference/terminology#dry-run">Testlauf</Terminology>** weiter funktionieren. Es empfiehlt sich, es erst zu aktivieren, nachdem der [erste Lauf](/docs/first-run) die <Terminology title="Ausgangspräfix, aufgezeichnet ohne Konfigurationsänderung" to="/docs/reference/terminology#baseline">Basislinie</Terminology> aufgezeichnet hat und diese geprüft ist.
+
+## Was eine Routineprüfung kostet \{#what-a-routine-check-costs}
+
+Eine Prüfung mit dem Ergebnis <Terminology title="Ergebnis: Präfix unverändert, nichts durchsucht oder geschrieben" to="/docs/reference/terminology#no-change">Keine Änderung</Terminology> liest nur ihre Einstellungen, die Schnittstellenadressen und den <Terminology title="Paketdatei mit Basislinie und letztem Lauf" to="/docs/reference/terminology#package-state">Paketzustand</Terminology>. Sie durchsucht die Konfiguration nicht, erstellt keine Sicherung, lädt keine Dienste neu und sendet keine Benachrichtigung.
+
+Sie schreibt dennoch eine Zeile in das <Terminology title="allgemeines pfSense-Protokoll, in das das Paket schreibt" to="/docs/reference/terminology#system-log">Systemprotokoll</Terminology>.
+
+## Überlappende Läufe \{#overlapping-runs}
+
+Eine <Terminology title="Sperre, die zwei gleichzeitige Prüfungen verhindert" to="/docs/reference/terminology#run-lock">Laufsperre</Terminology> lässt immer nur eine Prüfung gleichzeitig laufen. Eine Prüfung, die startet, während eine andere läuft, wird beendet, ohne die Konfiguration zu lesen, und lässt **Letzter Lauf** unverändert.
+
+Diese Prüfung schreibt `Ein anderer Lauf besitzt die Paketsperre; dieser Aufruf wurde beendet, ohne die Konfiguration zu lesen.` in das <Terminology title="allgemeines pfSense-Protokoll, in das das Paket schreibt" to="/docs/reference/terminology#system-log">Systemprotokoll</Terminology>.
+
+## Änderungsbenachrichtigungen \{#change-notifications}
+
+**<Terminology title="Meldung nach einer verifizierten erfolgreichen Aktualisierung" to="/docs/reference/terminology#change-notification">Änderungsbenachrichtigungen senden</Terminology>** ist standardmäßig aktiviert. Nach einem <Terminology title="Ergebnis: Felder aktualisiert, gespeichert, neu geladen und verifiziert" to="/docs/reference/terminology#success">Erfolg</Terminology> wird eine Nachricht über die <Terminology title="in pfSense eingerichtete externe Benachrichtigungsdienste" to="/docs/reference/terminology#notification-channels">Benachrichtigungskanäle</Terminology> von pfSense gesendet und ein <Terminology title="Hinweis in der Hinweisliste der pfSense-WebGUI" to="/docs/reference/terminology#webgui-notice">WebGUI-Hinweis</Terminology> hinzugefügt.
+
+Die Nachricht lautet etwa `1 genehmigte(s) Feld(er) wurde(n) auf Schnittstelle lan von 2001:db8:abcd:7800::/56 in 2001:db8:abcd:8800::/56 geändert.` Kein anderes Ergebnis sendet eine <Terminology title="Meldung nach einer verifizierten erfolgreichen Aktualisierung" to="/docs/reference/terminology#change-notification">Änderungsbenachrichtigung</Terminology>.
+
+Wenn die Zustellung fehlschlägt, gilt die Aktualisierung trotzdem als <Terminology title="Ergebnis: Felder aktualisiert, gespeichert, neu geladen und verifiziert" to="/docs/reference/terminology#success">Erfolg</Terminology>. Die Registerkarte Status zeigt den Zustellstatus nicht an, und das <Terminology title="allgemeines pfSense-Protokoll, in das das Paket schreibt" to="/docs/reference/terminology#system-log">Systemprotokoll</Terminology> verzeichnet `Die Konfiguration war erfolgreich, aber die Änderungsbenachrichtigung ist fehlgeschlagen.`
+
+## Hinweise bei Warnung und Fehler \{#warning-and-failure-notices}
+
+Die Ergebnisse <Terminology title="Ergebnis: Präfix geändert, aber kein genehmigtes Feld passte" to="/docs/reference/terminology#warning">Warnung</Terminology> und <Terminology title="Ergebnis: eine Prüf- oder Sicherheitsstufe hat den Lauf gestoppt" to="/docs/reference/terminology#failure">Fehler</Terminology> fügen immer einen lokalen <Terminology title="Hinweis in der Hinweisliste der pfSense-WebGUI" to="/docs/reference/terminology#webgui-notice">WebGUI-Hinweis</Terminology> hinzu, selbst wenn **<Terminology title="Meldung nach einer verifizierten erfolgreichen Aktualisierung" to="/docs/reference/terminology#change-notification">Änderungsbenachrichtigungen senden</Terminology>** deaktiviert ist. Diese Hinweise gehen nicht an die <Terminology title="in pfSense eingerichtete externe Benachrichtigungsdienste" to="/docs/reference/terminology#notification-channels">Benachrichtigungskanäle</Terminology>, und eine nicht behobene Ursache fügt bei jedem geplanten Lauf einen neuen hinzu.
+
+## Zeitplan validieren \{#validate-the-schedule}
+
+1. Speichern Sie die Einstellungen und prüfen Sie, ob die Meldung `Einstellungen gespeichert.` erscheint.
+2. Wählen Sie auf der Registerkarte Status **Jetzt ausführen** und prüfen Sie, ob das Ergebnis <Terminology title="Ergebnis: Präfix unverändert, nichts durchsucht oder geschrieben" to="/docs/reference/terminology#no-change">Keine Änderung</Terminology> mit einem aktuellen **Zeitstempel (UTC)** erscheint.
+3. Prüfen Sie, ob **<Terminology title="Kopie der Konfiguration vor einem Schreibvorgang" to="/docs/reference/terminology#configuration-backup">Konfigurationssicherung erstellt</Terminology>** Nein und **Geänderte Felder** `0` zeigt.
+4. Aktualisieren Sie nach dem nächsten geplanten Zeitpunkt die Registerkarte Status und prüfen Sie, ob sich der Zeitstempel geändert hat.
+5. Um die Zustellung zu testen, verwenden Sie die eigenen Testschaltflächen von pfSense unter **System → Advanced → Notifications**.
+
+Fahren Sie mit [Status und Aktionen](/docs/operate/status-and-actions) fort, um die Felder kennenzulernen, die geplante Prüfungen und <Terminology title="Prüfung, die auf der Registerkarte Status gestartet wird" to="/docs/reference/terminology#manual-run">manuelle Läufe</Terminology> aufzeichnen.

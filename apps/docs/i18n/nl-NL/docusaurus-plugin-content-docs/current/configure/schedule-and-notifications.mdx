@@ -1,0 +1,71 @@
+---
+id: schedule-and-notifications
+title: Schema en meldingen
+description: Kies hoe vaak pfSense de prefix controleert, schakel geplande updates in en bepaal of er na elke geslaagde update een wijzigingsmelding wordt verstuurd.
+keywords:
+  - pfsense ipv6 prefix updater
+  - schema
+  - cron
+  - wijzigingsmeldingen
+  - webgui-meldingen
+tags:
+  - configuration
+  - scheduling
+  - notifications
+sidebar_position: 3
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Kies hoe vaak pfSense je prefix controleert en of je na een geslaagde update een <Terminology title="melding na een geverifieerde, geslaagde update" to="/docs/reference/terminology#change-notification">wijzigingsmelding</Terminology> krijgt.
+
+## Een schema kiezen \{#choose-a-schedule}
+
+| Schema                   | Wanneer het draait                          |
+|--------------------------|---------------------------------------------|
+| Elke 15 minuten          | Op minuut 0, 15, 30 en 45 van elk uur       |
+| Elk uur                  | Op minuut 0 van elk uur, de standaardwaarde |
+| Elke 6 uur               | Om 00:00, 06:00, 12:00 en 18:00 uur         |
+| Dagelijks om middernacht | Om 00:00 uur                                |
+
+De tijden volgen de tijdzone van de firewall, terwijl het tabblad Status UTC toont.
+
+## Geplande updates inschakelen \{#turn-on-scheduled-updates}
+
+**<Terminology title="automatische controles via een door pfSense beheerde cronjob" to="/docs/reference/terminology#scheduled-updates">Geplande updates inschakelen</Terminology>** staat na de installatie uit. Bij het opslaan van de instellingen wordt een door pfSense beheerde cronjob toegevoegd of verwijderd, dus je hebt geen Cron-pakket of zelfgeschreven cronjob nodig.
+
+Is het vakje uitgevinkt, dan draait er geen enkele controle vanzelf, terwijl **Nu uitvoeren** en **<Terminology title="voorbeeld dat nooit een back-up maakt of schrijft" to="/docs/reference/terminology#dry-run">Testuitvoering</Terminology>** gewoon blijven werken. Het is aan te raden om het pas aan te vinken nadat de [eerste uitvoering](/docs/first-run) de <Terminology title="startprefix, vastgelegd zonder de configuratie te wijzigen" to="/docs/reference/terminology#baseline">baseline</Terminology> heeft vastgelegd en je die hebt gecontroleerd.
+
+## Wat een routinecontrole kost \{#what-a-routine-check-costs}
+
+Een controle met het resultaat <Terminology title="resultaat: prefix ongewijzigd, niets gescand of geschreven" to="/docs/reference/terminology#no-change">Geen wijziging</Terminology> leest alleen haar instellingen, de interfaceadressen en de <Terminology title="pakketbestand met de baseline en de laatste uitvoering" to="/docs/reference/terminology#package-state">pakketstatus</Terminology>. Ze scant de configuratie niet, maakt geen back-up, herlaadt geen services en verstuurt geen melding.
+
+Ze schrijft wel één regel naar het <Terminology title="algemeen pfSense-logboek waarin het pakket schrijft" to="/docs/reference/terminology#system-log">systeemlogboek</Terminology>.
+
+## Overlappende uitvoeringen \{#overlapping-runs}
+
+Een <Terminology title="vergrendeling die twee gelijktijdige controles voorkomt" to="/docs/reference/terminology#run-lock">uitvoeringsvergrendeling</Terminology> zorgt ervoor dat er maar één controle tegelijk draait. Een controle die start terwijl er al een andere draait, stopt zonder de configuratie te lezen en laat **Laatste uitvoering** ongewijzigd.
+
+Die controle schrijft `Een andere uitvoering bezit de pakketvergrendeling; deze aanroep is gestopt zonder de configuratie te lezen.` naar het <Terminology title="algemeen pfSense-logboek waarin het pakket schrijft" to="/docs/reference/terminology#system-log">systeemlogboek</Terminology>.
+
+## Wijzigingsmeldingen \{#change-notifications}
+
+**<Terminology title="melding na een geverifieerde, geslaagde update" to="/docs/reference/terminology#change-notification">Wijzigingsmeldingen verzenden</Terminology>** staat standaard aan. Na het resultaat <Terminology title="resultaat: velden bijgewerkt, opgeslagen, herladen en geverifieerd" to="/docs/reference/terminology#success">Geslaagd</Terminology> wordt er een bericht verstuurd via de <Terminology title="externe meldingsdiensten die in pfSense zijn ingesteld" to="/docs/reference/terminology#notification-channels">meldingskanalen</Terminology> van pfSense en een <Terminology title="melding in de meldingenlijst van de pfSense-WebGUI" to="/docs/reference/terminology#webgui-notice">WebGUI-melding</Terminology> toegevoegd.
+
+Het bericht luidt bijvoorbeeld `1 goedgekeurde veld(en) bijgewerkt van 2001:db8:abcd:7800::/56 naar 2001:db8:abcd:8800::/56 op interface lan.` Geen enkel ander resultaat verstuurt een <Terminology title="melding na een geverifieerde, geslaagde update" to="/docs/reference/terminology#change-notification">wijzigingsmelding</Terminology>.
+
+Mislukt de bezorging, dan telt de update toch als <Terminology title="resultaat: velden bijgewerkt, opgeslagen, herladen en geverifieerd" to="/docs/reference/terminology#success">Geslaagd</Terminology>. Het tabblad Status toont de bezorgstatus niet, en het <Terminology title="algemeen pfSense-logboek waarin het pakket schrijft" to="/docs/reference/terminology#system-log">systeemlogboek</Terminology> vermeldt `De configuratie is geslaagd, maar de wijzigingsmelding is mislukt.`
+
+## Meldingen bij Waarschuwing en Mislukt \{#warning-and-failure-notices}
+
+De resultaten <Terminology title="resultaat: prefix gewijzigd, maar geen goedgekeurd veld kwam overeen" to="/docs/reference/terminology#warning">Waarschuwing</Terminology> en <Terminology title="resultaat: een controle of veiligheidsstap stopte de uitvoering" to="/docs/reference/terminology#failure">Mislukt</Terminology> voegen altijd een lokale <Terminology title="melding in de meldingenlijst van de pfSense-WebGUI" to="/docs/reference/terminology#webgui-notice">WebGUI-melding</Terminology> toe, ook als **<Terminology title="melding na een geverifieerde, geslaagde update" to="/docs/reference/terminology#change-notification">Wijzigingsmeldingen verzenden</Terminology>** is uitgevinkt. Deze meldingen gaan niet naar de <Terminology title="externe meldingsdiensten die in pfSense zijn ingesteld" to="/docs/reference/terminology#notification-channels">meldingskanalen</Terminology>, en een oorzaak die niet is opgelost, voegt bij elke geplande uitvoering een nieuwe toe.
+
+## Het schema valideren \{#validate-the-schedule}
+
+1. Sla de instellingen op en controleer of de melding `Instellingen opgeslagen.` verschijnt.
+2. Selecteer op het tabblad Status **Nu uitvoeren** en controleer of het resultaat <Terminology title="resultaat: prefix ongewijzigd, niets gescand of geschreven" to="/docs/reference/terminology#no-change">Geen wijziging</Terminology> verschijnt met een actuele **Tijdstempel (UTC)**.
+3. Controleer of **<Terminology title="kopie van de configuratie van vóór een schrijfactie" to="/docs/reference/terminology#configuration-backup">Configuratieback-up gemaakt</Terminology>** Nee toont en **Gewijzigde velden** `0` toont.
+4. Vernieuw na het volgende geplande tijdstip het tabblad Status en controleer of de tijdstempel is verschoven.
+5. Gebruik de eigen testknoppen van pfSense onder **System → Advanced → Notifications** om de bezorging te testen.
+
+Ga verder met [Status en acties](/docs/operate/status-and-actions) voor de velden die geplande controles en <Terminology title="controle die je start vanaf het tabblad Status" to="/docs/reference/terminology#manual-run">handmatige uitvoeringen</Terminology> vastleggen.

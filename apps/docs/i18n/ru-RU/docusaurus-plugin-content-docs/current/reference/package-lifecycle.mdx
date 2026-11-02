@@ -1,0 +1,65 @@
+---
+id: package-lifecycle
+title: Обновление и удаление
+description: Описывает проверку установленной версии, установку нового выпуска поверх старого и удаление пакета, а также то, что каждый из этих шагов сохраняет или удаляет.
+keywords:
+  - pfsense ipv6 prefix updater
+  - обновление пакета
+  - удаление пакета
+  - pkg delete
+  - переустановка
+tags:
+  - reference
+  - maintenance
+  - pfsense
+sidebar_position: 5
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Проверьте установленную версию, установите новый выпуск или удалите пакет из командной оболочки pfSense.
+
+## Проверка установленной версии \{#check-the-installed-version}
+
+```shell
+pkg info pfSense-pkg-Ipv6PrefixUpdater
+```
+
+Сравните показанную версию с [последним выпуском на GitHub](https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest).
+
+## Обновление пакета \{#update-the-package}
+
+Рекомендуется сначала загрузить копию конфигурации в **Diagnostics → Backup & Restore**. Затем установите последний выпуск поверх существующего пакета:
+
+```shell
+pkg add -f https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
+```
+
+Этап установки снова синхронизирует запись cron с сохранёнными настройками и сохраняет все <Terminology title="начальный префикс, записанный без изменения конфигурации" to="/docs/reference/terminology#baseline">базовые значения</Terminology>. Шаги проверки контрольной суммы из раздела [Установка пакета](/docs/installation#verify-the-download-first) подходят и для обновлений.
+
+После обновления:
+
+1. Откройте **Services → IPv6 Prefix Updater → Настройки** и проверьте сохранённые значения.
+2. На вкладке «Состояние» проверьте раздел **Текущее состояние**. Каждый интерфейс сохраняет своё <Terminology title="начальный префикс, записанный без изменения конфигурации" to="/docs/reference/terminology#baseline">базовое значение</Terminology>.
+
+Если в строке отображается `Не инициализировано`, **Запустить сейчас** запишет для этого интерфейса новое <Terminology title="начальный префикс, записанный без изменения конфигурации" to="/docs/reference/terminology#baseline">базовое значение</Terminology>. Адреса, которые всё ещё используют префикс, действовавший до этого базового значения, тогда останутся без изменений.
+
+## Удаление пакета \{#remove-the-package}
+
+Если сначала снять флажок **<Terminology title="автоматические проверки через запись cron под управлением pfSense" to="/docs/reference/terminology#scheduled-updates">Включить обновления по расписанию</Terminology>**, последующая переустановка не запустит расписание сразу, если pfSense сохранит настройки. Затем выполните:
+
+```shell
+pkg delete pfSense-pkg-Ipv6PrefixUpdater
+```
+
+Удаление стирает запись cron пакета и файл <Terminology title="защита от одновременного выполнения двух проверок" to="/docs/reference/terminology#run-lock">блокировки запуска</Terminology>. <Terminology title="файл пакета с базовым значением и последним запуском" to="/docs/reference/terminology#package-state">Состояние пакета</Terminology> и копии с вкладки **Резервные копии** в `/cf/conf/ipv6-prefix-updater` сохраняются, поэтому удаление и повторная установка, которые pfSense сам выполняет при обновлениях, никогда не приводят к потере <Terminology title="начальный префикс, записанный без изменения конфигурации" to="/docs/reference/terminology#baseline">базового значения</Terminology>.
+
+Удаление не отменяет адреса, уже сохранённые в конфигурации, а ревизии пакета остаются в <Terminology title="список сохранённых ревизий конфигурации pfSense" to="/docs/reference/terminology#config-history">Config History</Terminology>. Чтобы удалить и сохранённые файлы, после удаления пакета выполните `rm -rf /cf/conf/ipv6-prefix-updater`.
+
+## Последующая переустановка \{#reinstall-later}
+
+Переустановленный пакет находит сохранённое <Terminology title="файл пакета с базовым значением и последним запуском" to="/docs/reference/terminology#package-state">состояние пакета</Terminology>, поэтому первый запуск сравнивает префиксы с каждым сохранённым <Terminology title="начальный префикс, записанный без изменения конфигурации" to="/docs/reference/terminology#baseline">базовым значением</Terminology> и обновляет поля, оставшиеся на более старом префиксе. Если прежние настройки сохранились с установленным флажком **<Terminology title="автоматические проверки через запись cron под управлением pfSense" to="/docs/reference/terminology#scheduled-updates">Включить обновления по расписанию</Terminology>**, этап установки сразу включает расписание.
+
+Чтобы начать с чистого листа, удалите `/cf/conf/ipv6-prefix-updater` перед переустановкой. Тогда первый запуск запишет новое <Terminology title="начальный префикс, записанный без изменения конфигурации" to="/docs/reference/terminology#baseline">базовое значение</Terminology> и сообщит «<Terminology title="результат: базовое значение записано, конфигурация не изменена" to="/docs/reference/terminology#initialized">Инициализировано</Terminology>», не изменяя конфигурацию.
+
+Перед обслуживанием изучите раздел [Резервные копии и восстановление](/docs/operate/backups-and-recovery), а после переустановки — раздел [Создание базового значения](/docs/first-run).

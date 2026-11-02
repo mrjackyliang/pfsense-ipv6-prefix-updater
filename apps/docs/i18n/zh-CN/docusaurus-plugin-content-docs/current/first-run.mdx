@@ -1,0 +1,76 @@
+---
+id: first-run
+title: 建立基线
+description: 用“立即运行”将当前 IPv6 前缀记录为基线，核对报告的地址和前缀，检查“字段”选项卡，确认无误后再开启计划更新。
+keywords:
+  - pfsense ipv6 prefix updater
+  - 首次运行
+  - 基线
+  - 立即运行
+  - 已初始化
+tags:
+  - setup
+  - baseline
+  - status
+sidebar_position: 3
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+将当前前缀记录为<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>，并在开启<Terminology title="由 pfSense 管理的 cron 条目运行的自动检查" to="/docs/reference/terminology#scheduled-updates">计划更新</Terminology>之前先检查它。
+
+## 保存初始设置 \{#save-the-initial-settings}
+
+1. 打开 **Services → IPv6 Prefix Updater**，然后进入 **设置** 选项卡。
+2. 让 **<Terminology title="由 pfSense 管理的 cron 条目运行的自动检查" to="/docs/reference/terminology#scheduled-updates">启用计划更新</Terminology>** 保持未勾选。
+3. 按照[接口与前缀](/docs/configure/interface-and-prefix)中的说明，为每个<Terminology title="位于 2000::/3 内的公网 IPv6 地址" to="/docs/reference/terminology#global-unicast-address">全局地址</Terminology>来自<Terminology title="ISP 路由到防火墙的 IPv6 网络" to="/docs/reference/terminology#delegated-prefix">委派前缀</Terminology>的接口添加一行 **<Terminology title="其地址可反映当前前缀的接口" to="/docs/reference/terminology#monitored-interface">监控接口</Terminology>**。
+4. 在每一行中选择与 ISP 委派大小一致的 **<Terminology title="ISP 前缀大小设置，/48 至 /64" to="/docs/reference/terminology#delegated-prefix-length">委派前缀长度</Terminology>**。
+5. 保存并确认出现 `设置已保存。` 消息。
+
+## 运行首次检查 \{#run-the-first-check}
+
+在 **状态** 选项卡中选择 **立即运行**。由于还没有<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>，此次运行会记录每个接口的<Terminology title="pfSense 为监控接口报告的全局地址" to="/docs/reference/terminology#source-address">源地址</Terminology>和前缀，并报告<Terminology title="结果：已记录基线，配置未更改" to="/docs/reference/terminology#initialized">已初始化</Terminology>。
+
+记录<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>不会更改配置、创建备份或发送通知。
+
+## 核对结果 \{#verify-the-result}
+
+检查 **当前状态** 每一行中的这些值：
+
+- **<Terminology title="其地址可反映当前前缀的接口" to="/docs/reference/terminology#monitored-interface">监控接口</Terminology>** 以描述加内部名称（如 `LAN (lan)`）显示预期的接口。
+- **<Terminology title="pfSense 为监控接口报告的全局地址" to="/docs/reference/terminology#source-address">上次成功源地址</Terminology>** 与 **Status → Interfaces**（状态 → 接口）中该接口的地址一致。
+- **<Terminology title="下次检查用于比较的前缀" to="/docs/reference/terminology#last-successful-prefix">上次成功前缀</Terminology>** 与 ISP 委派的前缀一致。
+- **上次成功更新** 以 UTC 显示此次运行的时间。
+
+<Terminology title="立即运行或试运行后显示的只读结果" to="/docs/reference/terminology#command-output">命令输出</Terminology>应显示 `状态: 已初始化`、`计划或已更改字段: 0` 和 `配置备份: 未创建`。例如，文档示例地址 `2001:db8:abcd:78aa::1` 在 `/56` 长度下属于 `2001:db8:abcd:7800::/56`。
+
+:::warning
+
+如果接口或长度有误，建议在开启计划更新前先在“设置”中更正。如[接口与前缀](/docs/configure/interface-and-prefix#changing-the-prefix-length)所述，换用其他接口会记录新的<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>，而更改长度则算作一次<Terminology title="与上次成功前缀或长度不同" to="/docs/reference/terminology#prefix-transition">前缀变化</Terminology>。
+
+:::
+
+## 检查字段 \{#review-the-fields}
+
+打开 **字段** 选项卡。记录<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>后，它会列出前缀内的每个地址，并标明下一次变化会更新其中哪些地址。
+
+1. 关闭防火墙用不到的<Terminology title="“字段”选项卡上由一个开关控制的一组字段" to="/docs/reference/terminology#field-group">字段组</Terminology>。十一个 pfSense 组一开始全部开启。
+2. 取消勾选应保留原值的单个字段，并勾选其他软件包中应随前缀变化的字段。
+3. 在 **其他设置** 中勾选应随前缀变化的字段，例如网关或静态路由。
+4. 选择 **保存**，并确认出现 `字段选择已保存。` 消息。
+
+[字段](/docs/configure/configuration-scopes)介绍了每个组和每个控件。
+
+## 此时试运行会显示什么 \{#what-a-dry-run-shows-now}
+
+前缀未变化时，**<Terminology title="不备份也不写入的预览" to="/docs/reference/terminology#dry-run">试运行</Terminology>** 会报告<Terminology title="结果：前缀未变化，未扫描或写入任何内容" to="/docs/reference/terminology#no-change">无变化</Terminology>，且不扫描配置，因为只有真正发生<Terminology title="与上次成功前缀或长度不同" to="/docs/reference/terminology#prefix-transition">前缀变化</Terminology>后才会开始规划。将来的变化会涉及哪些字段，可在“字段”选项卡中查看。
+
+在尚无<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>时进行的<Terminology title="不备份也不写入的预览" to="/docs/reference/terminology#dry-run">试运行</Terminology>会报告<Terminology title="结果：尚无基线时的试运行" to="/docs/reference/terminology#initialization-preview">初始化预览</Terminology>，且不记录任何内容。
+
+## 开启计划更新 \{#turn-on-the-schedule}
+
+各项值一致后，勾选 **<Terminology title="由 pfSense 管理的 cron 条目运行的自动检查" to="/docs/reference/terminology#scheduled-updates">启用计划更新</Terminology>**，选择 **计划**，然后保存。[计划与通知](/docs/configure/schedule-and-notifications)介绍了每个选项。
+
+到达第一个计划时间后，**上次运行** 下的 **时间戳 (UTC)** 会显示该次检查的运行时间。
+
+完整的检查清单请继续阅读[自动化前的检查](/docs/safety/testing-and-verification)。

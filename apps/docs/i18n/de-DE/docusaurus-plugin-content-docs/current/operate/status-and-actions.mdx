@@ -1,0 +1,122 @@
+---
+id: status-and-actions
+title: Status und Aktionen
+description: Lesen Sie die Abschnitte Aktueller Zustand und Letzter Lauf, starten Sie Prüfungen und Vorschauen, stellen Sie die Basislinie wieder her und verstehen Sie die Befehlsausgabe auf der Registerkarte Status.
+keywords:
+  - pfsense ipv6 prefix updater
+  - registerkarte status
+  - jetzt ausführen
+  - testlauf
+  - befehlsausgabe
+tags:
+  - operations
+  - status
+  - dry run
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import unchangedRun from './_assets_/status-and-actions-1.png';
+import changedRun from './_assets_/status-and-actions-2.png';
+import runByInterface from './_assets_/status-and-actions-3.png';
+
+Sehen Sie, was die aktuelle Basislinie und der letzte Lauf aufgezeichnet haben, und starten Sie auf der Registerkarte Status eine Prüfung, eine Vorschau oder eine Wiederherstellung der Basislinie.
+
+## Aktueller Zustand \{#current-state}
+
+Die Registerkarte **Status** unter **Services → IPv6 Prefix Updater** beginnt mit dieser Tabelle, die eine Zeile pro überwachter Schnittstelle hat und die <Terminology title="Ausgangspräfix, aufgezeichnet ohne Konfigurationsänderung" to="/docs/reference/terminology#baseline">Basislinie</Terminology> beschreibt, mit der die nächste Prüfung vergleicht:
+
+- **<Terminology title="Schnittstelle, deren Adresse das aktuelle Präfix verrät" to="/docs/reference/terminology#monitored-interface">Überwachte Schnittstelle</Terminology>**: die Beschreibung der Schnittstelle, gefolgt vom internen pfSense-Namen, etwa `LAN (lan)`.
+- **<Terminology title="Präfix, mit dem die nächste Prüfung vergleicht" to="/docs/reference/terminology#last-successful-prefix">Letztes erfolgreiches Präfix</Terminology>**: das Präfix mit seiner Länge, etwa `2001:db8:abcd:7800::/56`.
+- **<Terminology title="globale Adresse, die pfSense für die überwachte Schnittstelle meldet" to="/docs/reference/terminology#source-address">Letzte erfolgreiche Quelladresse</Terminology>**: die Adresse in <Terminology title="kleingeschriebene, kürzeste Standardschreibweise einer Adresse" to="/docs/reference/terminology#canonical-form">kanonischer Form</Terminology>. Ein Lauf mit <Terminology title="Ergebnis: Präfix unverändert, nichts durchsucht oder geschrieben" to="/docs/reference/terminology#no-change">Keine Änderung</Terminology> aktualisiert sie ebenfalls.
+- **Letzte erfolgreiche Aktualisierung**: die UTC-Zeit, zu der die <Terminology title="Ausgangspräfix, aufgezeichnet ohne Konfigurationsänderung" to="/docs/reference/terminology#baseline">Basislinie</Terminology> initialisiert, übernommen oder nach dem letzten <Terminology title="Ergebnis: Felder aktualisiert, gespeichert, neu geladen und verifiziert" to="/docs/reference/terminology#success">Erfolg</Terminology> verschoben wurde, etwa `2026-10-24T14:00:00+00:00`.
+
+Vor dem ersten Lauf einer Schnittstelle zeigt ihre Zeile `Nicht initialisiert. Führen Sie einmal eine normale Prüfung aus, um eine sichere Basislinie festzulegen.` Eine vom Legacy-Updater übernommene <Terminology title="Ausgangspräfix, aufgezeichnet ohne Konfigurationsänderung" to="/docs/reference/terminology#baseline">Basislinie</Terminology> zeigt bis zur ersten Prüfung `Von dieser Paketversion nicht aufgezeichnet` als Quelladresse.
+
+## Letzter Lauf \{#last-run}
+
+Dieser Abschnitt zeichnet den letzten Lauf auf. Wenn Sie eine Schnittstelle überwachen, zeigt er das Ergebnis dieser Schnittstelle direkt:
+
+- **Ergebnis**: wie der Lauf ausging, erklärt unter [Laufergebnisse](/docs/operate/run-outcomes).
+- **Zeitstempel (UTC)**: wann der Lauf endete.
+- **<Terminology title="globale Adresse, die pfSense für die überwachte Schnittstelle meldet" to="/docs/reference/terminology#source-address">Beobachtete Quelladresse</Terminology>**: die Adresse, die pfSense für die <Terminology title="Schnittstelle, deren Adresse das aktuelle Präfix verrät" to="/docs/reference/terminology#monitored-interface">überwachte Schnittstelle</Terminology> zurückgegeben hat.
+- **<Terminology title="Quelladresse, auf die Präfixlänge maskiert" to="/docs/reference/terminology#observed-prefix">Beobachtetes Präfix</Terminology>**: das Netz, berechnet aus dieser Adresse und der <Terminology title="Einstellung für die Präfixgröße des Anbieters, /48 bis /64" to="/docs/reference/terminology#delegated-prefix-length">Länge des delegierten Präfixes</Terminology>.
+- **Geänderte Felder**: die Anzahl der <Terminology title="exaktes Konfigurationsfeld, das das Paket umschreiben darf" to="/docs/reference/terminology#approved-field">genehmigten Felder</Terminology>, die der Lauf geändert hat oder nach einem <Terminology title="Vorschau, die nie sichert oder schreibt" to="/docs/reference/terminology#dry-run">Testlauf</Terminology> ändern würde.
+- **<Terminology title="Kopie der Konfiguration vor einem Schreibvorgang" to="/docs/reference/terminology#configuration-backup">Konfigurationssicherung erstellt</Terminology>**: `Ja` oder `Nein – dieser Lauf hat die Konfiguration nicht geschrieben`.
+- **<Terminology title="pfSense-Aktion, die geänderte Einstellungen anwendet" to="/docs/reference/terminology#service-reload">Neu geladene Dienste</Terminology>**: die Dienste, die der Lauf neu geladen hat oder nach einem <Terminology title="Vorschau, die nie sichert oder schreibt" to="/docs/reference/terminology#dry-run">Testlauf</Terminology> neu laden würde.
+- **Zusammenfassung**: ein Satz zum Ergebnis, nach einem <Terminology title="Abweichung vom letzten erfolgreichen Präfix oder dessen Länge" to="/docs/reference/terminology#prefix-transition">Präfixwechsel</Terminology> einschließlich des vorherigen Präfixes.
+- **Pakete**: erscheint, wenn der Lauf die Einstellungen eines anderen Pakets geändert hat, mit einer Zeile pro Paket, etwa `Die Einstellungen des Pakets <package> wurden erneut angewendet.` [Felder](/docs/configure/configuration-scopes#other-packages-settings) listet jede Meldung auf.
+- **Übersprungene Felder**: erscheint, wenn angekreuzte Felder nicht mehr existieren, mit `Diese ausgewählten Felder existieren nicht mehr, daher hat der Lauf sie übersprungen. Prüfen Sie sie auf der Registerkarte Felder.` und der Identität jedes Feldes.
+
+Es empfiehlt sich, zuerst die beobachtete Adresse und das beobachtete Präfix zu prüfen. Sie zeigen, ob pfSense die gewünschte Adresse zurückgegeben hat und ob die Länge das erwartete Netz ergibt.
+
+**Letzter Lauf** wird nicht aktualisiert, wenn eine andere Prüfung die <Terminology title="Sperre, die zwei gleichzeitige Prüfungen verhindert" to="/docs/reference/terminology#run-lock">Laufsperre</Terminology> hält oder ein Lauf stoppt, bevor er seinen <Terminology title="Paketdatei mit Basislinie und letztem Lauf" to="/docs/reference/terminology#package-state">Paketzustand</Terminology> liest, etwa wenn keine überwachte Schnittstelle eine <Terminology title="öffentliche IPv6-Adresse innerhalb von 2000::/3" to="/docs/reference/terminology#global-unicast-address">globale Adresse</Terminology> hat. Ein <Terminology title="Ergebnis: eine Prüf- oder Sicherheitsstufe hat den Lauf gestoppt" to="/docs/reference/terminology#failure">Fehler</Terminology> zeigt immer `0` geänderte Felder, wie [Laufergebnisse](/docs/operate/run-outcomes#failures-after-the-save) erklärt.
+
+### Letzter Lauf pro Schnittstelle \{#last-run-by-interface}
+
+Wenn Sie mehr als eine Schnittstelle überwachen, zeigt **Letzter Lauf** die Gesamtwerte, und **Zusammenfassung** zählt, wie viele Schnittstellen aktualisiert wurden, unverändert blieben oder eine Prüfung brauchen. Die Tabelle **Letzter Lauf pro Schnittstelle** darunter listet jede Schnittstelle mit eigenem Ergebnis, beobachtetem Präfix, geänderten Feldern und eigener Zusammenfassung auf.
+
+- **Geänderte Felder** unter **Letzter Lauf** zählt jedes Feld nur einmal, auch wenn zwei Schnittstellen, die sich ein <Terminology title="IPv6-Netz, das Ihr Internetanbieter zur Firewall routet" to="/docs/reference/terminology#delegated-prefix">delegiertes Präfix</Terminology> teilen, es beide geplant haben.
+- Eine Schnittstelle ohne <Terminology title="öffentliche IPv6-Adresse innerhalb von 2000::/3" to="/docs/reference/terminology#global-unicast-address">globale Adresse</Terminology> meldet in ihrer eigenen Zeile <Terminology title="Ergebnis: eine Prüf- oder Sicherheitsstufe hat den Lauf gestoppt" to="/docs/reference/terminology#failure">Fehler</Terminology>, während die anderen Schnittstellen trotzdem geprüft werden.
+- Planen zwei Schnittstellen unterschiedliche Werte für dasselbe Feld, stoppt der Lauf, bevor er etwas schreibt, und meldet, bei welchem Feld die Werte abweichen.
+
+## Aktionen \{#actions}
+
+| Aktion                                                                                                                       | Wirkung                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+|------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Jetzt ausführen                                                                                                              | Führt eine vollständige Prüfung aus, auch wenn <Terminology title="automatische Prüfungen über einen von pfSense verwalteten Cron-Eintrag" to="/docs/reference/terminology#scheduled-updates">geplante Aktualisierungen</Terminology> ausgeschaltet sind. Dabei wird eine <Terminology title="Ausgangspräfix, aufgezeichnet ohne Konfigurationsänderung" to="/docs/reference/terminology#baseline">Basislinie</Terminology> aufgezeichnet, wenn keine existiert, und ein <Terminology title="Abweichung vom letzten erfolgreichen Präfix oder dessen Länge" to="/docs/reference/terminology#prefix-transition">Präfixwechsel</Terminology> angewendet, wenn einer gefunden wird. |
+| <Terminology title="Vorschau, die nie sichert oder schreibt" to="/docs/reference/terminology#dry-run">Testlauf</Terminology> | Führt dieselbe Prüfung ohne Sicherung und ohne Schreibvorgang aus. Solange keine <Terminology title="Ausgangspräfix, aufgezeichnet ohne Konfigurationsänderung" to="/docs/reference/terminology#baseline">Basislinie</Terminology> existiert, lautet das Ergebnis <Terminology title="Ergebnis: Testlauf, bevor eine Basislinie existiert" to="/docs/reference/terminology#initialization-preview">Initialisierungsvorschau</Terminology>.                                                                                                                                                                                                                                       |
+| Aktuelles Präfix übernehmen                                                                                                  | Zeichnet nach einer Bestätigung die aktive Quelladresse, das Präfix und die Länge als neue <Terminology title="Ausgangspräfix, aufgezeichnet ohne Konfigurationsänderung" to="/docs/reference/terminology#baseline">Basislinie</Terminology> auf. Dabei werden keine genehmigten Felder geprüft, keine Sicherung erstellt, keine Konfiguration geschrieben und keine Dienste neu geladen.                                                                                                                                                                                                                                                                                        |
+
+Jetzt ausführen und <Terminology title="Vorschau, die nie sichert oder schreibt" to="/docs/reference/terminology#dry-run">Testlauf</Terminology> sind <Terminology title="Prüfung, die auf der Registerkarte Status gestartet wird" to="/docs/reference/terminology#manual-run">manuelle Läufe</Terminology>. **Aktuelles Präfix übernehmen** ist eine Wiederherstellungsaktion und sollte erst verwendet werden, nachdem die gespeicherten Adressen und betroffenen Dienste geprüft wurden.
+
+Jede Aktion zeigt ein Abschluss- oder Warnbanner an. Die Bestätigung bei **Aktuelles Präfix übernehmen** ist die letzte Schutzmaßnahme, bevor das Paket die Basislinie für seine Vergleiche ersetzt.
+
+Eine Prüfung, die einen bereits laufenden Lauf vorfindet, zeigt ebenfalls das Abschlussbanner, daher empfiehlt es sich, auch die <Terminology title="schreibgeschützte Ergebnisse nach Jetzt ausführen oder Testlauf" to="/docs/reference/terminology#command-output">Befehlsausgabe</Terminology> zu lesen.
+
+## Befehlsausgabe \{#command-output}
+
+Nach einer Aktion erscheint unter **<Terminology title="schreibgeschützte Ergebnisse nach Jetzt ausführen oder Testlauf" to="/docs/reference/terminology#command-output">Befehlsausgabe</Terminology>** ein schreibgeschütztes Feld **Neuester Lauf**:
+
+```text
+Status: Keine Änderung
+Schnittstelle: lan
+Beobachtete Quelladresse: 2001:db8:abcd:78aa::1
+Vorheriges Präfix: 2001:db8:abcd:7800::
+Aktuelles Präfix: 2001:db8:abcd:7800::/56
+Geplante oder geänderte Felder: 0
+Konfigurationssicherung: Nicht erstellt
+Neu geladene Dienste: Keine
+Zusammenfassung: Das aktive IPv6-Präfix ist unverändert; es wurden keine genehmigten Konfigurationsziele gelesen oder geschrieben.
+```
+
+Das vorherige Präfix wird ohne seine Länge ausgegeben. Ein fehlgeschlagener Lauf zeigt stattdessen eine einzelne Zeile, die mit `IPv6-Präfixaktualisierung fehlgeschlagen:` beginnt.
+
+Nach einem <Terminology title="Vorschau, die nie sichert oder schreibt" to="/docs/reference/terminology#dry-run">Testlauf</Terminology> oder einer Änderung folgt `Feldänderungen:` mit jeder Adresse, die der Lauf ersetzt hat oder ersetzen würde, und dem Feld, zu dem sie gehört:
+
+```text
+Feldänderungen:
+- aliases/alias/0/address: 2001:db8:abcd:78aa::10 → 2001:db8:abcd:88aa::10
+```
+
+## Felder auswählen \{#choosing-fields}
+
+Welche Felder ein Lauf aktualisiert, legen Sie auf der Registerkarte **Felder** fest, die jede Adresse innerhalb des Präfixes jeder <Terminology title="Ausgangspräfix, aufgezeichnet ohne Konfigurationsänderung" to="/docs/reference/terminology#baseline">Basislinie</Terminology> auflistet. [Felder](/docs/configure/configuration-scopes) erklärt die Gruppen, die Ausnahmen für einzelne Felder und die Gruppe Weitere Einstellungen.
+
+## Screenshots \{#screenshots}
+
+Der erste Screenshot zeigt ein Ergebnis <Terminology title="Ergebnis: Präfix unverändert, nichts durchsucht oder geschrieben" to="/docs/reference/terminology#no-change">Keine Änderung</Terminology> für zwei überwachte Schnittstellen, ohne geänderte Felder und ohne Sicherung.
+
+<img src={unchangedRun} alt="Registerkarte Status von IPv6 Prefix Updater mit Letzter Lauf und Letzter Lauf pro Schnittstelle für zwei unveränderte Schnittstellen, ohne geänderte Felder und ohne Sicherung" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+Der zweite Screenshot zeigt einen <Terminology title="Ergebnis: Felder aktualisiert, gespeichert, neu geladen und verifiziert" to="/docs/reference/terminology#success">Erfolg</Terminology>, der ein <Terminology title="exaktes Konfigurationsfeld, das das Paket umschreiben darf" to="/docs/reference/terminology#approved-field">genehmigtes Feld</Terminology> geändert, eine <Terminology title="Kopie der Konfiguration vor einem Schreibvorgang" to="/docs/reference/terminology#configuration-backup">Konfigurationssicherung</Terminology> erstellt und den Firewallfilter neu geladen hat.
+
+<img src={changedRun} alt="Registerkarte Status von IPv6 Prefix Updater mit einem erfolgreichen /56-Präfixwechsel für zwei überwachte Schnittstellen, einem geänderten Feld, einer Konfigurationssicherung und einem Neuladen des Firewallfilters" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+Der dritte Screenshot zeigt die Tabelle **Letzter Lauf pro Schnittstelle** für diesen Lauf, in dem sich LAN und LAB ein <Terminology title="IPv6-Netz, das Ihr Internetanbieter zur Firewall routet" to="/docs/reference/terminology#delegated-prefix">delegiertes Präfix</Terminology> teilen und beide dasselbe geänderte Feld melden.
+
+<img src={runByInterface} alt="Tabelle Letzter Lauf pro Schnittstelle von IPv6 Prefix Updater, in der LAN und LAB beide Erfolg mit einem geänderten Feld aus demselben /56-Präfixwechsel melden" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+Die `2001:db8::/32`-Adressen in diesen Screenshots sind reservierte Dokumentationsbeispiele.
+
+Lesen Sie [Laufergebnisse](/docs/operate/run-outcomes) zu jedem Ergebnis und [Sicherung und Wiederherstellung](/docs/operate/backups-and-recovery), bevor Sie sich auf einen Lauf mit Änderungen verlassen.

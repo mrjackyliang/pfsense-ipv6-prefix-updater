@@ -1,0 +1,76 @@
+---
+id: first-run
+title: Opprett grunnlinjen
+description: Registrer gjeldende IPv6-prefiks som grunnlinje med Kjør nå, kontroller den rapporterte adressen og prefikset, gå gjennom fanen Felt, og slå først deretter på planlagte oppdateringer.
+keywords:
+  - pfsense ipv6 prefix updater
+  - første kjøring
+  - grunnlinje
+  - kjør nå
+  - initialisert
+tags:
+  - setup
+  - baseline
+  - status
+sidebar_position: 3
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Registrer gjeldende prefiks som <Terminology title="startprefiks registrert uten å endre konfigurasjonen" to="/docs/reference/terminology#baseline">grunnlinje</Terminology>, og kontroller den før du slår på <Terminology title="automatiske kontroller fra en cron-oppføring styrt av pfSense" to="/docs/reference/terminology#scheduled-updates">planlagte oppdateringer</Terminology>.
+
+## Lagre de første innstillingene \{#save-the-initial-settings}
+
+1. Åpne **Services → IPv6 Prefix Updater**, og deretter fanen **Innstillinger**.
+2. La **<Terminology title="automatiske kontroller fra en cron-oppføring styrt av pfSense" to="/docs/reference/terminology#scheduled-updates">Aktiver planlagte oppdateringer</Terminology>** være umerket.
+3. Legg til en rad i **<Terminology title="grensesnittet der adressen avslører gjeldende prefiks" to="/docs/reference/terminology#monitored-interface">Overvåkede grensesnitt</Terminology>** for hvert grensesnitt der den <Terminology title="offentlig IPv6-adresse innenfor 2000::/3" to="/docs/reference/terminology#global-unicast-address">globale adressen</Terminology> kommer fra det <Terminology title="IPv6-nettverket internettleverandøren ruter til brannmuren" to="/docs/reference/terminology#delegated-prefix">delegerte prefikset</Terminology>, som beskrevet i [Grensesnitt og prefiks](/docs/configure/interface-and-prefix).
+4. I hver rad velger du under **<Terminology title="innstilling for leverandørens prefiksstørrelse, /48 til /64" to="/docs/reference/terminology#delegated-prefix-length">Lengde på delegert prefiks</Terminology>** lengden som internettleverandøren delegerer.
+5. Lagre, og bekreft meldingen `Innstillingene er lagret.`
+
+## Kjør den første kontrollen \{#run-the-first-check}
+
+Velg **Kjør nå** i fanen **Status**. Siden det ikke finnes noen <Terminology title="startprefiks registrert uten å endre konfigurasjonen" to="/docs/reference/terminology#baseline">grunnlinje</Terminology> ennå, registrerer kjøringen <Terminology title="global adresse pfSense rapporterer for det overvåkede grensesnittet" to="/docs/reference/terminology#source-address">kildeadressen</Terminology> og prefikset for hvert grensesnitt og rapporterer <Terminology title="resultat: grunnlinje registrert, konfigurasjon uendret" to="/docs/reference/terminology#initialized">Initialisert</Terminology>.
+
+Når en <Terminology title="startprefiks registrert uten å endre konfigurasjonen" to="/docs/reference/terminology#baseline">grunnlinje</Terminology> registreres, endres ikke konfigurasjonen, det tas ingen sikkerhetskopi, og det sendes ikke noe varsel.
+
+## Kontroller resultatet \{#verify-the-result}
+
+Kontroller disse verdiene i hver rad under **Gjeldende tilstand**:
+
+- **<Terminology title="grensesnittet der adressen avslører gjeldende prefiks" to="/docs/reference/terminology#monitored-interface">Overvåket grensesnitt</Terminology>** viser det tiltenkte grensesnittet med beskrivelse og internt navn, for eksempel `LAN (lan)`.
+- **<Terminology title="global adresse pfSense rapporterer for det overvåkede grensesnittet" to="/docs/reference/terminology#source-address">Siste vellykkede kildeadresse</Terminology>** samsvarer med adressen under **Status → Interfaces** for det grensesnittet.
+- **<Terminology title="prefikset neste kontroll sammenligner med" to="/docs/reference/terminology#last-successful-prefix">Siste vellykkede prefiks</Terminology>** samsvarer med prefikset internettleverandøren delegerer.
+- **Siste vellykkede oppdatering** viser tidspunktet for denne kjøringen i UTC.
+
+<Terminology title="skrivebeskyttede resultater vist etter Kjør nå eller Testkjøring" to="/docs/reference/terminology#command-output">Kommandoutdata</Terminology> skal vise `Status: Initialisert`, `Planlagte eller endrede felt: 0` og `Konfigurasjonssikkerhetskopi: Ikke opprettet`. Dokumentasjonsadressen `2001:db8:abcd:78aa::1` med lengden `/56` hører for eksempel til `2001:db8:abcd:7800::/56`.
+
+:::warning
+
+Hvis grensesnittet eller lengden er feil, anbefales det å rette opp innstillingene før du slår på tidsplanen. Et annet grensesnitt registrerer en ny <Terminology title="startprefiks registrert uten å endre konfigurasjonen" to="/docs/reference/terminology#baseline">grunnlinje</Terminology>, mens en annen lengde regnes som en <Terminology title="endring fra siste vellykkede prefiks eller lengde" to="/docs/reference/terminology#prefix-transition">prefiksovergang</Terminology>, som [Grensesnitt og prefiks](/docs/configure/interface-and-prefix#changing-the-prefix-length) forklarer.
+
+:::
+
+## Gå gjennom feltene \{#review-the-fields}
+
+Åpne fanen **Felt**. Når <Terminology title="startprefiks registrert uten å endre konfigurasjonen" to="/docs/reference/terminology#baseline">grunnlinjen</Terminology> er registrert, viser fanen hver adresse innenfor prefikset og hvilke av dem neste endring vil oppdatere.
+
+1. Slå av <Terminology title="gruppe av felt med én bryter i fanen Felt" to="/docs/reference/terminology#field-group">feltgruppene</Terminology> brannmuren ikke bruker. Alle de elleve pfSense-gruppene er slått på fra start.
+2. Fjern haken fra enkeltfelt som skal beholde verdien sin, og kryss av alle felt i en annen pakke som skal følge prefikset.
+3. Kryss av alle felt under **Andre innstillinger** som skal følge prefikset, for eksempel en gateway eller en statisk rute.
+4. Velg **Lagre**, og bekreft meldingen `Feltutvalget er lagret.`
+
+[Felt](/docs/configure/configuration-scopes) forklarer hver gruppe og hvert kontrollelement.
+
+## Hva en testkjøring viser nå \{#what-a-dry-run-shows-now}
+
+Når prefikset er uendret, rapporterer **<Terminology title="forhåndsvisning som aldri sikkerhetskopierer eller skriver" to="/docs/reference/terminology#dry-run">Testkjøring</Terminology>** <Terminology title="resultat: prefiks uendret, ingenting gjennomsøkt eller skrevet" to="/docs/reference/terminology#no-change">Ingen endring</Terminology> uten å gjennomsøke konfigurasjonen, fordi planleggingen først starter etter en reell <Terminology title="endring fra siste vellykkede prefiks eller lengde" to="/docs/reference/terminology#prefix-transition">prefiksovergang</Terminology>. Fanen Felt viser hvilke felt en fremtidig endring vil berøre.
+
+En <Terminology title="forhåndsvisning som aldri sikkerhetskopierer eller skriver" to="/docs/reference/terminology#dry-run">testkjøring</Terminology> som gjøres før det finnes noen <Terminology title="startprefiks registrert uten å endre konfigurasjonen" to="/docs/reference/terminology#baseline">grunnlinje</Terminology>, rapporterer <Terminology title="resultat: testkjøring før en grunnlinje finnes" to="/docs/reference/terminology#initialization-preview">Forhåndsvisning av initialisering</Terminology> og registrerer ingenting.
+
+## Slå på tidsplanen \{#turn-on-the-schedule}
+
+Når verdiene stemmer, merker du av for **<Terminology title="automatiske kontroller fra en cron-oppføring styrt av pfSense" to="/docs/reference/terminology#scheduled-updates">Aktiver planlagte oppdateringer</Terminology>**, velger en **Tidsplan** og lagrer. [Tidsplan og varsler](/docs/configure/schedule-and-notifications) forklarer hvert alternativ.
+
+Etter det første planlagte tidspunktet viser **Tidsstempel (UTC)** under **Siste kjøring** når kontrollen ble kjørt.
+
+Fortsett med [Kontroller før automatisering](/docs/safety/testing-and-verification) for en fullstendig sjekkliste.

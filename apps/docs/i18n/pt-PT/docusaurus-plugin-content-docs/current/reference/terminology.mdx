@@ -1,0 +1,203 @@
+---
+id: terminology
+title: Terminologia
+description: Conheça os termos de endereços, prefixos, definições, resultados e pfSense usados nos separadores Definições, Estado e Campos e em toda a documentação.
+keywords:
+  - pfsense ipv6 prefix updater
+  - terminologia
+  - glossário
+  - prefixo delegado
+  - referência
+  - resultados da execução
+tags:
+  - reference
+  - terminology
+  - glossary
+sidebar_position: 1
+---
+
+Conheça os termos que os separadores Definições, Estado e Campos e estes guias usam para endereços, prefixos, execuções e funcionalidades do pfSense.
+
+## Prefixo delegado \{#delegated-prefix}
+
+A rede IPv6 que o seu ISP encaminha para a firewall, normalmente através de DHCPv6 Prefix Delegation. O pacote acompanha este prefixo, mas nunca o pede, renova ou altera.
+
+## Comprimento do prefixo \{#prefix-length}
+
+O número de bits iniciais que identificam uma rede, escrito como uma barra seguida de um número, como `/56`. Um sufixo CIDR num valor configurado, como `/64`, fica como foi escrito quando o pacote reescreve o endereço.
+
+## Comprimento do prefixo delegado \{#delegated-prefix-length}
+
+A definição **Comprimento do prefixo delegado**, que contém o tamanho do prefixo que o seu ISP delega, de `/48` a `/64`. Começa em `/56`, o pacote nunca o deteta, e alterá-lo depois de existir uma referência conta como transição de prefixo.
+
+## Endereço unicast global \{#global-unicast-address}
+
+Um endereço IPv6 dentro de `2000::/3`, o único tipo de endereço que o pacote lê como origem ou reescreve. Os endereços link-local, locais únicos (`fc00::/7`), multicast, de loopback, não especificados e mapeados de IPv4 são rejeitados como origem e ficam inalterados na configuração.
+
+## Endereço link-local \{#link-local-address}
+
+Um endereço que só funciona numa ligação de rede e que começa por `fe80`. O pacote nunca recorre a um destes endereços, pelo que uma interface sem endereço global faz a execução falhar.
+
+## Parte de anfitrião \{#host-portion}
+
+Todos os bits do endereço após o comprimento do prefixo delegado, também chamados bits de anfitrião. O pacote copia estes bits sem alterações para o novo endereço, mesmo quando o limite fica a meio de um dígito hexadecimal.
+
+## Forma canónica \{#canonical-form}
+
+A grafia padrão de um endereço IPv6, em minúsculas e na forma mais curta, como `2001:db8::1` para `2001:0DB8:0:0::1`. O pacote compara os endereços nesta forma e grava assim os valores reescritos, pelo que um valor pode parecer diferente e representar o mesmo endereço.
+
+## Interface rastreada \{#tracked-interface}
+
+Uma interface do pfSense cujo endereço IPv6 provém do prefixo delegado de outra interface, através do tipo de configuração **Track Interface**. É muitas vezes a Interface monitorizada certa quando a WAN não tem endereço global, e o pacote nunca reescreve o respetivo endereço porque é o pfSense que o gera.
+
+## Interface monitorizada \{#monitored-interface}
+
+Uma linha da definição **Interfaces monitorizadas**, que indica uma interface cujo endereço global revela um prefixo atual. O separador Estado mostra a descrição da interface seguida do nome interno que o pfSense lhe dá, como `LAN (lan)`.
+
+Adicionar uma interface faz com que a execução seguinte registe uma nova referência para ela, em vez de comparar prefixos.
+
+## Endereço de origem \{#source-address}
+
+O endereço global principal que o pfSense indica para a Interface monitorizada, lido de novo em cada execução. O separador Estado mostra-o na forma canónica como **Endereço de origem observado** e **Último endereço de origem bem-sucedido**.
+
+## Prefixo observado \{#observed-prefix}
+
+A rede calculada a partir do endereço de origem e do Comprimento do prefixo delegado, apresentada no separador Estado com o respetivo comprimento. Cada execução compara-a com o último prefixo bem-sucedido.
+
+## Referência \{#baseline}
+
+O prefixo e o endereço de origem que o pacote regista como ponto de partida, sem alterar a configuração. É registada uma referência na primeira execução de cada interface monitorizada, sempre que o estado do pacote está em falta, quando um operador aceita explicitamente o prefixo ativo e, durante uma migração, a partir do prefixo guardado pelo atualizador legado.
+
+## Último prefixo bem-sucedido \{#last-successful-prefix}
+
+O prefixo e o comprimento guardados com os quais a próxima verificação compara. Só os resultados Inicializado, Aceite e Sucesso o alteram, e todos os outros resultados o deixam como estava.
+
+## Transição de prefixo \{#prefix-transition}
+
+Uma diferença entre o último prefixo bem-sucedido e o prefixo observado, incluindo a mesma rede com um comprimento de prefixo diferente. Só uma transição leva o pacote a analisar a configuração, planear alterações e gravar.
+
+## Grupo de campos \{#field-group}
+
+Um grupo de campos com um só interruptor no separador Campos. Os onze grupos do pfSense são Interfaces estáticas, Endereços IP virtuais, Aliases, Regras da firewall, NAT e NPt, Servidor DHCPv6, Anúncios de router, Substituições de anfitriões DNS, IPsec, OpenVPN e WireGuard, e começam ativados. As definições de cada um dos outros pacotes recebem um grupo próprio que começa desativado, e todos os outros valores estão no grupo Outras definições, que também começa desativado. Um grupo ativado abrange todos os campos do seu tipo, incluindo os adicionados mais tarde.
+
+## Campo aprovado \{#approved-field}
+
+Um campo de configuração exato que o pacote pode reescrever: um campo de um grupo ativado que não esteja desmarcado, ou um campo marcado de um grupo desativado. Os valores fora dos campos aprovados nunca são alterados.
+
+## Exceção de campo \{#field-exception}
+
+Um campo cuja marcação no separador Campos não coincide com o interruptor do grupo: um campo desmarcado num grupo ativado, ou um campo marcado num grupo desativado. Cada exceção indica a respetiva entrada, como o ID de rastreio (tracker) de uma regra da firewall, em vez de uma posição numa lista.
+
+## Plano de alterações \{#change-plan}
+
+A lista completa dos campos aprovados que vão mudar, com o valor antigo, o valor novo e o serviço a recarregar de cada um. O pacote cria o plano inteiro antes de alterar seja o que for.
+
+## Atualizações agendadas \{#scheduled-updates}
+
+Verificações automáticas controladas por **Ativar atualizações agendadas**, desmarcada por predefinição, e por **Agenda**, cuja predefinição é De hora a hora. Guardar as Definições adiciona ou remove uma entrada cron gerida pelo pfSense, pelo que o pacote Cron não é necessário.
+
+## Execução manual \{#manual-run}
+
+Uma verificação iniciada com **Executar agora** ou **Simulação** no separador Estado. É executada mesmo com as atualizações agendadas desativadas.
+
+## Simulação \{#dry-run}
+
+Uma pré-visualização iniciada com **Simulação** que nunca cria uma cópia de segurança nem grava a configuração. Quando encontra uma transição de prefixo com campos a alterar, o resultado é **Simulação** e indica o número de campos planeados.
+
+Com o prefixo inalterado, uma simulação indica Sem alteração sem analisar a configuração.
+
+## Saída do comando \{#command-output}
+
+A caixa só de leitura **Execução mais recente**, em **Saída do comando**, que aparece após Executar agora, Simulação ou Aceitar prefixo atual. Mostra as linhas da execução, de `Estado` a `Resumo`, seguidas de `Alterações de campos` após uma simulação ou um Sucesso, ou uma única linha quando a ação falha ou quando outra execução detém o bloqueio.
+
+## Bloqueio de execução \{#run-lock}
+
+O bloqueio que permite apenas uma verificação de cada vez. Uma segunda verificação termina sem ler a configuração, e o bloqueio é libertado assim que a verificação em curso termina.
+
+## Estado do pacote \{#package-state}
+
+O ficheiro `/cf/conf/ipv6-prefix-updater/state.json`, onde o pacote guarda cada referência e a execução mais recente, fora da configuração do pfSense. Só o root o pode ler, e sobrevive a reinícios, a discos RAM e à remoção do pacote, para que uma reinstalação mantenha cada referência.
+
+## Inicializado \{#initialized}
+
+O resultado de uma execução que regista uma nova referência. Não cria uma cópia de segurança, não altera a configuração nem envia uma notificação.
+
+## Pré-visualização da inicialização \{#initialization-preview}
+
+O resultado de uma simulação feita sem existir uma referência. Mostra a referência que uma execução normal registaria, sem a registar.
+
+## Sem alteração \{#no-change}
+
+O resultado quando o prefixo observado e o respetivo comprimento coincidem com o último prefixo bem-sucedido, também chamado execução sem efeito (no-op). A execução não analisa a configuração, não cria uma cópia de segurança, não recarrega serviços nem envia uma notificação.
+
+## Aviso \{#warning}
+
+O resultado quando é encontrada uma transição de prefixo, mas nenhum campo aprovado pertence ao prefixo antigo. Nada é gravado, a referência fica onde estava e cada Aviso adiciona um alerta da WebGUI.
+
+## Aceite \{#accepted}
+
+O resultado depois de um operador selecionar **Aceitar prefixo atual** e confirmar que os endereços guardados já usam o prefixo ativo. O pacote move a referência sem analisar os campos aprovados, criar uma cópia de segurança, gravar a configuração nem recarregar serviços.
+
+## Sucesso \{#success}
+
+O resultado depois de concluídas a cópia de segurança, a gravação única da configuração, os recarregamentos de serviços e as verificações de valores. A referência passa para o novo prefixo e, se estiver ativada, é enviada uma notificação de alteração.
+
+## Falha \{#failure}
+
+O resultado quando uma verificação ou uma etapa de segurança para a execução. Se a paragem acontecer depois de a configuração ter sido guardada, os novos valores ficam guardados e a referência fica no prefixo antigo.
+
+## Desativado \{#disabled}
+
+O resultado de uma verificação agendada executada com a opção **Ativar atualizações agendadas** desmarcada. Para antes de ler qualquer interface ou o estado do pacote, e só aparece na saída do próprio comando.
+
+## Notificação de alteração \{#change-notification}
+
+A mensagem enviada após um Sucesso quando a opção **Enviar notificações de alteração** está selecionada, como acontece por predefinição. Vai para os canais de notificação configurados no pfSense e aparece também como alerta da WebGUI.
+
+## Canais de notificação \{#notification-channels}
+
+Os serviços de alerta remotos configurados em **System → Advanced → Notifications**, como o e-mail. As notificações de alteração usam estes canais, enquanto os alertas de Aviso e de Falha ficam locais.
+
+## Alerta da WebGUI \{#webgui-notice}
+
+Um alerta na lista de avisos da WebGUI do pfSense que liga ao separador Estado do pacote, ou ao separador Limpeza após a migração do atualizador legado. Os resultados Aviso e Falha adicionam sempre um, mesmo com a opção **Enviar notificações de alteração** desmarcada.
+
+## Registo do sistema \{#system-log}
+
+O registo geral do pfSense em **Status → System Logs → System → General**. Cada linha que o pacote escreve começa por `IPv6 Prefix Updater:`.
+
+## Cópia de segurança da configuração \{#configuration-backup}
+
+Uma cópia da configuração tal como estava antes de uma gravação, feita com a função de cópia de segurança do pfSense e mantida também no separador **Cópias de segurança**. O pacote cria uma em cada execução que grava, antes de alterar qualquer campo, e nenhuma nas execuções que não gravam.
+
+## Config History \{#config-history}
+
+O histórico das revisões de configuração guardadas, em **Diagnostics → Backup & Restore → Config History**. A revisão com a descrição `O Atualizador de prefixo IPv6 alterou ...` contém a configuração atualizada, pelo que a revisão a restaurar é a que foi guardada antes dela.
+
+## Recarregamento de serviço \{#service-reload}
+
+A ação do pfSense que aplica as definições alteradas a um serviço em execução. O pacote recarrega apenas os serviços cujos campos mudaram e indica-os em **Serviços recarregados**.
+
+## IP virtual \{#virtual-ip}
+
+Um endereço adicional atribuído a uma interface em **Firewall → Virtual IPs**. O grupo Endereços IP virtuais atualiza apenas as entradas CARP e IP Alias.
+
+## Fase 2 do IPsec \{#ipsec-phase-2}
+
+Uma entrada IPsec que define as redes local e remota de um túnel. O grupo IPsec abrange o lado local das entradas Tunnel IPv6 e Routed (VTI), e o lado remoto está no grupo Outras definições.
+
+## Substituição específica de cliente \{#client-specific-override}
+
+Uma entrada OpenVPN em **VPN → OpenVPN → Client Specific Overrides** que define opções para um cliente. O pacote pode atualizar a respetiva rede de túnel IPv6 e as redes locais IPv6.
+
+## Endereço de túnel WireGuard \{#wireguard-tunnel-address}
+
+Um endereço de interface atribuído a um túnel WireGuard no pfSense. Atualizá-lo requer o pacote WireGuard, e os IPs permitidos e os pontos finais dos pares estão no grupo Outras definições.
+
+## Atualizador legado \{#legacy-updater}
+
+A versão 1.x deste projeto, um script `update.php` instalado em `/root` e executado por uma entrada do pacote Cron. Substituía o texto do prefixo antigo em qualquer ponto da configuração.
+
+## Pacote não oficial \{#unofficial-package}
+
+Um pacote instalado com `pkg add` a partir do GitHub, em vez do repositório de pacotes da Netgate. A Netgate não o revê nem lhe presta suporte, e as atualizações têm de ser instaladas por si.

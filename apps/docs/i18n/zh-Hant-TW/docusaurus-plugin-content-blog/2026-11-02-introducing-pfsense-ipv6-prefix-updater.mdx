@@ -1,0 +1,60 @@
+---
+title: "介紹 pfSense IPv6 Prefix Updater：更安全的後繼者"
+description: pfSense IPv6 Prefix Updater 作為 update.php 指令碼的後繼者，會跟隨新的 IPv6 前綴，保留每個位址的主機部分，並在每次變更前先建立備份。
+slug: introducing-pfsense-ipv6-prefix-updater
+authors:
+  - mrjackyliang
+keywords:
+  - pfsense ipv6 prefix updater
+  - pfSense 套件
+  - 動態 IPv6 前綴
+  - IPv6 前綴委派
+  - 舊版更新器
+tags:
+  - release
+  - ipv6
+  - pfsense
+---
+
+許多 ISP 委派的 IPv6 前綴可能會在未事先通知的情況下變更。一旦前綴變更，pfSense 別名、介面與 VPN 設定中屬於舊前綴的位址就會一起過時，服務也可能出現難以追查的故障。
+
+pfSense IPv6 Prefix Updater 就是我提出的解答：一個原生 pfSense 套件，會跟隨新的前綴，並更新您所核准之設定區域中的位址。
+
+{/* truncate */}
+
+## 我為什麼開發它 \{#why-i-built-it}
+
+這個專案起初是 `update.php`，一個安裝在 `/root` 中、由 Cron 套件項目執行的指令碼。它證明了 pfSense 能夠偵測新的前綴、備份設定並改寫舊位址。
+
+但安裝與升級都很容易出錯，而且這個指令碼會取代設定中任何位置出現的舊前綴文字。我想要的是這樣一個後繼者：只變更它能理解的欄位，並顯示它做了什麼，而且不必手動安裝，也不必手動建立 Cron 項目。
+
+## 功能簡介 \{#what-it-does}
+
+套件會監看您選擇的介面。前綴變更時，它會：
+
+- **保留主機部分** — 只有前綴位元會改變，因此每部裝置的位址尾碼都維持不變。
+- **只變更已核准欄位** — 別名、防火牆規則、DHCPv6 伺服器與 WireGuard 等十一個 pfSense 群組預設為開啟，您可以在「欄位」分頁中關閉某個群組，或取消勾選單一欄位。
+- **寫入前先備份** — 先將設定備份存入設定歷程，再以一次寫入儲存所有變更。
+- **驗證結果** — 檢查已儲存的值，只重新載入受影響的服務，然後再次檢查這些值。
+
+遠端 VPN 網路與對等端只有在您於[其他設定](/docs/configure/configuration-scopes#other-settings)中勾選後才會變更；每次成功更新後，套件還會傳送選用的變更通知。
+
+## 如何設定 \{#how-you-set-it-up}
+
+在 **Services → IPv6 Prefix Updater** 下的「設定」分頁中，為每個要監看的介面新增一列監控介面，並填入與 ISP 委派大小一致的委派前綴長度，然後儲存。
+
+接著在「狀態」分頁中選取 **立即執行**。第一次執行只會記錄基準，因此可以先核對位址與前綴並查看「欄位」分頁，再開啟排程更新；排程更新預設每小時由 pfSense 管理的 cron 項目執行一次。
+
+如果檢查發現前綴相同，就不會寫入任何內容；**試執行** 則會執行檢查，但不備份也不寫入。
+
+:::info
+
+這個非官方套件透過 `pkg` 從 GitHub 發行版本安裝，Netgate 不會審查或支援它。1.x 版只包含指令碼，因此如果最新的發行版本中沒有 `.pkg` 檔案，`pkg add` 會因找不到檔案（404）而失敗。
+
+:::
+
+## 從指令碼遷移過來 \{#moving-from-the-script}
+
+如果 `update.php` 仍透過 Cron 套件執行，請保留它並直接安裝套件。套件會遷移該指令碼的 Cron 項目、已儲存的前綴與備份，並刪除舊檔案，詳見[從指令碼遷移](/docs/migrate-from-legacy)。
+
+第一次接觸這個專案嗎？請從[安裝套件](/docs/installation)開始。

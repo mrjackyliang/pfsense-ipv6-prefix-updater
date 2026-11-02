@@ -1,0 +1,153 @@
+---
+id: configuration-scopes
+title: Velden
+description: Kies op het tabblad Velden welke configuratievelden met de gedelegeerde prefix meeveranderen, stel uitzonderingen in, controleer de instellingen van andere pakketten en neem desgewenst elke andere waarde mee.
+keywords:
+  - pfsense ipv6 prefix updater
+  - tabblad velden
+  - veldgroepen
+  - firewallregels
+  - dhcpv6
+  - pakketinstellingen
+tags:
+  - configuration
+  - fields
+  - safety
+sidebar_position: 2
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import fieldsTab from './_assets_/configuration-scopes-1.png';
+import fieldException from './_assets_/configuration-scopes-2.png';
+import otherSettings from './_assets_/configuration-scopes-3.png';
+
+Kies welke configuratievelden meeveranderen wanneer je prefix verandert.
+
+## Het tabblad Velden \{#the-fields-tab}
+
+Het tabblad **Velden** onder **Services → IPv6 Prefix Updater** toont elk adres binnen de prefix van elke <Terminology title="startprefix, vastgelegd zonder de configuratie te wijzigen" to="/docs/reference/terminology#baseline">baseline</Terminology>, gegroepeerd per soort. De regel **Baselines** noemt de prefixen waarmee het tabblad vergelijkt. Zolang de eerste controle nog geen baseline heeft vastgelegd, toont het tabblad alleen de groepsschakelaars.
+
+<img src={fieldsTab} alt="Tabblad Velden van IPv6 Prefix Updater met de knoppen Automatisch selecteren en Alles wissen, een zoekvak, een filter en de groep Statische interfaces met de adressen van LAN en LAB, waarin het prefixdeel is gemarkeerd" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+Elke rij toont:
+
+- **Vakje**: aangevinkt als de volgende <Terminology title="afwijking van de laatste geslaagde prefix of lengte" to="/docs/reference/terminology#prefix-transition">prefixwissel</Terminology> het veld bijwerkt.
+- **Veld**: het item, zoals een regelbeschrijving of aliasnaam, gevolgd door het veldlabel en het configuratiepad ervan.
+- **Huidige waarde**: de waarde, met het prefixdeel van elk adres gemarkeerd. Alleen het gemarkeerde deel verandert, en het <Terminology title="adresbits na de gedelegeerde prefix" to="/docs/reference/terminology#host-portion">hostgedeelte</Terminology> blijft staan.
+
+## Groepsschakelaars en uitzonderingen \{#group-switches-and-exceptions}
+
+Elke <Terminology title="groep velden met één schakelaar op het tabblad Velden" to="/docs/reference/terminology#field-group">veldgroep</Terminology> heeft een schakelaar in de kop:
+
+- **Aan**: elk veld van die soort verandert mee met de prefix, ook velden die later worden toegevoegd, behalve de velden die je uitvinkt.
+- **Uit**: alleen de velden die je aanvinkt, veranderen.
+
+Een vinkje dat afwijkt van de groepsschakelaar is een <Terminology title="afzonderlijk veld dat tegen de groepsschakelaar in is aan- of uitgevinkt" to="/docs/reference/terminology#field-exception">velduitzondering</Terminology>. Zolang een groep uitzonderingen heeft, toont de kop een streepje en telt **N van M geselecteerd** de aangevinkte velden. Een klik op de kop zet de groep aan of uit en past alle vinkjes in de groep daarop aan. Selecteer **Opslaan** om de wijzigingen te bewaren.
+
+<img src={fieldException} alt="Tabblad Velden met de groep Firewallregels aan, één uitgevinkte regel waardoor de kop een streepje en 2 van 3 geselecteerd toont, en een regel zonder tracker-ID die de groepsschakelaar volgt" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+Een keuze volgt het item, niet de positie ervan in een lijst, dus als je andere items verplaatst of verwijdert, verschuift ze niet naar een ander item. Het pakket herkent elk item aan:
+
+- **Firewallregels**: de tracker-ID van de regel.
+- **Aliassen**: de aliasnaam.
+- **Statische DHCPv6-toewijzingen**: de DUID, omdat pfSense DHCPv6-toewijzingen aan de DUID herkent in plaats van aan het MAC-adres.
+- **Port forwards en uitgaande NAT**: het tijdstip waarop de regel is gemaakt.
+- **1:1-NAT- en NPt-items en DHCPv6-pools**: de beschrijving.
+- **DNS-hostoverschrijvingen**: de host, het domein en of het item IPv4-, IPv6- of beide soorten adressen bevat.
+- **Instellingen van andere pakketten**: een veld dat elk item in een lijst uniek benoemt, zoals de naam of beschrijving ervan.
+- **Overige instellingen**: een veld dat elk item in een lijst uniek benoemt en geen adres bevat, zoals de naam van een gateway. Eén keuze geldt voor alle items van een gewone lijst, zoals de DNS-servers onder **System → General Setup**.
+- **Andere items**: hun interface, naam of pfSense-ID. Eén keuze geldt voor alle DNS-servers, NTP-servers of RA-subnetten van een interface.
+
+Een rij waarvan het item zo'n identificatie niet heeft, of die met een ander item deelt, heeft geen vakje en toont `Geen stabiele id, dus dit veld volgt de groepsschakelaar.` Keuzes worden los van de instellingen bewaard, dus het opslaan van het tabblad Instellingen wist ze niet.
+
+## pfSense-groepen \{#pfsense-groups}
+
+Elf groepen dekken de eigen instellingen van pfSense. Na een nieuwe installatie en na een overstap van de <Terminology title="oorspronkelijk update.php-script, uitgevoerd via het Cron-pakket" to="/docs/reference/terminology#legacy-updater">legacy-updater</Terminology> staan ze allemaal aan.
+
+| Groep                                                                                                                                            | Wat de groep dekt                                                                                                                                                                                                                                                                                                                                                                                                                            |
+|--------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Statische interfaces                                                                                                                             | Adressen van interfaces die op Static IPv6 staan. DHCPv6, SLAAC, <Terminology title="interface met een adres uit de gedelegeerde prefix van een andere" to="/docs/reference/terminology#tracked-interface">Track Interface</Terminology> en andere modi worden overgeslagen.                                                                                                                                                                 |
+| <Terminology title="extra interfaceadres, zoals CARP of IP Alias" to="/docs/reference/terminology#virtual-ip">Virtuele IP-adressen</Terminology> | <Terminology title="extra interfaceadres, zoals CARP of IP Alias" to="/docs/reference/terminology#virtual-ip">Virtuele IP's</Terminology> van het type CARP en IP Alias. De typen Proxy ARP en Other vallen onder de groep Overige instellingen, en het CIDR-masker blijft zoals het is.                                                                                                                                                     |
+| Aliassen                                                                                                                                         | Adressen en netwerken in Host- en Network-aliassen. Port-, URL-, URL Table- en andere aliastypen vallen onder de groep Overige instellingen.                                                                                                                                                                                                                                                                                                 |
+| Firewallregels                                                                                                                                   | Bron- en doeladressen die in firewallregels zijn ingetypt, ook in Floating-regels. Aliassen, interfacenetwerken zoals **LAN subnets** en **any** worden overgeslagen.                                                                                                                                                                                                                                                                        |
+| NAT en NPt                                                                                                                                       | Ingetypte adressen in port forwards, uitgaande NAT en 1:1-NAT, en de prefixen van NPt-items. NPt-items die een interface volgen, worden overgeslagen.                                                                                                                                                                                                                                                                                        |
+| DHCPv6-server                                                                                                                                    | Adresbereiken, bereiken voor prefixdelegatie en bereiken van extra pools, adressen van statische toewijzingen en de DNS- en NTP-servers die aan clients worden uitgedeeld.                                                                                                                                                                                                                                                                   |
+| Router Advertisements                                                                                                                            | De DNS-servers en RA-subnetten die elke interface adverteert.                                                                                                                                                                                                                                                                                                                                                                                |
+| DNS-hostoverschrijvingen                                                                                                                         | Adressen van hostoverschrijvingen in de DNS Resolver en de DNS Forwarder, ook elk adres in een door komma's gescheiden lijst. Domeinoverschrijvingen vallen onder de groep Overige instellingen.                                                                                                                                                                                                                                             |
+| IPsec                                                                                                                                            | Het Local Network en de NAT/BINAT-vertaling van <Terminology title="IPsec-item dat lokale en externe netwerken beschrijft" to="/docs/reference/terminology#ipsec-phase-2">fase-2</Terminology>-items in de modi Tunnel IPv6 en Routed (VTI), als hun type Address of Network is. Externe netwerken vallen onder de groep Overige instellingen.                                                                                               |
+| OpenVPN                                                                                                                                          | IPv6-tunnel- en lokale netwerken op servers, IPv6-tunnelnetwerken op clients en IPv6-tunnel- en lokale netwerken in <Terminology title="OpenVPN-instellingen voor één client op een server" to="/docs/reference/terminology#client-specific-override">clientspecifieke overschrijvingen</Terminology>. Externe netwerken vallen onder de groep Overige instellingen, en servertunnelnetwerken die een interface volgen, worden overgeslagen. |
+| WireGuard                                                                                                                                        | <Terminology title="adres van een WireGuard-tunnel in pfSense" to="/docs/reference/terminology#wireguard-tunnel-address">Tunneladressen</Terminology> op WireGuard-tunnels van pfSense. Peers, toegestane IP's en eindpunten vallen onder de groep Overige instellingen.                                                                                                                                                                     |
+
+Door de groepen uit te zetten die de firewall niet gebruikt, houd je onverwachte waarden buiten een <Terminology title="volledige lijst met veldwijzigingen, opgesteld vóór het schrijven" to="/docs/reference/terminology#change-plan">wijzigingsplan</Terminology>.
+
+## Knoppen, zoeken en filters \{#buttons-search-and-filters}
+
+- **Automatisch selecteren**: zet elke pfSense-groep aan en vinkt elk veld daarin aan. De groep Overige instellingen en de instellingen van andere pakketten blijven zoals ze zijn.
+- **Alles wissen**: zet elke groep uit en vinkt elk veld uit.
+- **Velden zoeken**: toont alleen de rijen waarvan de groep, het item, het label, de waarde of het pad de tekst bevat.
+- **Filter**: toont alle rijen, alleen geselecteerde rijen of alleen rijen van andere pakketten.
+
+**Automatisch selecteren** en **Alles wissen** wijzigen alleen de pagina totdat je **Opslaan** selecteert. Zodra een selectie zonder geselecteerde velden is opgeslagen, toont het tabblad een waarschuwing, en uitvoeringen stoppen met `Er zijn geen configuratievelden geselecteerd. Selecteer velden op het tabblad Velden.` totdat je opnieuw velden selecteert.
+
+Toont het tabblad meer dan 40 velden, dan zijn de groepen eerst ingeklapt. Selecteer de naam van een groep om die te openen.
+
+## Instellingen van andere pakketten \{#other-packages-settings}
+
+Instellingen die andere pakketten onder `installedpackages` bewaren, krijgen een eigen groep, genoemd naar het geïnstalleerde pakket dat er eigenaar van is, of naar hun sectie als geen pakket dat is. Het pakket kan niet weten wat deze velden betekenen, dus ze zijn eerst uitgevinkt, en **Automatisch selecteren** selecteert ze nooit. Vink een veld pas aan nadat je hebt gecontroleerd wat het in dat pakket doet.
+
+Wijzigt een uitvoering een van deze velden, dan past ze de instellingen van dat pakket opnieuw toe, zoals de eigen knop **Save** van dat pakket doet. **Laatste uitvoering** op het tabblad Status toont elk resultaat onder **Pakketten**:
+
+- `De instellingen van het pakket <package> zijn opnieuw toegepast.`
+- `Geen geïnstalleerd pakket is eigenaar van de instellingen <section>. Start de service die ze gebruikt handmatig opnieuw.` De waarden worden toch opgeslagen. Dit gebeurt ook als een pakket een deel van zijn instellingen onder een sectie met een andere naam bewaart.
+- `De instellingen van het pakket <package> konden niet opnieuw worden toegepast: <reason>` De nieuwe waarden blijven opgeslagen, en er wordt niets teruggedraaid.
+
+Beide problemen voegen ook een <Terminology title="melding in de meldingenlijst van de pfSense-WebGUI" to="/docs/reference/terminology#webgui-notice">WebGUI-melding</Terminology> toe.
+
+## Velden die niet meer bestaan \{#fields-that-no-longer-exist}
+
+Wordt het item achter een aangevinkt veld verwijderd, dan verschijnt het veld bovenaan het tabblad onder **Ontbrekende velden**. Uitvoeringen slaan het over en vermelden het onder **Overgeslagen velden** op het tabblad Status. **Ontbrekende velden vergeten** verwijdert die vinkjes.
+
+## Overige instellingen \{#other-settings}
+
+De groep **Overige instellingen** toont elk ander adres binnen de prefix van een baseline. De groep staat standaard uit, dus een waarde erin verandert alleen als je die aanvinkt of als je de groep aanzet, wat ook geldt voor waarden die later worden toegevoegd. Elke rij noemt de soort:
+
+- De externe kant van elk VPN: externe netwerken en externe gateways van IPsec, en externe netwerken en serveradressen van OpenVPN.
+- WireGuard-peers, inclusief hun toegestane IP's en eindpunten.
+- Gateways en statische routes.
+- Certificaten, privésleutels, wachtwoorden en pre-shared keys, waarvan de waarden als `Waarde verborgen` verschijnen.
+- Waarden die in Base64 zijn opgeslagen, zoals de aangepaste opties van de DNS Resolver. Ze worden gedecodeerd, herschreven en opnieuw gecodeerd.
+- Beschrijvingen.
+- Elke andere instelling, die in plaats daarvan de naam van de instelling toont, zoals domeinoverschrijvingen van de DNS Resolver en de DNS-servers onder **System → General Setup**.
+
+<img src={otherSettings} alt="Groep Overige instellingen op het tabblad Velden met een statische route, een aliasbeschrijving, Base64-gecodeerde aangepaste opties van de DNS Resolver, een domeinoverschrijving en een gateway, elk met de soort" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+Nadat een uitvoering een van deze waarden heeft gewijzigd, herlaadt die wat pfSense herlaadt wanneer je die instelling opslaat:
+
+- **Gateways en statische routes**: de routering, daarna het firewallfilter.
+- **DNS-servers onder System → General Setup**: de DNS-instellingen van het systeem, daarna de DNS Resolver of DNS Forwarder.
+- **Waarden van de DNS Resolver, DNS Forwarder, IPsec, OpenVPN en WireGuard**: die service.
+- **Waarden van een ander pakket**: de instellingen van dat pakket, zoals [Instellingen van andere pakketten](#other-packages-settings) beschrijft.
+- **Beschrijvingen, certificaten en waarden zonder bekende service**: niets. De nieuwe waarde wordt alleen opgeslagen.
+
+Het is aan te raden om deze velden aan te vinken zolang de baseline nog de oude prefix is, omdat het tabblad na een wijziging met de nieuwe prefix vergelijkt. Externe VPN-peers houden hun eigen configuratie, dus een peer die naar een gewijzigd adres wijst, moet aan zijn eigen kant worden bijgewerkt.
+
+## Hoe waarden worden vergeleken \{#how-values-are-matched}
+
+- Een adres verandert alleen als het bij de <Terminology title="prefix waarmee de volgende controle vergelijkt" to="/docs/reference/terminology#last-successful-prefix">laatste geslaagde prefix</Terminology> hoort, met de lengte die in de <Terminology title="startprefix, vastgelegd zonder de configuratie te wijzigen" to="/docs/reference/terminology#baseline">baseline</Terminology> is opgeslagen. Adressen uit andere netwerken, IPv4-adressen, hostnamen en aliasnamen blijven zoals ze zijn, en het tabblad toont ze niet.
+- In lijsten, zoals aliasitems, lokale OpenVPN-netwerken en hostoverschrijvingen van de DNS Resolver, wordt elk item apart gecontroleerd en blijven de scheidingstekens staan zoals ze zijn geschreven.
+- In de instellingen van andere pakketten en in de groep Overige instellingen wordt elk adres in de tekst apart gecontroleerd en blijft de rest van de tekst staan zoals die is geschreven.
+- Een CIDR-achtervoegsel zoals `/64` blijft staan zoals het is geschreven, en het <Terminology title="adresbits na de gedelegeerde prefix" to="/docs/reference/terminology#host-portion">hostgedeelte</Terminology> van elk adres blijft behouden.
+- Op een <Terminology title="interface met een adres uit de gedelegeerde prefix van een andere" to="/docs/reference/terminology#tracked-interface">Track Interface</Terminology> bevatten DHCPv6-bereiken en statische toewijzingen hostachtervoegsels zoals `::1000`, die blijven zoals ze zijn.
+- Herschreven adressen worden in <Terminology title="kortste standaardnotatie van een adres, in kleine letters" to="/docs/reference/terminology#canonical-form">canonieke vorm</Terminology> opgeslagen, dus de schrijfwijze kan afwijken van wat er was ingetypt.
+
+## Wijzigingen vooraf bekijken \{#previewing-changes}
+
+Een <Terminology title="voorbeeld dat nooit een back-up maakt of schrijft" to="/docs/reference/terminology#dry-run">testuitvoering</Terminology> leest de geselecteerde velden pas na een <Terminology title="afwijking van de laatste geslaagde prefix of lengte" to="/docs/reference/terminology#prefix-transition">prefixwissel</Terminology>. Zolang de prefix ongewijzigd is, meldt ze <Terminology title="resultaat: prefix ongewijzigd, niets gescand of geschreven" to="/docs/reference/terminology#no-change">Geen wijziging</Terminology>, dus een nieuwe selectie bekijk je vooraf op het tabblad Velden. Na een prefixwissel toont de <Terminology title="alleen-lezen resultaten na Nu uitvoeren of Testuitvoering" to="/docs/reference/terminology#command-output">Opdrachtuitvoer</Terminology> van de testuitvoering onder `Veldwijzigingen` elk adres dat ze zou vervangen.
+
+Een <Terminology title="voorbeeld dat nooit een back-up maakt of schrijft" to="/docs/reference/terminology#dry-run">testuitvoering</Terminology> slaat ook de controle over of pfSense de betrokken services kan herladen. Een ontbrekend WireGuard-pakket komt daardoor pas bij een echte uitvoering aan het licht.
+
+## WireGuard-pakket \{#wireguard-package}
+
+Voor het bijwerken van <Terminology title="adres van een WireGuard-tunnel in pfSense" to="/docs/reference/terminology#wireguard-tunnel-address">WireGuard-tunneladressen</Terminology> is het WireGuard-pakket nodig. Moeten die adressen veranderen en is het pakket niet geïnstalleerd, dan stopt een echte uitvoering vóór de back-up met `Vereiste pfSense-afhankelijkheid ‘/usr/local/pkg/wireguard/includes/wg.inc’ is niet beschikbaar.`
+
+[Goedgekeurde velden](/docs/reference/approved-fields) toont de exacte configuratiepaden achter elke groep en de identiteit waaronder elke keuze wordt opgeslagen.

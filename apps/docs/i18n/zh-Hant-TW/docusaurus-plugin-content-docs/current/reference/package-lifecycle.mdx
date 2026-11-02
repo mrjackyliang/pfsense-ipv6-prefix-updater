@@ -1,0 +1,65 @@
+---
+id: package-lifecycle
+title: 更新或移除
+description: 檢查已安裝的版本，在舊版本之上安裝新版本或移除套件，並了解每個步驟會保留或刪除哪些內容。
+keywords:
+  - pfsense ipv6 prefix updater
+  - 套件更新
+  - 套件移除
+  - pkg delete
+  - 重新安裝
+tags:
+  - reference
+  - maintenance
+  - pfsense
+sidebar_position: 5
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+在 pfSense shell 中檢查已安裝的版本、安裝新版本或移除套件。
+
+## 檢查已安裝的版本 \{#check-the-installed-version}
+
+```shell
+pkg info pfSense-pkg-Ipv6PrefixUpdater
+```
+
+將回報的版本與 [GitHub 上的最新發行版本](https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest)進行比較。
+
+## 更新套件 \{#update-the-package}
+
+建議先在 **Diagnostics → Backup & Restore**（診斷 → 備份與還原）下載一份設定副本。然後在現有套件之上安裝最新的發行版本：
+
+```shell
+pkg add -f https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
+```
+
+安裝步驟會再次依已儲存的設定同步 cron 項目，並保留每個<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>。[安裝套件](/docs/installation#verify-the-download-first)中的總和檢查碼步驟同樣適用於更新。
+
+更新之後：
+
+1. 開啟 **Services → IPv6 Prefix Updater** 的 **設定** 分頁，確認已儲存的值。
+2. 在「狀態」分頁中查看 **目前狀態**。每個介面都會保留其<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>。
+
+如果某一列顯示 `尚未初始化`，**立即執行** 會為它記錄新的<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>。如此一來，仍在使用該基準之前舊前綴的位址將維持不變。
+
+## 移除套件 \{#remove-the-package}
+
+如果 pfSense 保留了已儲存的設定，先取消勾選 **<Terminology title="由 pfSense 管理的 cron 項目執行的自動檢查" to="/docs/reference/terminology#scheduled-updates">啟用排程更新</Terminology>** 可以避免日後重新安裝時立即啟動排程。接著執行：
+
+```shell
+pkg delete pfSense-pkg-Ipv6PrefixUpdater
+```
+
+移除動作會刪除套件的 cron 項目與<Terminology title="防止兩個檢查同時執行的保護機制" to="/docs/reference/terminology#run-lock">執行鎖定</Terminology>檔案。它會保留 `/cf/conf/ipv6-prefix-updater` 中的<Terminology title="保存基準與上次執行的套件檔案" to="/docs/reference/terminology#package-state">套件狀態</Terminology>與 **備份** 分頁中的副本，因此 pfSense 在更新期間自行執行的移除再重新安裝，絕不會遺失<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>。
+
+移除動作不會撤銷已儲存到設定中的位址，套件產生的修訂版本也會保留在<Terminology title="pfSense 已儲存設定修訂版本的清單" to="/docs/reference/terminology#config-history">設定歷程</Terminology>中。若也要刪除保留的檔案，請在移除套件後執行 `rm -rf /cf/conf/ipv6-prefix-updater`。
+
+## 日後重新安裝 \{#reinstall-later}
+
+重新安裝時會找到保留的<Terminology title="保存基準與上次執行的套件檔案" to="/docs/reference/terminology#package-state">套件狀態</Terminology>，因此第一次執行會與每個已儲存的<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>進行比較，並更新仍停留在較舊前綴上的欄位。如果先前的設定仍然存在且勾選了 **<Terminology title="由 pfSense 管理的 cron 項目執行的自動檢查" to="/docs/reference/terminology#scheduled-updates">啟用排程更新</Terminology>**，安裝步驟會立即開啟排程。
+
+若想從頭開始，請在重新安裝之前刪除 `/cf/conf/ipv6-prefix-updater`。如此一來，第一次執行會記錄新的<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>並回報<Terminology title="結果：已記錄基準，設定未變更" to="/docs/reference/terminology#initialized">已初始化</Terminology>，不會變更設定。
+
+維護之前請閱讀[備份與復原](/docs/operate/backups-and-recovery)，重新安裝之後請閱讀[建立基準](/docs/first-run)。

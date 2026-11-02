@@ -1,0 +1,90 @@
+---
+id: intro
+title: Oversikt
+description: Hold aliaser, grensesnitt og VPN-adresser i pfSense oppdatert når internettleverandøren delegerer et nytt IPv6-prefiks, med sikkerhetskopi før hver endring.
+keywords:
+  - pfsense ipv6 prefix updater
+  - oversikt
+  - ipv6-prefiksdelegering
+  - dynamisk prefiks
+  - pfsense-pakke
+tags:
+  - setup
+  - overview
+  - ipv6
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Hold IPv6-adressene som er lagret i pfSense, oppdatert med gjeldende prefiks når internettleverandøren tildeler et nytt <Terminology title="IPv6-nettverket internettleverandøren ruter til brannmuren" to="/docs/reference/terminology#delegated-prefix">delegert prefiks</Terminology>.
+
+## Hva den gjør \{#what-it-does}
+
+pfSense IPv6 Prefix Updater er en pfSense-pakke som overvåker grensesnittene du har valgt, for å oppdage et nytt prefiks. Når prefikset endres, skriver den om de samsvarende adressene i feltene du velger, og beholder <Terminology title="adressebitene etter det delegerte prefikset" to="/docs/reference/terminology#host-portion">vertsdelen</Terminology> av hver adresse.
+
+## Hvorfor bruke denne pakken? \{#why-use-this-package}
+
+1. Beholder <Terminology title="adressebitene etter det delegerte prefikset" to="/docs/reference/terminology#host-portion">vertsdelen</Terminology> av hver adresse, slik at hver enhet beholder samme suffiks etter en prefiksendring.
+2. Endrer bare de <Terminology title="eksakt konfigurasjonsfelt som pakken kan skrive om" to="/docs/reference/terminology#approved-field">godkjente feltene</Terminology> du velger i fanen Felt, slik at eksterne VPN-nettverk, noder, gatewayer og ruter forblir slik du satte dem opp.
+3. Lagrer en <Terminology title="kopi av konfigurasjonen lagret før en skriving" to="/docs/reference/terminology#configuration-backup">konfigurasjonssikkerhetskopi</Terminology> før hver skriving, slik at den forrige konfigurasjonen ligger klar i <Terminology title="pfSense-liste over lagrede konfigurasjonsrevisjoner" to="/docs/reference/terminology#config-history">Config History</Terminology>.
+4. Kjører etter en tidsplan som pfSense styrer, slik at du ikke trenger Cron-pakken eller et skript i en hjemmekatalog.
+5. Viser hvert resultat i fanen Status, slik at du ser hva som ble endret, hvilke tjenester som ble lastet inn på nytt, og om det ble tatt en sikkerhetskopi.
+
+## Hva den oppdaterer \{#what-it-updates}
+
+- **Aliaser**: adresser og nettverk i verts- og nettverksaliaser.
+- **Statiske grensesnitt**: adresser på grensesnitt som er satt til Static IPv6.
+- **<Terminology title="ekstra grensesnittadresse, for eksempel CARP eller IP Alias" to="/docs/reference/terminology#virtual-ip">Virtuelle IP-adresser</Terminology>**: <Terminology title="ekstra grensesnittadresse, for eksempel CARP eller IP Alias" to="/docs/reference/terminology#virtual-ip">virtuelle IP-er</Terminology> av typen CARP og IP Alias.
+- **IPsec**: den lokale siden av <Terminology title="IPsec-oppføring som beskriver lokale og eksterne nettverk" to="/docs/reference/terminology#ipsec-phase-2">fase 2</Terminology>-oppføringer i modusene Tunnel IPv6 og Routed (VTI).
+- **OpenVPN**: IPv6-tunnelnettverk og lokale IPv6-nettverk på servere og <Terminology title="OpenVPN-innstillinger per klient på en server" to="/docs/reference/terminology#client-specific-override">klientspesifikke overstyringer</Terminology>, og IPv6-tunnelnettverk på klienter.
+- **WireGuard**: <Terminology title="adresse tildelt en WireGuard-tunnel i pfSense" to="/docs/reference/terminology#wireguard-tunnel-address">tunneladresser</Terminology>, når WireGuard-pakken er installert.
+- **DHCPv6-server**: adresseintervaller, intervaller for prefiksdelegering og intervaller i pooler, statiske tilordninger og DNS- og NTP-serverne som deles ut til klienter.
+- **Ruterannonseringer**: annonserte DNS-servere og RA-subnett.
+- **DNS-vertsoverstyringer**: vertsoverstyringer i DNS Resolver og DNS Forwarder.
+- **Brannmurregler**: inntastede kilde- og måladresser i regler.
+- **NAT og NPt**: inntastede adresser i portvideresendinger, utgående NAT og 1:1-NAT, og NPt-prefikser.
+- **Innstillinger for andre pakker**: bare feltene du krysser av, og deretter tar pakken innstillingene til den andre pakken i bruk på nytt.
+
+Fanen **Felt** viser hver adresse innenfor prefikset ditt, med en bryter for hver <Terminology title="gruppe av felt med én bryter i fanen Felt" to="/docs/reference/terminology#field-group">feltgruppe</Terminology> og en avkrysningsboks for hvert felt.
+
+## Hva som venter på deg \{#what-waits-for-you}
+
+Gruppen **Andre innstillinger** starter slått av, så disse verdiene endres bare når du krysser dem av:
+
+- Den eksterne siden av et VPN, for eksempel eksterne nettverk i IPsec og OpenVPN, og WireGuard-noder, tillatte IP-er og endepunkter.
+- Gatewayer, statiske ruter, DNS-domeneoverstyringer, sertifikater, hemmeligheter, Base64-kodede verdier og beskrivelser.
+- Port-, URL- og andre aliastyper.
+
+Grensesnitt som får adressen sin fra DHCPv6, SLAAC eller <Terminology title="grensesnitt adressert fra et annet grensesnitts delegerte prefiks" to="/docs/reference/terminology#tracked-interface">Track Interface</Terminology>, endres aldri, fordi pfSense genererer disse adressene. Det samme gjelder IPv4-adresser, vertsnavn og IPv6-adresser utenfor det gamle prefikset. [Andre innstillinger](/docs/configure/configuration-scopes#other-settings) har den fullstendige listen.
+
+## Slik fungerer en kontroll \{#how-a-check-works}
+
+1. Leser den <Terminology title="offentlig IPv6-adresse innenfor 2000::/3" to="/docs/reference/terminology#global-unicast-address">globale adressen</Terminology> til hvert <Terminology title="grensesnittet der adressen avslører gjeldende prefiks" to="/docs/reference/terminology#monitored-interface">overvåket grensesnitt</Terminology> og beregner prefikset for det.
+2. Sammenligner det med det <Terminology title="prefikset neste kontroll sammenligner med" to="/docs/reference/terminology#last-successful-prefix">siste vellykkede prefikset</Terminology> og stopper med <Terminology title="resultat: prefiks uendret, ingenting gjennomsøkt eller skrevet" to="/docs/reference/terminology#no-change">Ingen endring</Terminology> hvis de er like.
+3. Bygger en <Terminology title="fullstendig liste over feltendringer, bygget før skriving" to="/docs/reference/terminology#change-plan">endringsplan</Terminology> for de <Terminology title="eksakt konfigurasjonsfelt som pakken kan skrive om" to="/docs/reference/terminology#approved-field">godkjente feltene</Terminology> som fortsatt bruker det gamle prefikset, når den finner en <Terminology title="endring fra siste vellykkede prefiks eller lengde" to="/docs/reference/terminology#prefix-transition">prefiksovergang</Terminology>.
+4. Lagrer en <Terminology title="kopi av konfigurasjonen lagret før en skriving" to="/docs/reference/terminology#configuration-backup">konfigurasjonssikkerhetskopi</Terminology>, skriver alle endringene i én lagring, laster bare de berørte tjenestene inn på nytt og kontrollerer verdiene igjen.
+5. Registrerer resultatet i fanen Status og sender et <Terminology title="varsel sendt etter en verifisert vellykket oppdatering" to="/docs/reference/terminology#change-notification">endringsvarsel</Terminology> hvis det er slått på.
+
+[Sikkerhetsmodell](/docs/operations) beskriver beskyttelsen i hvert trinn.
+
+## Før du begynner \{#before-you-start}
+
+:::warning
+
+pfSense IPv6 Prefix Updater er en <Terminology title="pakke installert fra GitHub, ikke fra Netgates pakkebrønn" to="/docs/reference/terminology#unofficial-package">uoffisiell pakke</Terminology>. Du installerer den fra GitHub med `pkg`, og Netgate verken gjennomgår eller støtter den.
+
+:::
+
+Pakkeutgivelsene publiseres på prosjektets GitHub Releases-side. Utgivelser av versjon 1.x inneholder bare det <Terminology title="opprinnelig update.php-skript kjørt av Cron-pakken" to="/docs/reference/terminology#legacy-updater">eldre oppdateringsskriptet</Terminology>, ikke denne pakken.
+
+## Språk \{#languages}
+
+Alle fanene i pakken, <Terminology title="skrivebeskyttede resultater vist etter Kjør nå eller Testkjøring" to="/docs/reference/terminology#command-output">Kommandoutdata</Terminology> og meldingene fra pakken følger språket som er valgt i pfSense. Pakken har oversettelser for 18 språkvalg i pfSense og faller tilbake til engelsk for alle andre språk.
+
+## Neste steg \{#next-steps}
+
+- **[Installer pakken](/docs/installation)**: legg til pakken fra en GitHub-utgivelse.
+- **[Opprett grunnlinjen](/docs/first-run)**: registrer og kontroller gjeldende prefiks før du slår på tidsplanen.
+- **[Migrer fra skriptet](/docs/migrate-from-legacy)**: bytt over fra skriptet i versjon 1.x.
+- **[Sikkerhetsmodell](/docs/operations)**: se hva pakken beskytter, og hva den fortsatt kan påvirke.

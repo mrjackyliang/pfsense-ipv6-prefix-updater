@@ -1,0 +1,60 @@
+---
+id: compatibility
+title: Kompatibilnost
+description: Provjerite zahtjeve za pfSense, PHP, adresu i dužinu prefiksa, opcionalnu WireGuard zavisnost i poznata ograničenja prije nego što se oslonite na paket.
+keywords:
+  - pfsense ipv6 prefix updater
+  - kompatibilnost
+  - zahtjevi
+  - globalna ipv6 adresa
+  - poznata ograničenja
+tags:
+  - setup
+  - compatibility
+  - ipv6
+sidebar_position: 4
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Provjerite da li vatrozid, sučelje i dodjela od ISP-a ispunjavaju zahtjeve paketa prije nego što se oslonite na <Terminology title="automatske provjere iz cron unosa kojim upravlja pfSense" to="/docs/reference/terminology#scheduled-updates">zakazana ažuriranja</Terminology>.
+
+## Podržana izdanja \{#supported-releases}
+
+- Projekat još nije objavio listu testiranih izdanja pfSense-a.
+- Paket ne provjerava verziju pfSense-a. Svako pokretanje provjerava da li radi na pfSense-u s datotekama i funkcijama koje koristi i zaustavlja se prije čitanja postavki ako one nedostaju.
+- Kod paketa zahtijeva PHP 8.1 ili noviji.
+- Datoteka `.pkg` mora biti izgrađena za verziju FreeBSD-a na kojoj radi vaše izdanje pfSense-a, inače `pkg` prijavljuje neusklađenost ABI-ja.
+
+## Zahtjevi za adresu \{#address-requirements}
+
+- Svako <Terminology title="sučelje čija adresa otkriva trenutni prefiks" to="/docs/reference/terminology#monitored-interface">nadzirano sučelje</Terminology> treba aktivnu <Terminology title="javna IPv6 adresa unutar 2000::/3" to="/docs/reference/terminology#global-unicast-address">globalnu unicast adresu</Terminology>. Paket nikada ne koristi <Terminology title="fe80:: adresa koja radi samo na jednoj vezi" to="/docs/reference/terminology#link-local-address">link-local adresu</Terminology> kao zamjenu.
+- Unique local (`fc00::/7`), multicast, loopback, neodređene, IPv4-mapirane adrese i adrese s oznakom zone ne mogu biti <Terminology title="globalna adresa koju pfSense prijavljuje za nadzirano sučelje" to="/docs/reference/terminology#source-address">izvorna adresa</Terminology>.
+- <Terminology title="postavka veličine ISP prefiksa, od /48 do /64" to="/docs/reference/terminology#delegated-prefix-length">Dužina dodijeljenog prefiksa</Terminology> mora biti od `/48` do `/64`. Rade i dužine koje završavaju unutar heksadecimalne cifre, na primjer `/57`.
+
+Kada neka adresa ne ispunjava uslove, to sučelje završava ishodom <Terminology title="ishod: kontrola ili sigurnosna faza zaustavila je pokretanje" to="/docs/reference/terminology#failure">Greška</Terminology> s razlogom kao što je `Sučelje „lan” nema aktivnu globalnu IPv6 adresu.` Uputstvo [Rješavanje problema](/docs/operate/troubleshooting#run-failed) navodi poruke.
+
+## Kada WAN nema globalnu adresu \{#when-wan-has-no-global-address}
+
+Neki ISP-ovi dodjeljuju prefiks, a WAN-u ne daju vlastitu <Terminology title="javna IPv6 adresa unutar 2000::/3" to="/docs/reference/terminology#global-unicast-address">globalnu adresu</Terminology>. Tada adresu iz <Terminology title="IPv6 mreža koju ISP usmjerava prema vatrozidu" to="/docs/reference/terminology#delegated-prefix">dodijeljenog prefiksa</Terminology> nosi <Terminology title="sučelje adresirano iz dodijeljenog prefiksa drugog sučelja" to="/docs/reference/terminology#tracked-interface">sučelje tipa Track Interface</Terminology>, na primjer LAN, i njega treba nadzirati.
+
+**Status → Interfaces** prikazuje koja sučelja imaju <Terminology title="javna IPv6 adresa unutar 2000::/3" to="/docs/reference/terminology#global-unicast-address">globalnu adresu</Terminology>.
+
+## Šta paket prepoznaje \{#what-the-package-recognizes}
+
+Paket ažurira doslovne IPv6 adrese i mreže u <Terminology title="tačno polje konfiguracije koje paket smije prepisati" to="/docs/reference/terminology#approved-field">odobrenim poljima</Terminology>. Nazivi hostova, URL-ovi, IPv4 vrijednosti i ostali tekst ostaju kakvi jesu.
+
+Adrese koje generiše pfSense, na primjer one na <Terminology title="sučelje adresirano iz dodijeljenog prefiksa drugog sučelja" to="/docs/reference/terminology#tracked-interface">sučeljima tipa Track Interface</Terminology>, nikada se ne mijenjaju. Adrese koje opisuju druge uređaje, na primjer udaljene VPN mreže i WireGuard peerovi, mijenjaju se samo kada ih označite u grupi [Ostale postavke](/docs/configure/configuration-scopes#other-settings).
+
+## Opcionalne zavisnosti \{#optional-dependencies}
+
+- **WireGuard paket**: potreban samo kada se moraju promijeniti <Terminology title="adresa dodijeljena pfSense WireGuard tunelu" to="/docs/reference/terminology#wireguard-tunnel-address">adrese WireGuard tunela</Terminology>. Bez njega, stvarno pokretanje s WireGuard promjenama zaustavlja se prije sigurnosne kopije.
+
+## Poznata ograničenja \{#known-limits}
+
+- Dodavanje <Terminology title="sučelje čija adresa otkriva trenutni prefiks" to="/docs/reference/terminology#monitored-interface">nadziranog sučelja</Terminology> ili prebacivanje reda na drugo sučelje bilježi za njega novo <Terminology title="početni prefiks zabilježen bez promjene konfiguracije" to="/docs/reference/terminology#baseline">početno stanje</Terminology>, a promjena <Terminology title="postavka veličine ISP prefiksa, od /48 do /64" to="/docs/reference/terminology#delegated-prefix-length">dužine dodijeljenog prefiksa</Terminology> u nekom redu računa se kao <Terminology title="razlika u odnosu na posljednji uspješni prefiks ili dužinu" to="/docs/reference/terminology#prefix-transition">promjena prefiksa</Terminology>.
+- <Terminology title="pregled bez sigurnosne kopije i bez upisa" to="/docs/reference/terminology#dry-run">Probno pokretanje</Terminology> ne može simulirati promjenu prefiksa, pa se planirane promjene pojavljuju tek nakon stvarne promjene.
+- Parovi visoke dostupnosti (CARP) nemaju posebnu obradu.
+- Pošto je ovo <Terminology title="paket instaliran s GitHuba, ne iz Netgate repozitorija" to="/docs/reference/terminology#unofficial-package">nezvanični paket</Terminology>, novija izdanja se instaliraju pomoću `pkg`, kako je opisano u uputstvu [Ažuriranje ili uklanjanje](/docs/reference/package-lifecycle).
+
+Pregledajte uputstvo [Sučelje i prefiks](/docs/configure/interface-and-prefix) za izbor izvora i stranicu [Polja](/docs/configure/configuration-scopes) za polja koja paket može mijenjati.

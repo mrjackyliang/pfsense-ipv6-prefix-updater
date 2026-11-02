@@ -1,0 +1,153 @@
+---
+id: configuration-scopes
+title: Pola
+description: Wybierz na karcie Pola, które pola konfiguracji zmieniają się wraz z delegowanym prefiksem, ustaw wyjątki, przejrzyj ustawienia innych pakietów i w razie potrzeby uwzględnij każdą inną wartość.
+keywords:
+  - pfsense ipv6 prefix updater
+  - karta pola
+  - grupy pól
+  - reguły zapory
+  - dhcpv6
+  - ustawienia pakietów
+tags:
+  - configuration
+  - fields
+  - safety
+sidebar_position: 2
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import fieldsTab from './_assets_/configuration-scopes-1.png';
+import fieldException from './_assets_/configuration-scopes-2.png';
+import otherSettings from './_assets_/configuration-scopes-3.png';
+
+Wybierz, które pola konfiguracji zmieniają się, gdy zmieni się prefiks.
+
+## Karta Pola \{#the-fields-tab}
+
+Karta **Pola** w **Services → IPv6 Prefix Updater** wymienia, z podziałem na rodzaje, każdy adres należący do prefiksu każdej <Terminology title="prefiks startowy zapisany bez zmiany konfiguracji" to="/docs/reference/terminology#baseline">wartości bazowej</Terminology>. Wiersz **Wartości bazowe** podaje prefiksy, z którymi karta porównuje adresy. Zanim pierwsze sprawdzenie zapisze wartość bazową, karta pokazuje tylko przełączniki grup.
+
+<img src={fieldsTab} alt="Karta Pola pakietu IPv6 Prefix Updater z przyciskami Wybierz automatycznie i Wyczyść wszystko, polem wyszukiwania, filtrem oraz grupą Interfejsy statyczne, która wymienia adresy LAN i LAB z wyróżnioną częścią prefiksu" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+Każdy wiersz pokazuje:
+
+- **Pole wyboru**: zaznaczone, gdy następna <Terminology title="różnica względem ostatniego pomyślnego prefiksu lub długości" to="/docs/reference/terminology#prefix-transition">zmiana prefiksu</Terminology> zaktualizuje to pole.
+- **Pole**: wpis, na przykład opis reguły lub nazwa aliasu, a pod nim etykieta pola i jego ścieżka konfiguracji.
+- **Bieżąca wartość**: wartość z wyróżnioną częścią prefiksu każdego adresu. Zmienia się tylko wyróżniona część, a <Terminology title="bity adresu po delegowanym prefiksie" to="/docs/reference/terminology#host-portion">część hosta</Terminology> pozostaje bez zmian.
+
+## Przełączniki grup i wyjątki \{#group-switches-and-exceptions}
+
+Każda <Terminology title="grupa pól z jednym przełącznikiem na karcie Pola" to="/docs/reference/terminology#field-group">grupa pól</Terminology> ma przełącznik w nagłówku:
+
+- **Włączona**: każde pole tego rodzaju zmienia się wraz z prefiksem, także pola dodane później, z wyjątkiem tych, które odznaczysz.
+- **Wyłączona**: zmieniają się tylko pola, które zaznaczysz.
+
+Zaznaczenie, które różni się od przełącznika grupy, to <Terminology title="pojedyncze pole zaznaczone lub odznaczone wbrew przełącznikowi swojej grupy" to="/docs/reference/terminology#field-exception">wyjątek pola</Terminology>. Gdy grupa ma wyjątki, jej nagłówek pokazuje kreskę, a **Wybrano N z M** podaje liczbę zaznaczonych pól. Kliknięcie nagłówka włącza lub wyłącza grupę i ustawia każde zaznaczenie w niej zgodnie z przełącznikiem. Wybierz **Zapisz**, aby zachować zmiany.
+
+<img src={fieldException} alt="Karta Pola z włączoną grupą Reguły zapory i jedną odznaczoną regułą, przez co nagłówek pokazuje kreskę i Wybrano 2 z 3, oraz z regułą bez identyfikatora śledzenia, która podąża za przełącznikiem grupy" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+Wybór dotyczy wpisu, a nie jego pozycji na liście, więc przeniesienie lub usunięcie innych wpisów nie przypisze go do innego wpisu. Pakiet rozpoznaje każdy wpis po tych danych:
+
+- **Reguły zapory**: identyfikator śledzenia reguły (tracker ID).
+- **Aliasy**: nazwa aliasu.
+- **Mapowania statyczne DHCPv6**: DUID, ponieważ pfSense identyfikuje mapowania DHCPv6 po DUID, a nie po adresie MAC.
+- **Przekierowania portów i wychodzący NAT**: czas utworzenia reguły.
+- **Wpisy NAT 1:1 i NPt oraz pule DHCPv6**: opis.
+- **Nadpisania hostów DNS**: host, domena oraz to, czy wpis zawiera adresy IPv4, IPv6, czy oba.
+- **Ustawienia innych pakietów**: pole, które jednoznacznie nazywa każdy wpis listy, na przykład jego nazwa lub opis.
+- **Inne ustawienia**: pole, które jednoznacznie nazywa każdy wpis listy i nie zawiera adresu, na przykład nazwa bramy. Jeden wybór obejmuje wszystkie wpisy zwykłej listy, na przykład serwery DNS w **System → General Setup**.
+- **Inne wpisy**: ich interfejs, nazwa lub identyfikator pfSense. Jeden wybór obejmuje wszystkie serwery DNS, serwery NTP lub podsieci RA danego interfejsu.
+
+Wiersz, którego wpis nie ma takiego identyfikatora albo dzieli go z innym wpisem, nie ma pola wyboru i pokazuje `Brak stabilnego identyfikatora, więc to pole podąża za przełącznikiem grupy.` Wybory są przechowywane osobno od ustawień, więc zapisanie karty Ustawienia ich nie czyści.
+
+## Grupy pfSense \{#pfsense-groups}
+
+Jedenaście grup obejmuje ustawienia samego pfSense. Po nowej instalacji i po przejściu ze <Terminology title="pierwotny skrypt update.php uruchamiany przez pakiet Cron" to="/docs/reference/terminology#legacy-updater">starszego aktualizatora</Terminology> wszystkie są włączone.
+
+| Grupa                                                                                                                                                | Co obejmuje                                                                                                                                                                                                                                                                                                                                                                                                                |
+|------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Interfejsy statyczne                                                                                                                                 | Adresy interfejsów ustawionych na Static IPv6. Tryby DHCPv6, SLAAC, <Terminology title="interfejs adresowany z delegowanego prefiksu innego interfejsu" to="/docs/reference/terminology#tracked-interface">Track Interface</Terminology> i inne są pomijane.                                                                                                                                                               |
+| <Terminology title="dodatkowy adres interfejsu, np. CARP lub IP Alias" to="/docs/reference/terminology#virtual-ip">Wirtualne adresy IP</Terminology> | <Terminology title="dodatkowy adres interfejsu, np. CARP lub IP Alias" to="/docs/reference/terminology#virtual-ip">Wirtualne adresy IP</Terminology> typu CARP i IP Alias. Typy Proxy ARP i Other należą do grupy Inne ustawienia, a maska CIDR pozostaje bez zmian.                                                                                                                                                       |
+| Aliasy                                                                                                                                               | Adresy i sieci w aliasach typu Host i Network. Aliasy typu Port, URL, URL table i inne należą do grupy Inne ustawienia.                                                                                                                                                                                                                                                                                                    |
+| Reguły zapory                                                                                                                                        | Adresy źródłowe i docelowe wpisane w regułach zapory, w tym w regułach pływających (Floating). Aliasy, sieci interfejsów, takie jak **LAN subnets**, oraz **any** są pomijane.                                                                                                                                                                                                                                             |
+| NAT i NPt                                                                                                                                            | Wpisane adresy w przekierowaniach portów, wychodzącym NAT i NAT 1:1 oraz prefiksy wpisów NPt. Wpisy NPt, które śledzą interfejs, są pomijane.                                                                                                                                                                                                                                                                              |
+| Serwer DHCPv6                                                                                                                                        | Przedziały adresów, delegowania prefiksów i dodatkowych pul, adresy mapowań statycznych oraz serwery DNS i NTP przekazywane klientom.                                                                                                                                                                                                                                                                                      |
+| Ogłoszenia routera                                                                                                                                   | Serwery DNS i podsieci RA ogłaszane przez każdy interfejs.                                                                                                                                                                                                                                                                                                                                                                 |
+| Nadpisania hostów DNS                                                                                                                                | Adresy nadpisań hostów w DNS Resolver i DNS Forwarder, w tym każdy adres na liście rozdzielanej przecinkami. Nadpisania domen należą do grupy Inne ustawienia.                                                                                                                                                                                                                                                             |
+| IPsec                                                                                                                                                | Local Network i translacja NAT/BINAT wpisów <Terminology title="wpis IPsec opisujący sieci lokalne i zdalne" to="/docs/reference/terminology#ipsec-phase-2">fazy 2</Terminology> typu Tunnel IPv6 i Routed (VTI), gdy ich typ to Address lub Network. Sieci zdalne należą do grupy Inne ustawienia.                                                                                                                        |
+| OpenVPN                                                                                                                                              | Sieci tunelu IPv6 i sieci lokalne na serwerach, sieci tunelu IPv6 na klientach oraz sieci tunelu IPv6 i sieci lokalne w <Terminology title="ustawienia OpenVPN dla jednego klienta na serwerze" to="/docs/reference/terminology#client-specific-override">nadpisaniach specyficznych dla klienta</Terminology>. Sieci zdalne należą do grupy Inne ustawienia, a sieci tunelu serwera, które śledzą interfejs, są pomijane. |
+| WireGuard                                                                                                                                            | <Terminology title="adres przypisany do tunelu WireGuard w pfSense" to="/docs/reference/terminology#wireguard-tunnel-address">Adresy tuneli</Terminology> w tunelach WireGuard w pfSense. Peery, dozwolone adresy IP i punkty końcowe należą do grupy Inne ustawienia.                                                                                                                                                     |
+
+Wyłączenie grup, których zapora nie używa, chroni <Terminology title="pełna lista zmian pól, tworzona przed zapisem" to="/docs/reference/terminology#change-plan">plan zmian</Terminology> przed nieoczekiwanymi wartościami.
+
+## Przyciski, wyszukiwanie i filtry \{#buttons-search-and-filters}
+
+- **Wybierz automatycznie**: włącza każdą grupę pfSense i zaznacza każde pole w tych grupach. Grupa Inne ustawienia i ustawienia innych pakietów pozostają bez zmian.
+- **Wyczyść wszystko**: wyłącza każdą grupę i odznacza każde pole.
+- **Szukaj pól**: pokazuje tylko wiersze, których grupa, wpis, etykieta, wartość lub ścieżka zawiera wpisany tekst.
+- **Filtr**: pokazuje wszystkie wiersze, tylko wybrane wiersze albo tylko wiersze innych pakietów.
+
+**Wybierz automatycznie** i **Wyczyść wszystko** zmieniają tylko stronę, dopóki nie wybierzesz **Zapisz**. Gdy zostanie zapisany wybór, w którym nic nie jest wybrane, karta pokazuje ostrzeżenie, a dopóki ponownie nie wybierzesz pól, uruchomienia zatrzymują się z komunikatem `Nie wybrano żadnych pól konfiguracji. Wybierz pola na karcie Pola.`
+
+Gdy karta wymienia więcej niż 40 pól, grupy są początkowo zwinięte. Wybierz nazwę grupy, aby ją rozwinąć.
+
+## Ustawienia innych pakietów \{#other-packages-settings}
+
+Ustawienia, które inne pakiety przechowują w `installedpackages`, otrzymują własną grupę nazwaną od zainstalowanego pakietu, do którego należą, albo od ich sekcji, gdy nie należą do żadnego zainstalowanego pakietu. Pakiet nie może wiedzieć, co oznaczają te pola, więc są one początkowo odznaczone, a **Wybierz automatycznie** nigdy ich nie wybiera. Zaznacz pole dopiero po sprawdzeniu, do czego służy w tamtym pakiecie.
+
+Gdy uruchomienie zmieni jedno z tych pól, ponownie stosuje ustawienia tego pakietu, tak jak robi to jego własny przycisk **Save**. Sekcja **Ostatnie uruchomienie** na karcie Stan wymienia każdy rezultat w wierszu **Pakiety**:
+
+- `Ponownie zastosowano ustawienia pakietu <package>.`
+- `Żaden zainstalowany pakiet nie jest właścicielem ustawień <section>. Ręcznie uruchom ponownie usługę, która ich używa.` Wartości i tak zostają zapisane. Dzieje się tak również wtedy, gdy pakiet przechowuje część swoich ustawień w sekcji o innej nazwie.
+- `Nie można ponownie zastosować ustawień pakietu <package>: <reason>` Nowe wartości pozostają zapisane i nic nie jest wycofywane.
+
+Oba problemy dodają też <Terminology title="alert na liście komunikatów pfSense" to="/docs/reference/terminology#webgui-notice">komunikat WebGUI</Terminology>.
+
+## Pola, które już nie istnieją \{#fields-that-no-longer-exist}
+
+Gdy wpis, do którego należy zaznaczone pole, zostanie usunięty, pole pojawia się w sekcji **Brakujące pola** na górze karty. Uruchomienia je pomijają i wymieniają w wierszu **Pominięte pola** na karcie Stan. **Zapomnij o brakujących polach** usuwa te zaznaczenia.
+
+## Inne ustawienia \{#other-settings}
+
+Grupa **Inne ustawienia** wymienia każdy inny adres należący do prefiksu wartości bazowej. Jest początkowo wyłączona, więc wartość w niej zmienia się tylko wtedy, gdy ją zaznaczysz albo włączysz grupę, co obejmuje też wartości dodane później. Każdy wiersz podaje swój rodzaj:
+
+- Zdalna strona każdej sieci VPN: zdalne sieci i zdalne bramy IPsec oraz zdalne sieci i adresy serwerów OpenVPN.
+- Peery WireGuard, w tym ich dozwolone adresy IP i punkty końcowe.
+- Bramy i trasy statyczne.
+- Certyfikaty, klucze prywatne, hasła i klucze wstępnie współdzielone, których wartości są wyświetlane jako `Wartość ukryta`.
+- Wartości przechowywane w Base64, na przykład niestandardowe opcje DNS Resolver. Są dekodowane, przepisywane i ponownie kodowane.
+- Opisy.
+- Każde inne ustawienie, które zamiast tego pokazuje nazwę ustawienia, na przykład nadpisania domen w DNS Resolver i serwery DNS w **System → General Setup**.
+
+<img src={otherSettings} alt="Grupa Inne ustawienia na karcie Pola wymieniająca trasę statyczną, opis aliasu, zakodowane w Base64 niestandardowe opcje DNS Resolver, nadpisanie domeny i bramę, każdą pozycję z rodzajem" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+Gdy uruchomienie zmieni jedną z tych wartości, ponownie ładuje to, co pfSense ponownie ładuje po zapisaniu tego ustawienia:
+
+- **Bramy i trasy statyczne**: routing, a następnie filtr zapory.
+- **Serwery DNS w System → General Setup**: ustawienia DNS systemu, a następnie DNS Resolver lub DNS Forwarder.
+- **Wartości DNS Resolver, DNS Forwarder, IPsec, OpenVPN i WireGuard**: ta usługa.
+- **Wartości innego pakietu**: ustawienia tego pakietu, jak opisano w sekcji [Ustawienia innych pakietów](#other-packages-settings).
+- **Opisy, certyfikaty i wartości bez znanej usługi**: nic. Nowa wartość jest tylko zapisywana.
+
+Zaleca się zaznaczyć te pola, dopóki wartość bazowa pozostaje jeszcze na starym prefiksie, ponieważ po zmianie karta porównuje adresy z nowym prefiksem. Zdalne peery VPN mają własną konfigurację, więc peer wskazujący na zmieniony adres wymaga aktualizacji po swojej stronie.
+
+## Jak dopasowywane są wartości \{#how-values-are-matched}
+
+- Adres zmienia się tylko wtedy, gdy należy do <Terminology title="prefiks, z którym porównuje następne sprawdzenie" to="/docs/reference/terminology#last-successful-prefix">ostatniego pomyślnego prefiksu</Terminology> przy długości zapisanej w <Terminology title="prefiks startowy zapisany bez zmiany konfiguracji" to="/docs/reference/terminology#baseline">wartości bazowej</Terminology>. Adresy z innych sieci, adresy IPv4, nazwy hostów i nazwy aliasów pozostają bez zmian, a karta ich nie wymienia.
+- W listach, takich jak wpisy aliasów, sieci lokalne OpenVPN i nadpisania hostów w DNS Resolver, każdy element jest sprawdzany osobno, a separatory pozostają w niezmienionej postaci.
+- W ustawieniach innych pakietów i w grupie Inne ustawienia każdy adres w tekście jest sprawdzany osobno, a reszta tekstu pozostaje w niezmienionej postaci.
+- Sufiks CIDR, na przykład `/64`, pozostaje bez zmian, a <Terminology title="bity adresu po delegowanym prefiksie" to="/docs/reference/terminology#host-portion">część hosta</Terminology> każdego adresu jest zachowywana.
+- Na interfejsie w trybie <Terminology title="interfejs adresowany z delegowanego prefiksu innego interfejsu" to="/docs/reference/terminology#tracked-interface">Track Interface</Terminology> przedziały DHCPv6 i mapowania statyczne zawierają sufiksy hosta, na przykład `::1000`, które pozostają bez zmian.
+- Przepisane adresy są zapisywane w <Terminology title="najkrótszy standardowy zapis adresu małymi literami" to="/docs/reference/terminology#canonical-form">postaci kanonicznej</Terminology>, więc ich zapis może się różnić od wpisanego.
+
+## Podgląd zmian \{#previewing-changes}
+
+<Terminology title="podgląd bez kopii zapasowej i bez zapisu" to="/docs/reference/terminology#dry-run">Próba</Terminology> odczytuje wybrane pola dopiero po <Terminology title="różnica względem ostatniego pomyślnego prefiksu lub długości" to="/docs/reference/terminology#prefix-transition">zmianie prefiksu</Terminology>. Dopóki prefiks się nie zmienił, zgłasza wynik <Terminology title="wynik: prefiks bez zmian, nic nie skanowano ani nie zapisano" to="/docs/reference/terminology#no-change">Brak zmian</Terminology>, więc nowy wybór można podejrzeć na karcie Pola. Po zmianie prefiksu jej <Terminology title="wyniki tylko do odczytu po Uruchom teraz lub Próbie" to="/docs/reference/terminology#command-output">Wynik polecenia</Terminology> wymienia pod nagłówkiem `Zmiany pól` każdy adres, który próba by zastąpiła.
+
+<Terminology title="podgląd bez kopii zapasowej i bez zapisu" to="/docs/reference/terminology#dry-run">Próba</Terminology> pomija też kontrolę, czy pfSense może ponownie załadować usługi, których dotyczą zmiany. Dlatego brak pakietu WireGuard ujawnia się dopiero przy rzeczywistym uruchomieniu.
+
+## Pakiet WireGuard \{#wireguard-package}
+
+Aktualizacja <Terminology title="adres przypisany do tunelu WireGuard w pfSense" to="/docs/reference/terminology#wireguard-tunnel-address">adresów tuneli WireGuard</Terminology> wymaga pakietu WireGuard. Jeśli te adresy muszą się zmienić, a pakiet nie jest zainstalowany, rzeczywiste uruchomienie zatrzymuje się przed utworzeniem kopii zapasowej z komunikatem `Wymagana zależność pfSense „/usr/local/pkg/wireguard/includes/wg.inc” jest niedostępna.`
+
+Dokładne ścieżki konfiguracji stojące za każdą grupą oraz tożsamość, pod którą zapisywany jest każdy wybór, wymienia strona [Zatwierdzone pola](/docs/reference/approved-fields).

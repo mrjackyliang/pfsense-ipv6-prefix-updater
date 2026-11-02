@@ -1,0 +1,76 @@
+---
+id: first-run
+title: Ustalenie wartości bazowej
+description: Zapisz bieżący prefiks IPv6 jako wartość bazową przyciskiem Uruchom teraz, sprawdź zgłoszony adres i prefiks, przejrzyj kartę Pola, a dopiero potem włącz zaplanowane aktualizacje.
+keywords:
+  - pfsense ipv6 prefix updater
+  - pierwsze uruchomienie
+  - wartość bazowa
+  - uruchom teraz
+  - zainicjowano
+tags:
+  - setup
+  - baseline
+  - status
+sidebar_position: 3
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Zapisz bieżący prefiks jako <Terminology title="prefiks startowy zapisany bez zmiany konfiguracji" to="/docs/reference/terminology#baseline">wartość bazową</Terminology> i sprawdź go, zanim włączysz <Terminology title="automatyczne sprawdzenia z wpisu cron zarządzanego przez pfSense" to="/docs/reference/terminology#scheduled-updates">zaplanowane aktualizacje</Terminology>.
+
+## Zapisanie początkowych ustawień \{#save-the-initial-settings}
+
+1. Otwórz **Services → IPv6 Prefix Updater**, a następnie kartę **Ustawienia**.
+2. Pozostaw opcję **<Terminology title="automatyczne sprawdzenia z wpisu cron zarządzanego przez pfSense" to="/docs/reference/terminology#scheduled-updates">Włącz zaplanowane aktualizacje</Terminology>** odznaczoną.
+3. Dodaj w polu **<Terminology title="interfejs, którego adres ujawnia bieżący prefiks" to="/docs/reference/terminology#monitored-interface">Monitorowane interfejsy</Terminology>** wiersz dla każdego interfejsu, którego <Terminology title="publiczny adres IPv6 z zakresu 2000::/3" to="/docs/reference/terminology#global-unicast-address">globalny adres</Terminology> pochodzi z <Terminology title="sieć IPv6, którą dostawca kieruje do zapory" to="/docs/reference/terminology#delegated-prefix">delegowanego prefiksu</Terminology>, zgodnie z opisem w przewodniku [Interfejs i prefiks](/docs/configure/interface-and-prefix).
+4. W każdym wierszu w polu **<Terminology title="ustawienie rozmiaru prefiksu od dostawcy, od /48 do /64" to="/docs/reference/terminology#delegated-prefix-length">Długość delegowanego prefiksu</Terminology>** wybierz długość, którą deleguje dostawca internetu.
+5. Zapisz i potwierdź komunikat `Ustawienia zapisano.`
+
+## Uruchomienie pierwszego sprawdzenia \{#run-the-first-check}
+
+Na karcie **Stan** wybierz **Uruchom teraz**. Ponieważ nie ma jeszcze <Terminology title="prefiks startowy zapisany bez zmiany konfiguracji" to="/docs/reference/terminology#baseline">wartości bazowej</Terminology>, uruchomienie zapisuje <Terminology title="globalny adres zgłaszany przez pfSense dla monitorowanego interfejsu" to="/docs/reference/terminology#source-address">adres źródłowy</Terminology> i prefiks każdego interfejsu oraz zgłasza wynik <Terminology title="wynik: zapisano wartość bazową, konfiguracja bez zmian" to="/docs/reference/terminology#initialized">Zainicjowano</Terminology>.
+
+Zapisanie <Terminology title="prefiks startowy zapisany bez zmiany konfiguracji" to="/docs/reference/terminology#baseline">wartości bazowej</Terminology> nie zmienia konfiguracji, nie tworzy kopii zapasowej i nie wysyła powiadomienia.
+
+## Weryfikacja wyniku \{#verify-the-result}
+
+Sprawdź te wartości w każdym wierszu sekcji **Bieżący stan**:
+
+- **<Terminology title="interfejs, którego adres ujawnia bieżący prefiks" to="/docs/reference/terminology#monitored-interface">Monitorowany interfejs</Terminology>** pokazuje zamierzony interfejs pod jego opisem i wewnętrzną nazwą, na przykład `LAN (lan)`.
+- **<Terminology title="globalny adres zgłaszany przez pfSense dla monitorowanego interfejsu" to="/docs/reference/terminology#source-address">Ostatni pomyślny adres źródłowy</Terminology>** jest zgodny z adresem tego interfejsu w **Status → Interfaces**.
+- **<Terminology title="prefiks, z którym porównuje następne sprawdzenie" to="/docs/reference/terminology#last-successful-prefix">Ostatni pomyślny prefiks</Terminology>** jest zgodny z prefiksem delegowanym przez dostawcę internetu.
+- **Ostatnia pomyślna aktualizacja** pokazuje czas tego uruchomienia w UTC.
+
+<Terminology title="wyniki tylko do odczytu po Uruchom teraz lub Próbie" to="/docs/reference/terminology#command-output">Wynik polecenia</Terminology> powinien pokazywać `Stan: Zainicjowano`, `Zaplanowane lub zmienione pola: 0` i `Kopia zapasowa konfiguracji: Nie utworzono`. Na przykład dokumentacyjny adres `2001:db8:abcd:78aa::1` z długością `/56` należy do `2001:db8:abcd:7800::/56`.
+
+:::warning
+
+Jeśli interfejs lub długość są nieprawidłowe, zaleca się poprawić ustawienia przed włączeniem harmonogramu. Inny interfejs zapisuje nową <Terminology title="prefiks startowy zapisany bez zmiany konfiguracji" to="/docs/reference/terminology#baseline">wartość bazową</Terminology>, a inna długość liczy się jako <Terminology title="różnica względem ostatniego pomyślnego prefiksu lub długości" to="/docs/reference/terminology#prefix-transition">zmiana prefiksu</Terminology>, co wyjaśnia przewodnik [Interfejs i prefiks](/docs/configure/interface-and-prefix#changing-the-prefix-length).
+
+:::
+
+## Przegląd pól \{#review-the-fields}
+
+Otwórz kartę **Pola**. Gdy <Terminology title="prefiks startowy zapisany bez zmiany konfiguracji" to="/docs/reference/terminology#baseline">wartość bazowa</Terminology> jest już zapisana, karta wymienia wszystkie adresy należące do prefiksu i pokazuje, które z nich zaktualizowałaby następna zmiana.
+
+1. Wyłącz <Terminology title="grupa pól z jednym przełącznikiem na karcie Pola" to="/docs/reference/terminology#field-group">grupy pól</Terminology>, których zapora nie używa. Wszystkich jedenaście grup pfSense jest początkowo włączonych.
+2. Odznacz pojedyncze pola, które mają zachować swoją wartość, i zaznacz każde pole innego pakietu, które ma podążać za prefiksem.
+3. Zaznacz w grupie **Inne ustawienia** każde pole, które ma podążać za prefiksem, na przykład bramę lub trasę statyczną.
+4. Wybierz **Zapisz** i potwierdź komunikat `Zapisano wybór pól.`
+
+Każdą grupę i każdy element sterujący wyjaśnia strona [Pola](/docs/configure/configuration-scopes).
+
+## Co teraz pokazuje próba \{#what-a-dry-run-shows-now}
+
+Gdy prefiks się nie zmienił, **<Terminology title="podgląd bez kopii zapasowej i bez zapisu" to="/docs/reference/terminology#dry-run">Próba</Terminology>** zgłasza wynik <Terminology title="wynik: prefiks bez zmian, nic nie skanowano ani nie zapisano" to="/docs/reference/terminology#no-change">Brak zmian</Terminology> bez skanowania konfiguracji, ponieważ planowanie zaczyna się dopiero po rzeczywistej <Terminology title="różnica względem ostatniego pomyślnego prefiksu lub długości" to="/docs/reference/terminology#prefix-transition">zmianie prefiksu</Terminology>. Których pól dotknęłaby przyszła zmiana, pokazuje karta Pola.
+
+<Terminology title="podgląd bez kopii zapasowej i bez zapisu" to="/docs/reference/terminology#dry-run">Próba</Terminology> wykonana, zanim powstanie jakakolwiek <Terminology title="prefiks startowy zapisany bez zmiany konfiguracji" to="/docs/reference/terminology#baseline">wartość bazowa</Terminology>, zgłasza wynik <Terminology title="wynik: próba przed ustaleniem wartości bazowej" to="/docs/reference/terminology#initialization-preview">Podgląd inicjalizacji</Terminology> i niczego nie zapisuje.
+
+## Włączenie harmonogramu \{#turn-on-the-schedule}
+
+Gdy wartości się zgadzają, zaznacz **<Terminology title="automatyczne sprawdzenia z wpisu cron zarządzanego przez pfSense" to="/docs/reference/terminology#scheduled-updates">Włącz zaplanowane aktualizacje</Terminology>**, wybierz **Harmonogram** i zapisz. Każdą opcję wyjaśnia przewodnik [Harmonogram i powiadomienia](/docs/configure/schedule-and-notifications).
+
+Po pierwszym zaplanowanym terminie pole **Znacznik czasu (UTC)** w sekcji **Ostatnie uruchomienie** pokazuje, kiedy wykonano to sprawdzenie.
+
+Pełną listę kontrolną znajdziesz w przewodniku [Kontrola przed automatyzacją](/docs/safety/testing-and-verification).

@@ -1,0 +1,89 @@
+---
+id: installation
+title: Instalar el paquete
+description: Instala pfSense IPv6 Prefix Updater desde una versión de GitHub con pkg, comprueba la descarga con su archivo SHA-256 y confirma las nuevas páginas en la WebGUI.
+keywords:
+  - pfsense ipv6 prefix updater
+  - instalación
+  - pkg add
+  - versión de github
+  - suma de comprobación sha256
+tags:
+  - setup
+  - installation
+  - pfsense
+sidebar_position: 2
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Instala el paquete desde una versión de GitHub con la herramienta `pkg` de pfSense y después confirma que sus páginas aparecen en la WebGUI.
+
+## Requisitos \{#requirements}
+
+- **Shell de administrador** — Acceso por SSH o consola a la shell de pfSense. **Diagnostics → Command Prompt** en la WebGUI también puede ejecutar comandos sueltos.
+- **Acceso HTTPS a GitHub** — El cortafuegos descarga el paquete de GitHub Releases.
+- **Una compilación del paquete compatible** — El paquete tiene que estar compilado para la versión de FreeBSD sobre la que funciona tu versión de pfSense.
+- **Una copia de seguridad reciente** — Descarga una copia de la configuración desde **Diagnostics → Backup & Restore** antes de instalar.
+- **El <Terminology title="script update.php original ejecutado por el paquete Cron" to="/docs/reference/terminology#legacy-updater">actualizador heredado</Terminology> puede quedarse** — Si el script de la versión 1.x todavía se ejecuta desde el paquete Cron, déjalo donde está. El paso de instalación lo traslada al paquete, como explica [Migrar desde el script](/docs/migrate-from-legacy).
+
+:::warning
+
+pfSense IPv6 Prefix Updater es un <Terminology title="paquete instalado desde GitHub, no del repositorio de Netgate" to="/docs/reference/terminology#unofficial-package">paquete no oficial</Terminology>. Instalar un archivo `.pkg` desde GitHub se salta la revisión y el soporte de paquetes de Netgate, por lo que se recomienda probarlo antes en un cortafuegos con copia de seguridad o desechable.
+
+:::
+
+## Comprobar la versión \{#check-the-release}
+
+Las versiones del paquete aparecen en la [página GitHub Releases](https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases). Cada versión del paquete incluye estos archivos:
+
+| Archivo                                       | Descripción                                                                    |
+|-----------------------------------------------|--------------------------------------------------------------------------------|
+| `pfSense-pkg-Ipv6PrefixUpdater.pkg`           | El paquete con un nombre fijo, que es el que usan los comandos de esta página. |
+| `pfSense-pkg-Ipv6PrefixUpdater-<version>.pkg` | El mismo paquete con su versión en el nombre del archivo.                      |
+| Archivos `.sha256`                            | Una suma de comprobación SHA-256 para cada archivo del paquete.                |
+
+:::info
+
+Las versiones 1.x solo contienen el <Terminology title="script update.php original ejecutado por el paquete Cron" to="/docs/reference/terminology#legacy-updater">actualizador heredado</Terminology>. Si la última versión no tiene ningún archivo `.pkg`, los comandos de esta página fallan con un error de no encontrado (404).
+
+:::
+
+## Instalar el paquete \{#install-the-package}
+
+Ejecuta este comando desde la shell de pfSense:
+
+```shell
+pkg add https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
+```
+
+`pkg` descarga el paquete de la última versión y ejecuta su paso de instalación, que registra **Services → IPv6 Prefix Updater** en pfSense.
+
+## Verificar antes la descarga \{#verify-the-download-first}
+
+Para comprobar el archivo con su suma de comprobación antes de instalarlo, descarga ambos archivos en `/tmp` y muestra los dos valores:
+
+```shell
+cd /tmp
+fetch https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
+fetch https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg.sha256
+sha256 -q pfSense-pkg-Ipv6PrefixUpdater.pkg
+cat pfSense-pkg-Ipv6PrefixUpdater.pkg.sha256
+```
+
+Los dos últimos comandos muestran el mismo valor cuando la descarga está intacta. Después puedes instalar el archivo comprobado con `pkg add /tmp/pfSense-pkg-Ipv6PrefixUpdater.pkg`.
+
+## Confirmar en la WebGUI \{#confirm-in-the-webgui}
+
+1. Inicia sesión en la WebGUI de pfSense.
+2. Abre **Services → IPv6 Prefix Updater** y confirma que aparecen las pestañas **Configuración**, **Estado**, **Campos**, **Copias de seguridad** y **Limpieza**.
+3. En la pestaña Estado, confirma que **Estado actual** muestra `Todavía no hay interfaces supervisadas guardadas. Añádalas en la pestaña Configuración.` Después de la migración del actualizador heredado, muestra en su lugar las interfaces trasladadas.
+4. Deja **<Terminology title="comprobaciones automáticas desde una entrada de cron gestionada por pfSense" to="/docs/reference/terminology#scheduled-updates">Activar actualizaciones programadas</Terminology>** desmarcada, como viene de forma predeterminada, hasta que [establezcas la referencia](/docs/first-run). Después de la migración del actualizador heredado, ya está activada, según la programación de Cron anterior.
+
+## Si la instalación falla \{#if-installation-fails}
+
+- **No encontrado (404)**: la última versión no tiene ningún archivo de paquete. [Comprobar la versión](/docs/installation#check-the-release) explica qué versiones incluyen uno.
+- **Discrepancia de ABI o de versión del sistema operativo**: el paquete se compiló para una versión de FreeBSD distinta de la de tu versión de pfSense. Se recomienda usar una compilación compatible en lugar de forzar la instalación.
+- **Errores de DNS, TLS o certificados**: pfSense necesita resolver `github.com`, conectarse a él por HTTPS y mantener la hora correcta para comprobar los certificados.
+
+Continúa con [Establecer la referencia](/docs/first-run) cuando el paquete aparezca en la WebGUI.

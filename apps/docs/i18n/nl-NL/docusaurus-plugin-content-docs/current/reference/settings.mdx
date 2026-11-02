@@ -1,0 +1,52 @@
+---
+id: settings
+title: Instellingenoverzicht
+description: Zoek elk veld op het tabblad Instellingen van IPv6 Prefix Updater op, met de standaardwaarde, de waarden die het accepteert en de validatiemelding die het kan tonen.
+keywords:
+  - pfsense ipv6 prefix updater
+  - instellingen
+  - standaardwaarden
+  - validatie
+  - webgui
+tags:
+  - reference
+  - settings
+  - webgui
+sidebar_position: 2
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Zoek elk veld op het tabblad Instellingen op, met de standaardwaarde en de waarden die het accepteert.
+
+## Prefixbewaking \{#prefix-monitoring}
+
+Het tabblad **Instellingen** onder **Services → IPv6 Prefix Updater** begint met deze velden, en het opslaan van het formulier toont `Instellingen opgeslagen.`
+
+| Veld                                                                                                                                                                            | Beschrijving                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| <Terminology title="automatische controles via een door pfSense beheerde cronjob" to="/docs/reference/terminology#scheduled-updates">Geplande updates inschakelen</Terminology> | Voert controles uit volgens het geselecteerde **Schema**. Staat standaard uit, en opslaan voegt de cronjob toe of verwijdert hem.                                                                                                                                                                                                                                                                                                                |
+| <Terminology title="interface waarvan het adres de huidige prefix verraadt" to="/docs/reference/terminology#monitored-interface">Bewaakte interfaces</Terminology>              | Verplicht. Eén rij per interface waarvan het <Terminology title="openbaar IPv6-adres binnen 2000::/3" to="/docs/reference/terminology#global-unicast-address">globale adres</Terminology> een <Terminology title="IPv6-netwerk dat je ISP naar de firewall routeert" to="/docs/reference/terminology#delegated-prefix">gedelegeerde prefix</Terminology> draagt. **Toevoegen** voegt een rij toe, en elke interface mag maar één keer voorkomen. |
+| <Terminology title="instelling voor de prefixgrootte van de ISP, /48 tot /64" to="/docs/reference/terminology#delegated-prefix-length">Lengte gedelegeerde prefix</Terminology> | Verplicht in elke rij. `/48` tot en met `/64`, met `/56` standaard geselecteerd.                                                                                                                                                                                                                                                                                                                                                                 |
+| Schema                                                                                                                                                                          | Elke 15 minuten, Elk uur, Elke 6 uur of Dagelijks om middernacht. Standaard Elk uur.                                                                                                                                                                                                                                                                                                                                                             |
+
+## Veldselectie \{#field-selection}
+
+Onder **Schema** toont het tabblad Instellingen `Kies op het tabblad Velden welke configuratievelden met de prefix meeveranderen.` De <Terminology title="groep velden met één schakelaar op het tabblad Velden" to="/docs/reference/terminology#field-group">veldgroepen</Terminology> en afzonderlijke velden kies je op het tabblad **Velden**, en ze worden los van deze instellingen opgeslagen, dus het opslaan van het tabblad Instellingen wijzigt ze nooit. [Velden](/docs/configure/configuration-scopes) beschrijft elke groep en de standaardwaarde ervan.
+
+## Meldingen \{#notifications}
+
+| Veld                                                                                                                                                                 | Beschrijving                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| <Terminology title="melding na een geverifieerde, geslaagde update" to="/docs/reference/terminology#change-notification">Wijzigingsmeldingen verzenden</Terminology> | Standaard aangevinkt. Verstuurt na elk resultaat <Terminology title="resultaat: velden bijgewerkt, opgeslagen, herladen en geverifieerd" to="/docs/reference/terminology#success">Geslaagd</Terminology> een <Terminology title="melding na een geverifieerde, geslaagde update" to="/docs/reference/terminology#change-notification">wijzigingsmelding</Terminology>, terwijl meldingen bij <Terminology title="resultaat: prefix gewijzigd, maar geen goedgekeurd veld kwam overeen" to="/docs/reference/terminology#warning">Waarschuwing</Terminology> en <Terminology title="resultaat: een controle of veiligheidsstap stopte de uitvoering" to="/docs/reference/terminology#failure">Mislukt</Terminology> hoe dan ook verschijnen. |
+
+## Validatiemeldingen \{#validation-messages}
+
+| Melding                                                                                | Oorzaak                                                                                |
+|----------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|
+| `Selecteer een geconfigureerde pfSense-interface om te bewaken.`                       | Er is geen rij, of de interface van een rij is geen geconfigureerde pfSense-interface. |
+| `Elke interface mag maar één keer voorkomen. Verwijder de extra rij voor <interface>.` | Twee rijen in **Bewaakte interfaces** noemen dezelfde interface.                       |
+| `De lengte van de gedelegeerde prefix moet tussen 48 en 64 liggen.`                    | De lengte valt buiten de toegestane waarden.                                           |
+| `Selecteer een ondersteund pakketschema.`                                              | Het schema is niet een van de vier opties.                                             |
+
+Elke uitvoering controleert de opgeslagen instellingen opnieuw, omdat die na het opslaan van het formulier gewijzigd kunnen zijn. [Probleemoplossing](/docs/operate/troubleshooting#run-failed) toont de meldingen die een uitvoering kan geven.

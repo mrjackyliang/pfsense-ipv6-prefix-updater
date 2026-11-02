@@ -1,0 +1,79 @@
+---
+id: how-updates-work
+title: Come funzionano gli aggiornamenti
+description: Segui un’esecuzione fase per fase, dalla lettura degli indirizzi delle interfacce al piano, al backup, alla scrittura unica, ai ricaricamenti dei servizi e al risultato registrato.
+keywords:
+  - pfsense ipv6 prefix updater
+  - processo di aggiornamento
+  - piano delle modifiche
+  - ricaricamento dei servizi
+  - verifica
+tags:
+  - safety
+  - update process
+  - service reload
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Segui un’esecuzione dalla lettura degli indirizzi delle interfacce alla registrazione del risultato, compreso ogni punto in cui può fermarsi.
+
+## 1. Leggi e convalida \{#1-read-and-validate}
+
+- Un controllo pianificato si ferma subito con il risultato <Terminology title="risultato: controllo pianificato saltato, aggiornamenti disattivati" to="/docs/reference/terminology#disabled">Disabilitato</Terminology> quando **<Terminology title="controlli automatici da una voce cron gestita da pfSense" to="/docs/reference/terminology#scheduled-updates">Abilita aggiornamenti pianificati</Terminology>** è disattivato. Un’<Terminology title="controllo avviato dalla scheda Stato" to="/docs/reference/terminology#manual-run">esecuzione manuale</Terminology> prosegue.
+- L’esecuzione ricontrolla le impostazioni salvate, perché potrebbero essere cambiate dopo il salvataggio del modulo.
+- Rilegge l’<Terminology title="indirizzo IPv6 pubblico compreso in 2000::/3" to="/docs/reference/terminology#global-unicast-address">indirizzo globale</Terminology> di ogni <Terminology title="interfaccia il cui indirizzo rivela il prefisso attuale" to="/docs/reference/terminology#monitored-interface">interfaccia monitorata</Terminology>, senza ripiegare su un <Terminology title="indirizzo fe80:: valido su un solo collegamento" to="/docs/reference/terminology#link-local-address">indirizzo link-local</Terminology>, e lo converte in <Terminology title="grafia standard più breve di un indirizzo, in minuscolo" to="/docs/reference/terminology#canonical-form">forma canonica</Terminology>.
+- Maschera ogni indirizzo alla <Terminology title="impostazione della dimensione del prefisso dell’ISP, da /48 a /64" to="/docs/reference/terminology#delegated-prefix-length">lunghezza del prefisso delegato</Terminology> della sua riga per ottenere il <Terminology title="indirizzo sorgente mascherato alla lunghezza del prefisso" to="/docs/reference/terminology#observed-prefix">prefisso osservato</Terminology>.
+
+## 2. Confronta \{#2-compare}
+
+- Senza una <Terminology title="prefisso di partenza registrato senza modificare la configurazione" to="/docs/reference/terminology#baseline">linea di base</Terminology> per l’interfaccia, l’esecuzione ne registra una e termina con il risultato <Terminology title="risultato: linea di base registrata, configurazione invariata" to="/docs/reference/terminology#initialized">Inizializzato</Terminology>.
+- Quando il prefisso e la sua lunghezza corrispondono all’<Terminology title="prefisso con cui si confronta il controllo successivo" to="/docs/reference/terminology#last-successful-prefix">ultimo prefisso riuscito</Terminology>, l’esecuzione termina con il risultato <Terminology title="risultato: prefisso invariato, nulla analizzato o scritto" to="/docs/reference/terminology#no-change">Nessuna modifica</Terminology> senza analizzare la configurazione.
+- Un prefisso o una lunghezza diversi costituiscono un <Terminology title="differenza dall’ultimo prefisso riuscito o dalla sua lunghezza" to="/docs/reference/terminology#prefix-transition">cambio di prefisso</Terminology>, e l’esecuzione prosegue.
+
+## 3. Crea il piano \{#3-plan}
+
+- L’esecuzione legge la configurazione tramite le funzioni di configurazione di pfSense e mantiene solo i campi selezionati nella scheda Campi. I campi selezionati che non esistono più vengono saltati ed elencati in **Campi saltati**.
+- Ogni indirizzo in un <Terminology title="campo di configurazione preciso che il pacchetto può riscrivere" to="/docs/reference/terminology#approved-field">campo approvato</Terminology> che appartiene al vecchio prefisso, alla lunghezza memorizzata, riceve i bit del nuovo prefisso alla lunghezza attuale e mantiene la sua <Terminology title="bit dell’indirizzo dopo il prefisso delegato" to="/docs/reference/terminology#host-portion">parte host</Terminology>. Insieme, queste modifiche formano il <Terminology title="elenco completo delle modifiche, creato prima della scrittura" to="/docs/reference/terminology#change-plan">piano delle modifiche</Terminology> completo.
+- Se non c’è nulla da modificare, l’esecuzione termina con il risultato <Terminology title="risultato: prefisso cambiato, ma nessun campo approvato corrispondente" to="/docs/reference/terminology#warning">Avviso</Terminology>. Una <Terminology title="anteprima che non esegue mai backup né scritture" to="/docs/reference/terminology#dry-run">simulazione</Terminology> con modifiche termina qui con il risultato <Terminology title="anteprima che non esegue mai backup né scritture" to="/docs/reference/terminology#dry-run">Simulazione</Terminology>.
+
+## 4. Controlli preliminari \{#4-preflight}
+
+- L’esecuzione verifica che pfSense possa ricaricare ogni servizio del piano. Per questo, gli <Terminology title="indirizzo assegnato a un tunnel WireGuard di pfSense" to="/docs/reference/terminology#wireguard-tunnel-address">indirizzi dei tunnel WireGuard</Terminology> richiedono il pacchetto WireGuard.
+- Verifica che ogni campo pianificato contenga ancora il valore che aveva quando è stato creato il piano.
+
+## 5. Backup e scrittura unica \{#5-back-up-and-write-once}
+
+- pfSense crea un <Terminology title="copia della configurazione salvata prima di una scrittura" to="/docs/reference/terminology#configuration-backup">backup della configurazione</Terminology>, e l’esecuzione si ferma se pfSense non lo conferma.
+- L’esecuzione applica tutte le modifiche e salva una sola volta, con la descrizione `Aggiornamento prefisso IPv6 ha modificato <numero> campo/campi approvati per l’interfaccia <interfaccia>`.
+- Se pfSense segnala il salvataggio come non riuscito, l’esecuzione ripristina in memoria i valori originali e si ferma.
+
+## 6. Verifica, ricarica, verifica \{#6-verify-reload-verify}
+
+- L’esecuzione controlla che i valori salvati corrispondano al piano, ricarica i servizi interessati e ricontrolla i valori.
+- I servizi vengono ricaricati nell’ordine fisso elencato in [Azioni di ricaricamento](/docs/reference/approved-fields#reload-actions), da Interfacce a WireGuard. Un ricaricamento di Interfacce è seguito da un ricaricamento del filtro del firewall, che poi non viene ripetuto.
+- I ricaricamenti del filtro del firewall, del DNS Resolver e del DNS Forwarder fanno fallire l’esecuzione quando il loro valore di ritorno segnala un errore. Gli altri ricaricamenti la fanno fallire solo quando generano un errore.
+- Le impostazioni degli altri pacchetti vengono applicate di nuovo per ultime, dopo i ricaricamenti e la loro verifica. Un pacchetto le cui impostazioni non possono essere applicate viene segnalato, e i valori salvati restano.
+- Un errore in questa fase lascia salvati i nuovi valori.
+
+## 7. Registra e notifica \{#7-record-and-notify}
+
+- La <Terminology title="prefisso di partenza registrato senza modificare la configurazione" to="/docs/reference/terminology#baseline">linea di base</Terminology> si sposta sul nuovo prefisso, e **Ultima esecuzione** registra il risultato <Terminology title="risultato: campi aggiornati, salvati, ricaricati e verificati" to="/docs/reference/terminology#success">Riuscito</Terminology> con il numero di campi modificati e i <Terminology title="azione di pfSense che applica le impostazioni modificate" to="/docs/reference/terminology#service-reload">servizi ricaricati</Terminology>.
+- L’esecuzione scrive una riga nel <Terminology title="registro generale di pfSense in cui scrive il pacchetto" to="/docs/reference/terminology#system-log">registro di sistema</Terminology> e invia una <Terminology title="messaggio inviato dopo un aggiornamento riuscito e verificato" to="/docs/reference/terminology#change-notification">notifica di modifica</Terminology> se è attiva. Una notifica non riuscita non cambia il risultato.
+
+## Dove può fermarsi un’esecuzione \{#where-a-run-can-stop}
+
+| Punto di arresto                                                                                                                                                                                                                                                                                                       | Configurazione scritta | Backup creato | Ultima esecuzione aggiornata                                                                                                                                |
+|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------|---------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Controllo pianificato con risultato <Terminology title="risultato: controllo pianificato saltato, aggiornamenti disattivati" to="/docs/reference/terminology#disabled">Disabilitato</Terminology>                                                                                                                      | No                     | No            | No                                                                                                                                                          |
+| Impostazioni, indirizzo o <Terminology title="file del pacchetto con la linea di base e l’ultima esecuzione" to="/docs/reference/terminology#package-state">stato del pacchetto</Terminology> illeggibile                                                                                                              | No                     | No            | No                                                                                                                                                          |
+| <Terminology title="risultato: linea di base registrata, configurazione invariata" to="/docs/reference/terminology#initialized">Inizializzato</Terminology> o <Terminology title="risultato: prefisso invariato, nulla analizzato o scritto" to="/docs/reference/terminology#no-change">Nessuna modifica</Terminology> | No                     | No            | Sì                                                                                                                                                          |
+| <Terminology title="risultato: prefisso cambiato, ma nessun campo approvato corrispondente" to="/docs/reference/terminology#warning">Avviso</Terminology> o <Terminology title="anteprima che non esegue mai backup né scritture" to="/docs/reference/terminology#dry-run">Simulazione</Terminology>                   | No                     | No            | Sì                                                                                                                                                          |
+| Errore nei controlli preliminari                                                                                                                                                                                                                                                                                       | No                     | No            | Sì                                                                                                                                                          |
+| Errore del backup                                                                                                                                                                                                                                                                                                      | No                     | No            | Sì                                                                                                                                                          |
+| Errore di scrittura                                                                                                                                                                                                                                                                                                    | No, secondo pfSense    | Sì            | Sì                                                                                                                                                          |
+| Errore di verifica o di ricaricamento                                                                                                                                                                                                                                                                                  | Sì                     | Sì            | Sì                                                                                                                                                          |
+| Errore di notifica                                                                                                                                                                                                                                                                                                     | Sì                     | Sì            | Sì, come <Terminology title="risultato: campi aggiornati, salvati, ricaricati e verificati" to="/docs/reference/terminology#success">Riuscito</Terminology> |
+
+[Campi approvati](/docs/reference/approved-fields) elenca la funzione di pfSense dietro ogni ricaricamento, e [Backup e ripristino](/docs/operate/backups-and-recovery) tratta il ripristino dopo un errore.

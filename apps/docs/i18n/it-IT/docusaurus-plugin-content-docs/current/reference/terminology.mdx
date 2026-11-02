@@ -1,0 +1,203 @@
+---
+id: terminology
+title: Terminologia
+description: Definisce i termini su indirizzi, prefissi, impostazioni, risultati delle esecuzioni e pfSense usati nelle schede Impostazioni, Stato e Campi e in tutta questa documentazione.
+keywords:
+  - pfsense ipv6 prefix updater
+  - terminologia
+  - glossario
+  - prefisso delegato
+  - linea di base
+  - risultati delle esecuzioni
+tags:
+  - reference
+  - terminology
+  - glossary
+sidebar_position: 1
+---
+
+Consulta i termini che le schede Impostazioni, Stato e Campi e queste guide usano per indirizzi, prefissi, esecuzioni e funzionalità di pfSense.
+
+## Prefisso delegato \{#delegated-prefix}
+
+La rete IPv6 che il tuo ISP instrada verso il firewall, di solito tramite DHCPv6 Prefix Delegation. Il pacchetto segue questo prefisso, ma non lo richiede, non lo rinnova e non lo modifica mai.
+
+## Lunghezza del prefisso \{#prefix-length}
+
+Il numero di bit iniziali che identificano una rete, scritto come una barra seguita da un numero, ad esempio `/56`. Un suffisso CIDR su un valore configurato, come `/64`, resta com’è quando il pacchetto riscrive l’indirizzo.
+
+## Lunghezza prefisso delegato \{#delegated-prefix-length}
+
+L’impostazione **Lunghezza prefisso delegato**, che contiene la dimensione del prefisso delegato dal tuo ISP, da `/48` a `/64`. Parte da `/56`, il pacchetto non la rileva mai, e modificarla quando esiste già la linea di base conta come cambio di prefisso.
+
+## Indirizzo unicast globale \{#global-unicast-address}
+
+Un indirizzo IPv6 compreso in `2000::/3`, l’unico tipo di indirizzo che il pacchetto legge come sorgente o riscrive. Gli indirizzi link-local, locali univoci (`fc00::/7`), multicast, di loopback, non specificati e mappati IPv4 vengono rifiutati come sorgente e lasciati invariati nella configurazione.
+
+## Indirizzo link-local \{#link-local-address}
+
+Un indirizzo che funziona solo su un singolo collegamento di rete e inizia con `fe80`. Il pacchetto non ripiega mai su un indirizzo di questo tipo, quindi un’interfaccia senza indirizzo globale fa fallire l’esecuzione.
+
+## Parte host \{#host-portion}
+
+Tutti i bit dell’indirizzo dopo la lunghezza del prefisso delegato, detti anche bit host. Il pacchetto copia questi bit invariati nel nuovo indirizzo, anche quando il limite cade a metà di una cifra esadecimale.
+
+## Forma canonica \{#canonical-form}
+
+La grafia standard più breve e in minuscolo di un indirizzo IPv6, ad esempio `2001:db8::1` per `2001:0DB8:0:0::1`. Il pacchetto confronta gli indirizzi in questa forma e scrive così i valori riscritti, quindi un valore può apparire diverso pur indicando lo stesso indirizzo.
+
+## Interfaccia tracciata \{#tracked-interface}
+
+Un’interfaccia pfSense il cui indirizzo IPv6 proviene dal prefisso delegato di un’altra interfaccia tramite il tipo di configurazione **Track Interface**. Spesso è l’interfaccia monitorata giusta quando la WAN non ha un indirizzo globale, e il pacchetto non ne riscrive mai l’indirizzo perché lo genera pfSense.
+
+## Interfaccia monitorata \{#monitored-interface}
+
+Una riga dell’impostazione **Interfacce monitorate**, che indica un’interfaccia il cui indirizzo globale rivela un prefisso attuale. La scheda Stato ne mostra la descrizione seguita dal nome interno in pfSense, ad esempio `LAN (lan)`.
+
+Aggiungere un’interfaccia fa sì che l’esecuzione successiva registri per essa una nuova linea di base anziché confrontare i prefissi.
+
+## Indirizzo sorgente \{#source-address}
+
+L’indirizzo globale principale che pfSense riporta per l’interfaccia monitorata, riletto a ogni esecuzione. La scheda Stato lo mostra in forma canonica come **Indirizzo sorgente osservato** e **Ultimo indirizzo sorgente riuscito**.
+
+## Prefisso osservato \{#observed-prefix}
+
+La rete calcolata dall’indirizzo sorgente e dalla lunghezza del prefisso delegato, mostrata con la sua lunghezza nella scheda Stato. Ogni esecuzione la confronta con l’ultimo prefisso riuscito.
+
+## Linea di base \{#baseline}
+
+Il prefisso e l’indirizzo sorgente che il pacchetto registra come punto di partenza, senza modificare la configurazione. Una linea di base viene registrata alla prima esecuzione per ogni interfaccia monitorata, ogni volta che manca lo stato del pacchetto, quando un operatore accetta esplicitamente il prefisso attivo e, durante una migrazione, dal prefisso salvato dal vecchio script di aggiornamento.
+
+## Ultimo prefisso riuscito \{#last-successful-prefix}
+
+Il prefisso e la lunghezza memorizzati con cui si confronta il controllo successivo. Solo i risultati Inizializzato, Accettato e Riuscito lo modificano; tutti gli altri lo lasciano com’era.
+
+## Cambio di prefisso \{#prefix-transition}
+
+Una differenza tra l’ultimo prefisso riuscito e il prefisso osservato, compresa la stessa rete con una lunghezza del prefisso diversa. Solo un cambio di prefisso porta il pacchetto ad analizzare la configurazione, preparare le modifiche e scrivere.
+
+## Gruppo di campi \{#field-group}
+
+Un gruppo di campi con un unico interruttore nella scheda Campi. Gli undici gruppi di pfSense sono Interfacce statiche, Indirizzi IP virtuali, Alias, Regole firewall, NAT e NPt, Server DHCPv6, Router Advertisement, Override host DNS, IPsec, OpenVPN e WireGuard, e all’inizio sono attivi. Le impostazioni di ogni altro pacchetto hanno un proprio gruppo, che all’inizio è disattivato, e ogni altro valore fa parte del gruppo Altre impostazioni, anch’esso disattivato all’inizio. Un gruppo attivo copre ogni campo del suo tipo, compresi i campi aggiunti in seguito.
+
+## Campo approvato \{#approved-field}
+
+Un campo di configurazione preciso che il pacchetto è autorizzato a riscrivere: un campo di un gruppo attivo che non è stato deselezionato, oppure un campo selezionato in un gruppo disattivato. I valori al di fuori dei campi approvati non vengono mai modificati.
+
+## Eccezione di campo \{#field-exception}
+
+Un singolo campo la cui casella nella scheda Campi ha uno stato diverso dall’interruttore del suo gruppo: un campo deselezionato in un gruppo attivo, oppure un campo selezionato in un gruppo disattivato. Ogni eccezione indica la propria voce, ad esempio il tracker ID di una regola firewall, anziché una posizione in un elenco.
+
+## Piano delle modifiche \{#change-plan}
+
+L’elenco completo dei campi approvati che cambieranno, con il vecchio valore, il nuovo valore e il servizio da ricaricare per ciascuno. Il pacchetto crea l’intero piano prima di modificare qualsiasi cosa.
+
+## Aggiornamenti pianificati \{#scheduled-updates}
+
+I controlli automatici gestiti da **Abilita aggiornamenti pianificati**, disattivato per impostazione predefinita, e da **Pianificazione**, che per impostazione predefinita è Ogni ora. Salvare le impostazioni aggiunge o rimuove una voce cron gestita da pfSense, quindi il pacchetto Cron non serve.
+
+## Esecuzione manuale \{#manual-run}
+
+Un controllo avviato con **Esegui ora** o **Simulazione** nella scheda Stato. Viene eseguito anche quando gli aggiornamenti pianificati sono disattivati.
+
+## Simulazione \{#dry-run}
+
+Un’anteprima avviata con **Simulazione** che non crea mai un backup e non scrive mai la configurazione. Quando rileva un cambio di prefisso con campi da modificare, il suo risultato è **Simulazione** e indica il numero di campi pianificati.
+
+Con il prefisso invariato, una simulazione riporta Nessuna modifica senza analizzare la configurazione.
+
+## Output del comando \{#command-output}
+
+Il riquadro di sola lettura **Esecuzione più recente** sotto **Output del comando**, che compare dopo Esegui ora, Simulazione o Accetta prefisso corrente. Mostra le righe dell’esecuzione da `Stato` a `Riepilogo`, seguite da `Modifiche ai campi` dopo una simulazione o un risultato Riuscito, oppure una sola riga quando l’azione non riesce o un’altra esecuzione detiene il blocco.
+
+## Blocco di esecuzione \{#run-lock}
+
+Il blocco che consente un solo controllo alla volta. Un secondo controllo termina senza leggere la configurazione, e il blocco viene rilasciato non appena il controllo in corso termina.
+
+## Stato del pacchetto \{#package-state}
+
+Il file `/cf/conf/ipv6-prefix-updater/state.json`, in cui il pacchetto conserva ogni linea di base e l’ultima esecuzione al di fuori della configurazione di pfSense. Solo root può leggerlo, e sopravvive ai riavvii, ai dischi RAM e alla rimozione del pacchetto, così una reinstallazione mantiene ogni linea di base.
+
+## Inizializzato \{#initialized}
+
+Il risultato di un’esecuzione che registra una nuova linea di base. Non crea backup, non modifica la configurazione e non invia notifiche.
+
+## Anteprima inizializzazione \{#initialization-preview}
+
+Il risultato di una simulazione eseguita quando non esiste una linea di base. Mostra la linea di base che un’esecuzione normale registrerebbe, senza registrarla.
+
+## Nessuna modifica \{#no-change}
+
+Il risultato quando il prefisso osservato e la sua lunghezza corrispondono all’ultimo prefisso riuscito, detto anche esecuzione senza effetti. L’esecuzione non analizza la configurazione, non crea backup, non ricarica servizi e non invia notifiche.
+
+## Avviso \{#warning}
+
+Il risultato quando viene rilevato un cambio di prefisso, ma nessun campo approvato appartiene al vecchio prefisso. Non viene scritto nulla, la linea di base resta dov’era e ogni Avviso aggiunge una segnalazione WebGUI.
+
+## Accettato \{#accepted}
+
+Il risultato dopo che un operatore fa clic su **Accetta prefisso corrente** e conferma che gli indirizzi salvati usano già il prefisso attivo. Il pacchetto sposta la linea di base senza analizzare i campi approvati, creare backup, scrivere la configurazione o ricaricare servizi.
+
+## Riuscito \{#success}
+
+Il risultato dopo che il backup, la scrittura unica della configurazione, i ricaricamenti dei servizi e i controlli dei valori sono stati tutti completati. La linea di base si sposta sul nuovo prefisso, e viene inviata una notifica di modifica se è attiva.
+
+## Errore \{#failure}
+
+Il risultato quando un controllo o una fase di sicurezza ferma l’esecuzione. Se l’arresto avviene dopo il salvataggio della configurazione, i nuovi valori restano salvati e la linea di base resta sul vecchio prefisso.
+
+## Disabilitato \{#disabled}
+
+Il risultato di un controllo pianificato eseguito mentre **Abilita aggiornamenti pianificati** è disattivato. Si ferma prima di leggere qualsiasi interfaccia o lo stato del pacchetto, e compare solo nell’output del comando stesso.
+
+## Notifica di modifica \{#change-notification}
+
+Il messaggio inviato dopo un risultato Riuscito quando **Invia notifiche di modifica** è selezionato, come avviene per impostazione predefinita. Viene inviato ai canali di notifica configurati in pfSense e compare anche come segnalazione WebGUI.
+
+## Canali di notifica \{#notification-channels}
+
+I servizi di notifica remoti configurati in **System → Advanced → Notifications**, come l’email. Le notifiche di modifica usano questi canali, mentre le segnalazioni di Avviso ed Errore restano locali.
+
+## Segnalazione WebGUI \{#webgui-notice}
+
+Un messaggio nell’elenco Notices della WebGUI di pfSense che rimanda alla scheda Stato del pacchetto, o alla scheda Pulizia dopo la migrazione dal vecchio script di aggiornamento. I risultati Avviso ed Errore ne aggiungono sempre una, anche quando **Invia notifiche di modifica** è deselezionato.
+
+## Registro di sistema \{#system-log}
+
+Il registro generale di pfSense in **Status → System Logs → System → General**. Ogni riga scritta dal pacchetto inizia con `IPv6 Prefix Updater:`.
+
+## Backup della configurazione \{#configuration-backup}
+
+Una copia della configurazione com’era prima di una scrittura, creata con la funzione di backup di pfSense e conservata anche nella scheda **Backup**. Il pacchetto ne crea una a ogni esecuzione che scrive, prima di modificare qualsiasi campo, e nessuna nelle esecuzioni che non scrivono.
+
+## Config History \{#config-history}
+
+L’elenco delle revisioni della configurazione salvate in **Diagnostics → Backup & Restore → Config History**. La revisione con la descrizione `Aggiornamento prefisso IPv6 ha modificato ...` contiene la configurazione aggiornata, quindi la revisione da ripristinare è quella salvata subito prima.
+
+## Ricaricamento del servizio \{#service-reload}
+
+L’azione di pfSense che applica le impostazioni modificate a un servizio in esecuzione. Il pacchetto ricarica solo i servizi i cui campi sono cambiati e li elenca in **Servizi ricaricati**.
+
+## IP virtuale \{#virtual-ip}
+
+Un indirizzo aggiuntivo assegnato a un’interfaccia in **Firewall → Virtual IPs**. Il gruppo Indirizzi IP virtuali aggiorna solo le voci CARP e IP Alias.
+
+## Fase 2 IPsec \{#ipsec-phase-2}
+
+Una voce IPsec che definisce le reti locale e remota di un tunnel. Il gruppo IPsec copre il lato locale delle voci Tunnel IPv6 e Routed (VTI), e il lato remoto fa parte del gruppo Altre impostazioni.
+
+## Override specifico del client \{#client-specific-override}
+
+Una voce OpenVPN in **VPN → OpenVPN → Client Specific Overrides** che imposta le opzioni per un singolo client. Il pacchetto può aggiornarne la rete tunnel IPv6 e le reti locali IPv6.
+
+## Indirizzo del tunnel WireGuard \{#wireguard-tunnel-address}
+
+Un indirizzo di interfaccia assegnato a un tunnel WireGuard su pfSense. Per aggiornarlo serve il pacchetto WireGuard, e gli IP consentiti e gli endpoint dei peer fanno parte del gruppo Altre impostazioni.
+
+## Vecchio script di aggiornamento \{#legacy-updater}
+
+La versione 1.x di questo progetto, uno script `update.php` installato in `/root` ed eseguito da una voce del pacchetto Cron. Sostituiva il testo del vecchio prefisso ovunque nella configurazione.
+
+## Pacchetto non ufficiale \{#unofficial-package}
+
+Un pacchetto installato con `pkg add` da GitHub invece che dal repository dei pacchetti di Netgate. Netgate non lo verifica né lo supporta, e i suoi aggiornamenti li installi tu.

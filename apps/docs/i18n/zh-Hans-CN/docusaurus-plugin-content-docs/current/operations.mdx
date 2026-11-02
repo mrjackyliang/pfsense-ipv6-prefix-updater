@@ -1,0 +1,66 @@
+---
+id: operations
+title: 安全模型
+description: 了解软件包在更改 pfSense 之前执行的检查、备份和单次写入，哪些运行绝不写入，以及哪些情况仍可能影响流量。
+keywords:
+  - pfsense ipv6 prefix updater
+  - 安全模型
+  - 配置备份
+  - 验证
+  - 服务重新加载
+tags:
+  - safety
+  - backup
+  - verification
+sidebar_position: 6
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+了解软件包在更改配置之前采取的保护措施，以及哪些情况仍可能影响流量。
+
+## 前缀变化时会发生什么 \{#what-happens-on-a-prefix-change}
+
+软件包发现<Terminology title="与上次成功前缀或长度不同" to="/docs/reference/terminology#prefix-transition">前缀变化</Terminology>后，会按以下顺序工作：
+
+1. 读取每个<Terminology title="其地址可反映当前前缀的接口" to="/docs/reference/terminology#monitored-interface">监控接口</Terminology>的<Terminology title="位于 2000::/3 内的公网 IPv6 地址" to="/docs/reference/terminology#global-unicast-address">全局地址</Terminology>并计算其前缀。
+2. 将该前缀与<Terminology title="下次检查用于比较的前缀" to="/docs/reference/terminology#last-successful-prefix">上次成功前缀</Terminology>进行比较。
+3. 找出仍在使用旧前缀的<Terminology title="软件包可改写的具体配置字段" to="/docs/reference/terminology#approved-field">已批准字段</Terminology>，并生成完整的<Terminology title="写入前生成的完整字段变更列表" to="/docs/reference/terminology#change-plan">变更计划</Terminology>。
+4. 确认 pfSense 能够重新加载每个受影响的服务，并且计划中的字段在读取后都没有被改动。
+5. 保存<Terminology title="写入前保存的配置副本" to="/docs/reference/terminology#configuration-backup">配置备份</Terminology>。
+6. 应用所有更改，并只保存一次配置。
+7. 检查已保存的值，只重新加载受影响的服务，然后再次检查这些值。
+8. 将<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>移到新前缀，记录结果，并在已开启时发送<Terminology title="更新经验证成功后发送的提醒" to="/docs/reference/terminology#change-notification">变化通知</Terminology>。
+
+如果备份之前的任何一步失败，配置都会保持原样。
+
+## 哪些情况绝不会写入 \{#what-never-causes-a-write}
+
+出现以下结果时，软件包不会更改配置：
+
+- <Terminology title="结果：已记录基线，配置未更改" to="/docs/reference/terminology#initialized">已初始化</Terminology>和<Terminology title="结果：尚无基线时的试运行" to="/docs/reference/terminology#initialization-preview">初始化预览</Terminology>。
+- <Terminology title="结果：前缀未变化，未扫描或写入任何内容" to="/docs/reference/terminology#no-change">无变化</Terminology>。
+- <Terminology title="不备份也不写入的预览" to="/docs/reference/terminology#dry-run">试运行</Terminology>。
+- <Terminology title="结果：前缀已变化，但没有匹配的已批准字段" to="/docs/reference/terminology#warning">警告</Terminology>。
+- 在备份之前就停止的<Terminology title="结果：检查或安全阶段中止了运行" to="/docs/reference/terminology#failure">失败</Terminology>。
+
+## 仍可能影响流量的情况 \{#what-can-still-affect-traffic}
+
+- **<Terminology title="让更改后的设置生效的 pfSense 操作" to="/docs/reference/terminology#service-reload">服务重新加载</Terminology>**：更改静态接口或<Terminology title="额外的接口地址，如 CARP 或 IP Alias" to="/docs/reference/terminology#virtual-ip">虚拟 IP</Terminology> 会重新加载所有接口，然后重新加载防火墙过滤器。更改网关和静态路由会重新加载路由和过滤器，更改 OpenVPN 会重新加载所有 OpenVPN 实例，更改 DHCPv6、路由器通告和 DNS 则会重启这些服务。
+- **保存后的失败**：如果保存后的检查或<Terminology title="让更改后的设置生效的 pfSense 操作" to="/docs/reference/terminology#service-reload">服务重新加载</Terminology>失败，新值会保持已保存状态，不会回滚任何内容。如[运行结果](/docs/operate/run-outcomes#failures-after-the-save)所述，<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>仍停留在旧前缀上。
+- **等待你勾选的值**：网关、静态路由、DNS 域覆盖以及[其他设置](/docs/configure/configuration-scopes#other-settings)中的其他值会保留旧前缀，直到你勾选它们；处于关闭状态的组中的字段同样如此。
+
+## 恢复途径 \{#recovery-path}
+
+每次写入之前的配置都在<Terminology title="pfSense 已保存配置修订版本的列表" to="/docs/reference/terminology#config-history">配置历史</Terminology>中留有一份<Terminology title="写入前保存的配置副本" to="/docs/reference/terminology#configuration-backup">配置备份</Terminology>。以软件包命名的修订版本保存的是更新后的配置，因此应恢复哪个修订版本请参阅[备份与恢复](/docs/operate/backups-and-recovery)。
+
+建议同时保留你平常存放在设备之外的 pfSense 备份。
+
+## 你可以核对的内容 \{#what-you-can-verify}
+
+“状态”选项卡会显示最近一次运行的<Terminology title="pfSense 为监控接口报告的全局地址" to="/docs/reference/terminology#source-address">源地址</Terminology>、<Terminology title="按前缀长度掩码后的源地址" to="/docs/reference/terminology#observed-prefix">观察到的前缀</Terminology>、结果、已更改字段数、备份结果、<Terminology title="让更改后的设置生效的 pfSense 操作" to="/docs/reference/terminology#service-reload">已重新加载的服务</Terminology>、时间和摘要。<Terminology title="从“状态”选项卡启动的检查" to="/docs/reference/terminology#manual-run">手动运行</Terminology>结束后，<Terminology title="立即运行或试运行后显示的只读结果" to="/docs/reference/terminology#command-output">命令输出</Terminology>会立即显示相同的详细信息。
+
+## 了解更多 \{#learn-more}
+
+- **[更新工作原理](/docs/safety/how-updates-work)**：一次运行的各个阶段，以及可能在哪里停止。
+- **[自动化前的检查](/docs/safety/testing-and-verification)**：开启计划更新前，在你的防火墙上逐项执行的检查清单。

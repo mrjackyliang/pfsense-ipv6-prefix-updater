@@ -1,0 +1,95 @@
+---
+id: interface-and-prefix
+title: 接口与前缀
+description: 选择承载委派前缀的各个监控接口，为每个接口输入 ISP 使用的前缀长度，并了解日后更改其中任一项会产生什么影响。
+keywords:
+  - pfsense ipv6 prefix updater
+  - 监控接口
+  - 委派前缀长度
+  - DHCPv6 前缀委派
+  - 主机位
+tags:
+  - configuration
+  - interface
+  - prefix length
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import monitoredInterfaces from './_assets_/interface-and-prefix-1.png';
+
+选择能反映当前前缀的各个接口，并为每个接口输入 ISP 委派的<Terminology title="前导网络位数，如 /56" to="/docs/reference/terminology#prefix-length">前缀长度</Terminology>。
+
+## 选择监控接口 \{#choose-the-monitored-interfaces}
+
+为每个<Terminology title="位于 2000::/3 内的公网 IPv6 地址" to="/docs/reference/terminology#global-unicast-address">全局地址</Terminology>来自<Terminology title="ISP 路由到防火墙的 IPv6 网络" to="/docs/reference/terminology#delegated-prefix">委派前缀</Terminology>的接口添加一行 **监控接口**。软件包每次运行都会重新读取每个地址，绝不会回退使用<Terminology title="仅在单条链路上有效的 fe80:: 地址" to="/docs/reference/terminology#link-local-address">链路本地地址</Terminology>。
+
+如果 WAN 只获得<Terminology title="ISP 路由到防火墙的 IPv6 网络" to="/docs/reference/terminology#delegated-prefix">委派前缀</Terminology>，那么 LAN 等<Terminology title="地址来自另一接口委派前缀的接口" to="/docs/reference/terminology#tracked-interface">跟踪接口</Terminology>通常持有来自该前缀的<Terminology title="位于 2000::/3 内的公网 IPv6 地址" to="/docs/reference/terminology#global-unicast-address">全局地址</Terminology>，是合适的选择。
+
+<img src={monitoredInterfaces} alt="IPv6 Prefix Updater 的“设置”选项卡，“监控接口”中有 LAN 和 LAB 两行，委派前缀长度均设为 /56，另有一行指向“字段”选项卡的提示" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+- **添加**：添加一行。每个接口只能出现在一行中，没有任何行时无法保存。
+- **删除**：删除一行。只剩一行时，pfSense 会隐藏此按钮。
+- **一次运行涵盖所有行**：每次计划检查都会读取所有监控接口，并在一次有备份的写入中提交它们的更改。
+
+大多数防火墙只需要一行。如果有多个接口各自获得委派前缀（例如有两条 WAN 连接），或者你希望检查每个 LAN 网段的地址，请添加更多行。
+
+确认所选接口的方法：
+
+1. 在 **<Terminology title="由 pfSense 管理的 cron 条目运行的自动检查" to="/docs/reference/terminology#scheduled-updates">启用计划更新</Terminology>** 未勾选的情况下保存设置。
+2. 在“状态”选项卡中选择 **立即运行**。
+3. 将 **<Terminology title="pfSense 为监控接口报告的全局地址" to="/docs/reference/terminology#source-address">观察到的源地址</Terminology>** 与 **Status → Interfaces**（状态 → 接口）中的地址进行比较。
+4. 如果该地址属于错误的网络，请选择其他接口后重复上述步骤。
+
+“状态”选项卡会显示每个接口的描述，后接 pfSense 对该接口的内部名称，如 `LAN (lan)`。
+
+## 输入委派前缀长度 \{#enter-the-delegated-prefix-length}
+
+根据 ISP 的服务说明或 WAN 接口上的 DHCPv6 前缀委派大小选择长度。**<Terminology title="ISP 前缀大小设置，/48 至 /64" to="/docs/reference/terminology#delegated-prefix-length">委派前缀长度</Terminology>** 接受 `/48` 到 `/64`，初始值为 `/56`，并且不会自动检测。
+
+:::tip
+
+建议在首次 **立即运行** 之前确认长度，因为<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>会连同前缀一起保存长度。
+
+:::
+
+## 检查计算出的网络 \{#check-the-calculated-network}
+
+运行之后，**<Terminology title="按前缀长度掩码后的源地址" to="/docs/reference/terminology#observed-prefix">观察到的前缀</Terminology>** 会显示计算出的网络。由于软件包按位掩码地址，边界落在十六进制位内部的长度（如 `/57` 或 `/63`）也同样适用。
+
+以从 `2001:db8:abcd:7800::/56` 变为 `2001:db8:abcd:8800::/56` 的 `/56` 委派为例：
+
+```text
+Source address:    2001:db8:abcd:88aa::1
+Current prefix:    2001:db8:abcd:8800::/56
+Previous address:  2001:db8:abcd:78aa::42
+Updated address:   2001:db8:abcd:88aa::42
+```
+
+只有前 56 位发生变化，<Terminology title="委派前缀之后的地址位" to="/docs/reference/terminology#host-portion">主机部分</Terminology> `aa::42` 保持不变。本指南中 `2001:db8::/32` 范围内的地址均为文档示例。
+
+## 更改接口 \{#changing-the-interfaces}
+
+:::warning
+
+添加<Terminology title="其地址可反映当前前缀的接口" to="/docs/reference/terminology#monitored-interface">监控接口</Terminology>或将某一行切换为其他接口后，下一次运行会为它记录新的<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>，且不更改配置。如果它的前缀之前已经变化而软件包尚未应用，这次变化会被跳过。
+
+:::
+
+删除某一行后，该接口的<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>仍会保留在<Terminology title="保存基线和上次运行的软件包文件" to="/docs/reference/terminology#package-state">软件包状态</Terminology>中。之后重新添加该接口时，会与保存的基线进行比较，而不是记录新的基线。
+
+## 更改前缀长度 \{#changing-the-prefix-length}
+
+在<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>已存在后更改 **<Terminology title="ISP 前缀大小设置，/48 至 /64" to="/docs/reference/terminology#delegated-prefix-length">委派前缀长度</Terminology>**，即使网络本身不变，也算作一次<Terminology title="与上次成功前缀或长度不同" to="/docs/reference/terminology#prefix-transition">前缀变化</Terminology>。软件包会用<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>中保存的长度匹配地址，再按新长度替换相应的位。
+
+:::danger
+
+改用更长的前缀（网络变窄）会覆盖每个匹配地址的子网位。以<Terminology title="pfSense 为监控接口报告的全局地址" to="/docs/reference/terminology#source-address">源地址</Terminology> `2001:db8:1234:ab00::1` 和 `/56` <Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>为例，改为 `/64` 后，`2001:db8:1234:abcc::42` 会变成 `2001:db8:1234:ab00::42`。
+
+:::
+
+改用更短的前缀（网络变宽），例如从 `/64` 改为 `/56`，可能使运行找不到需要更改的内容。此后每次运行都会报告<Terminology title="结果：前缀已变化，但没有匹配的已批准字段" to="/docs/reference/terminology#warning">警告</Terminology>，直到前缀本身发生变化，或你核实已保存的地址后[接受当前前缀](/docs/operate/backups-and-recovery#after-a-failed-run)作为新的基线。
+
+更改长度前，建议在同一次保存中取消勾选 **<Terminology title="由 pfSense 管理的 cron 条目运行的自动检查" to="/docs/reference/terminology#scheduled-updates">启用计划更新</Terminology>**。这样在选择 **立即运行** 之前，可以先用 **<Terminology title="不备份也不写入的预览" to="/docs/reference/terminology#dry-run">试运行</Terminology>** 查看计划更改的字段数、`字段变更` 下列出的每项计划更改，以及 **摘要**。
+
+接下来请[建立基线](/docs/first-run)，然后在[字段](/docs/configure/configuration-scopes)选项卡中选择要更新的字段。

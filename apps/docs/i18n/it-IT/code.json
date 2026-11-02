@@ -1,0 +1,173 @@
+{
+  "home.meta.description": {
+    "message": "Rileva le modifiche del prefisso delegato, aggiorna solo i campi pfSense approvati, conserva i bit host e verifica ogni transazione."
+  },
+  "home.meta.title": {
+    "message": "Aggiornamento prefisso IPv6 - Mantieni allineati in sicurezza i prefissi IPv6 dinamici."
+  },
+  "home.hero.eyebrow": {
+    "message": "Pacchetto pfSense nativo"
+  },
+  "home.hero.heading": {
+    "message": "Mantieni allineati in sicurezza i prefissi IPv6 dinamici."
+  },
+  "home.hero.tagline": {
+    "message": "Rileva le modifiche del prefisso delegato, aggiorna solo i campi pfSense approvati, conserva i bit host e verifica ogni transazione."
+  },
+  "home.hero.primaryAction": {
+    "message": "Installa e configura"
+  },
+  "home.hero.secondaryAction": {
+    "message": "Esamina la sicurezza"
+  },
+  "home.preview.ariaLabel": {
+    "message": "Lunghezza prefisso delegato: /56"
+  },
+  "home.preview.dryRun": {
+    "message": "Simulazione"
+  },
+  "home.preview.detected": {
+    "message": "Indirizzo sorgente osservato"
+  },
+  "home.preview.previous": {
+    "message": "Prefisso precedente"
+  },
+  "home.preview.current": {
+    "message": "Prefisso attuale"
+  },
+  "home.preview.prefixChanged": {
+    "message": "Prefisso osservato"
+  },
+  "home.preview.hostPreserved": {
+    "message": "Lunghezza prefisso delegato"
+  },
+  "home.preview.result": {
+    "message": "La simulazione ha trovato 2 modifica/modifiche di campo approvate per 2001:db8:abcd:8800::/56; la configurazione non è stata modificata."
+  },
+  "home.workflow.eyebrow": {
+    "message": "Sicurezza e funzionamento"
+  },
+  "home.workflow.heading": {
+    "message": "Transazione sicura"
+  },
+  "home.workflow.detect": {
+    "message": "Indirizzo sorgente osservato"
+  },
+  "home.workflow.plan": {
+    "message": "Campi modificati"
+  },
+  "home.workflow.backup": {
+    "message": "Backup della configurazione creato"
+  },
+  "home.workflow.write": {
+    "message": "Prefisso attuale"
+  },
+  "home.workflow.verify": {
+    "message": "Riuscito"
+  },
+  "home.workflow.notify": {
+    "message": "Notifiche"
+  },
+  "home.features.interface.title": {
+    "message": "Interfacce monitorate"
+  },
+  "home.features.interface.description": {
+    "message": "Aggiungi una riga per ogni interfaccia il cui indirizzo IPv6 globale attivo principale contiene un prefisso delegato. Per DHCPv6 solo prefisso sulla WAN, seleziona un’interfaccia tracciata a valle. I bit host dopo la lunghezza del prefisso vengono mantenuti esattamente e l’indirizzo scelto da pfSense per ogni interfaccia compare nella scheda Stato."
+  },
+  "home.features.prefix.title": {
+    "message": "Lunghezza prefisso delegato"
+  },
+  "home.features.prefix.description": {
+    "message": "Inserire il limite del prefisso delegato dall’ISP. I bit host dopo questo limite vengono conservati esattamente."
+  },
+  "home.features.scopes.title": {
+    "message": "Campi"
+  },
+  "home.features.scopes.description": {
+    "message": "Scegli nella scheda Campi quali campi della configurazione cambiano con il prefisso."
+  },
+  "home.features.dryRun.title": {
+    "message": "Simulazione"
+  },
+  "home.features.dryRun.description": {
+    "message": "Esegui ora può aggiornare i campi approvati dopo una modifica rilevata. La simulazione registra solo un’anteprima e non scrive mai la configurazione del firewall."
+  },
+  "home.features.backup.title": {
+    "message": "Backup della configurazione creato"
+  },
+  "home.features.backup.description": {
+    "message": "Backup della configurazione creato: Sì."
+  },
+  "home.features.notify.title": {
+    "message": "Notifiche"
+  },
+  "home.features.notify.description": {
+    "message": "Usa i canali di notifica pfSense configurati dopo un aggiornamento del prefisso verificato e riuscito. I controlli senza modifiche non inviano notifiche."
+  },
+  "home.stats.heading": {
+    "message": "Sicurezza e funzionamento"
+  },
+  "home.stats.boundaries": {
+    "message": "Lunghezza prefisso delegato"
+  },
+  "home.stats.backups": {
+    "message": "Backup della configurazione creato"
+  },
+  "home.stats.writes": {
+    "message": "Campi modificati"
+  },
+  "home.stats.noChange": {
+    "message": "Il prefisso IPv6 attivo è invariato; nessuna destinazione di configurazione approvata è stata letta o scritta."
+  },
+  "home.routes.eyebrow": {
+    "message": "Guide"
+  },
+  "home.routes.heading": {
+    "message": "Installa e configura"
+  },
+  "home.routes.install.title": {
+    "message": "Installa il pacchetto"
+  },
+  "home.routes.install.description": {
+    "message": "Esegui questo comando in una shell pfSense per installare l’ultima versione direttamente da GitHub."
+  },
+  "home.routes.open": {
+    "message": "Inizia a leggere"
+  },
+  "home.routes.configure.title": {
+    "message": "Interfacce monitorate / Lunghezza prefisso delegato"
+  },
+  "home.routes.configure.description": {
+    "message": "Aggiungi una riga per ogni interfaccia il cui indirizzo IPv6 globale attivo principale contiene un prefisso delegato. Per DHCPv6 solo prefisso sulla WAN, seleziona un’interfaccia tracciata a valle. I bit host dopo la lunghezza del prefisso vengono mantenuti esattamente e l’indirizzo scelto da pfSense per ogni interfaccia compare nella scheda Stato."
+  },
+  "home.routes.status.title": {
+    "message": "Stato / Output del comando"
+  },
+  "home.routes.status.description": {
+    "message": "Esegui ora può aggiornare i campi approvati dopo una modifica rilevata. La simulazione registra solo un’anteprima e non scrive mai la configurazione del firewall."
+  },
+  "home.routes.troubleshoot.title": {
+    "message": "Risoluzione dei problemi"
+  },
+  "home.routes.troubleshoot.description": {
+    "message": "Se l’indirizzo sorgente è errato, scegli l’interfaccia tracciata a valle che possiede davvero l’indirizzo globale; non compensare con una lunghezza ipotizzata."
+  },
+  "home.spotlight.heading": {
+    "message": "Output del comando"
+  },
+  "home.spotlight.description": {
+    "message": "Controlla ogni esecuzione nella pagina Stato: indirizzo sorgente, prefisso calcolato, backup e risultato."
+  },
+  "home.spotlight.statusAction": {
+    "message": "Stato / Output del comando"
+  },
+  "home.spotlight.testsAction": {
+    "message": "Risultati e test"
+  },
+  "home.blogPreview.heading": {
+    "message": "Dal blog"
+  },
+  "home.blogPreview.description": {
+    "message": "Note di rilascio, guide alla configurazione e articoli sui prefissi IPv6 dinamici."
+  }
+}

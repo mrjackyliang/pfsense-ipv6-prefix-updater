@@ -1,0 +1,35 @@
+{
+  "layout.learn.title": {
+    "message": "Guías"
+  },
+  "layout.resources.title": {
+    "message": "Recursos"
+  },
+  "sections.learn.0.label": {
+    "message": "Instalar y configurar"
+  },
+  "sections.learn.1.label": {
+    "message": "Interfaces supervisadas / Longitud del prefijo delegado"
+  },
+  "sections.learn.2.label": {
+    "message": "Estado / Acciones"
+  },
+  "sections.learn.3.label": {
+    "message": "Solución de problemas"
+  },
+  "sections.resources.0.label": {
+    "message": "Seguridad y funcionamiento"
+  },
+  "sections.resources.1.label": {
+    "message": "Resultados y pruebas"
+  },
+  "sections.resources.2.label": {
+    "message": "Documentación de pfSense"
+  },
+  "sections.resources.3.label": {
+    "message": "Código fuente"
+  },
+  "copyright": {
+    "message": "Copyright © 2023-2026 Jacky Liang. Publicado bajo la licencia MIT."
+  }
+}

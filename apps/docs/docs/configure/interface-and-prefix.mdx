@@ -1,0 +1,95 @@
+---
+id: interface-and-prefix
+title: Interface and Prefix
+description: Choose the monitored interfaces that carry your delegated prefixes, enter the prefix length your ISP uses for each, and see what changing either one later does.
+keywords:
+  - pfsense ipv6 prefix updater
+  - monitored interface
+  - delegated prefix length
+  - dhcpv6 prefix delegation
+  - host bits
+tags:
+  - configuration
+  - interface
+  - prefix length
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import monitoredInterfaces from './_assets_/interface-and-prefix-1.png';
+
+Choose the interfaces that reveal your current prefixes and enter the <Terminology title="number of leading network bits, such as /56" to="/docs/reference/terminology#prefix-length">prefix length</Terminology> your ISP delegates for each.
+
+## Choose the Monitored Interfaces
+
+Add a **Monitored Interfaces** row for each interface whose <Terminology title="public IPv6 address inside 2000::/3" to="/docs/reference/terminology#global-unicast-address">global address</Terminology> comes from the <Terminology title="IPv6 network your ISP routes to the firewall" to="/docs/reference/terminology#delegated-prefix">delegated prefix</Terminology>. The package reads each address fresh on every run and never falls back to a <Terminology title="fe80:: address that works only on one link" to="/docs/reference/terminology#link-local-address">link-local address</Terminology>.
+
+If WAN receives only a <Terminology title="IPv6 network your ISP routes to the firewall" to="/docs/reference/terminology#delegated-prefix">delegated prefix</Terminology>, a <Terminology title="interface addressed from another interface's delegated prefix" to="/docs/reference/terminology#tracked-interface">tracked interface</Terminology> such as LAN usually holds a <Terminology title="public IPv6 address inside 2000::/3" to="/docs/reference/terminology#global-unicast-address">global address</Terminology> from it and is the right choice.
+
+<img src={monitoredInterfaces} alt="IPv6 Prefix Updater Settings tab with two Monitored Interfaces rows, LAN and LAB, each set to a /56 delegated prefix length, and a pointer to the Fields tab" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+- **Add**: adds a row. Each interface can appear in only one row, and saving with no rows is rejected.
+- **Delete**: removes a row. pfSense hides it while only one row is left.
+- **One run for all rows**: every scheduled check reads all monitored interfaces and commits their changes in one backed-up write.
+
+Most firewalls need one row. Add more when several interfaces receive their own delegated prefix, such as on two WAN connections, or when you want each LAN segment's address checked.
+
+To confirm the choice:
+
+1. Save Settings with **<Terminology title="automatic checks run from a pfSense-managed cron entry" to="/docs/reference/terminology#scheduled-updates">Enable Scheduled Updates</Terminology>** cleared.
+2. On the Status tab, select **Run Now**.
+3. Compare **<Terminology title="global address pfSense reports for the monitored interface" to="/docs/reference/terminology#source-address">Observed Source Address</Terminology>** with the address under **Status → Interfaces**.
+4. If the address belongs to the wrong network, select another interface and repeat.
+
+Status shows each interface's description followed by pfSense's internal name, such as `LAN (lan)`.
+
+## Enter the Delegated Prefix Length
+
+Select the length from your ISP's service details or the DHCPv6 prefix delegation size on the WAN interface. **<Terminology title="setting for the ISP prefix size, /48 to /64" to="/docs/reference/terminology#delegated-prefix-length">Delegated Prefix Length</Terminology>** accepts `/48` through `/64`, starts at `/56`, and is never detected for you.
+
+:::tip
+
+It is recommended to confirm the length before the first **Run Now**, because the <Terminology title="starting prefix recorded without changing configuration" to="/docs/reference/terminology#baseline">baseline</Terminology> stores the length along with the prefix.
+
+:::
+
+## Check the Calculated Network
+
+After a run, **<Terminology title="source address masked at the prefix length" to="/docs/reference/terminology#observed-prefix">Observed Prefix</Terminology>** shows the calculated network. Lengths that end inside a hexadecimal digit, such as `/57` or `/63`, work the same way because the package masks addresses bit by bit.
+
+For a `/56` delegation that changes from `2001:db8:abcd:7800::/56` to `2001:db8:abcd:8800::/56`:
+
+```text
+Source address:    2001:db8:abcd:88aa::1
+Current prefix:    2001:db8:abcd:8800::/56
+Previous address:  2001:db8:abcd:78aa::42
+Updated address:   2001:db8:abcd:88aa::42
+```
+
+Only the first 56 bits change, and the <Terminology title="address bits after the delegated prefix" to="/docs/reference/terminology#host-portion">host portion</Terminology> `aa::42` stays the same. Addresses under `2001:db8::/32` in these guides are documentation examples.
+
+## Changing the Interfaces
+
+:::warning
+
+Adding a <Terminology title="interface whose address reveals the current prefix" to="/docs/reference/terminology#monitored-interface">Monitored Interface</Terminology>, or switching a row to a different one, makes the next run record a new <Terminology title="starting prefix recorded without changing configuration" to="/docs/reference/terminology#baseline">baseline</Terminology> for it without changing the configuration. If its prefix had changed and the package hadn't applied it yet, that change is skipped.
+
+:::
+
+Deleting a row keeps that interface's <Terminology title="starting prefix recorded without changing configuration" to="/docs/reference/terminology#baseline">baseline</Terminology> in the <Terminology title="package file holding the baseline and last run" to="/docs/reference/terminology#package-state">package state</Terminology>. Adding the interface back later compares against that saved baseline instead of recording a new one.
+
+## Changing the Prefix Length
+
+Changing **<Terminology title="setting for the ISP prefix size, /48 to /64" to="/docs/reference/terminology#delegated-prefix-length">Delegated Prefix Length</Terminology>** after the <Terminology title="starting prefix recorded without changing configuration" to="/docs/reference/terminology#baseline">baseline</Terminology> exists counts as a <Terminology title="change from the last successful prefix or length" to="/docs/reference/terminology#prefix-transition">prefix transition</Terminology>, even when the network itself stays the same. The package matches addresses with the length stored in the <Terminology title="starting prefix recorded without changing configuration" to="/docs/reference/terminology#baseline">baseline</Terminology> and replaces bits with the new length.
+
+:::danger
+
+Narrowing the length overwrites the subnet bits of every matching address. With the <Terminology title="global address pfSense reports for the monitored interface" to="/docs/reference/terminology#source-address">source address</Terminology> `2001:db8:1234:ab00::1` and a `/56` <Terminology title="starting prefix recorded without changing configuration" to="/docs/reference/terminology#baseline">baseline</Terminology>, changing to `/64` turns `2001:db8:1234:abcc::42` into `2001:db8:1234:ab00::42`.
+
+:::
+
+Widening the length, for example from `/64` to `/56`, can leave the run with nothing to change. It then reports <Terminology title="outcome: prefix changed, but no approved field matched" to="/docs/reference/terminology#warning">Warning</Terminology> on every run until the prefix itself changes or you verify the saved addresses and [accept the current prefix](/docs/operate/backups-and-recovery#after-a-failed-run) as the new baseline.
+
+Before changing the length, it is recommended to clear **<Terminology title="automatic checks run from a pfSense-managed cron entry" to="/docs/reference/terminology#scheduled-updates">Enable Scheduled Updates</Terminology>** in the same save. A **<Terminology title="preview that never backs up or writes" to="/docs/reference/terminology#dry-run">Dry Run</Terminology>** then shows the planned field count, each planned change under `Field changes`, and the **Summary** before you select **Run Now**.
+
+[Establish the baseline](/docs/first-run) next, then choose the fields on the [Fields](/docs/configure/configuration-scopes) tab.

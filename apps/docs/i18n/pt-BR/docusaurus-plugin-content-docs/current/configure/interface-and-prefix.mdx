@@ -1,0 +1,95 @@
+---
+id: interface-and-prefix
+title: Interface e prefixo
+description: Escolha as interfaces monitoradas que recebem os seus prefixos delegados, informe o comprimento de prefixo que o provedor usa em cada uma e veja o que acontece se você mudar algum deles depois.
+keywords:
+  - pfsense ipv6 prefix updater
+  - interface monitorada
+  - comprimento do prefixo delegado
+  - delegação de prefixo dhcpv6
+  - bits de host
+tags:
+  - configuration
+  - interface
+  - prefix length
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import monitoredInterfaces from './_assets_/interface-and-prefix-1.png';
+
+Escolha as interfaces que revelam os seus prefixos atuais e informe o <Terminology title="número de bits iniciais de rede, como /56" to="/docs/reference/terminology#prefix-length">comprimento do prefixo</Terminology> que o seu provedor delega para cada uma.
+
+## Escolher as interfaces monitoradas \{#choose-the-monitored-interfaces}
+
+Adicione uma linha em **Interfaces monitoradas** para cada interface cujo <Terminology title="endereço IPv6 público dentro de 2000::/3" to="/docs/reference/terminology#global-unicast-address">endereço global</Terminology> vem do <Terminology title="rede IPv6 que o provedor roteia para o firewall" to="/docs/reference/terminology#delegated-prefix">prefixo delegado</Terminology>. O pacote lê cada endereço novamente a cada execução e nunca recorre a um <Terminology title="endereço fe80:: que só funciona em um link" to="/docs/reference/terminology#link-local-address">endereço link-local</Terminology>.
+
+Se a WAN recebe apenas um <Terminology title="rede IPv6 que o provedor roteia para o firewall" to="/docs/reference/terminology#delegated-prefix">prefixo delegado</Terminology>, normalmente uma <Terminology title="interface endereçada pelo prefixo delegado de outra interface" to="/docs/reference/terminology#tracked-interface">interface rastreada</Terminology>, como a LAN, tem um <Terminology title="endereço IPv6 público dentro de 2000::/3" to="/docs/reference/terminology#global-unicast-address">endereço global</Terminology> desse prefixo e é a escolha certa.
+
+<img src={monitoredInterfaces} alt="Guia Configurações do IPv6 Prefix Updater com duas linhas em Interfaces monitoradas, LAN e LAB, cada uma com um comprimento do prefixo delegado de /56, e uma nota que aponta para a guia Campos" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+- **Adicionar**: adiciona uma linha. Cada interface só pode aparecer em uma única linha, e salvar sem nenhuma linha é rejeitado.
+- **Excluir**: remove uma linha. O pfSense oculta esse botão enquanto resta só uma linha.
+- **Uma execução para todas as linhas**: cada verificação agendada lê todas as interfaces monitoradas e aplica as alterações delas em uma única gravação com backup.
+
+A maioria dos firewalls precisa de uma só linha. Adicione mais quando várias interfaces recebem prefixos delegados próprios, como em duas conexões WAN, ou quando você quiser conferir o endereço de cada segmento de LAN.
+
+Para confirmar a escolha:
+
+1. Salve as Configurações com a opção **<Terminology title="verificações automáticas por entrada cron gerenciada pelo pfSense" to="/docs/reference/terminology#scheduled-updates">Ativar atualizações agendadas</Terminology>** desmarcada.
+2. Na guia Status, clique em **Executar agora**.
+3. Compare **<Terminology title="endereço global informado pelo pfSense para a interface monitorada" to="/docs/reference/terminology#source-address">Endereço de origem observado</Terminology>** com o endereço exibido em **Status → Interfaces**.
+4. Se o endereço pertencer à rede errada, selecione outra interface e repita.
+
+A guia Status mostra a descrição de cada interface seguida do nome interno no pfSense, como `LAN (lan)`.
+
+## Informar o comprimento do prefixo delegado \{#enter-the-delegated-prefix-length}
+
+Selecione o comprimento indicado nos detalhes do serviço do seu provedor ou o tamanho da delegação de prefixo DHCPv6 na interface WAN. O **<Terminology title="configuração do tamanho do prefixo do provedor (/48 a /64)" to="/docs/reference/terminology#delegated-prefix-length">Comprimento do prefixo delegado</Terminology>** aceita de `/48` a `/64`, começa em `/56` e nunca é detectado automaticamente.
+
+:::tip
+
+É recomendável confirmar o comprimento antes do primeiro **Executar agora**, porque a <Terminology title="prefixo inicial registrado sem alterar a configuração" to="/docs/reference/terminology#baseline">referência</Terminology> armazena o comprimento junto com o prefixo.
+
+:::
+
+## Conferir a rede calculada \{#check-the-calculated-network}
+
+Depois de uma execução, **<Terminology title="endereço de origem com máscara no comprimento do prefixo" to="/docs/reference/terminology#observed-prefix">Prefixo observado</Terminology>** mostra a rede calculada. Comprimentos que terminam no meio de um dígito hexadecimal, como `/57` ou `/63`, funcionam da mesma forma, porque o pacote aplica a máscara aos endereços bit a bit.
+
+Para uma delegação `/56` que muda de `2001:db8:abcd:7800::/56` para `2001:db8:abcd:8800::/56`:
+
+```text
+Source address:    2001:db8:abcd:88aa::1
+Current prefix:    2001:db8:abcd:8800::/56
+Previous address:  2001:db8:abcd:78aa::42
+Updated address:   2001:db8:abcd:88aa::42
+```
+
+Só os primeiros 56 bits mudam, e a <Terminology title="bits do endereço após o prefixo delegado" to="/docs/reference/terminology#host-portion">parte de host</Terminology> `aa::42` continua igual. Os endereços em `2001:db8::/32` destes guias são exemplos de documentação.
+
+## Trocar as interfaces \{#changing-the-interfaces}
+
+:::warning
+
+Adicionar uma <Terminology title="interface cujo endereço revela o prefixo atual" to="/docs/reference/terminology#monitored-interface">Interface monitorada</Terminology>, ou trocar uma linha para outra interface, faz a próxima execução registrar uma nova <Terminology title="prefixo inicial registrado sem alterar a configuração" to="/docs/reference/terminology#baseline">referência</Terminology> para ela, sem alterar a configuração. Se o prefixo dessa interface tiver mudado e o pacote ainda não tiver aplicado essa mudança, ela é ignorada.
+
+:::
+
+Excluir uma linha mantém a <Terminology title="prefixo inicial registrado sem alterar a configuração" to="/docs/reference/terminology#baseline">referência</Terminology> dessa interface no <Terminology title="arquivo do pacote com referência e última execução" to="/docs/reference/terminology#package-state">estado do pacote</Terminology>. Adicionar a interface de novo mais tarde compara com essa referência salva, em vez de registrar uma nova.
+
+## Alterar o comprimento do prefixo \{#changing-the-prefix-length}
+
+Alterar o **<Terminology title="configuração do tamanho do prefixo do provedor (/48 a /64)" to="/docs/reference/terminology#delegated-prefix-length">Comprimento do prefixo delegado</Terminology>** depois que a <Terminology title="prefixo inicial registrado sem alterar a configuração" to="/docs/reference/terminology#baseline">referência</Terminology> já existe conta como <Terminology title="mudança em relação ao último prefixo ou comprimento bem-sucedido" to="/docs/reference/terminology#prefix-transition">transição de prefixo</Terminology>, mesmo quando a rede em si continua a mesma. O pacote compara os endereços usando o comprimento armazenado na <Terminology title="prefixo inicial registrado sem alterar a configuração" to="/docs/reference/terminology#baseline">referência</Terminology> e substitui os bits usando o novo comprimento.
+
+:::danger
+
+Estreitar o prefixo sobrescreve os bits de sub-rede de todos os endereços correspondentes. Com o <Terminology title="endereço global informado pelo pfSense para a interface monitorada" to="/docs/reference/terminology#source-address">endereço de origem</Terminology> `2001:db8:1234:ab00::1` e uma <Terminology title="prefixo inicial registrado sem alterar a configuração" to="/docs/reference/terminology#baseline">referência</Terminology> `/56`, mudar para `/64` transforma `2001:db8:1234:abcc::42` em `2001:db8:1234:ab00::42`.
+
+:::
+
+Ampliar o prefixo, por exemplo de `/64` para `/56`, pode deixar a execução sem nada para alterar. Nesse caso, ela informa <Terminology title="resultado: o prefixo mudou, mas nenhum campo aprovado correspondeu" to="/docs/reference/terminology#warning">Aviso</Terminology> em todas as execuções até que o próprio prefixo mude ou até que você confira os endereços salvos e [aceite o prefixo atual](/docs/operate/backups-and-recovery#after-a-failed-run) como a nova referência.
+
+Antes de alterar o comprimento, é recomendável desmarcar **<Terminology title="verificações automáticas por entrada cron gerenciada pelo pfSense" to="/docs/reference/terminology#scheduled-updates">Ativar atualizações agendadas</Terminology>** ao salvar essa mesma alteração. Assim, uma **<Terminology title="prévia que nunca faz backup nem grava" to="/docs/reference/terminology#dry-run">Simulação</Terminology>** mostra a quantidade de campos planejados, cada alteração planejada em `Alterações de campos` e o **Resumo** antes de você clicar em **Executar agora**.
+
+Em seguida, [estabeleça a referência](/docs/first-run) e depois escolha os campos na guia [Campos](/docs/configure/configuration-scopes).

@@ -1,0 +1,71 @@
+---
+id: schedule-and-notifications
+title: Расписание и уведомления
+description: Помогает выбрать частоту проверки префикса в pfSense, включить обновления по расписанию и решить, отправлять ли уведомление об изменении после каждого успешного обновления.
+keywords:
+  - pfsense ipv6 prefix updater
+  - расписание
+  - cron
+  - уведомления об изменениях
+  - уведомления webgui
+tags:
+  - configuration
+  - scheduling
+  - notifications
+sidebar_position: 3
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Выберите, как часто pfSense проверяет префикс и нужно ли получать <Terminology title="оповещение после проверенного успешного обновления" to="/docs/reference/terminology#change-notification">уведомление об изменении</Terminology> после успешного обновления.
+
+## Выбор расписания \{#choose-a-schedule}
+
+| Расписание          | Когда выполняется                    |
+|---------------------|--------------------------------------|
+| Каждые 15 минут     | В 0, 15, 30 и 45 минут каждого часа  |
+| Ежечасно            | В 0 минут каждого часа, по умолчанию |
+| Каждые 6 часов      | В 00:00, 06:00, 12:00 и 18:00        |
+| Ежедневно в полночь | В 00:00                              |
+
+Время соответствует часовому поясу межсетевого экрана, а вкладка «Состояние» показывает время в UTC.
+
+## Включение обновлений по расписанию \{#turn-on-scheduled-updates}
+
+После установки флажок **<Terminology title="автоматические проверки через запись cron под управлением pfSense" to="/docs/reference/terminology#scheduled-updates">Включить обновления по расписанию</Terminology>** снят. При сохранении настроек добавляется или удаляется запись cron под управлением pfSense, поэтому не нужны ни пакет Cron, ни задание cron, написанное вручную.
+
+Пока флажок снят, проверки сами не запускаются, но **Запустить сейчас** и **<Terminology title="предварительный просмотр без резервной копии и записи" to="/docs/reference/terminology#dry-run">Пробный запуск</Terminology>** продолжают работать. Рекомендуется включать его только после того, как [первый запуск](/docs/first-run) записал и подтвердил <Terminology title="начальный префикс, записанный без изменения конфигурации" to="/docs/reference/terminology#baseline">базовое значение</Terminology>.
+
+## Чего стоит обычная проверка \{#what-a-routine-check-costs}
+
+Проверка с результатом «<Terminology title="результат: префикс прежний, ничего не просмотрено и не записано" to="/docs/reference/terminology#no-change">Без изменений</Terminology>» читает только свои настройки, адреса интерфейсов и <Terminology title="файл пакета с базовым значением и последним запуском" to="/docs/reference/terminology#package-state">состояние пакета</Terminology>. Она не просматривает конфигурацию, не создаёт резервную копию, не перезагружает службы и не отправляет уведомление.
+
+При этом она всё же записывает одну строку в <Terminology title="общий журнал pfSense, в который пишет пакет" to="/docs/reference/terminology#system-log">системный журнал</Terminology>.
+
+## Перекрывающиеся запуски \{#overlapping-runs}
+
+<Terminology title="защита от одновременного выполнения двух проверок" to="/docs/reference/terminology#run-lock">Блокировка запуска</Terminology> позволяет выполнять только одну проверку за раз. Проверка, запущенная во время выполнения другой, завершается, не читая конфигурацию, и не изменяет раздел **Последний запуск**.
+
+Такая проверка записывает в <Terminology title="общий журнал pfSense, в который пишет пакет" to="/docs/reference/terminology#system-log">системный журнал</Terminology> строку `Другой запуск удерживает блокировку пакета; этот вызов завершён без чтения конфигурации.`
+
+## Уведомления об изменениях \{#change-notifications}
+
+Флажок **<Terminology title="оповещение после проверенного успешного обновления" to="/docs/reference/terminology#change-notification">Отправлять уведомления об изменениях</Terminology>** по умолчанию установлен. После результата «<Terminology title="результат: поля обновлены, сохранены, перезагружены и проверены" to="/docs/reference/terminology#success">Успешно</Terminology>» пакет отправляет сообщение через <Terminology title="внешние службы оповещений, настроенные в pfSense" to="/docs/reference/terminology#notification-channels">каналы уведомлений</Terminology> pfSense и добавляет <Terminology title="запись в списке уведомлений pfSense" to="/docs/reference/terminology#webgui-notice">уведомление WebGUI</Terminology>.
+
+Сообщение выглядит так: `Обновлено 1 разрешённое поле с 2001:db8:abcd:7800::/56 на 2001:db8:abcd:8800::/56 на интерфейсе lan.` Другие результаты не отправляют <Terminology title="оповещение после проверенного успешного обновления" to="/docs/reference/terminology#change-notification">уведомление об изменении</Terminology>.
+
+Если доставка не удалась, обновление всё равно получает результат «<Terminology title="результат: поля обновлены, сохранены, перезагружены и проверены" to="/docs/reference/terminology#success">Успешно</Terminology>». Вкладка «Состояние» не показывает состояние доставки, а <Terminology title="общий журнал pfSense, в который пишет пакет" to="/docs/reference/terminology#system-log">системный журнал</Terminology> записывает `Конфигурация обновлена успешно, но уведомление об изменении отправить не удалось.`
+
+## Уведомления о предупреждениях и ошибках \{#warning-and-failure-notices}
+
+Результаты «<Terminology title="результат: префикс сменился, но подходящих разрешённых полей нет" to="/docs/reference/terminology#warning">Предупреждение</Terminology>» и «<Terminology title="результат: проверка или этап безопасности остановили запуск" to="/docs/reference/terminology#failure">Ошибка</Terminology>» всегда добавляют локальное <Terminology title="запись в списке уведомлений pfSense" to="/docs/reference/terminology#webgui-notice">уведомление WebGUI</Terminology>, даже если флажок **<Terminology title="оповещение после проверенного успешного обновления" to="/docs/reference/terminology#change-notification">Отправлять уведомления об изменениях</Terminology>** снят. Эти уведомления не отправляются в <Terminology title="внешние службы оповещений, настроенные в pfSense" to="/docs/reference/terminology#notification-channels">каналы уведомлений</Terminology>, а неустранённая причина добавляет новое уведомление при каждом запуске по расписанию.
+
+## Проверка расписания \{#validate-the-schedule}
+
+1. Сохраните настройки и убедитесь, что появилось сообщение `Настройки сохранены.`
+2. На вкладке «Состояние» выберите **Запустить сейчас** и убедитесь, что результат — «<Terminology title="результат: префикс прежний, ничего не просмотрено и не записано" to="/docs/reference/terminology#no-change">Без изменений</Terminology>», а **Время (UTC)** соответствует текущему моменту.
+3. Убедитесь, что поле **<Terminology title="копия конфигурации, сохранённая перед записью" to="/docs/reference/terminology#configuration-backup">Создана резервная копия конфигурации</Terminology>** показывает «Нет», а поле **Изменённые поля** — `0`.
+4. После следующего запланированного времени обновите вкладку «Состояние» и убедитесь, что время изменилось.
+5. Чтобы проверить доставку, воспользуйтесь собственными кнопками проверки pfSense в **System → Advanced → Notifications**.
+
+Поля, которые записывают проверки по расписанию и <Terminology title="проверка, запущенная с вкладки «Состояние»" to="/docs/reference/terminology#manual-run">ручные запуски</Terminology>, описаны в разделе [Состояние и действия](/docs/operate/status-and-actions).

@@ -1,0 +1,95 @@
+---
+id: interface-and-prefix
+title: 介面與前綴
+description: 選擇承載委派前綴的各個監控介面，為每個介面輸入 ISP 使用的前綴長度，並了解日後變更其中任一項會造成什麼影響。
+keywords:
+  - pfsense ipv6 prefix updater
+  - 監控介面
+  - 委派前綴長度
+  - DHCPv6 前綴委派
+  - 主機位元
+tags:
+  - configuration
+  - interface
+  - prefix length
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import monitoredInterfaces from './_assets_/interface-and-prefix-1.png';
+
+選擇能反映目前前綴的各個介面，並為每個介面輸入 ISP 委派的<Terminology title="開頭的網路位元數，例如 /56" to="/docs/reference/terminology#prefix-length">前綴長度</Terminology>。
+
+## 選擇監控介面 \{#choose-the-monitored-interfaces}
+
+為每個<Terminology title="位於 2000::/3 內的公用 IPv6 位址" to="/docs/reference/terminology#global-unicast-address">全域位址</Terminology>來自<Terminology title="ISP 路由到防火牆的 IPv6 網路" to="/docs/reference/terminology#delegated-prefix">委派前綴</Terminology>的介面新增一列 **監控介面**。套件每次執行都會重新讀取每個位址，絕不會改用<Terminology title="僅在單一鏈路上有效的 fe80:: 位址" to="/docs/reference/terminology#link-local-address">鏈路本機位址</Terminology>。
+
+如果 WAN 只取得<Terminology title="ISP 路由到防火牆的 IPv6 網路" to="/docs/reference/terminology#delegated-prefix">委派前綴</Terminology>，那麼 LAN 等<Terminology title="位址取自另一介面委派前綴的介面" to="/docs/reference/terminology#tracked-interface">追蹤介面</Terminology>通常持有來自該前綴的<Terminology title="位於 2000::/3 內的公用 IPv6 位址" to="/docs/reference/terminology#global-unicast-address">全域位址</Terminology>，是適當的選擇。
+
+<img src={monitoredInterfaces} alt="IPv6 Prefix Updater 的「設定」分頁，「監控介面」中有 LAN 與 LAB 兩列，委派前綴長度皆設為 /56，並有一行指向「欄位」分頁的說明" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+- **新增**：新增一列。每個介面只能出現在一列中，沒有任何列時無法儲存。
+- **刪除**：刪除一列。只剩一列時，pfSense 會隱藏此按鈕。
+- **一次執行涵蓋所有列**：每次排程檢查都會讀取所有監控介面，並在一次有備份的寫入中提交它們的變更。
+
+大多數防火牆只需要一列。如果有多個介面各自取得委派前綴（例如有兩條 WAN 連線），或者您想檢查每個 LAN 網段的位址，請新增更多列。
+
+確認所選介面的方法：
+
+1. 在 **<Terminology title="由 pfSense 管理的 cron 項目執行的自動檢查" to="/docs/reference/terminology#scheduled-updates">啟用排程更新</Terminology>** 未勾選的情況下儲存設定。
+2. 在「狀態」分頁中選取 **立即執行**。
+3. 將 **<Terminology title="pfSense 回報的監控介面全域位址" to="/docs/reference/terminology#source-address">觀察到的來源位址</Terminology>** 與 **Status → Interfaces**（狀態 → 介面）中的位址進行比較。
+4. 如果該位址屬於錯誤的網路，請選擇其他介面後重複上述步驟。
+
+「狀態」分頁會顯示每個介面的描述，後接 pfSense 對該介面的內部名稱，例如 `LAN (lan)`。
+
+## 輸入委派前綴長度 \{#enter-the-delegated-prefix-length}
+
+依據 ISP 的服務說明或 WAN 介面上的 DHCPv6 前綴委派大小選擇長度。**<Terminology title="ISP 前綴大小設定，/48 至 /64" to="/docs/reference/terminology#delegated-prefix-length">委派前綴長度</Terminology>** 接受 `/48` 到 `/64`，初始值為 `/56`，且不會自動偵測。
+
+:::tip
+
+建議在第一次 **立即執行** 之前確認長度，因為<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>會連同前綴一起儲存長度。
+
+:::
+
+## 檢查計算出的網路 \{#check-the-calculated-network}
+
+執行之後，**<Terminology title="依前綴長度遮罩後的來源位址" to="/docs/reference/terminology#observed-prefix">觀察到的前綴</Terminology>** 會顯示計算出的網路。由於套件逐位元遮罩位址，邊界落在十六進位數字內部的長度（例如 `/57` 或 `/63`）也同樣適用。
+
+以從 `2001:db8:abcd:7800::/56` 變更為 `2001:db8:abcd:8800::/56` 的 `/56` 委派為例：
+
+```text
+Source address:    2001:db8:abcd:88aa::1
+Current prefix:    2001:db8:abcd:8800::/56
+Previous address:  2001:db8:abcd:78aa::42
+Updated address:   2001:db8:abcd:88aa::42
+```
+
+只有前 56 個位元會變更，<Terminology title="委派前綴之後的位址位元" to="/docs/reference/terminology#host-portion">主機部分</Terminology> `aa::42` 維持不變。本指南中 `2001:db8::/32` 範圍內的位址都是文件範例。
+
+## 變更介面 \{#changing-the-interfaces}
+
+:::warning
+
+新增<Terminology title="其位址可反映目前前綴的介面" to="/docs/reference/terminology#monitored-interface">監控介面</Terminology>或將某一列切換為其他介面後，下一次執行會為它記錄新的<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>，且不會變更設定。如果它的前綴先前已經變更而套件尚未套用，這次變更會被略過。
+
+:::
+
+刪除某一列後，該介面的<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>仍會保留在<Terminology title="保存基準與上次執行的套件檔案" to="/docs/reference/terminology#package-state">套件狀態</Terminology>中。之後重新新增該介面時，會與已儲存的基準進行比較，而不是記錄新的基準。
+
+## 變更前綴長度 \{#changing-the-prefix-length}
+
+在<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>已存在後變更 **<Terminology title="ISP 前綴大小設定，/48 至 /64" to="/docs/reference/terminology#delegated-prefix-length">委派前綴長度</Terminology>**，即使網路本身不變，也會視為一次<Terminology title="與上次成功前綴或長度不同" to="/docs/reference/terminology#prefix-transition">前綴變更</Terminology>。套件會以<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>中儲存的長度比對位址，再依新長度替換相應的位元。
+
+:::danger
+
+改用較長的前綴（網路範圍變窄）會覆寫每個相符位址的子網路位元。以<Terminology title="pfSense 回報的監控介面全域位址" to="/docs/reference/terminology#source-address">來源位址</Terminology> `2001:db8:1234:ab00::1` 與 `/56` <Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>為例，改為 `/64` 後，`2001:db8:1234:abcc::42` 會變成 `2001:db8:1234:ab00::42`。
+
+:::
+
+改用較短的前綴（網路範圍變寬），例如從 `/64` 改為 `/56`，可能讓執行找不到需要變更的內容。之後每次執行都會回報<Terminology title="結果：前綴已變更，但沒有符合的已核准欄位" to="/docs/reference/terminology#warning">警告</Terminology>，直到前綴本身變更，或您核對已儲存的位址後[接受目前前綴](/docs/operate/backups-and-recovery#after-a-failed-run)作為新的基準。
+
+變更長度前，建議在同一次儲存中取消勾選 **<Terminology title="由 pfSense 管理的 cron 項目執行的自動檢查" to="/docs/reference/terminology#scheduled-updates">啟用排程更新</Terminology>**。這樣在選取 **立即執行** 之前，就能先用 **<Terminology title="不備份也不寫入的預覽" to="/docs/reference/terminology#dry-run">試執行</Terminology>** 查看規劃變更的欄位數、`欄位變更` 下列出的每項規劃變更，以及 **摘要**。
+
+接下來請[建立基準](/docs/first-run)，然後在[欄位](/docs/configure/configuration-scopes)分頁中選擇要變更的欄位。

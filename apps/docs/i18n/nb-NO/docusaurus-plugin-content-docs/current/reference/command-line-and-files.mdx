@@ -1,0 +1,174 @@
+---
+id: command-line-and-files
+title: Kommandolinje og filer
+description: Kjør /usr/local/sbin/ipv6-prefix-updater fra et skall, og slå opp alternativer, avslutningskoder, utdatalinjer, filer, logger og WebGUI-varsler.
+keywords:
+  - pfsense ipv6 prefix updater
+  - kommandolinje
+  - avslutningskoder
+  - tilstandsfil
+  - file_notice
+tags:
+  - reference
+  - command line
+  - files
+sidebar_position: 4
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Kjør pakkekommandoen fra et skall, og finn filene, loggene og varslene den bruker.
+
+## Bruk \{#usage}
+
+```shell
+/usr/local/sbin/ipv6-prefix-updater [--manual] [--dry-run] [--accept-current-prefix [--interface=NAME]] [--migrate-legacy] [--help]
+```
+
+Cron-oppføringen som pfSense styrer, kjører kommandoen som `root` uten alternativer. Før hver kontroll flytter den også eventuelle rester etter det <Terminology title="opprinnelig update.php-skript kjørt av Cron-pakken" to="/docs/reference/terminology#legacy-updater">eldre oppdateringsskriptet</Terminology> inn i pakken. Fanen Status bruker `--manual` for **Kjør nå**, `--dry-run` for **<Terminology title="forhåndsvisning som aldri sikkerhetskopierer eller skriver" to="/docs/reference/terminology#dry-run">Testkjøring</Terminology>** og `--accept-current-prefix` for gjenoppretting av grunnlinjen, og fanen Opprydding bruker `--migrate-legacy`.
+
+Uten alternativer oppfører kommandoen seg som en planlagt kontroll og rapporterer <Terminology title="resultat: planlagt kontroll hoppet over mens oppdateringer er av" to="/docs/reference/terminology#disabled">Deaktivert</Terminology> når **<Terminology title="automatiske kontroller fra en cron-oppføring styrt av pfSense" to="/docs/reference/terminology#scheduled-updates">Aktiver planlagte oppdateringer</Terminology>** er slått av.
+
+## Alternativer \{#options}
+
+| Flagg                     | Beskrivelse                                                                                                                                                                                                                                                                                                                 |
+|---------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `--manual`                | Kjører også mens <Terminology title="automatiske kontroller fra en cron-oppføring styrt av pfSense" to="/docs/reference/terminology#scheduled-updates">planlagte oppdateringer</Terminology> er slått av.                                                                                                                   |
+| `--dry-run`               | Forhåndsviser uten sikkerhetskopi eller skriving, og innebærer `--manual`.                                                                                                                                                                                                                                                  |
+| `--accept-current-prefix` | Registrerer den aktive kildeadressen, prefikset og lengden som grunnlinje uten å gjennomsøke godkjente felt, opprette en sikkerhetskopi, skrive konfigurasjon eller laste tjenester inn på nytt. Innebærer `--manual` og kan ikke kombineres med `--dry-run`.                                                               |
+| `--interface=NAME`        | Begrenser `--accept-current-prefix` til ett overvåket grensesnitt, angitt med det interne navnet, for eksempel `lan`. Uten dette alternativet godtas alle overvåkede grensesnitt som har en adresse.                                                                                                                        |
+| `--migrate-legacy`        | Flytter det <Terminology title="opprinnelig update.php-skript kjørt av Cron-pakken" to="/docs/reference/terminology#legacy-updater">eldre oppdateringsskriptet</Terminology> inn i pakken med en gang og skriver ut hvert trinn, uten å kjøre en prefikskontroll. Avslutter med `2` når flyttingen rapporterte en advarsel. |
+| `--help`                  | Skriver ut brukslinjen og avslutter med `0`. Selve `--help` står ikke i brukslinjen.                                                                                                                                                                                                                                        |
+
+Alle andre alternativer skriver ut `Ukjent alternativ: <option>` til standard feilutdata og avslutter med `64`. Å kombinere `--accept-current-prefix` med `--dry-run` avslutter også med `64`.
+
+## Avslutningskoder \{#exit-codes}
+
+| Kode | Betydning                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+|------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `0`  | <Terminology title="resultat: grunnlinje registrert, konfigurasjon uendret" to="/docs/reference/terminology#initialized">Initialisert</Terminology>, <Terminology title="resultat: testkjøring før en grunnlinje finnes" to="/docs/reference/terminology#initialization-preview">Forhåndsvisning av initialisering</Terminology>, <Terminology title="resultat: prefiks uendret, ingenting gjennomsøkt eller skrevet" to="/docs/reference/terminology#no-change">Ingen endring</Terminology>, <Terminology title="forhåndsvisning som aldri sikkerhetskopierer eller skriver" to="/docs/reference/terminology#dry-run">Testkjøring</Terminology>, **Godtatt**, <Terminology title="resultat: felt oppdatert, lagret, lastet inn igjen og verifisert" to="/docs/reference/terminology#success">Vellykket</Terminology> eller <Terminology title="resultat: planlagt kontroll hoppet over mens oppdateringer er av" to="/docs/reference/terminology#disabled">Deaktivert</Terminology>. Returneres også når en annen kontroll holder <Terminology title="sperre som hindrer to kontroller i å kjøre samtidig" to="/docs/reference/terminology#run-lock">kjørelåsen</Terminology>, og etter `--help`. |
+| `1`  | <Terminology title="resultat: en kontroll eller et sikkerhetstrinn stoppet kjøringen" to="/docs/reference/terminology#failure">Feil</Terminology>. Standard feilutdata får én linje, `IPv6-prefiksoppdateringen mislyktes: <reason>`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `2`  | <Terminology title="resultat: prefiks endret, men ingen godkjente felt samsvarte" to="/docs/reference/terminology#warning">Advarsel</Terminology>.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `64` | Ukjent alternativ.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+
+## Utdata \{#output}
+
+En fullført kjøring som overvåker ett grensesnitt, skriver ut ni linjer til standard utdata, etterfulgt av feltendringene etter en <Terminology title="forhåndsvisning som aldri sikkerhetskopierer eller skriver" to="/docs/reference/terminology#dry-run">testkjøring</Terminology> eller resultatet <Terminology title="resultat: felt oppdatert, lagret, lastet inn igjen og verifisert" to="/docs/reference/terminology#success">Vellykket</Terminology>:
+
+```text
+Status: Vellykket
+Grensesnitt: lan
+Observert kildeadresse: 2001:db8:abcd:88aa::1
+Forrige prefiks: 2001:db8:abcd:7800::
+Gjeldende prefiks: 2001:db8:abcd:8800::/56
+Planlagte eller endrede felt: 1
+Konfigurasjonssikkerhetskopi: Opprettet
+Tjenester lastet inn på nytt: Brannmurfilter
+Sammendrag: Oppdaterte 1 godkjent(e) felt fra 2001:db8:abcd:7800::/56 til 2001:db8:abcd:8800::/56 på grensesnitt lan.
+Feltendringer:
+- aliases/alias/0/address: 2001:db8:abcd:78aa::10 → 2001:db8:abcd:88aa::10
+```
+
+- `Forrige prefiks` har ingen lengde og viser `Ikke tilgjengelig` etter <Terminology title="resultat: grunnlinje registrert, konfigurasjon uendret" to="/docs/reference/terminology#initialized">Initialisert</Terminology> eller <Terminology title="resultat: testkjøring før en grunnlinje finnes" to="/docs/reference/terminology#initialization-preview">Forhåndsvisning av initialisering</Terminology>.
+- `Tjenester lastet inn på nytt` viser etikettene fra Status eller `Ingen`. Etter en <Terminology title="forhåndsvisning som aldri sikkerhetskopierer eller skriver" to="/docs/reference/terminology#dry-run">testkjøring</Terminology> viser linjen tjenestene som ville blitt lastet inn på nytt.
+- `Feltendringer` har én linje per erstattet adresse, skrevet som `- <path>: <old> → <new>`, for opptil 200 felt.
+- Når kjøringen brukte innstillingene til en annen pakke på nytt eller hoppet over et avkrysset felt som ikke lenger finnes, følger én linje for hver, formulert som i fanen Status.
+- Når en annen kontroll holder <Terminology title="sperre som hindrer to kontroller i å kjøre samtidig" to="/docs/reference/terminology#run-lock">kjørelåsen</Terminology>, er den eneste utdatalinjen `En annen kjøring eier pakkelåsen; denne kjøringen avsluttet uten å lese konfigurasjonen.`
+- Med flere overvåkede grensesnitt starter utdataene med samlet `Status` og `Sammendrag` og linjene om pakker og felt som ble hoppet over, etterfulgt av linjene for hvert grensesnitt, atskilt med tomme linjer.
+- Når en flytting av det <Terminology title="opprinnelig update.php-skript kjørt av Cron-pakken" to="/docs/reference/terminology#legacy-updater">eldre oppdateringsskriptet</Terminology> skjedde før kontrollen, skrives trinnene i flyttingen ut først.
+- Etiketter og meldinger følger språkinnstillingen i pfSense.
+
+## Filer og baner \{#files-and-paths}
+
+| Bane                                                      | Beskrivelse                                                                                                                                                                                                                                                                                 |
+|-----------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `/usr/local/sbin/ipv6-prefix-updater`                     | Kommandoen, et PHP-skript.                                                                                                                                                                                                                                                                  |
+| `/usr/local/pkg/ipv6-prefix-updater.xml`                  | Definisjonen av siden Innstillinger og livssykluskrokene for den.                                                                                                                                                                                                                           |
+| `/usr/local/pkg/ipv6-prefix-updater.inc`                  | Funksjoner for installasjon, synkronisering av innstillinger, fjerning og skjemavalidering.                                                                                                                                                                                                 |
+| `/usr/local/pkg/ipv6-prefix-updater/`                     | Kjøretidsklasser og oversettelser.                                                                                                                                                                                                                                                          |
+| `/usr/local/www/ipv6-prefix-updater-status.php`           | Fanen Status.                                                                                                                                                                                                                                                                               |
+| `/usr/local/www/ipv6-prefix-updater-fields.php`           | Fanen Felt.                                                                                                                                                                                                                                                                                 |
+| `/usr/local/www/ipv6-prefix-updater-backups.php`          | Fanen Sikkerhetskopier.                                                                                                                                                                                                                                                                     |
+| `/usr/local/www/ipv6-prefix-updater-cleanup.php`          | Fanen Opprydding.                                                                                                                                                                                                                                                                           |
+| `/usr/local/share/pfSense-pkg-Ipv6PrefixUpdater/info.xml` | Pakkemanifestet.                                                                                                                                                                                                                                                                            |
+| `/cf/conf/ipv6-prefix-updater/state.json`                 | <Terminology title="pakkefil med grunnlinjen og siste kjøring" to="/docs/reference/terminology#package-state">Pakketilstanden</Terminology>. Katalogen har `0700`, filen har `0600`, hver skriving erstatter filen atomisk, og filen overlever omstarter, RAM-disker og fjerning av pakken. |
+| `/cf/conf/ipv6-prefix-updater/backups/`                   | Kopiene i fanen **Sikkerhetskopier**, hver med én `<id>.xml`-konfigurasjon og én `<id>.json`-beskrivelse, alle med `0600`.                                                                                                                                                                  |
+| `/var/run/ipv6-prefix-updater.lock`                       | <Terminology title="sperre som hindrer to kontroller i å kjøre samtidig" to="/docs/reference/terminology#run-lock">Kjørelåsen</Terminology>, som holdes med en ikke-blokkerende `flock` og inneholder prosess-ID-en til kjøringen som pågår. Den blir liggende på disken mellom kjøringene. |
+
+## Format for pakketilstanden \{#package-state-format}
+
+| Nøkkel                | Beskrivelse                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+|-----------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `schema_version`      | Alltid `1`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `targets.<interface>` | Én <Terminology title="startprefiks registrert uten å endre konfigurasjonen" to="/docs/reference/terminology#baseline">grunnlinje</Terminology> per overvåket grensesnitt, med det interne navnet som nøkkel og med `interface`, `source_address`, `prefix`, `prefix_length` og `updated_at`. En grunnlinje som er hentet fra det <Terminology title="opprinnelig update.php-skript kjørt av Cron-pakken" to="/docs/reference/terminology#legacy-updater">eldre oppdateringsskriptet</Terminology>, har i tillegg `source` satt til `legacy_cache`. |
+| `last_run`            | Den nyeste registrerte kjøringen, med `status`, `timestamp`, `interface`, `observed_address`, `previous_prefix`, `current_prefix`, `current_prefix_length`, `change_count`, `backup_created`, `services`, `message`, `message_key` og `message_arguments`.                                                                                                                                                                                                                                                                                          |
+| `legacy_migration`    | Finnes etter en flytting av det <Terminology title="opprinnelig update.php-skript kjørt av Cron-pakken" to="/docs/reference/terminology#legacy-updater">eldre oppdateringsskriptet</Terminology>, med `status`, `steps`, `warnings` og `recorded_at`. Fanen Opprydding viser den.                                                                                                                                                                                                                                                                   |
+
+- `status` er en av `initialized`, `initialization_preview`, `no_change`, `dry_run`, `warning`, `accepted`, `success` eller `failure`.
+- Etter resultatet <Terminology title="resultat: felt oppdatert, lagret, lastet inn igjen og verifisert" to="/docs/reference/terminology#success">Vellykket</Terminology> er `last_run.notification` `disabled` når varsler er slått av, eller `sent` eller `failed` etter et leveringsforsøk.
+- Etter en <Terminology title="forhåndsvisning som aldri sikkerhetskopierer eller skriver" to="/docs/reference/terminology#dry-run">testkjøring</Terminology> eller resultatet <Terminology title="resultat: felt oppdatert, lagret, lastet inn igjen og verifisert" to="/docs/reference/terminology#success">Vellykket</Terminology> har hvert resultat også `changes`, som viser `path` og `replacements` for opptil 200 felt, der hver erstatning er en gammel og en ny adresse.
+- `package_reapply` viser `section`, `package`, `status` og `error` for hver pakke der kjøringen brukte innstillingene på nytt, og `skipped_fields` viser avkryssede felt som ikke lenger finnes. Hver av dem finnes bare når den ikke er tom.
+- Med flere overvåkede grensesnitt inneholder `last_run` totalene og en `targets`-liste med ett resultat per grensesnitt.
+- Tidsstempler bruker ISO 8601 i UTC. En fil som ikke kan tolkes, eller som har en annen skjemaversjon, stopper hver kjøring med `Tilstanden til IPv6 Prefix Updater er ugyldig eller støttes ikke.`
+
+## Lagring av innstillinger \{#settings-storage}
+
+Innstillingene ligger i pfSense-konfigurasjonen under `installedpackages/ipv6prefixupdater/config/0`.
+
+| Nøkkel             | Beskrivelse                                                                                                                                                                                                        |
+|--------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `enabled`          | **<Terminology title="automatiske kontroller fra en cron-oppføring styrt av pfSense" to="/docs/reference/terminology#scheduled-updates">Aktiver planlagte oppdateringer</Terminology>**, `on` når den er avmerket. |
+| `row`              | **Overvåkede grensesnitt**, en liste med én `interface` (en grensesnittnøkkel, for eksempel `lan`) og én `prefix_length` (`48` til `64`) per rad.                                                                  |
+| `update_frequency` | **Tidsplan**, en av `every_fifteen_minutes`, `hourly`, `every_six_hours` eller `daily`.                                                                                                                            |
+| `notifications`    | **<Terminology title="varsel sendt etter en verifisert vellykket oppdatering" to="/docs/reference/terminology#change-notification">Send endringsvarsler</Terminology>**, `on` når den er avmerket.                 |
+
+### Feltutvalg \{#field-selection}
+
+Valgene i fanen Felt ligger ved siden av innstillingsoppføringen, under `installedpackages/ipv6prefixupdater/fields`, så de fjernes aldri når du lagrer fanen Innstillinger, som erstatter `config/0`.
+
+| Nøkkel                 | Beskrivelse                                                                                                                 |
+|------------------------|-----------------------------------------------------------------------------------------------------------------------------|
+| `schema`               | Alltid `1`. Den markerer et utvalg som er lagret fra fanen Felt, også et tomt utvalg.                                       |
+| `enabled_groups/item`  | Grupper som er på, for eksempel `firewall_rules`, `dhcpv6` eller `package:<section>` for innstillingene til en annen pakke. |
+| `disabled_groups/item` | pfSense-grupper som er av. En pfSense-gruppe som ikke står i noen av listene, er på, og en gruppe for en annen pakke er av. |
+| `include/item`         | Identitetene til avkryssede felt i en gruppe som er av.                                                                     |
+| `exclude/item`         | Identitetene til felt uten hake i en gruppe som er på.                                                                      |
+
+- Nøklene for pfSense-gruppene er `interfaces`, `virtual_ips`, `aliases`, `firewall_rules`, `nat`, `dhcpv6`, `router_advertisements`, `dns_host_overrides`, `ipsec`, `openvpn` og `wireguard`.
+- `include` og `exclude` beholder høyst 1000 identiteter hver, og hver identitet følger [Feltidentiteter](/docs/reference/approved-fields#field-identities).
+
+## Cron-oppføring \{#cron-entry}
+
+Når innstillingene lagres, fjernes alle eksisterende oppføringer for kommandoen, og når `enabled` er `on`, installeres en ny for `root` med `install_cron_job()` i pfSense.
+
+| Tidsplanverdi           | Cron-felt      |
+|-------------------------|----------------|
+| `every_fifteen_minutes` | `*/15 * * * *` |
+| `hourly`                | `0 * * * *`    |
+| `every_six_hours`       | `0 */6 * * *`  |
+| `daily`                 | `0 0 * * *`    |
+
+En ukjent verdi faller tilbake til feltene for hver time. Mens en flytting av det <Terminology title="opprinnelig update.php-skript kjørt av Cron-pakken" to="/docs/reference/terminology#legacy-updater">eldre oppdateringsskriptet</Terminology> venter på at det eldre skriptet skal bli ferdig, beholder pakken en `*/15 * * * *`-oppføring, slik at flyttingen prøves på nytt selv om planlagte oppdateringer er slått av.
+
+## Logger og varsler \{#logs-and-notices}
+
+Hver linje i <Terminology title="generell pfSense-logg som pakken skriver til" to="/docs/reference/terminology#system-log">systemloggen</Terminology> skrives med `log_error()` i pfSense og starter med `IPv6 Prefix Updater:`. Varsler opprettes med `file_notice()` og lenker til `/ipv6-prefix-updater-status.php`, bortsett fra migreringsvarselet, som lenker til `/ipv6-prefix-updater-cleanup.php`.
+
+| Varsel-ID                               | Opprettes når                                                                                                                                                                                                                                                         | Levering                                                                                                                                                               |
+|-----------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `ipv6-prefix-updater-success`           | <Terminology title="resultat: felt oppdatert, lagret, lastet inn igjen og verifisert" to="/docs/reference/terminology#success">Vellykket</Terminology> med `notifications` satt til `on`                                                                              | WebGUI og <Terminology title="eksterne varslingstjenester konfigurert i pfSense" to="/docs/reference/terminology#notification-channels">varslingskanaler</Terminology> |
+| `ipv6-prefix-updater-no-matches`        | <Terminology title="resultat: prefiks endret, men ingen godkjente felt samsvarte" to="/docs/reference/terminology#warning">Advarsel</Terminology>                                                                                                                     | Bare WebGUI                                                                                                                                                            |
+| `ipv6-prefix-updater-failure`           | <Terminology title="resultat: en kontroll eller et sikkerhetstrinn stoppet kjøringen" to="/docs/reference/terminology#failure">Feil</Terminology>                                                                                                                     | Bare WebGUI                                                                                                                                                            |
+| `ipv6-prefix-updater-package-<section>` | En kjøring endret innstillingene til en annen pakke, og enten eier ingen installert pakke seksjonen, eller det mislyktes å bruke innstillingene på nytt                                                                                                               | Bare WebGUI                                                                                                                                                            |
+| `ipv6-prefix-updater-legacy-migration`  | En flytting av det <Terminology title="opprinnelig update.php-skript kjørt av Cron-pakken" to="/docs/reference/terminology#legacy-updater">eldre oppdateringsskriptet</Terminology> som utførte minst ett trinn, eller en flytting som mislyktes under installasjonen | Bare WebGUI                                                                                                                                                            |
+
+Hvis kommandoens egen miljøkontroll mislykkes, eller låsefilen ikke kan åpnes, går årsaken bare til standard feilutdata. Hver kjøring som skriver, lagrer også en konfigurasjonsrevisjon med beskrivelsen `IPv6-prefiksoppdateringen endret <count> godkjent(e) felt for grensesnitt <interface>`.
+
+## Rettigheter for sidene \{#page-privileges}
+
+Hver pakkeside deklarerer sin egen pfSense-rettighet, slik at tilgang kan gis per side:
+
+- **Status**: `page-services-ipv6-prefix-updater-status`, med navnet `Services: IPv6 Prefix Updater: Status`.
+- **Felt**: `page-services-ipv6-prefix-updater-fields`, med navnet `Services: IPv6 Prefix Updater: Fields`. Den kan endre hvilke felt en kjøring skriver om, så det anbefales å gi den bare til administratorer.
+- **Sikkerhetskopier**: `page-services-ipv6-prefix-updater-backups`, med navnet `Services: IPv6 Prefix Updater: Backups`. Den gir tilgang til å laste ned fullstendige konfigurasjonskopier, så det anbefales å gi den bare til administratorer.
+- **Opprydding**: `page-services-ipv6-prefix-updater-cleanup`, med navnet `Services: IPv6 Prefix Updater: Cleanup`.

@@ -1,0 +1,174 @@
+---
+id: command-line-and-files
+title: 命令行与文件
+description: 在 shell 中运行 /usr/local/sbin/ipv6-prefix-updater，并查阅其选项、退出码、输出行、文件、日志和 WebGUI 通知。
+keywords:
+  - pfsense ipv6 prefix updater
+  - 命令行
+  - 退出码
+  - 状态文件
+  - file_notice
+tags:
+  - reference
+  - command line
+  - files
+sidebar_position: 4
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+在 shell 中运行软件包命令，并查找它使用的文件、日志和通知。
+
+## 用法 \{#usage}
+
+```shell
+/usr/local/sbin/ipv6-prefix-updater [--manual] [--dry-run] [--accept-current-prefix [--interface=NAME]] [--migrate-legacy] [--help]
+```
+
+由 pfSense 管理的 cron 条目以 `root` 身份不带选项运行该命令。每次检查之前，它还会将<Terminology title="由 Cron 软件包运行的原 update.php 脚本" to="/docs/reference/terminology#legacy-updater">旧版更新器</Terminology>的所有遗留内容迁移到软件包中。“状态”选项卡在 **立即运行** 时使用 `--manual`，在 **<Terminology title="不备份也不写入的预览" to="/docs/reference/terminology#dry-run">试运行</Terminology>** 时使用 `--dry-run`，在基线恢复时使用 `--accept-current-prefix`；“清理”选项卡则使用 `--migrate-legacy`。
+
+不带选项时，该命令的行为与计划检查相同；**<Terminology title="由 pfSense 管理的 cron 条目运行的自动检查" to="/docs/reference/terminology#scheduled-updates">启用计划更新</Terminology>** 关闭时会报告<Terminology title="结果：更新关闭时跳过的计划检查" to="/docs/reference/terminology#disabled">已禁用</Terminology>。
+
+## 选项 \{#options}
+
+| 参数                        | 说明                                                                                                                                                               |
+|---------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `--manual`                | 即使<Terminology title="由 pfSense 管理的 cron 条目运行的自动检查" to="/docs/reference/terminology#scheduled-updates">计划更新</Terminology>已关闭也会运行。                                |
+| `--dry-run`               | 只预览，不备份也不写入，并隐含 `--manual`。                                                                                                                                      |
+| `--accept-current-prefix` | 将当前活动的源地址、前缀和长度记录为基线，不扫描已批准字段、不创建备份、不写入配置，也不重新加载服务。它隐含 `--manual`，且不能与 `--dry-run` 同时使用。                                                                         |
+| `--interface=NAME`        | 将 `--accept-current-prefix` 限定于一个监控接口，以其内部名称（如 `lan`）指定。不带此选项时，所有具有地址的监控接口都会被接受。                                                                                 |
+| `--migrate-legacy`        | 立即将<Terminology title="由 Cron 软件包运行的原 update.php 脚本" to="/docs/reference/terminology#legacy-updater">旧版更新器</Terminology>迁移到软件包中并打印每个步骤，不运行前缀检查。迁移报告了警告时以 `2` 退出。 |
+| `--help`                  | 打印用法行并以 `0` 退出。用法行本身不列出 `--help`。                                                                                                                                |
+
+任何其他选项都会向标准错误输出 `未知选项：<option>` 并以 `64` 退出。将 `--accept-current-prefix` 与 `--dry-run` 组合使用同样会以 `64` 退出。
+
+## 退出码 \{#exit-codes}
+
+| 代码   | 含义                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+|------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `0`  | <Terminology title="结果：已记录基线，配置未更改" to="/docs/reference/terminology#initialized">已初始化</Terminology>、<Terminology title="结果：尚无基线时的试运行" to="/docs/reference/terminology#initialization-preview">初始化预览</Terminology>、<Terminology title="结果：前缀未变化，未扫描或写入任何内容" to="/docs/reference/terminology#no-change">无变化</Terminology>、<Terminology title="不备份也不写入的预览" to="/docs/reference/terminology#dry-run">试运行</Terminology>、**已接受**、<Terminology title="结果：字段已更新、保存、重新加载并验证" to="/docs/reference/terminology#success">成功</Terminology>或<Terminology title="结果：更新关闭时跳过的计划检查" to="/docs/reference/terminology#disabled">已禁用</Terminology>。另一个检查持有<Terminology title="防止两个检查同时运行的保护机制" to="/docs/reference/terminology#run-lock">运行锁</Terminology>时以及执行 `--help` 后也返回此值。 |
+| `1`  | <Terminology title="结果：检查或安全阶段中止了运行" to="/docs/reference/terminology#failure">失败</Terminology>。标准错误中会输出一行 `IPv6 前缀更新器失败：<reason>`。                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `2`  | <Terminology title="结果：前缀已变化，但没有匹配的已批准字段" to="/docs/reference/terminology#warning">警告</Terminology>。                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `64` | 未知选项。                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+
+## 输出 \{#output}
+
+监控一个接口的运行完成后，会向标准输出打印九行；在<Terminology title="不备份也不写入的预览" to="/docs/reference/terminology#dry-run">试运行</Terminology>或<Terminology title="结果：字段已更新、保存、重新加载并验证" to="/docs/reference/terminology#success">成功</Terminology>之后，还会接着打印字段变更：
+
+```text
+状态: 成功
+接口: lan
+观察到的源地址: 2001:db8:abcd:88aa::1
+旧前缀: 2001:db8:abcd:7800::
+当前前缀: 2001:db8:abcd:8800::/56
+计划或已更改字段: 1
+配置备份: 已创建
+已重新加载的服务: 防火墙过滤器
+摘要: 已在接口 lan 上将 1 个已批准字段从 2001:db8:abcd:7800::/56 更新为 2001:db8:abcd:8800::/56。
+字段变更:
+- aliases/alias/0/address: 2001:db8:abcd:78aa::10 → 2001:db8:abcd:88aa::10
+```
+
+- `旧前缀`不带长度；在<Terminology title="结果：已记录基线，配置未更改" to="/docs/reference/terminology#initialized">已初始化</Terminology>或<Terminology title="结果：尚无基线时的试运行" to="/docs/reference/terminology#initialization-preview">初始化预览</Terminology>之后，它显示为 `不可用`。
+- `已重新加载的服务`列出各服务的状态标签，没有时显示 `无`。<Terminology title="不备份也不写入的预览" to="/docs/reference/terminology#dry-run">试运行</Terminology>之后，它列出的是将会重新加载的服务。
+- `字段变更`为每个被替换的地址输出一行，格式为 `- <path>: <old> → <new>`，最多列出 200 个字段。
+- 如果运行重新应用了其他软件包的设置，或跳过了已不存在的已勾选字段，随后会针对每一项各输出一行，措辞与“状态”选项卡上的相同。
+- 当另一个检查持有<Terminology title="防止两个检查同时运行的保护机制" to="/docs/reference/terminology#run-lock">运行锁</Terminology>时，唯一的输出是 `另一次运行持有软件包锁；本次调用未读取配置便已退出。`
+- 监控多个接口时，输出以总体的 `状态`、`摘要`、软件包行和跳过字段行开头，随后是每个接口各自的各行内容，各组之间以空行分隔。
+- 如果检查之前进行了<Terminology title="由 Cron 软件包运行的原 update.php 脚本" to="/docs/reference/terminology#legacy-updater">旧版更新器</Terminology>迁移，会先打印迁移的各个步骤。
+- 标签和消息跟随 pfSense 的语言设置。
+
+## 文件与路径 \{#files-and-paths}
+
+| 路径                                                        | 说明                                                                                                                                                                              |
+|-----------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `/usr/local/sbin/ipv6-prefix-updater`                     | 命令本身，是一个 PHP 脚本。                                                                                                                                                                |
+| `/usr/local/pkg/ipv6-prefix-updater.xml`                  | “设置”页面的定义及其生命周期钩子。                                                                                                                                                              |
+| `/usr/local/pkg/ipv6-prefix-updater.inc`                  | 安装、设置同步、移除和表单验证函数。                                                                                                                                                              |
+| `/usr/local/pkg/ipv6-prefix-updater/`                     | 运行时类和翻译。                                                                                                                                                                        |
+| `/usr/local/www/ipv6-prefix-updater-status.php`           | “状态”选项卡。                                                                                                                                                                        |
+| `/usr/local/www/ipv6-prefix-updater-fields.php`           | “字段”选项卡。                                                                                                                                                                        |
+| `/usr/local/www/ipv6-prefix-updater-backups.php`          | “备份”选项卡。                                                                                                                                                                        |
+| `/usr/local/www/ipv6-prefix-updater-cleanup.php`          | “清理”选项卡。                                                                                                                                                                        |
+| `/usr/local/share/pfSense-pkg-Ipv6PrefixUpdater/info.xml` | 软件包清单。                                                                                                                                                                          |
+| `/cf/conf/ipv6-prefix-updater/state.json`                 | <Terminology title="保存基线和上次运行的软件包文件" to="/docs/reference/terminology#package-state">软件包状态</Terminology>。其目录权限为 `0700`，文件权限为 `0600`，每次写入都会以原子方式替换该文件，并且在重启、启用 RAM 磁盘和移除软件包后都会保留。 |
+| `/cf/conf/ipv6-prefix-updater/backups/`                   | **备份** 选项卡中的副本，每份包含一个 `<id>.xml` 配置文件和一个 `<id>.json` 描述文件，权限均为 `0600`。                                                                                                          |
+| `/var/run/ipv6-prefix-updater.lock`                       | <Terminology title="防止两个检查同时运行的保护机制" to="/docs/reference/terminology#run-lock">运行锁</Terminology>，通过非阻塞的 `flock` 持有，并记录正在运行的进程 ID。它在两次运行之间保留在磁盘上。                                |
+
+## 软件包状态格式 \{#package-state-format}
+
+| 键                     | 说明                                                                                                                                                                                                                                                                                                                                                  |
+|-----------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `schema_version`      | 始终为 `1`。                                                                                                                                                                                                                                                                                                                                            |
+| `targets.<interface>` | 每个监控接口一个<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>，以接口的内部名称为键，包含 `interface`、`source_address`、`prefix`、`prefix_length` 和 `updated_at`。从<Terminology title="由 Cron 软件包运行的原 update.php 脚本" to="/docs/reference/terminology#legacy-updater">旧版更新器</Terminology>接管的基线还会将 `source` 设为 `legacy_cache`。 |
+| `last_run`            | 最近记录的一次运行，包含 `status`、`timestamp`、`interface`、`observed_address`、`previous_prefix`、`current_prefix`、`current_prefix_length`、`change_count`、`backup_created`、`services`、`message`、`message_key` 和 `message_arguments`。                                                                                                                               |
+| `legacy_migration`    | 在<Terminology title="由 Cron 软件包运行的原 update.php 脚本" to="/docs/reference/terminology#legacy-updater">旧版更新器</Terminology>迁移之后出现，包含 `status`、`steps`、`warnings` 和 `recorded_at`。“清理”选项卡会显示它。                                                                                                                                                            |
+
+- `status` 的取值为 `initialized`、`initialization_preview`、`no_change`、`dry_run`、`warning`、`accepted`、`success` 或 `failure` 之一。
+- <Terminology title="结果：字段已更新、保存、重新加载并验证" to="/docs/reference/terminology#success">成功</Terminology>之后，如果通知已关闭，`last_run.notification` 为 `disabled`；尝试发送后则为 `sent` 或 `failed`。
+- 在<Terminology title="不备份也不写入的预览" to="/docs/reference/terminology#dry-run">试运行</Terminology>或<Terminology title="结果：字段已更新、保存、重新加载并验证" to="/docs/reference/terminology#success">成功</Terminology>之后，每条结果还包含 `changes`，列出最多 200 个字段的 `path` 和 `replacements`，其中每个替换项由一个旧地址和一个新地址组成。
+- `package_reapply` 列出运行重新应用了其设置的每个软件包的 `section`、`package`、`status` 和 `error`，`skipped_fields` 列出已不存在的已勾选字段。两者都只在非空时出现。
+- 监控多个接口时，`last_run` 保存总计以及一个 `targets` 列表，其中每个接口一条结果。
+- 时间戳采用 UTC 的 ISO 8601 格式。如果文件无法解析，或其架构版本不同，每次运行都会停止，并显示 `IPv6 前缀更新器状态无效或不受支持。`
+
+## 设置的存储 \{#settings-storage}
+
+设置保存在 pfSense 配置中的 `installedpackages/ipv6prefixupdater/config/0` 下。
+
+| 键                  | 说明                                                                                                                                       |
+|--------------------|------------------------------------------------------------------------------------------------------------------------------------------|
+| `enabled`          | **<Terminology title="由 pfSense 管理的 cron 条目运行的自动检查" to="/docs/reference/terminology#scheduled-updates">启用计划更新</Terminology>**，勾选时为 `on`。 |
+| `row`              | **监控接口**，一个列表，每行包含一个 `interface`（接口键，例如 `lan`）和一个 `prefix_length`（`48` 到 `64`）。                                                          |
+| `update_frequency` | **计划**，取值为 `every_fifteen_minutes`、`hourly`、`every_six_hours` 或 `daily` 之一。                                                              |
+| `notifications`    | **<Terminology title="更新经验证成功后发送的提醒" to="/docs/reference/terminology#change-notification">发送变化通知</Terminology>**，勾选时为 `on`。              |
+
+### 字段选择 \{#field-selection}
+
+“字段”选项卡上的选择保存在设置记录旁边的 `installedpackages/ipv6prefixupdater/fields` 下，因此保存“设置”选项卡（这会替换 `config/0`）绝不会清除它们。
+
+| 键                      | 说明                                                                      |
+|------------------------|-------------------------------------------------------------------------|
+| `schema`               | 始终为 `1`。它表示这是从“字段”选项卡保存的选择，即使选择为空也是如此。                                  |
+| `enabled_groups/item`  | 处于开启状态的组，例如 `firewall_rules`、`dhcpv6`，或表示另一个软件包设置的 `package:<section>`。 |
+| `disabled_groups/item` | 处于关闭状态的 pfSense 组。pfSense 组如果不在任一列表中则为开启，另一个软件包的组则为关闭。                  |
+| `include/item`         | 在关闭的组中被勾选的字段的标识。                                                        |
+| `exclude/item`         | 在开启的组中被取消勾选的字段的标识。                                                      |
+
+- pfSense 组的键为 `interfaces`、`virtual_ips`、`aliases`、`firewall_rules`、`nat`、`dhcpv6`、`router_advertisements`、`dns_host_overrides`、`ipsec`、`openvpn` 和 `wireguard`。
+- `include` 和 `exclude` 各自最多保存 1000 个标识，每个标识都遵循[字段标识](/docs/reference/approved-fields#field-identities)中的格式。
+
+## Cron 条目 \{#cron-entry}
+
+保存设置时会删除该命令已有的条目；当 `enabled` 为 `on` 时，会通过 pfSense 的 `install_cron_job()` 为 `root` 安装一个新条目。
+
+| 计划值                     | Cron 字段        |
+|-------------------------|----------------|
+| `every_fifteen_minutes` | `*/15 * * * *` |
+| `hourly`                | `0 * * * *`    |
+| `every_six_hours`       | `0 */6 * * *`  |
+| `daily`                 | `0 0 * * *`    |
+
+未知的值会回退为每小时一次的字段。在<Terminology title="由 Cron 软件包运行的原 update.php 脚本" to="/docs/reference/terminology#legacy-updater">旧版更新器</Terminology>迁移等待旧版脚本运行结束期间，软件包会保留一个 `*/15 * * * *` 条目，以便即使计划更新已关闭也会重试迁移。
+
+## 日志与通知 \{#logs-and-notices}
+
+每一行<Terminology title="软件包写入的 pfSense 常规日志" to="/docs/reference/terminology#system-log">系统日志</Terminology>都通过 pfSense 的 `log_error()` 写入，并以 `IPv6 Prefix Updater:` 开头。通知通过 `file_notice()` 创建，并链接到 `/ipv6-prefix-updater-status.php`；迁移通知除外，它链接到 `/ipv6-prefix-updater-cleanup.php`。
+
+| 通知 ID                                   | 创建时机                                                                                                                                          | 发送方式                                                                                                                        |
+|-----------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
+| `ipv6-prefix-updater-success`           | <Terminology title="结果：字段已更新、保存、重新加载并验证" to="/docs/reference/terminology#success">成功</Terminology>且 `notifications` 设为 `on`                   | WebGUI 和<Terminology title="在 pfSense 中配置的远程提醒服务" to="/docs/reference/terminology#notification-channels">通知渠道</Terminology> |
+| `ipv6-prefix-updater-no-matches`        | <Terminology title="结果：前缀已变化，但没有匹配的已批准字段" to="/docs/reference/terminology#warning">警告</Terminology>                                           | 仅 WebGUI                                                                                                                    |
+| `ipv6-prefix-updater-failure`           | <Terminology title="结果：检查或安全阶段中止了运行" to="/docs/reference/terminology#failure">失败</Terminology>                                                | 仅 WebGUI                                                                                                                    |
+| `ipv6-prefix-updater-package-<section>` | 运行更改了另一个软件包的设置，且没有已安装的软件包拥有该配置节，或重新应用其设置失败                                                                                                    | 仅 WebGUI                                                                                                                    |
+| `ipv6-prefix-updater-legacy-migration`  | 至少执行了一个步骤的<Terminology title="由 Cron 软件包运行的原 update.php 脚本" to="/docs/reference/terminology#legacy-updater">旧版更新器</Terminology>迁移，或在安装期间失败的迁移 | 仅 WebGUI                                                                                                                    |
+
+如果命令自身的环境检查失败，或无法打开其锁文件，原因只会输出到标准错误。每次需要写入的运行还会保存一个配置修订版本，描述为 `IPv6 前缀更新器为接口 <interface> 更改了 <count> 个已批准字段`。
+
+## 页面权限 \{#page-privileges}
+
+软件包的每个页面都声明了各自的 pfSense 权限，因此可以按页面授予访问权限：
+
+- **状态**：`page-services-ipv6-prefix-updater-status`，其名称为 `Services: IPv6 Prefix Updater: Status`。
+- **字段**：`page-services-ipv6-prefix-updater-fields`，其名称为 `Services: IPv6 Prefix Updater: Fields`。它可以更改运行会改写哪些字段，因此建议只授予管理员。
+- **备份**：`page-services-ipv6-prefix-updater-backups`，其名称为 `Services: IPv6 Prefix Updater: Backups`。它允许下载完整的配置副本，因此建议只授予管理员。
+- **清理**：`page-services-ipv6-prefix-updater-cleanup`，其名称为 `Services: IPv6 Prefix Updater: Cleanup`。

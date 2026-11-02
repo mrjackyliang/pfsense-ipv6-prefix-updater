@@ -1,0 +1,153 @@
+---
+id: configuration-scopes
+title: Champs
+description: Choisissez dans l’onglet Champs les champs de configuration qui changent avec le préfixe délégué, définissez des exceptions, examinez les paramètres des autres paquets et incluez, si vous le souhaitez, toute autre valeur.
+keywords:
+  - pfsense ipv6 prefix updater
+  - onglet champs
+  - groupes de champs
+  - règles du pare-feu
+  - dhcpv6
+  - paramètres des paquets
+tags:
+  - configuration
+  - fields
+  - safety
+sidebar_position: 2
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import fieldsTab from './_assets_/configuration-scopes-1.png';
+import fieldException from './_assets_/configuration-scopes-2.png';
+import otherSettings from './_assets_/configuration-scopes-3.png';
+
+Choisissez les champs de configuration qui changent quand votre préfixe change.
+
+## L’onglet Champs \{#the-fields-tab}
+
+L’onglet **Champs** sous **Services → IPv6 Prefix Updater** liste toutes les adresses comprises dans chaque préfixe de <Terminology title="préfixe de départ enregistré sans modifier la configuration" to="/docs/reference/terminology#baseline">référence</Terminology>, regroupées par type. La ligne **Références** indique les préfixes auxquels l’onglet compare les adresses. Tant que la première vérification n’a pas enregistré de référence, l’onglet n’affiche que les interrupteurs des groupes.
+
+<img src={fieldsTab} alt="Onglet Champs d’IPv6 Prefix Updater avec les boutons Sélection automatique et Tout effacer, une zone de recherche, un filtre et le groupe Interfaces statiques listant les adresses LAN et LAB, dont la partie préfixe est mise en évidence" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+Chaque ligne affiche :
+
+- **Case à cocher** : cochée quand le prochain <Terminology title="écart avec le dernier préfixe réussi ou sa longueur" to="/docs/reference/terminology#prefix-transition">changement de préfixe</Terminology> met à jour le champ.
+- **Champ** : l’entrée, comme la description d’une règle ou le nom d’un alias, puis le libellé du champ et son chemin de configuration.
+- **Valeur actuelle** : la valeur, avec la partie préfixe de chaque adresse mise en évidence. Seule la partie mise en évidence change, et la <Terminology title="bits de l’adresse situés après le préfixe délégué" to="/docs/reference/terminology#host-portion">partie hôte</Terminology> est conservée.
+
+## Interrupteurs de groupe et exceptions \{#group-switches-and-exceptions}
+
+Chaque <Terminology title="groupe de champs avec un seul interrupteur dans l’onglet Champs" to="/docs/reference/terminology#field-group">groupe de champs</Terminology> possède un interrupteur dans son en-tête :
+
+- **Activé** : tous les champs de ce type changent avec le préfixe, y compris ceux ajoutés plus tard, sauf ceux que vous décochez.
+- **Désactivé** : seuls les champs que vous cochez changent.
+
+Une coche qui diffère de l’interrupteur de son groupe est une <Terminology title="champ isolé coché ou décoché à l’inverse de l’interrupteur de son groupe" to="/docs/reference/terminology#field-exception">exception de champ</Terminology>. Tant qu’un groupe comporte des exceptions, son en-tête affiche un tiret, et **N sur M sélectionnés** compte les champs cochés. Cliquer sur l’en-tête active ou désactive le groupe et réinitialise toutes ses coches en conséquence. Cliquez sur **Enregistrer** pour conserver les modifications.
+
+<img src={fieldException} alt="Onglet Champs avec le groupe Règles du pare-feu activé, une règle décochée si bien que l’en-tête affiche un tiret et 2 sur 3 sélectionnés, et une règle sans identifiant de suivi qui obéit à l’interrupteur du groupe" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+Un choix suit l’entrée, et non sa position dans une liste ; déplacer ou supprimer d’autres entrées ne le redirige donc pas. Le paquet identifie chaque entrée par :
+
+- **Règles de pare-feu** : l’identifiant de suivi (tracker) de la règle.
+- **Alias** : le nom de l’alias.
+- **Mappages statiques DHCPv6** : le DUID, car pfSense identifie les mappages DHCPv6 par leur DUID et non par leur adresse MAC.
+- **Redirections de port et NAT sortant** : l’heure de création de la règle.
+- **Entrées NAT 1:1 et NPt, et pools DHCPv6** : la description.
+- **Surcharges d’hôtes DNS** : l’hôte, le domaine, et le fait que l’entrée contienne des adresses IPv4, IPv6 ou les deux.
+- **Paramètres des autres paquets** : un champ qui désigne chaque entrée de liste de manière unique, comme son nom ou sa description.
+- **Autres paramètres** : un champ qui désigne chaque entrée de liste de manière unique et ne contient aucune adresse, comme le nom d’une passerelle. Un seul choix couvre toutes les entrées d’une liste simple, comme les serveurs DNS sous **System → General Setup**.
+- **Autres entrées** : leur interface, leur nom ou leur identifiant pfSense. Un seul choix couvre tous les serveurs DNS, serveurs NTP ou sous-réseaux RA d’une interface.
+
+Une ligne dont l’entrée n’a pas un tel identifiant, ou le partage avec une autre entrée, n’a pas de case à cocher et affiche `Aucun identifiant stable : ce champ suit donc l’interrupteur du groupe.` Les choix sont conservés à part des paramètres ; enregistrer l’onglet Paramètres ne les efface donc pas.
+
+## Groupes pfSense \{#pfsense-groups}
+
+Onze groupes couvrent les paramètres propres à pfSense. Une nouvelle installation et une migration depuis l’<Terminology title="script update.php d’origine lancé par le paquet Cron" to="/docs/reference/terminology#legacy-updater">ancien script de mise à jour</Terminology> démarrent avec tous ces groupes activés.
+
+| Groupe                                                                                                                                                           | Ce qu’il couvre                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+|------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Interfaces statiques                                                                                                                                             | Adresses des interfaces configurées en IPv6 statique. Les modes DHCPv6, SLAAC, <Terminology title="interface adressée depuis le préfixe délégué d’une autre interface" to="/docs/reference/terminology#tracked-interface">Track Interface</Terminology> et les autres sont ignorés.                                                                                                                                                                                        |
+| <Terminology title="adresse d’interface supplémentaire, comme CARP ou IP Alias" to="/docs/reference/terminology#virtual-ip">Adresses IP virtuelles</Terminology> | <Terminology title="adresse d’interface supplémentaire, comme CARP ou IP Alias" to="/docs/reference/terminology#virtual-ip">IP virtuelles</Terminology> CARP et IP Alias. Les types Proxy ARP et Other font partie du groupe Autres paramètres, et le masque CIDR reste inchangé.                                                                                                                                                                                          |
+| Alias                                                                                                                                                            | Adresses et réseaux des alias d’hôte et de réseau. Les alias de port, d’URL, de table d’URL et des autres types font partie du groupe Autres paramètres.                                                                                                                                                                                                                                                                                                                   |
+| Règles du pare-feu                                                                                                                                               | Adresses source et destination saisies dans les règles de pare-feu, y compris les règles flottantes. Les alias, les réseaux d’interface comme **LAN subnets** et **any** sont ignorés.                                                                                                                                                                                                                                                                                     |
+| NAT et NPt                                                                                                                                                       | Adresses saisies dans les redirections de port, le NAT sortant et le NAT 1:1, ainsi que les préfixes des entrées NPt. Les entrées NPt qui suivent une interface sont ignorées.                                                                                                                                                                                                                                                                                             |
+| Serveur DHCPv6                                                                                                                                                   | Plages d’adresses, de délégation de préfixe et des pools supplémentaires, adresses des mappages statiques, et serveurs DNS et NTP fournis aux clients.                                                                                                                                                                                                                                                                                                                     |
+| Annonces de routeur                                                                                                                                              | Les serveurs DNS et les sous-réseaux RA que chaque interface annonce.                                                                                                                                                                                                                                                                                                                                                                                                      |
+| Surcharges d’hôtes DNS                                                                                                                                           | Adresses des surcharges d’hôtes du DNS Resolver et du DNS Forwarder, y compris chaque adresse d’une liste séparée par des virgules. Les surcharges de domaines font partie du groupe Autres paramètres.                                                                                                                                                                                                                                                                    |
+| IPsec                                                                                                                                                            | Le réseau local (Local Network) et la traduction NAT/BINAT des entrées de <Terminology title="entrée IPsec décrivant les réseaux local et distant" to="/docs/reference/terminology#ipsec-phase-2">phase 2</Terminology> Tunnel IPv6 et Routed (VTI), lorsque leur type est Address ou Network. Les réseaux distants font partie du groupe Autres paramètres.                                                                                                               |
+| OpenVPN                                                                                                                                                          | Réseaux de tunnel et réseaux locaux IPv6 des serveurs, réseaux de tunnel IPv6 des clients, et réseaux de tunnel et réseaux locaux IPv6 des <Terminology title="paramètres OpenVPN propres à un client sur un serveur" to="/docs/reference/terminology#client-specific-override">dérogations spécifiques au client</Terminology>. Les réseaux distants font partie du groupe Autres paramètres, et les réseaux de tunnel de serveur qui suivent une interface sont ignorés. |
+| WireGuard                                                                                                                                                        | <Terminology title="adresse attribuée à un tunnel WireGuard de pfSense" to="/docs/reference/terminology#wireguard-tunnel-address">Adresses de tunnel</Terminology> des tunnels WireGuard de pfSense. Les pairs, les IP autorisées et les points de terminaison font partie du groupe Autres paramètres.                                                                                                                                                                    |
+
+Désactiver les groupes que le pare-feu n’utilise pas évite que des valeurs inattendues entrent dans un <Terminology title="liste complète des modifications, établie avant l’écriture" to="/docs/reference/terminology#change-plan">plan de modifications</Terminology>.
+
+## Boutons, recherche et filtres \{#buttons-search-and-filters}
+
+- **Sélection automatique** : active tous les groupes pfSense et coche tous leurs champs. Le groupe Autres paramètres et les paramètres des autres paquets restent tels quels.
+- **Tout effacer** : désactive tous les groupes et décoche tous les champs.
+- **Rechercher des champs** : n’affiche que les lignes dont le groupe, l’entrée, le libellé, la valeur ou le chemin contient le texte saisi.
+- **Filtre** : affiche toutes les lignes, seulement les lignes sélectionnées ou seulement celles des autres paquets.
+
+**Sélection automatique** et **Tout effacer** ne modifient que la page tant que vous n’avez pas cliqué sur **Enregistrer**. Une fois qu’une sélection sans aucun champ sélectionné est enregistrée, l’onglet affiche un avertissement, et les exécutions s’arrêtent avec `Aucun champ de configuration n’est sélectionné. Sélectionnez des champs dans l’onglet Champs.` jusqu’à ce que vous sélectionniez de nouveau des champs.
+
+Quand l’onglet liste plus de 40 champs, les groupes s’affichent repliés. Cliquez sur le nom d’un groupe pour le déplier.
+
+## Paramètres des autres paquets \{#other-packages-settings}
+
+Les paramètres que d’autres paquets conservent sous `installedpackages` reçoivent leur propre groupe, nommé d’après le paquet installé qui les possède, ou d’après leur section quand aucun ne les possède. Le paquet ne peut pas savoir ce que signifient ces champs : ils sont donc décochés au départ, et **Sélection automatique** ne les sélectionne jamais. Ne cochez un champ qu’après avoir vérifié son rôle dans ce paquet.
+
+Après qu’une exécution a modifié l’un de ces champs, elle applique de nouveau les paramètres de ce paquet, comme le fait le bouton **Save** du paquet lui-même. **Dernière exécution**, dans l’onglet État, liste chaque résultat sous **Paquets** :
+
+- `Les paramètres du paquet <paquet> ont été appliqués de nouveau.`
+- `Aucun paquet installé ne possède les paramètres <section>. Redémarrez à la main le service qui les utilise.` Les valeurs sont tout de même enregistrées. Cela se produit aussi quand un paquet conserve une partie de ses paramètres sous une section portant un autre nom.
+- `Impossible d’appliquer de nouveau les paramètres du paquet <paquet> : <raison>` Les nouvelles valeurs restent enregistrées, et rien n’est annulé.
+
+Ces deux problèmes ajoutent aussi une <Terminology title="alerte affichée dans la WebGUI de pfSense" to="/docs/reference/terminology#webgui-notice">alerte WebGUI</Terminology>.
+
+## Champs qui n’existent plus \{#fields-that-no-longer-exist}
+
+Quand l’entrée d’un champ coché est supprimée, le champ apparaît sous **Champs manquants** en haut de l’onglet. Les exécutions l’ignorent et le listent sous **Champs ignorés** dans l’onglet État. **Oublier les champs manquants** retire ces coches.
+
+## Autres paramètres \{#other-settings}
+
+Le groupe **Autres paramètres** liste toutes les autres adresses comprises dans un préfixe de référence. Il est désactivé au départ : une valeur qu’il contient ne change donc que si vous la cochez, ou si vous activez le groupe, ce qui couvre aussi les valeurs ajoutées plus tard. Chaque ligne indique son type :
+
+- Le côté distant de tout VPN : réseaux distants et passerelles distantes IPsec, et réseaux distants et adresses de serveur OpenVPN.
+- Les pairs WireGuard, y compris leurs IP autorisées et leurs points de terminaison.
+- Les passerelles et les routes statiques.
+- Les certificats, clés privées, mots de passe et clés pré-partagées, dont les valeurs s’affichent comme `Valeur masquée`.
+- Les valeurs stockées en Base64, comme les options personnalisées du DNS Resolver. Elles sont décodées, réécrites puis réencodées.
+- Les descriptions.
+- Tout autre paramètre, qui affiche à la place le nom du paramètre, comme les surcharges de domaines du DNS Resolver et les serveurs DNS sous **System → General Setup**.
+
+<img src={otherSettings} alt="Groupe Autres paramètres de l’onglet Champs listant une route statique, une description d’alias, des options personnalisées du DNS Resolver encodées en Base64, une surcharge de domaine et une passerelle, chacune avec son type" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+Après qu’une exécution a modifié l’une de ces valeurs, elle recharge ce que pfSense recharge quand vous enregistrez ce paramètre :
+
+- **Passerelles et routes statiques** : le routage, puis le filtre du pare-feu.
+- **Serveurs DNS sous System → General Setup** : les paramètres DNS du système, puis le DNS Resolver ou le DNS Forwarder.
+- **Valeurs du DNS Resolver, du DNS Forwarder, d’IPsec, d’OpenVPN et de WireGuard** : le service concerné.
+- **Valeurs d’un autre paquet** : les paramètres de ce paquet, comme le décrit [Paramètres des autres paquets](#other-packages-settings).
+- **Descriptions, certificats et valeurs sans service connu** : rien. La nouvelle valeur est seulement enregistrée.
+
+Il est recommandé de cocher ces champs tant que la référence est encore l’ancien préfixe, car après un changement, l’onglet compare les adresses au nouveau préfixe. Les pairs VPN distants conservent leur propre configuration : un pair qui pointe vers une adresse modifiée doit être mis à jour de son côté.
+
+## Comparaison des valeurs \{#how-values-are-matched}
+
+- Une adresse ne change que si elle appartient au <Terminology title="préfixe auquel la prochaine vérification se compare" to="/docs/reference/terminology#last-successful-prefix">dernier préfixe réussi</Terminology>, à la longueur enregistrée dans la <Terminology title="préfixe de départ enregistré sans modifier la configuration" to="/docs/reference/terminology#baseline">référence</Terminology>. Les adresses d’autres réseaux, les adresses IPv4, les noms d’hôte et les noms d’alias restent inchangés, et l’onglet ne les liste pas.
+- Dans les listes, comme les entrées d’alias, les réseaux locaux OpenVPN et les surcharges d’hôtes du DNS Resolver, chaque élément est vérifié séparément et les séparateurs restent tels qu’ils ont été saisis.
+- Dans les paramètres des autres paquets et dans le groupe Autres paramètres, chaque adresse du texte est vérifiée séparément et le reste du texte demeure tel qu’il a été saisi.
+- Un suffixe CIDR comme `/64` reste tel quel, et la <Terminology title="bits de l’adresse situés après le préfixe délégué" to="/docs/reference/terminology#host-portion">partie hôte</Terminology> de chaque adresse est conservée.
+- Sur une interface en mode <Terminology title="interface adressée depuis le préfixe délégué d’une autre interface" to="/docs/reference/terminology#tracked-interface">Track Interface</Terminology>, les plages DHCPv6 et les mappages statiques contiennent des suffixes d’hôte comme `::1000`, qui restent inchangés.
+- Les adresses réécrites sont enregistrées sous <Terminology title="écriture standard la plus courte d’une adresse, en minuscules" to="/docs/reference/terminology#canonical-form">forme canonique</Terminology> ; leur écriture peut donc différer de ce qui avait été saisi.
+
+## Prévisualiser les modifications \{#previewing-changes}
+
+Une <Terminology title="aperçu qui ne sauvegarde ni n’écrit jamais" to="/docs/reference/terminology#dry-run">simulation</Terminology> ne lit les champs sélectionnés qu’après un <Terminology title="écart avec le dernier préfixe réussi ou sa longueur" to="/docs/reference/terminology#prefix-transition">changement de préfixe</Terminology>. Tant que le préfixe ne change pas, elle signale <Terminology title="résultat : préfixe inchangé, rien d’analysé ni d’écrit" to="/docs/reference/terminology#no-change">Aucun changement</Terminology> ; c’est donc l’onglet Champs qui permet de prévisualiser une nouvelle sélection. Après un changement, sa <Terminology title="résultats en lecture seule affichés après Exécuter maintenant ou Simulation" to="/docs/reference/terminology#command-output">sortie de commande</Terminology> liste sous `Modifications des champs` chaque adresse qu’elle remplacerait.
+
+Une <Terminology title="aperçu qui ne sauvegarde ni n’écrit jamais" to="/docs/reference/terminology#dry-run">simulation</Terminology> saute aussi la vérification de la capacité de pfSense à recharger les services concernés. L’absence du paquet WireGuard n’apparaît donc que lors d’une exécution réelle.
+
+## Paquet WireGuard \{#wireguard-package}
+
+La mise à jour des <Terminology title="adresse attribuée à un tunnel WireGuard de pfSense" to="/docs/reference/terminology#wireguard-tunnel-address">adresses de tunnel WireGuard</Terminology> nécessite le paquet WireGuard. Si ces adresses doivent changer alors que le paquet n’est pas installé, une exécution réelle s’arrête avant la sauvegarde avec `La dépendance pfSense requise « /usr/local/pkg/wireguard/includes/wg.inc » n’est pas disponible.`
+
+[Champs approuvés](/docs/reference/approved-fields) liste les chemins de configuration exacts de chaque groupe et l’identité sous laquelle chaque choix est enregistré.

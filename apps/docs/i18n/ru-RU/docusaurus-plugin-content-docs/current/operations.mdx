@@ -1,0 +1,66 @@
+---
+id: operations
+title: Модель безопасности
+description: Описывает проверки, резервную копию и единственную запись, которые пакет выполняет перед изменением pfSense, запуски без записи и то, что всё же может повлиять на трафик.
+keywords:
+  - pfsense ipv6 prefix updater
+  - модель безопасности
+  - резервная копия конфигурации
+  - проверка
+  - перезагрузка служб
+tags:
+  - safety
+  - backup
+  - verification
+sidebar_position: 6
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Узнайте, какую защиту пакет применяет перед изменением конфигурации и что всё же может повлиять на трафик.
+
+## Что происходит при смене префикса \{#what-happens-on-a-prefix-change}
+
+Обнаружив <Terminology title="отличие от последнего успешного префикса или длины" to="/docs/reference/terminology#prefix-transition">смену префикса</Terminology>, пакет действует в таком порядке:
+
+1. Считывает <Terminology title="публичный IPv6-адрес из диапазона 2000::/3" to="/docs/reference/terminology#global-unicast-address">глобальный адрес</Terminology> каждого <Terminology title="интерфейс, по адресу которого определяется текущий префикс" to="/docs/reference/terminology#monitored-interface">контролируемого интерфейса</Terminology> и вычисляет его префикс.
+2. Сравнивает префикс с <Terminology title="префикс, с которым сравнивает следующая проверка" to="/docs/reference/terminology#last-successful-prefix">последним успешным префиксом</Terminology>.
+3. Находит <Terminology title="конкретное поле конфигурации, которое пакет может перезаписать" to="/docs/reference/terminology#approved-field">разрешённые поля</Terminology>, которые всё ещё используют прежний префикс, и составляет полный <Terminology title="полный список изменений полей, составленный до записи" to="/docs/reference/terminology#change-plan">план изменений</Terminology>.
+4. Убеждается, что pfSense может перезагрузить каждую затронутую службу и что ни одно запланированное поле не изменилось после чтения.
+5. Сохраняет <Terminology title="копия конфигурации, сохранённая перед записью" to="/docs/reference/terminology#configuration-backup">резервную копию конфигурации</Terminology>.
+6. Применяет все изменения и сохраняет конфигурацию один раз.
+7. Проверяет сохранённые значения, перезагружает только затронутые службы и снова проверяет значения.
+8. Переносит <Terminology title="начальный префикс, записанный без изменения конфигурации" to="/docs/reference/terminology#baseline">базовое значение</Terminology> на новый префикс, записывает результат и, если включено, отправляет <Terminology title="оповещение после проверенного успешного обновления" to="/docs/reference/terminology#change-notification">уведомление об изменении</Terminology>.
+
+Если любой шаг до резервного копирования завершается ошибкой, конфигурация остаётся прежней.
+
+## Когда запись не выполняется никогда \{#what-never-causes-a-write}
+
+Пакет не изменяет конфигурацию при следующих результатах:
+
+- «<Terminology title="результат: базовое значение записано, конфигурация не изменена" to="/docs/reference/terminology#initialized">Инициализировано</Terminology>» и «<Terminology title="результат: пробный запуск до появления базового значения" to="/docs/reference/terminology#initialization-preview">Предварительная инициализация</Terminology>».
+- «<Terminology title="результат: префикс прежний, ничего не просмотрено и не записано" to="/docs/reference/terminology#no-change">Без изменений</Terminology>».
+- «<Terminology title="предварительный просмотр без резервной копии и записи" to="/docs/reference/terminology#dry-run">Пробный запуск</Terminology>».
+- «<Terminology title="результат: префикс сменился, но подходящих разрешённых полей нет" to="/docs/reference/terminology#warning">Предупреждение</Terminology>».
+- «<Terminology title="результат: проверка или этап безопасности остановили запуск" to="/docs/reference/terminology#failure">Ошибка</Terminology>», возникшая до резервного копирования.
+
+## Что всё же может повлиять на трафик \{#what-can-still-affect-traffic}
+
+- **<Terminology title="действие pfSense, применяющее изменённые настройки" to="/docs/reference/terminology#service-reload">Перезагрузка служб</Terminology>**: изменения статических интерфейсов или <Terminology title="дополнительный адрес интерфейса, например CARP или IP Alias" to="/docs/reference/terminology#virtual-ip">виртуальных IP-адресов</Terminology> перезагружают все интерфейсы, а затем фильтр межсетевого экрана. Изменения шлюзов и статических маршрутов перезагружают маршрутизацию и фильтр, изменения OpenVPN перезагружают все экземпляры OpenVPN, а изменения DHCPv6, объявлений маршрутизатора и DNS перезапускают соответствующие службы.
+- **Ошибки после сохранения**: если проверка или <Terminology title="действие pfSense, применяющее изменённые настройки" to="/docs/reference/terminology#service-reload">перезагрузка службы</Terminology> завершается ошибкой после сохранения, новые значения остаются сохранёнными и ничего не откатывается. <Terminology title="начальный префикс, записанный без изменения конфигурации" to="/docs/reference/terminology#baseline">Базовое значение</Terminology> остаётся на прежнем префиксе, как объясняется в разделе [Результаты запусков](/docs/operate/run-outcomes#failures-after-the-save).
+- **Значения, которые ждут вас**: шлюзы, статические маршруты, переопределения доменов DNS и другие значения из группы [Другие настройки](/docs/configure/configuration-scopes#other-settings) сохраняют прежний префикс, пока вы их не отметите, как и поля в выключенной группе.
+
+## Путь восстановления \{#recovery-path}
+
+Для каждой записи в <Terminology title="список сохранённых ревизий конфигурации pfSense" to="/docs/reference/terminology#config-history">Config History</Terminology> есть <Terminology title="копия конфигурации, сохранённая перед записью" to="/docs/reference/terminology#configuration-backup">резервная копия конфигурации</Terminology> в том виде, в каком она была до записи. Ревизия, названная по пакету, содержит обновлённую конфигурацию, поэтому какую ревизию восстанавливать, показано в разделе [Резервные копии и восстановление](/docs/operate/backups-and-recovery).
+
+Рекомендуется также сохранять привычные резервные копии pfSense вне устройства.
+
+## Что можно проверить \{#what-you-can-verify}
+
+Вкладка «Состояние» показывает <Terminology title="глобальный адрес контролируемого интерфейса по данным pfSense" to="/docs/reference/terminology#source-address">исходный адрес</Terminology>, <Terminology title="исходный адрес, маскированный по длине префикса" to="/docs/reference/terminology#observed-prefix">обнаруженный префикс</Terminology>, результат, число изменённых полей, результат резервного копирования, <Terminology title="действие pfSense, применяющее изменённые настройки" to="/docs/reference/terminology#service-reload">перезагруженные службы</Terminology>, время и сводку последнего запуска. «<Terminology title="результаты только для чтения после ручного или пробного запуска" to="/docs/reference/terminology#command-output">Вывод команды</Terminology>» показывает те же сведения сразу после <Terminology title="проверка, запущенная с вкладки «Состояние»" to="/docs/reference/terminology#manual-run">ручного запуска</Terminology>.
+
+## Подробнее \{#learn-more}
+
+- **[Как работают обновления](/docs/safety/how-updates-work)**: каждый этап запуска и место, где он может остановиться.
+- **[Проверка перед автоматизацией](/docs/safety/testing-and-verification)**: контрольный список для вашего межсетевого экрана перед включением расписания.

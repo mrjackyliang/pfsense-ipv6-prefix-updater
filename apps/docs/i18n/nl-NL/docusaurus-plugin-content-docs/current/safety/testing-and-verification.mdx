@@ -1,0 +1,63 @@
+---
+id: testing-and-verification
+title: Controleren vóór automatisering
+description: Verifieer de interface, de prefix, de herstelroute en de meldingen op je eigen firewall voordat je het pakket zonder toezicht volgens schema laat draaien.
+keywords:
+  - pfsense ipv6 prefix updater
+  - checklist
+  - testuitvoering
+  - config history
+  - geplande updates
+tags:
+  - safety
+  - checklist
+  - scheduled updates
+sidebar_position: 2
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Controleer de interface, de prefix, de herstelroute en de meldingen op je firewall voordat je het pakket volgens schema laat draaien.
+
+## 1. De bron bevestigen \{#1-confirm-the-source}
+
+Sla de instellingen op met **<Terminology title="automatische controles via een door pfSense beheerde cronjob" to="/docs/reference/terminology#scheduled-updates">Geplande updates inschakelen</Terminology>** uitgevinkt en selecteer één keer **Nu uitvoeren**. Controleer daarna het tabblad Status:
+
+- **<Terminology title="interface waarvan het adres de huidige prefix verraadt" to="/docs/reference/terminology#monitored-interface">Bewaakte interface</Terminology>** is de bedoelde WAN- of <Terminology title="interface met een adres uit de gedelegeerde prefix van een andere" to="/docs/reference/terminology#tracked-interface">gevolgde interface</Terminology>.
+- **<Terminology title="globaal adres dat pfSense voor de bewaakte interface meldt" to="/docs/reference/terminology#source-address">Laatste geslaagde bronadres</Terminology>** komt overeen met het adres onder **Status → Interfaces**.
+- **<Terminology title="prefix waarmee de volgende controle vergelijkt" to="/docs/reference/terminology#last-successful-prefix">Laatste geslaagde prefix</Terminology>** komt overeen met de prefix die je ISP delegeert.
+- **Resultaat** onder **Laatste uitvoering** is <Terminology title="resultaat: baseline vastgelegd, configuratie ongewijzigd" to="/docs/reference/terminology#initialized">Geïnitialiseerd</Terminology>, en **Gewijzigde velden** is `0`.
+
+Is een waarde onverwacht, dan is het aan te raden om die te corrigeren voordat je verdergaat. [Interface en prefix](/docs/configure/interface-and-prefix#changing-the-interfaces) legt uit wat een wijziging van de interface of de lengte doet zodra er een <Terminology title="startprefix, vastgelegd zonder de configuratie te wijzigen" to="/docs/reference/terminology#baseline">baseline</Terminology> bestaat.
+
+## 2. Een voorbeeld uitvoeren \{#2-run-a-preview}
+
+Selecteer **<Terminology title="voorbeeld dat nooit een back-up maakt of schrijft" to="/docs/reference/terminology#dry-run">Testuitvoering</Terminology>**. Bij een ongewijzigde prefix meldt ze <Terminology title="resultaat: prefix ongewijzigd, niets gescand of geschreven" to="/docs/reference/terminology#no-change">Geen wijziging</Terminology>, en **<Terminology title="kopie van de configuratie van vóór een schrijfactie" to="/docs/reference/terminology#configuration-backup">Configuratieback-up gemaakt</Terminology>** toont Nee.
+
+Een <Terminology title="voorbeeld dat nooit een back-up maakt of schrijft" to="/docs/reference/terminology#dry-run">testuitvoering</Terminology> kan geen prefixwijziging simuleren, dus ze toont geplande velden pas na een echte <Terminology title="afwijking van de laatste geslaagde prefix of lengte" to="/docs/reference/terminology#prefix-transition">prefixwissel</Terminology>.
+
+## 3. Herstel controleren \{#3-check-recovery}
+
+Open **Diagnostics → Backup & Restore → Config History** en controleer of pfSense een configuratiegeschiedenis bijhoudt. Een uitvoering die schrijft, slaat daar haar <Terminology title="kopie van de configuratie van vóór een schrijfactie" to="/docs/reference/terminology#configuration-backup">configuratieback-up</Terminology> op vóór de eerste wijziging.
+
+Het is aan te raden om nu [De juiste revisie vinden](/docs/operate/backups-and-recovery#find-the-right-revision) te lezen, omdat de revisie die naar het pakket is genoemd de bijgewerkte configuratie bevat. Een externe back-up is ook de moeite waard, omdat <Terminology title="pfSense-lijst met opgeslagen configuratierevisies" to="/docs/reference/terminology#config-history">Config History</Terminology> op de firewall staat.
+
+## 4. Meldingen testen \{#4-test-notifications}
+
+Is **<Terminology title="melding na een geverifieerde, geslaagde update" to="/docs/reference/terminology#change-notification">Wijzigingsmeldingen verzenden</Terminology>** aangevinkt, dan is het aan te raden om een test te versturen met de eigen knoppen van pfSense onder **System → Advanced → Notifications**. Het pakket gebruikt de <Terminology title="externe meldingsdiensten die in pfSense zijn ingesteld" to="/docs/reference/terminology#notification-channels">meldingskanalen</Terminology> die daar al zijn ingesteld.
+
+Meldingen bij <Terminology title="resultaat: prefix gewijzigd, maar geen goedgekeurd veld kwam overeen" to="/docs/reference/terminology#warning">Waarschuwing</Terminology> en <Terminology title="resultaat: een controle of veiligheidsstap stopte de uitvoering" to="/docs/reference/terminology#failure">Mislukt</Terminology> blijven in de WebGUI en gebruiken die kanalen niet.
+
+## 5. Het schema inschakelen \{#5-turn-on-the-schedule}
+
+Vink **<Terminology title="automatische controles via een door pfSense beheerde cronjob" to="/docs/reference/terminology#scheduled-updates">Geplande updates inschakelen</Terminology>** aan zodra de stappen hierboven het verwachte adres en de verwachte prefix tonen. **Elk uur** is de standaardwaarde voor **Schema**.
+
+Na het eerste geplande tijdstip is het aan te raden om **Tijdstempel (UTC)** en **Resultaat** onder **Laatste uitvoering** te controleren.
+
+## Wat een echte prefixwijziging vereist \{#what-needs-a-real-prefix-change}
+
+Het <Terminology title="volledige lijst met veldwijzigingen, opgesteld vóór het schrijven" to="/docs/reference/terminology#change-plan">wijzigingsplan</Terminology>, de <Terminology title="kopie van de configuratie van vóór een schrijfactie" to="/docs/reference/terminology#configuration-backup">configuratieback-up</Terminology>, het <Terminology title="pfSense-actie die gewijzigde instellingen toepast" to="/docs/reference/terminology#service-reload">herladen van services</Terminology> en de <Terminology title="melding na een geverifieerde, geslaagde update" to="/docs/reference/terminology#change-notification">wijzigingsmelding</Terminology> gebeuren pas na een echte <Terminology title="afwijking van de laatste geslaagde prefix of lengte" to="/docs/reference/terminology#prefix-transition">prefixwissel</Terminology>. Een testfirewall waarvan de prefix kan veranderen, is de veiligste plek om een volledige uitvoering te volgen.
+
+Op je eigen firewall is het aan te raden om de eerste echte wijziging op het tabblad Status te bekijken, te beginnen met **Gewijzigde velden**, **<Terminology title="pfSense-actie die gewijzigde instellingen toepast" to="/docs/reference/terminology#service-reload">Opnieuw geladen services</Terminology>** en **Samenvatting**.
+
+Lees [Status en acties](/docs/operate/status-and-actions) voor alle velden die na een uitvoering verschijnen.

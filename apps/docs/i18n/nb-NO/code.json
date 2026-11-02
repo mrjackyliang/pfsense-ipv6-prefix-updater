@@ -1,0 +1,173 @@
+{
+  "home.meta.description": {
+    "message": "Oppdag endringer i delegerte prefikser, oppdater bare godkjente pfSense-felt, bevar vertsbiter og verifiser hver transaksjon."
+  },
+  "home.meta.title": {
+    "message": "IPv6-prefiksoppdatering - Hold dynamiske IPv6-prefikser trygt samordnet."
+  },
+  "home.hero.eyebrow": {
+    "message": "Opprinnelig pfSense-pakke"
+  },
+  "home.hero.heading": {
+    "message": "Hold dynamiske IPv6-prefikser trygt samordnet."
+  },
+  "home.hero.tagline": {
+    "message": "Oppdag endringer i delegerte prefikser, oppdater bare godkjente pfSense-felt, bevar vertsbiter og verifiser hver transaksjon."
+  },
+  "home.hero.primaryAction": {
+    "message": "Installer og konfigurer"
+  },
+  "home.hero.secondaryAction": {
+    "message": "Se sikker virkemåte"
+  },
+  "home.preview.ariaLabel": {
+    "message": "Lengde på delegert prefiks: /56"
+  },
+  "home.preview.dryRun": {
+    "message": "Testkjøring"
+  },
+  "home.preview.detected": {
+    "message": "Observert kildeadresse"
+  },
+  "home.preview.previous": {
+    "message": "Forrige prefiks"
+  },
+  "home.preview.current": {
+    "message": "Gjeldende prefiks"
+  },
+  "home.preview.prefixChanged": {
+    "message": "Observert prefiks"
+  },
+  "home.preview.hostPreserved": {
+    "message": "Lengde på delegert prefiks"
+  },
+  "home.preview.result": {
+    "message": "Testkjøringen fant 2 godkjente feltendring(er) for 2001:db8:abcd:8800::/56; konfigurasjonen ble ikke endret."
+  },
+  "home.workflow.eyebrow": {
+    "message": "Sikkerhet og drift"
+  },
+  "home.workflow.heading": {
+    "message": "Sikker transaksjon"
+  },
+  "home.workflow.detect": {
+    "message": "Observert kildeadresse"
+  },
+  "home.workflow.plan": {
+    "message": "Endrede felt"
+  },
+  "home.workflow.backup": {
+    "message": "Konfigurasjonssikkerhetskopi opprettet"
+  },
+  "home.workflow.write": {
+    "message": "Gjeldende prefiks"
+  },
+  "home.workflow.verify": {
+    "message": "Vellykket"
+  },
+  "home.workflow.notify": {
+    "message": "Varsler"
+  },
+  "home.features.interface.title": {
+    "message": "Overvåkede grensesnitt"
+  },
+  "home.features.interface.description": {
+    "message": "Legg til én rad per grensesnitt der den primære aktive globale IPv6-adressen bærer et delegert prefiks. Ved DHCPv6 med bare prefiks på WAN velger du et sporet grensesnitt nedstrøms. Vertsbiter etter prefikslengden bevares nøyaktig, og adressen pfSense velger for hvert grensesnitt, vises på Status-fanen."
+  },
+  "home.features.prefix.title": {
+    "message": "Lengde på delegert prefiks"
+  },
+  "home.features.prefix.description": {
+    "message": "Angi prefiksgrensen som er delegert av internettleverandøren. Vertsbiter etter denne grensen bevares nøyaktig."
+  },
+  "home.features.scopes.title": {
+    "message": "Felt"
+  },
+  "home.features.scopes.description": {
+    "message": "Velg på Felt-fanen hvilke konfigurasjonsfelt som endres med prefikset."
+  },
+  "home.features.dryRun.title": {
+    "message": "Testkjøring"
+  },
+  "home.features.dryRun.description": {
+    "message": "Kjør nå kan oppdatere godkjente felt etter en oppdaget endring. Testkjøring registrerer bare en forhåndsvisning og skriver aldri brannmurkonfigurasjonen."
+  },
+  "home.features.backup.title": {
+    "message": "Konfigurasjonssikkerhetskopi opprettet"
+  },
+  "home.features.backup.description": {
+    "message": "Konfigurasjonssikkerhetskopi opprettet: Ja."
+  },
+  "home.features.notify.title": {
+    "message": "Varsler"
+  },
+  "home.features.notify.description": {
+    "message": "Bruk konfigurerte pfSense-varslingskanaler etter en verifisert vellykket prefiksoppdatering. Kontroller uten endring varsler aldri."
+  },
+  "home.stats.heading": {
+    "message": "Sikkerhet og drift"
+  },
+  "home.stats.boundaries": {
+    "message": "Lengde på delegert prefiks"
+  },
+  "home.stats.backups": {
+    "message": "Konfigurasjonssikkerhetskopi opprettet"
+  },
+  "home.stats.writes": {
+    "message": "Endrede felt"
+  },
+  "home.stats.noChange": {
+    "message": "Det aktive IPv6-prefikset er uendret; ingen godkjente konfigurasjonsmål ble lest eller skrevet."
+  },
+  "home.routes.eyebrow": {
+    "message": "Veiledninger"
+  },
+  "home.routes.heading": {
+    "message": "Installer og konfigurer"
+  },
+  "home.routes.install.title": {
+    "message": "Installer pakken"
+  },
+  "home.routes.install.description": {
+    "message": "Kjør denne kommandoen i et pfSense-skall for å installere den nyeste utgaven direkte fra GitHub."
+  },
+  "home.routes.open": {
+    "message": "Begynn å lese"
+  },
+  "home.routes.configure.title": {
+    "message": "Overvåkede grensesnitt / Lengde på delegert prefiks"
+  },
+  "home.routes.configure.description": {
+    "message": "Legg til én rad per grensesnitt der den primære aktive globale IPv6-adressen bærer et delegert prefiks. Ved DHCPv6 med bare prefiks på WAN velger du et sporet grensesnitt nedstrøms. Vertsbiter etter prefikslengden bevares nøyaktig, og adressen pfSense velger for hvert grensesnitt, vises på Status-fanen."
+  },
+  "home.routes.status.title": {
+    "message": "Status / Kommandoutdata"
+  },
+  "home.routes.status.description": {
+    "message": "Kjør nå kan oppdatere godkjente felt etter en oppdaget endring. Testkjøring registrerer bare en forhåndsvisning og skriver aldri brannmurkonfigurasjonen."
+  },
+  "home.routes.troubleshoot.title": {
+    "message": "Feilsøking"
+  },
+  "home.routes.troubleshoot.description": {
+    "message": "Hvis kildeadressen er feil, velger du det nedstrøms sporede grensesnittet som faktisk har den globale adressen; ikke kompenser med en gjettet lengde."
+  },
+  "home.spotlight.heading": {
+    "message": "Kommandoutdata"
+  },
+  "home.spotlight.description": {
+    "message": "Kontroller hver kjøring på statussiden: kildeadresse, avledet prefiks, sikkerhetskopi og resultat."
+  },
+  "home.spotlight.statusAction": {
+    "message": "Status / Kommandoutdata"
+  },
+  "home.spotlight.testsAction": {
+    "message": "Resultater og tester"
+  },
+  "home.blogPreview.heading": {
+    "message": "Fra bloggen"
+  },
+  "home.blogPreview.description": {
+    "message": "Utgivelsesmerknader, oppsettsveiledninger og innlegg om dynamiske IPv6-prefikser."
+  }
+}

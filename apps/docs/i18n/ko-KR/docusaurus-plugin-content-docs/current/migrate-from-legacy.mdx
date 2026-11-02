@@ -1,0 +1,85 @@
+---
+id: migrate-from-legacy
+title: 스크립트에서 마이그레이션
+description: 레거시 update.php 스크립트 위에 패키지를 설치해 Cron 항목, 저장된 접두사, 백업을 패키지가 대신 옮기게 한 다음, 정리 탭에서 결과를 검토합니다.
+keywords:
+  - pfsense ipv6 prefix updater
+  - 레거시 업데이터
+  - 마이그레이션
+  - update.php
+  - cron 패키지
+  - 정리
+tags:
+  - setup
+  - migration
+  - legacy updater
+sidebar_position: 5
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import cleanupBefore from './_assets_/migrate-from-legacy-1.png';
+import cleanupAfter from './_assets_/migrate-from-legacy-2.png';
+
+패키지를 설치해 <Terminology title="Cron 패키지로 실행하던 원래 update.php 스크립트" to="/docs/reference/terminology#legacy-updater">레거시 업데이터</Terminology>에서 패키지로 옮기면, 패키지가 스크립트의 인터페이스, 저장된 접두사, 백업을 스스로 넘겨받습니다.
+
+## 달라지는 점 \{#what-changes}
+
+| 영역      | <Terminology title="Cron 패키지로 실행하던 원래 update.php 스크립트" to="/docs/reference/terminology#legacy-updater">레거시 업데이터</Terminology> | 패키지                                                                                                                                                                                                                                                                |
+|---------|-------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 설치      | `install.sh`가 `/root/pfsense-ipv6-prefix-updater`에 파일을 복사                                                                     | `pkg add`가 pfSense 패키지를 설치                                                                                                                                                                                                                                         |
+| 일정      | 직접 만드는 Cron 패키지 항목                                                                                                            | pfSense가 관리하는 cron 항목을 쓰는 **일정** 설정                                                                                                                                                                                                                                |
+| 인터페이스   | `igb1` 같은 운영 체제 장치마다 Cron 항목 하나                                                                                               | LAN 같은 pfSense 인터페이스마다 **모니터링할 인터페이스** 행 하나, 한 번의 실행에서 모두 확인                                                                                                                                                                                                       |
+| 변경 대상   | base64로 인코딩된 값을 포함해 구성 어디에나 있는 이전 접두사 텍스트                                                                                     | **필드** 탭에서 선택한 <Terminology title="패키지가 다시 쓸 수 있는 정확한 구성 필드" to="/docs/reference/terminology#approved-field">승인된 필드</Terminology>                                                                                                                                  |
+| 백업      | `/root/pfsense-ipv6-prefix-updater-backups`에 있는, 모든 사용자가 읽을 수 있는 사본                                                           | 쓰기 전마다 <Terminology title="저장된 구성 리비전을 보여 주는 pfSense 목록" to="/docs/reference/terminology#config-history">Config History</Terminology>와 **백업** 탭에 남는 <Terminology title="쓰기 전에 저장한 구성 사본" to="/docs/reference/terminology#configuration-backup">구성 백업</Terminology> |
+| 저장된 접두사 | `/root/pfsense-ipv6-prefix-updater-cache`                                                                                     | 전환할 때 레거시 캐시의 값으로 채워지는 <Terminology title="기준선과 마지막 실행을 담은 패키지 파일" to="/docs/reference/terminology#package-state">패키지 상태</Terminology>                                                                                                                             |
+| 알림      | 변경할 때마다 전송                                                                                                                    | <Terminology title="결과: 필드 업데이트, 저장, 다시 로드, 검증 완료" to="/docs/reference/terminology#success">성공</Terminology> 후 선택적으로 보내는 <Terminology title="검증된 업데이트가 성공한 뒤 보내는 알림" to="/docs/reference/terminology#change-notification">변경 알림</Terminology>                      |
+
+## 패키지 설치 \{#install-the-package}
+
+레거시 업데이터를 그대로 둔 채 `pkg add`로 [패키지를 설치](/docs/installation)합니다. 먼저 제거할 것은 없으며, 패키지가 전환 중에 Cron 항목과 `/root` 폴더를 읽으므로 이를 직접 삭제하지 않는 것을 권장합니다.
+
+이전 설치 명령을 다시 실행해도 스크립트가 다시 설치되지 않습니다. 버전 2부터는 `pkg add` 명령을 안내하는 오류를 출력하고 아무것도 변경하지 않습니다.
+
+## 자동으로 처리되는 작업 \{#what-happens-automatically}
+
+설치 단계는 레거시 업데이터를 찾아 다음 순서로 패키지에 옮깁니다.
+
+1. **백업**: 무엇이든 변경하기 전에 <Terminology title="쓰기 전에 저장한 구성 사본" to="/docs/reference/terminology#configuration-backup">구성 백업</Terminology>을 저장합니다.
+2. **인터페이스**: 각 Cron 항목의 `igb1.10` 같은 장치를 그 장치를 사용하는 pfSense 인터페이스에 대응시켜 항목을 **모니터링할 인터페이스** 행으로 바꾸고, 그 <Terminology title="/56처럼 네트워크를 나타내는 앞쪽 비트 수" to="/docs/reference/terminology#prefix-length">접두사 길이</Terminology>를 유지합니다.
+3. **일정**: Cron 항목과 같거나 더 자주 확인하는 패키지 **일정**을 고르고 <Terminology title="pfSense가 관리하는 cron 항목으로 실행하는 자동 확인" to="/docs/reference/terminology#scheduled-updates">예약 업데이트</Terminology>를 켭니다.
+4. **기준선**: 저장된 각 접두사를 해당 인터페이스의 <Terminology title="구성을 바꾸지 않고 기록한 시작 접두사" to="/docs/reference/terminology#baseline">기준선</Terminology>으로 기록하므로 접두사 변경을 놓치지 않습니다.
+5. **Cron 항목**: `update.php`를 실행하는 항목만 새 설정과 같은 구성 쓰기에서 제거하므로, 두 업데이터가 동시에 실행되는 일이 없습니다.
+6. **레거시 백업**: 각 레거시 백업을 root만 읽을 수 있도록 **백업** 탭에 복사하고, 사본이 검증되면 원본을 삭제합니다.
+7. **이전 파일**: `/root`에서 스크립트, 저장된 접두사, 다운로드한 아카이브, 저장해 둔 설치 파일을 삭제합니다.
+
+전환이 끝나면 정리 탭으로 연결되는 WebGUI 알림이 표시됩니다. 그 순간 레거시 스크립트가 실행 중이면 패키지는 기다렸다가 다음 예약 확인에서 전환을 마칩니다.
+
+### 여러 Cron 항목 \{#several-cron-entries}
+
+서로 다른 장치를 지정한 Cron 항목은 각각 별도의 행이 되며, 한 번의 실행으로 모두 확인합니다. 하나의 <Terminology title="ISP가 방화벽으로 라우팅하는 IPv6 네트워크" to="/docs/reference/terminology#delegated-prefix">위임된 접두사</Terminology>를 공유하는 인터페이스는 공유 필드를 한 번만 업데이트하며, 이 작업은 백업 후 한 번의 쓰기로 이루어집니다.
+
+장치가 더 이상 어떤 pfSense 인터페이스에도 속하지 않는 Cron 항목은 제거되고 경고로 표시됩니다. 스크립트가 그 항목으로는 아무것도 업데이트할 수 없었기 때문입니다.
+
+### 오래된 저장 접두사 \{#saved-prefixes-that-are-out-of-date}
+
+레거시 업데이터가 마지막으로 실행된 뒤 ISP가 접두사를 바꿨다면, 저장된 접두사가 그대로 <Terminology title="구성을 바꾸지 않고 기록한 시작 접두사" to="/docs/reference/terminology#baseline">기준선</Terminology>으로 유지됩니다. 그러면 패키지의 첫 확인이 아직 이전 접두사를 쓰는 필드를 찾아 업데이트합니다.
+
+오래된 저장 접두사를 쓰는 승인된 필드가 없으면 대신 현재 접두사가 기준선이 되므로, 첫 확인이 <Terminology title="결과: 접두사가 바뀌었지만 일치하는 승인된 필드 없음" to="/docs/reference/terminology#warning">경고</Terminology>를 보고하지 않습니다.
+
+## 정리 탭 검토 \{#review-the-cleanup-tab}
+
+**Services → IPv6 Prefix Updater → 정리**를 열어 레거시 업데이터가 남긴 모든 항목과 각 항목이 어떻게 처리되었는지 확인합니다.
+
+<img src={cleanupBefore} alt="정리 전에 레거시 Cron 항목 두 개, 레거시 스크립트, 장치 두 개의 저장된 접두사, 레거시 백업 하나, 다운로드한 설치 파일 두 개를 나열하는 IPv6 Prefix Updater 정리 탭" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+- **1.x 남은 항목**: Cron 항목, 스크립트, 저장된 접두사, 백업, 다운로드한 설치 파일, 스크립트 잠금을 각각 **발견됨** 또는 **없음**으로 표시합니다.
+- **마지막 정리**: 전환이 수행한 각 단계와, 인터페이스에 할당되지 않은 장치 같은 경고를 보여 줍니다.
+- **지금 정리**: 다음 예약 확인을 기다리지 않고 같은 전환을 즉시 실행합니다. 다른 Cron 항목은 절대 변경하지 않습니다.
+
+<img src={cleanupAfter} alt="지금 정리 후 백업, 제거된 Cron 항목, 옮긴 백업, 삭제된 레거시 파일을 나열하는 IPv6 Prefix Updater 정리 탭" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+## 적용 범위 확인 \{#check-coverage}
+
+처음으로 실제 <Terminology title="마지막 성공 접두사나 길이와 달라진 상태" to="/docs/reference/terminology#prefix-transition">접두사 전환</Terminology>이 일어나면 **변경된 필드**와 **요약**을 <Terminology title="Cron 패키지로 실행하던 원래 update.php 스크립트" to="/docs/reference/terminology#legacy-updater">레거시 업데이터</Terminology>가 변경하던 내용과 비교합니다. 레거시 업데이터는 게이트웨이, 정적 경로, 설명, Base64로 인코딩된 값도 다시 썼습니다. 패키지는 이 값이 **필드** 탭의 **기타 설정**에서 선택된 경우에만 변경하므로, 접두사가 바뀌기 전에 선택해 두는 것을 권장합니다.
+
+전환은 **자동 선택**을 누른 것처럼 모든 pfSense <Terminology title="필드 탭에서 스위치 하나로 켜고 끄는 필드 묶음" to="/docs/reference/terminology#field-group">필드 그룹</Terminology>이 켜진 상태로 시작합니다. 모든 그룹과 그룹을 끄는 방법은 [필드](/docs/configure/configuration-scopes)에 나와 있습니다.

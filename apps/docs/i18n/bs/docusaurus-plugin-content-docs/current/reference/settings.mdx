@@ -1,0 +1,52 @@
+---
+id: settings
+title: Opis postavki
+description: Pregledajte svako polje na kartici Postavke paketa IPv6 Prefix Updater sa zadanom vrijednošću, vrijednostima koje prihvata i porukom validacije koju može prikazati.
+keywords:
+  - pfsense ipv6 prefix updater
+  - postavke
+  - zadane vrijednosti
+  - validacija
+  - webgui
+tags:
+  - reference
+  - settings
+  - webgui
+sidebar_position: 2
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Pregledajte svako polje na kartici Postavke sa zadanom vrijednošću i vrijednostima koje prihvata.
+
+## Praćenje prefiksa \{#prefix-monitoring}
+
+Kartica **Postavke** u **Services → IPv6 Prefix Updater** počinje ovim poljima, a čuvanje obrasca prikazuje `Postavke su sačuvane.`
+
+| Polje                                                                                                                                                                      | Opis                                                                                                                                                                                                                                                                                                                                                                                                                    |
+|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| <Terminology title="automatske provjere iz cron unosa kojim upravlja pfSense" to="/docs/reference/terminology#scheduled-updates">Omogući zakazana ažuriranja</Terminology> | Pokreće provjere prema odabranoj postavci **Raspored**. Po zadanim postavkama isključeno, a čuvanje dodaje ili uklanja cron unos.                                                                                                                                                                                                                                                                                       |
+| <Terminology title="sučelje čija adresa otkriva trenutni prefiks" to="/docs/reference/terminology#monitored-interface">Nadzirana sučelja</Terminology>                     | Obavezno. Jedan red za svako sučelje čija <Terminology title="javna IPv6 adresa unutar 2000::/3" to="/docs/reference/terminology#global-unicast-address">globalna adresa</Terminology> nosi <Terminology title="IPv6 mreža koju ISP usmjerava prema vatrozidu" to="/docs/reference/terminology#delegated-prefix">dodijeljeni prefiks</Terminology>. **Dodaj** dodaje red, a svako sučelje može se pojaviti samo jednom. |
+| <Terminology title="postavka veličine ISP prefiksa, od /48 do /64" to="/docs/reference/terminology#delegated-prefix-length">Dužina dodijeljenog prefiksa</Terminology>     | Obavezno u svakom redu. Od `/48` do `/64`, a `/56` je odabrano po zadanim postavkama.                                                                                                                                                                                                                                                                                                                                   |
+| Raspored                                                                                                                                                                   | Svakih 15 minuta, Svaki sat, Svakih 6 sati ili Svakog dana u ponoć. Po zadanim postavkama Svaki sat.                                                                                                                                                                                                                                                                                                                    |
+
+## Odabir polja \{#field-selection}
+
+Ispod polja **Raspored** kartica Postavke prikazuje `Na kartici Polja odaberite koja se polja konfiguracije mijenjaju s prefiksom.` <Terminology title="grupa polja s jednim prekidačem na kartici Polja" to="/docs/reference/terminology#field-group">Grupe polja</Terminology> i pojedinačna polja biraju se na kartici **Polja** i čuvaju odvojeno od ovih postavki, pa ih čuvanje kartice Postavke nikada ne mijenja. Stranica [Polja](/docs/configure/configuration-scopes) opisuje svaku grupu i njenu zadanu vrijednost.
+
+## Obavještenja \{#notifications}
+
+| Polje                                                                                                                                                                               | Opis                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| <Terminology title="obavještenje poslano nakon provjerenog uspješnog ažuriranja" to="/docs/reference/terminology#change-notification">Šalji obavještenja o promjenama</Terminology> | Označeno po zadanim postavkama. Šalje <Terminology title="obavještenje poslano nakon provjerenog uspješnog ažuriranja" to="/docs/reference/terminology#change-notification">obavještenje o promjeni</Terminology> nakon svakog ishoda <Terminology title="ishod: polja ažurirana, sačuvana, ponovo učitana i provjerena" to="/docs/reference/terminology#success">Uspjeh</Terminology>, dok se obavijesti o ishodima <Terminology title="ishod: prefiks promijenjen, ali nijedno odobreno polje nije odgovaralo" to="/docs/reference/terminology#warning">Upozorenje</Terminology> i <Terminology title="ishod: kontrola ili sigurnosna faza zaustavila je pokretanje" to="/docs/reference/terminology#failure">Greška</Terminology> pojavljuju u svakom slučaju. |
+
+## Poruke validacije \{#validation-messages}
+
+| Poruka                                                                               | Uzrok                                                                          |
+|--------------------------------------------------------------------------------------|--------------------------------------------------------------------------------|
+| `Odaberite podešeno pfSense sučelje za nadzor.`                                      | Ne postoji nijedan red ili sučelje u nekom redu nije podešeno pfSense sučelje. |
+| `Svako sučelje može biti navedeno samo jednom. Uklonite dodatni red za <interface>.` | Dva reda u polju **Nadzirana sučelja** navode isto sučelje.                    |
+| `Dužina dodijeljenog prefiksa mora biti od 48 do 64.`                                | Dužina je izvan prihvaćenog raspona.                                           |
+| `Odaberite podržani raspored paketa.`                                                | Raspored nije jedna od četiri opcije.                                          |
+
+Svako pokretanje ponovo provjerava sačuvane postavke, jer su se mogle promijeniti nakon što je obrazac sačuvan. Uputstvo [Rješavanje problema](/docs/operate/troubleshooting#run-failed) navodi poruke koje pokretanje može prijaviti.

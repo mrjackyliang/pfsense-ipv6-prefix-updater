@@ -1,0 +1,60 @@
+---
+id: compatibility
+title: Совместимость
+description: Перечисляет требования к pfSense, PHP, адресу и длине префикса, необязательную зависимость от WireGuard и известные ограничения, которые важно проверить до работы с пакетом.
+keywords:
+  - pfsense ipv6 prefix updater
+  - совместимость
+  - требования
+  - глобальный ipv6-адрес
+  - известные ограничения
+tags:
+  - setup
+  - compatibility
+  - ipv6
+sidebar_position: 4
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Убедитесь, что межсетевой экран, интерфейс и делегирование от провайдера соответствуют требованиям пакета, прежде чем полагаться на <Terminology title="автоматические проверки через запись cron под управлением pfSense" to="/docs/reference/terminology#scheduled-updates">обновления по расписанию</Terminology>.
+
+## Поддерживаемые выпуски \{#supported-releases}
+
+- Проект пока не опубликовал список протестированных выпусков pfSense.
+- Пакет не проверяет версию pfSense. Каждый запуск проверяет, что он выполняется в pfSense с нужными ему файлами и функциями, и при их отсутствии останавливается до чтения настроек.
+- Коду пакета требуется PHP 8.1 или новее.
+- Файл `.pkg` должен быть собран для той версии FreeBSD, на которой работает ваш выпуск pfSense, иначе `pkg` сообщает о несоответствии ABI.
+
+## Требования к адресу \{#address-requirements}
+
+- У каждого <Terminology title="интерфейс, по адресу которого определяется текущий префикс" to="/docs/reference/terminology#monitored-interface">контролируемого интерфейса</Terminology> должен быть активный <Terminology title="публичный IPv6-адрес из диапазона 2000::/3" to="/docs/reference/terminology#global-unicast-address">глобальный одноадресный адрес</Terminology>. Пакет никогда не переключается на <Terminology title="адрес fe80::, действующий только в одном канале" to="/docs/reference/terminology#link-local-address">адрес link-local</Terminology>.
+- Уникальные локальные (`fc00::/7`), многоадресные, петлевые, неопределённые, IPv4-отображённые адреса и адреса с идентификатором зоны не могут быть <Terminology title="глобальный адрес контролируемого интерфейса по данным pfSense" to="/docs/reference/terminology#source-address">исходным адресом</Terminology>.
+- <Terminology title="размер префикса провайдера, от /48 до /64" to="/docs/reference/terminology#delegated-prefix-length">Длина делегированного префикса</Terminology> должна быть от `/48` до `/64`. Длины, граница которых приходится на середину шестнадцатеричной цифры, например `/57`, тоже работают.
+
+Если адрес не подходит, этот интерфейс получает результат «<Terminology title="результат: проверка или этап безопасности остановили запуск" to="/docs/reference/terminology#failure">Ошибка</Terminology>» с причиной вроде `Интерфейс «lan» не имеет активного глобального IPv6-адреса.` Список сообщений приведён в разделе [Устранение неполадок](/docs/operate/troubleshooting#run-failed).
+
+## Если у WAN нет глобального адреса \{#when-wan-has-no-global-address}
+
+Некоторые провайдеры делегируют префикс, не назначая WAN собственного <Terminology title="публичный IPv6-адрес из диапазона 2000::/3" to="/docs/reference/terminology#global-unicast-address">глобального адреса</Terminology>. Тогда адрес из <Terminology title="сеть IPv6, которую провайдер направляет на межсетевой экран" to="/docs/reference/terminology#delegated-prefix">делегированного префикса</Terminology> получает <Terminology title="интерфейс с адресом из делегированного префикса другого интерфейса" to="/docs/reference/terminology#tracked-interface">интерфейс в режиме Track Interface</Terminology>, например LAN, и контролировать нужно именно его.
+
+Какие интерфейсы имеют <Terminology title="публичный IPv6-адрес из диапазона 2000::/3" to="/docs/reference/terminology#global-unicast-address">глобальный адрес</Terminology>, показывает **Status → Interfaces**.
+
+## Что распознаёт пакет \{#what-the-package-recognizes}
+
+Пакет обновляет явно заданные IPv6-адреса и сети в <Terminology title="конкретное поле конфигурации, которое пакет может перезаписать" to="/docs/reference/terminology#approved-field">разрешённых полях</Terminology>. Имена узлов, URL, значения IPv4 и прочий текст остаются как есть.
+
+Адреса, которые формирует pfSense, например на <Terminology title="интерфейс с адресом из делегированного префикса другого интерфейса" to="/docs/reference/terminology#tracked-interface">интерфейсах в режиме Track Interface</Terminology>, никогда не изменяются. Адреса, описывающие другие устройства, например удалённые сети VPN и пиры WireGuard, меняются, только когда вы отмечаете их в группе [Другие настройки](/docs/configure/configuration-scopes#other-settings).
+
+## Необязательные зависимости \{#optional-dependencies}
+
+- **Пакет WireGuard**: нужен только тогда, когда требуется изменить <Terminology title="адрес, назначенный туннелю WireGuard в pfSense" to="/docs/reference/terminology#wireguard-tunnel-address">адреса туннелей WireGuard</Terminology>. Без него реальный запуск с изменениями WireGuard останавливается до создания резервной копии.
+
+## Известные ограничения \{#known-limits}
+
+- Добавление <Terminology title="интерфейс, по адресу которого определяется текущий префикс" to="/docs/reference/terminology#monitored-interface">контролируемого интерфейса</Terminology> или замена интерфейса в строке на другой приводит к записи нового <Terminology title="начальный префикс, записанный без изменения конфигурации" to="/docs/reference/terminology#baseline">базового значения</Terminology> для него, а изменение <Terminology title="размер префикса провайдера, от /48 до /64" to="/docs/reference/terminology#delegated-prefix-length">длины делегированного префикса</Terminology> в строке считается <Terminology title="отличие от последнего успешного префикса или длины" to="/docs/reference/terminology#prefix-transition">сменой префикса</Terminology>.
+- <Terminology title="предварительный просмотр без резервной копии и записи" to="/docs/reference/terminology#dry-run">Пробный запуск</Terminology> не может имитировать изменение префикса, поэтому запланированные изменения появляются только после реального изменения.
+- Пары высокой доступности (CARP) не обрабатываются особым образом.
+- Поскольку это <Terminology title="пакет из GitHub, а не из репозитория Netgate" to="/docs/reference/terminology#unofficial-package">неофициальный пакет</Terminology>, новые выпуски устанавливаются с помощью `pkg`, как описано в разделе [Обновление и удаление](/docs/reference/package-lifecycle).
+
+Выбор источника адреса описан в разделе [Интерфейс и префикс](/docs/configure/interface-and-prefix), а поля, которые может изменять пакет, — в разделе [Поля](/docs/configure/configuration-scopes).

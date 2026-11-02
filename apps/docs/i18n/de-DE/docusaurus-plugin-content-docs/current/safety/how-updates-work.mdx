@@ -1,0 +1,79 @@
+---
+id: how-updates-work
+title: So funktionieren Aktualisierungen
+description: Verfolgen Sie einen Lauf Stufe für Stufe, vom Lesen der Schnittstellenadressen über Planung, Sicherung, den einzelnen Schreibvorgang und das Neuladen von Diensten bis zum aufgezeichneten Ergebnis.
+keywords:
+  - pfsense ipv6 prefix updater
+  - aktualisierungsablauf
+  - änderungsplan
+  - neuladen von diensten
+  - verifizierung
+tags:
+  - safety
+  - update process
+  - service reload
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Verfolgen Sie einen Lauf vom Lesen der Schnittstellenadressen bis zum Aufzeichnen des Ergebnisses, einschließlich jedes Punkts, an dem er stoppen kann.
+
+## 1. Lesen und validieren \{#1-read-and-validate}
+
+- Eine geplante Prüfung stoppt sofort als <Terminology title="Ergebnis: geplante Prüfung bei ausgeschalteten Aktualisierungen übersprungen" to="/docs/reference/terminology#disabled">Deaktiviert</Terminology>, wenn **<Terminology title="automatische Prüfungen über einen von pfSense verwalteten Cron-Eintrag" to="/docs/reference/terminology#scheduled-updates">Geplante Aktualisierungen aktivieren</Terminology>** ausgeschaltet ist. Ein <Terminology title="Prüfung, die auf der Registerkarte Status gestartet wird" to="/docs/reference/terminology#manual-run">manueller Lauf</Terminology> läuft weiter.
+- Der Lauf prüft die gespeicherten Einstellungen erneut, weil sie sich seit dem Speichern des Formulars geändert haben könnten.
+- Er liest die <Terminology title="öffentliche IPv6-Adresse innerhalb von 2000::/3" to="/docs/reference/terminology#global-unicast-address">globale Adresse</Terminology> jeder <Terminology title="Schnittstelle, deren Adresse das aktuelle Präfix verrät" to="/docs/reference/terminology#monitored-interface">überwachten Schnittstelle</Terminology> neu, ohne Rückgriff auf eine <Terminology title="fe80::-Adresse, die nur auf einem Link funktioniert" to="/docs/reference/terminology#link-local-address">Link-Local-Adresse</Terminology>, und wandelt sie in die <Terminology title="kleingeschriebene, kürzeste Standardschreibweise einer Adresse" to="/docs/reference/terminology#canonical-form">kanonische Form</Terminology> um.
+- Er maskiert jede Adresse mit der <Terminology title="Einstellung für die Präfixgröße des Anbieters, /48 bis /64" to="/docs/reference/terminology#delegated-prefix-length">Länge des delegierten Präfixes</Terminology> ihrer Zeile, um das <Terminology title="Quelladresse, auf die Präfixlänge maskiert" to="/docs/reference/terminology#observed-prefix">beobachtete Präfix</Terminology> zu erhalten.
+
+## 2. Vergleichen \{#2-compare}
+
+- Ohne <Terminology title="Ausgangspräfix, aufgezeichnet ohne Konfigurationsänderung" to="/docs/reference/terminology#baseline">Basislinie</Terminology> für die Schnittstelle zeichnet der Lauf eine auf und endet als <Terminology title="Ergebnis: Basislinie aufgezeichnet, Konfiguration unverändert" to="/docs/reference/terminology#initialized">Initialisiert</Terminology>.
+- Wenn das Präfix und seine Länge mit dem <Terminology title="Präfix, mit dem die nächste Prüfung vergleicht" to="/docs/reference/terminology#last-successful-prefix">letzten erfolgreichen Präfix</Terminology> übereinstimmen, endet der Lauf als <Terminology title="Ergebnis: Präfix unverändert, nichts durchsucht oder geschrieben" to="/docs/reference/terminology#no-change">Keine Änderung</Terminology>, ohne die Konfiguration zu durchsuchen.
+- Ein anderes Präfix oder eine andere Länge ist ein <Terminology title="Abweichung vom letzten erfolgreichen Präfix oder dessen Länge" to="/docs/reference/terminology#prefix-transition">Präfixwechsel</Terminology>, und der Lauf wird fortgesetzt.
+
+## 3. Planen \{#3-plan}
+
+- Der Lauf liest die Konfiguration über die Konfigurationsfunktionen von pfSense und behält nur die auf der Registerkarte Felder ausgewählten Felder. Ausgewählte Felder, die nicht mehr existieren, werden übersprungen und unter **Übersprungene Felder** aufgeführt.
+- Jede Adresse in einem <Terminology title="exaktes Konfigurationsfeld, das das Paket umschreiben darf" to="/docs/reference/terminology#approved-field">genehmigten Feld</Terminology>, die mit der gespeicherten Länge zum alten Präfix gehört, erhält die neuen Präfixbits mit der aktuellen Länge und behält ihren <Terminology title="Adressbits nach dem delegierten Präfix" to="/docs/reference/terminology#host-portion">Hostanteil</Terminology>. Zusammen bilden diese Änderungen den vollständigen <Terminology title="vollständige Liste der Feldänderungen, vor dem Schreiben erstellt" to="/docs/reference/terminology#change-plan">Änderungsplan</Terminology>.
+- Gibt es nichts zu ändern, endet der Lauf als <Terminology title="Ergebnis: Präfix geändert, aber kein genehmigtes Feld passte" to="/docs/reference/terminology#warning">Warnung</Terminology>. Ein <Terminology title="Vorschau, die nie sichert oder schreibt" to="/docs/reference/terminology#dry-run">Testlauf</Terminology> mit Änderungen endet hier als <Terminology title="Vorschau, die nie sichert oder schreibt" to="/docs/reference/terminology#dry-run">Testlauf</Terminology>.
+
+## 4. Vorabprüfung \{#4-preflight}
+
+- Der Lauf bestätigt, dass pfSense jeden Dienst im Plan neu laden kann. <Terminology title="Adresse eines WireGuard-Tunnels in pfSense" to="/docs/reference/terminology#wireguard-tunnel-address">WireGuard-Tunneladressen</Terminology> benötigen dafür das WireGuard-Paket.
+- Er bestätigt, dass jedes geplante Feld noch den Wert enthält, den es beim Erstellen des Plans hatte.
+
+## 5. Sichern und einmal schreiben \{#5-back-up-and-write-once}
+
+- pfSense erstellt eine <Terminology title="Kopie der Konfiguration vor einem Schreibvorgang" to="/docs/reference/terminology#configuration-backup">Konfigurationssicherung</Terminology>, und der Lauf stoppt, wenn pfSense sie nicht bestätigt.
+- Der Lauf wendet alle Änderungen an und speichert einmal mit der Beschreibung `Die IPv6-Präfixaktualisierung änderte <count> genehmigte(s) Feld(er) für Schnittstelle <interface>`.
+- Meldet pfSense das Speichern als fehlgeschlagen, stellt der Lauf die ursprünglichen Werte im Speicher wieder her und stoppt.
+
+## 6. Prüfen, neu laden, prüfen \{#6-verify-reload-verify}
+
+- Der Lauf prüft, ob die gespeicherten Werte dem Plan entsprechen, lädt die betroffenen Dienste neu und prüft die Werte erneut.
+- Dienste werden in der festen Reihenfolge neu geladen, die [Neuladeaktionen](/docs/reference/approved-fields#reload-actions) auflistet, von Schnittstellen bis WireGuard. Auf das Neuladen der Schnittstellen folgt ein Neuladen des Firewallfilters, das dann nicht wiederholt wird.
+- Die Neuladevorgänge von Firewallfilter, DNS-Resolver und DNS-Forwarder lassen den Lauf fehlschlagen, wenn sie über ihren Rückgabewert einen Fehler melden. Die anderen Neuladevorgänge lassen ihn nur fehlschlagen, wenn sie einen Fehler auslösen.
+- Die Einstellungen anderer Pakete werden zuletzt erneut angewendet, nach dem Neuladen und dessen Verifizierung. Ein Paket, dessen Einstellungen sich nicht erneut anwenden lassen, wird gemeldet, und die gespeicherten Werte bleiben erhalten.
+- Ein Fehler in dieser Stufe lässt die neuen Werte gespeichert.
+
+## 7. Aufzeichnen und benachrichtigen \{#7-record-and-notify}
+
+- Die <Terminology title="Ausgangspräfix, aufgezeichnet ohne Konfigurationsänderung" to="/docs/reference/terminology#baseline">Basislinie</Terminology> wird auf das neue Präfix verschoben, und **Letzter Lauf** zeichnet den <Terminology title="Ergebnis: Felder aktualisiert, gespeichert, neu geladen und verifiziert" to="/docs/reference/terminology#success">Erfolg</Terminology> mit der Anzahl geänderter Felder und den <Terminology title="pfSense-Aktion, die geänderte Einstellungen anwendet" to="/docs/reference/terminology#service-reload">neu geladenen Diensten</Terminology> auf.
+- Der Lauf schreibt eine Zeile in das <Terminology title="allgemeines pfSense-Protokoll, in das das Paket schreibt" to="/docs/reference/terminology#system-log">Systemprotokoll</Terminology> und sendet eine <Terminology title="Meldung nach einer verifizierten erfolgreichen Aktualisierung" to="/docs/reference/terminology#change-notification">Änderungsbenachrichtigung</Terminology>, sofern diese eingeschaltet ist. Eine fehlgeschlagene Benachrichtigung ändert das Ergebnis nicht.
+
+## Wo ein Lauf stoppen kann \{#where-a-run-can-stop}
+
+| Wo er stoppt                                                                                                                                                                                                                                                                                                                   | Konfiguration geschrieben | Sicherung erstellt | Letzter Lauf aktualisiert                                                                                                                                          |
+|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------|--------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Geplante Prüfung mit dem Ergebnis <Terminology title="Ergebnis: geplante Prüfung bei ausgeschalteten Aktualisierungen übersprungen" to="/docs/reference/terminology#disabled">Deaktiviert</Terminology>                                                                                                                        | Nein                      | Nein               | Nein                                                                                                                                                               |
+| Einstellungen, Adresse oder nicht lesbarer <Terminology title="Paketdatei mit Basislinie und letztem Lauf" to="/docs/reference/terminology#package-state">Paketzustand</Terminology>                                                                                                                                           | Nein                      | Nein               | Nein                                                                                                                                                               |
+| <Terminology title="Ergebnis: Basislinie aufgezeichnet, Konfiguration unverändert" to="/docs/reference/terminology#initialized">Initialisiert</Terminology> oder <Terminology title="Ergebnis: Präfix unverändert, nichts durchsucht oder geschrieben" to="/docs/reference/terminology#no-change">Keine Änderung</Terminology> | Nein                      | Nein               | Ja                                                                                                                                                                 |
+| <Terminology title="Ergebnis: Präfix geändert, aber kein genehmigtes Feld passte" to="/docs/reference/terminology#warning">Warnung</Terminology> oder <Terminology title="Vorschau, die nie sichert oder schreibt" to="/docs/reference/terminology#dry-run">Testlauf</Terminology>                                             | Nein                      | Nein               | Ja                                                                                                                                                                 |
+| Fehler bei der Vorabprüfung                                                                                                                                                                                                                                                                                                    | Nein                      | Nein               | Ja                                                                                                                                                                 |
+| Fehler bei der Sicherung                                                                                                                                                                                                                                                                                                       | Nein                      | Nein               | Ja                                                                                                                                                                 |
+| Fehler beim Schreiben                                                                                                                                                                                                                                                                                                          | Nein, laut pfSense        | Ja                 | Ja                                                                                                                                                                 |
+| Fehler bei Verifizierung oder Neuladen                                                                                                                                                                                                                                                                                         | Ja                        | Ja                 | Ja                                                                                                                                                                 |
+| Fehler bei der Benachrichtigung                                                                                                                                                                                                                                                                                                | Ja                        | Ja                 | Ja, als <Terminology title="Ergebnis: Felder aktualisiert, gespeichert, neu geladen und verifiziert" to="/docs/reference/terminology#success">Erfolg</Terminology> |
+
+[Genehmigte Felder](/docs/reference/approved-fields) listet die pfSense-Funktion hinter jedem Neuladen auf, und [Sicherung und Wiederherstellung](/docs/operate/backups-and-recovery) behandelt die Wiederherstellung nach einem Fehler.

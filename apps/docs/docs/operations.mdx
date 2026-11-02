@@ -1,0 +1,66 @@
+---
+id: operations
+title: Safety Model
+description: See the checks, backup, and single write the package performs before changing pfSense, which runs never write, and what can still affect traffic.
+keywords:
+  - pfsense ipv6 prefix updater
+  - safety model
+  - configuration backup
+  - verification
+  - service reload
+tags:
+  - safety
+  - backup
+  - verification
+sidebar_position: 6
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+See the protections the package applies before it changes your configuration and what can still affect traffic.
+
+## What Happens on a Prefix Change
+
+When the package finds a <Terminology title="change from the last successful prefix or length" to="/docs/reference/terminology#prefix-transition">prefix transition</Terminology>, it works in this order:
+
+1. Reads the <Terminology title="public IPv6 address inside 2000::/3" to="/docs/reference/terminology#global-unicast-address">global address</Terminology> of each <Terminology title="interface whose address reveals the current prefix" to="/docs/reference/terminology#monitored-interface">Monitored Interface</Terminology> and calculates its prefix.
+2. Compares the prefix with the <Terminology title="prefix the next check compares against" to="/docs/reference/terminology#last-successful-prefix">last successful prefix</Terminology>.
+3. Finds the <Terminology title="exact configuration field the package may rewrite" to="/docs/reference/terminology#approved-field">approved fields</Terminology> that still use the old prefix and builds the complete <Terminology title="full list of field changes, built before writing" to="/docs/reference/terminology#change-plan">change plan</Terminology>.
+4. Confirms that pfSense can reload every affected service and that no planned field has changed since it was read.
+5. Saves a <Terminology title="copy of the configuration saved before a write" to="/docs/reference/terminology#configuration-backup">configuration backup</Terminology>.
+6. Applies every change and saves the configuration once.
+7. Checks the saved values, reloads only the affected services, and checks the values again.
+8. Moves the <Terminology title="starting prefix recorded without changing configuration" to="/docs/reference/terminology#baseline">baseline</Terminology> to the new prefix, records the result, and sends a <Terminology title="alert sent after a verified successful update" to="/docs/reference/terminology#change-notification">change notification</Terminology> if it's turned on.
+
+If any step before the backup fails, the configuration stays as it was.
+
+## What Never Causes a Write
+
+The package doesn't change the configuration on these outcomes:
+
+- <Terminology title="outcome: baseline recorded, configuration unchanged" to="/docs/reference/terminology#initialized">Initialized</Terminology> and <Terminology title="outcome: dry run before a baseline exists" to="/docs/reference/terminology#initialization-preview">Initialization preview</Terminology>.
+- <Terminology title="outcome: prefix unchanged, nothing scanned or written" to="/docs/reference/terminology#no-change">No change</Terminology>.
+- <Terminology title="preview that never backs up or writes" to="/docs/reference/terminology#dry-run">Dry run</Terminology>.
+- <Terminology title="outcome: prefix changed, but no approved field matched" to="/docs/reference/terminology#warning">Warning</Terminology>.
+- A <Terminology title="outcome: a check or safety stage stopped the run" to="/docs/reference/terminology#failure">Failure</Terminology> that stops before the backup.
+
+## What Can Still Affect Traffic
+
+- **<Terminology title="pfSense action that applies changed settings" to="/docs/reference/terminology#service-reload">Service reloads</Terminology>**: changes to static interfaces or <Terminology title="extra interface address such as CARP or IP Alias" to="/docs/reference/terminology#virtual-ip">virtual IPs</Terminology> reload every interface and then the firewall filter. Gateway and static route changes reload routing and the filter, OpenVPN changes reload every OpenVPN instance, and DHCPv6, router advertisement, and DNS changes restart those services.
+- **Failures after the save**: if a check or <Terminology title="pfSense action that applies changed settings" to="/docs/reference/terminology#service-reload">service reload</Terminology> fails after the save, the new values stay saved and nothing is rolled back. The <Terminology title="starting prefix recorded without changing configuration" to="/docs/reference/terminology#baseline">baseline</Terminology> stays on the old prefix, as [Run Outcomes](/docs/operate/run-outcomes#failures-after-the-save) explains.
+- **Values that wait for you**: gateways, static routes, DNS domain overrides, and the other values in [Other Settings](/docs/configure/configuration-scopes#other-settings) keep the old prefix until you tick them, and so do fields in a group that is off.
+
+## Recovery Path
+
+Every write has a <Terminology title="copy of the configuration saved before a write" to="/docs/reference/terminology#configuration-backup">configuration backup</Terminology> of the configuration before it in <Terminology title="pfSense list of saved configuration revisions" to="/docs/reference/terminology#config-history">Config History</Terminology>. The revision named after the package holds the updated configuration, so [Backups and Recovery](/docs/operate/backups-and-recovery) shows which revision to restore.
+
+It is recommended to keep your usual off-device pfSense backups as well.
+
+## What You Can Verify
+
+The Status tab shows the <Terminology title="global address pfSense reports for the monitored interface" to="/docs/reference/terminology#source-address">source address</Terminology>, <Terminology title="source address masked at the prefix length" to="/docs/reference/terminology#observed-prefix">observed prefix</Terminology>, outcome, changed-field count, backup result, <Terminology title="pfSense action that applies changed settings" to="/docs/reference/terminology#service-reload">reloaded services</Terminology>, time, and summary of the latest run. The <Terminology title="read-only results shown after Run Now or Dry Run" to="/docs/reference/terminology#command-output">Command Output</Terminology> shows the same details right after a <Terminology title="check started from the Status tab" to="/docs/reference/terminology#manual-run">manual run</Terminology>.
+
+## Learn More
+
+- **[How Updates Work](/docs/safety/how-updates-work)**: each stage of a run and where it can stop.
+- **[Check Before Automation](/docs/safety/testing-and-verification)**: a checklist to run on your firewall before you turn on the schedule.

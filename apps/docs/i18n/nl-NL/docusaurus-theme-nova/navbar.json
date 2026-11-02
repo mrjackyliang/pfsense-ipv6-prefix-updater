@@ -1,0 +1,14 @@
+{
+  "item.label.Home": {
+    "message": "Start"
+  },
+  "item.label.Guides": {
+    "message": "Documentatie"
+  },
+  "item.label.Safety": {
+    "message": "Veiligheid en werking"
+  },
+  "item.label.Troubleshooting": {
+    "message": "Problemen oplossen"
+  }
+}

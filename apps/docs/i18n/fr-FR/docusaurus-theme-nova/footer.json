@@ -1,0 +1,32 @@
+{
+  "layout.resources.title": {
+    "message": "Ressources"
+  },
+  "sections.learn.0.label": {
+    "message": "Installer et configurer"
+  },
+  "sections.learn.1.label": {
+    "message": "Interfaces surveillées / Longueur du préfixe délégué"
+  },
+  "sections.learn.2.label": {
+    "message": "État / Actions"
+  },
+  "sections.learn.3.label": {
+    "message": "Dépannage"
+  },
+  "sections.resources.0.label": {
+    "message": "Sécurité et fonctionnement"
+  },
+  "sections.resources.1.label": {
+    "message": "Résultats et tests"
+  },
+  "sections.resources.2.label": {
+    "message": "Documentation pfSense"
+  },
+  "sections.resources.3.label": {
+    "message": "Code source"
+  },
+  "copyright": {
+    "message": "Copyright © 2023-2026 Jacky Liang. Publié sous licence MIT."
+  }
+}

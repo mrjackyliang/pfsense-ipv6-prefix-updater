@@ -1,0 +1,71 @@
+---
+id: build-and-release
+title: Bouwen en publiceren
+description: Controleer, stage en bouw het pfSense-pakket op FreeBSD, en koppel daarna de .pkg- en controlesombestanden met de publish-workflow aan een GitHub-release.
+keywords:
+  - pfsense ipv6 prefix updater
+  - build
+  - release-workflow
+  - freebsd-ports
+  - php-tests
+tags:
+  - contributing
+  - build
+  - release
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Controleer, stage en verpak pfSense IPv6 Prefix Updater, en publiceer het pakket daarna in een GitHub-release.
+
+## Vereisten \{#requirements}
+
+- **Node.js 22 of 24** — De manifests in de root en de workspaces accepteren `^22 || ^24`.
+- **PHP of Docker** — De PHP-suites gebruiken een lokale `php` als die er is, en anders de image `php:8.3-cli-alpine` via Docker. `PHP_TEST_IMAGE` overschrijft de image.
+- **FreeBSD voor het verpakken** — `npm run deploy` draait alleen op FreeBSD, met `PFSENSE_PORTS_DIR` naar een checkout van de FreeBSD-ports van pfSense.
+
+## Controleren, stagen en verpakken \{#check-stage-and-package}
+
+Voer deze opdrachten uit vanuit de root van de repository:
+
+```bash
+# Lint and type-check the scripts, run the PHP and Vitest suites, and validate the port.
+npm run check --workspace pfsense-pkg-ipv6-prefix-updater
+
+# Copy the port into packages/ipv6-prefix-updater/build/port with the workspace version.
+npm run build --workspace pfsense-pkg-ipv6-prefix-updater
+
+# Build the package on FreeBSD into packages/ipv6-prefix-updater/build/release.
+PFSENSE_PORTS_DIR=/path/to/FreeBSD-ports npm run deploy --workspace pfsense-pkg-ipv6-prefix-updater
+```
+
+- Het stagen maakt van `port/Makefile.template` het bestand `build/port/Makefile` en zet daarin de `version` uit `packages/ipv6-prefix-updater/package.json`.
+- Het verpakken kopieert de gestagede port naar `sysutils/pfSense-pkg-Ipv6PrefixUpdater` in de ports-checkout, voert `make package` uit en verwijdert die kopie weer. Het stopt als de bestemming al bestaat.
+- `build/release` bevat daarna de `.pkg` met versienummer, een kopie met de naam `pfSense-pkg-Ipv6PrefixUpdater.pkg` en voor elk een `.sha256`-bestand dat alleen de hash bevat.
+
+## Release-workflow \{#release-workflow}
+
+`.github/workflows/pfsense-ipv6-prefix-updater.yml` draait wanneer een GitHub-release wordt gepubliceerd, of handmatig met de tag van een bestaande release:
+
+1. Valideert en staget de port op een Ubuntu-runner.
+2. Start een FreeBSD-VM waarvan de release uit de repositoryvariabele `PFSENSE_FREEBSD_VERSION` komt, of `15` als die niet is ingesteld.
+3. Checkt de branch `devel` van de FreeBSD-ports-repository van pfSense uit en voert de pakketbuild uit.
+4. Uploadt `build/release` als workflow-artefact dat 7 dagen wordt bewaard en koppelt dezelfde bestanden aan de release, waarbij bestaande assets worden vervangen.
+
+Het is aan te raden om `PFSENSE_FREEBSD_VERSION` in te stellen op de hoofdversie van FreeBSD van de pfSense-release waarop je je richt, en geen pakket te publiceren dat tegen een andere hoofdversie is gebouwd. De opdracht `pkg add` uit de installatiehandleiding haalt `pfSense-pkg-Ipv6PrefixUpdater.pkg` op uit de release die GitHub als nieuwste markeert.
+
+## PHP-testsuites \{#php-test-suites}
+
+- **`tests/domain.php`**: <Terminology title="kortste standaardnotatie van een adres, in kleine letters" to="/docs/reference/terminology#canonical-form">canonieke vorm</Terminology>, de grenzen `/48` en `/64`, maskering, <Terminology title="adresbits na de gedelegeerde prefix" to="/docs/reference/terminology#host-portion">hostbits</Terminology> bij `/53`, geweigerde adressen, no-op-planning, filtering op de vorige prefix en een lengtewijziging die als <Terminology title="afwijking van de laatste geslaagde prefix of lengte" to="/docs/reference/terminology#prefix-transition">prefixwissel</Terminology> wordt behandeld.
+- **`tests/runtime.php`**: het scannen van elke <Terminology title="groep velden met één schakelaar op het tabblad Velden" to="/docs/reference/terminology#field-group">veldgroep</Terminology>, uitzonderingen per veld, het opnieuw toepassen van de instellingen van andere pakketten, een atomaire <Terminology title="pakketbestand met de baseline en de laatste uitvoering" to="/docs/reference/terminology#package-state">pakketstatus</Terminology>, de <Terminology title="vergrendeling die twee gelijktijdige controles voorkomt" to="/docs/reference/terminology#run-lock">uitvoeringsvergrendeling</Terminology>, niet-ondersteunde platforms en uitgeschakelde geplande controles. Het dekt ook de transactievolgorde en fouten bij het schrijven, de back-up, de voorcontrole voor het herladen, het herladen en de melding, plus de <Terminology title="resultaat: prefix gewijzigd, maar geen goedgekeurd veld kwam overeen" to="/docs/reference/terminology#warning">Waarschuwing</Terminology> zonder overeenkomsten.
+- **`tests/pfsense-adapter.php`**: een geforceerde adresvernieuwing zonder terugval op <Terminology title="fe80::-adres dat alleen op één link werkt" to="/docs/reference/terminology#link-local-address">link-local</Terminology>, de back-up vóór het opslaan dat alleen schrijft, en een mislukte back-up die vóór het schrijven stopt.
+- **`tests/translations.php`** en **`tests/webgui-localization.php`**: volledige catalogi voor elke taal-ID van pfSense en het gelokaliseerde formulier Instellingen met de validatiemeldingen.
+
+## Documentatiesite \{#documentation-site}
+
+Vanuit `apps/docs` voert `npm run check` ESLint, de controle van de vertaalboom, drie typecontroles en de Vitest-suites voor `.env`-bestanden, frontmatter, links, tabellen, glossariumlinks en typedeclaraties uit. `npm run build` bouwt elke locale.
+
+De vertaalde docs-pagina's van elke locale staan in `apps/docs/i18n/<locale>/docusaurus-plugin-content-docs/current/` en komen één-op-één overeen met de Engelse pagina's, dus werk ze bij wanneer een Engelse pagina verandert. De interfaceteksten (homepage, navigatiebalk, footer, blog en zijbalklabels) komen uit `scripts/generate-locales.mjs`, dat `scripts/locale-copies.json` en de pakketvertalingen leest. `npm run i18n` voert die generator eerst uit, en die laat de vertaalde docs-pagina's ongemoeid.
+
+`.github/workflows/nova-publish-project.yml` bouwt de site en publiceert die op GitHub Pages wanneer er een release wordt gepubliceerd.

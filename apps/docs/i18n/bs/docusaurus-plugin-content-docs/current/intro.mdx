@@ -1,0 +1,90 @@
+---
+id: intro
+title: Pregled
+description: Održavajte pfSense aliase, sučelja i VPN adrese na trenutnom IPv6 prefiksu kada ISP dodijeli novi, uz sigurnosnu kopiju prije svake promjene.
+keywords:
+  - pfsense ipv6 prefix updater
+  - pregled
+  - dodjela ipv6 prefiksa
+  - dinamički prefiks
+  - pfsense paket
+tags:
+  - setup
+  - overview
+  - ipv6
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Održavajte IPv6 adrese sačuvane u pfSense-u na trenutnom prefiksu kada ISP promijeni <Terminology title="IPv6 mreža koju ISP usmjerava prema vatrozidu" to="/docs/reference/terminology#delegated-prefix">dodijeljeni prefiks</Terminology>.
+
+## Šta paket radi \{#what-it-does}
+
+pfSense IPv6 Prefix Updater je pfSense paket koji nadgleda sučelja koja odaberete kako bi uočio novi prefiks. Kada se prefiks promijeni, prepisuje odgovarajuće adrese u poljima koja ste odabrali i zadržava <Terminology title="bitovi adrese nakon dodijeljenog prefiksa" to="/docs/reference/terminology#host-portion">dio hosta</Terminology> svake od njih.
+
+## Zašto koristiti ovaj paket? \{#why-use-this-package}
+
+1. Zadržava <Terminology title="bitovi adrese nakon dodijeljenog prefiksa" to="/docs/reference/terminology#host-portion">dio hosta</Terminology> svake adrese, pa svaki uređaj zadržava isti sufiks nakon promjene prefiksa.
+2. Mijenja samo <Terminology title="tačno polje konfiguracije koje paket smije prepisati" to="/docs/reference/terminology#approved-field">odobrena polja</Terminology> koja odaberete na kartici Polja, pa udaljene VPN mreže, peerovi, mrežni prolazi i rute ostaju onakvi kakve ste ih postavili.
+3. Pravi <Terminology title="kopija konfiguracije napravljena prije upisa" to="/docs/reference/terminology#configuration-backup">sigurnosnu kopiju konfiguracije</Terminology> prije svakog upisa, pa je prethodna konfiguracija spremna u <Terminology title="pfSense lista sačuvanih revizija konfiguracije" to="/docs/reference/terminology#config-history">Config History</Terminology>.
+4. Radi po rasporedu kojim upravlja pfSense, pa vam nisu potrebni Cron paket ni skripta u kućnom direktoriju.
+5. Prikazuje svaki rezultat na kartici Status, pa možete vidjeti šta se promijenilo, koje su usluge ponovo učitane i da li je napravljena sigurnosna kopija.
+
+## Šta ažurira \{#what-it-updates}
+
+- **Aliasi**: adrese i mreže u aliasima tipa Host i Network.
+- **Statička sučelja**: adrese sučelja postavljenih na Static IPv6.
+- **<Terminology title="dodatna adresa sučelja, npr. CARP ili IP Alias" to="/docs/reference/terminology#virtual-ip">Virtualne IP adrese</Terminology>**: CARP i IP Alias <Terminology title="dodatna adresa sučelja, npr. CARP ili IP Alias" to="/docs/reference/terminology#virtual-ip">virtualne IP adrese</Terminology>.
+- **IPsec**: lokalna strana unosa <Terminology title="IPsec unos koji opisuje lokalne i udaljene mreže" to="/docs/reference/terminology#ipsec-phase-2">faze 2</Terminology> tipa Tunnel IPv6 i Routed (VTI).
+- **OpenVPN**: IPv6 mreže tunela i lokalne mreže na serverima i u <Terminology title="OpenVPN postavke za jednog klijenta na serveru" to="/docs/reference/terminology#client-specific-override">klijentskim nadjačavanjima</Terminology>, te IPv6 mreže tunela na klijentima.
+- **WireGuard**: <Terminology title="adresa dodijeljena pfSense WireGuard tunelu" to="/docs/reference/terminology#wireguard-tunnel-address">adrese tunela</Terminology>, kada je instaliran WireGuard paket.
+- **DHCPv6 server**: rasponi adresa, delegiranja prefiksa i poolova, statička mapiranja te DNS i NTP serveri koji se dodjeljuju klijentima.
+- **Oglašavanje rutera**: oglašeni DNS serveri i RA podmreže.
+- **DNS nadjačavanja hostova**: nadjačavanja hostova u DNS Resolveru i DNS Forwarderu.
+- **Pravila vatrozida**: izvorne i odredišne adrese upisane u pravila.
+- **NAT i NPt**: upisane adrese u prosljeđivanjima portova, odlaznom NAT-u i 1:1 NAT-u te NPt prefiksi.
+- **Postavke drugih paketa**: samo polja koja označite, nakon čega paket ponovo primjenjuje postavke tog paketa.
+
+Kartica **Polja** navodi svaku adresu unutar vašeg prefiksa, s prekidačem za svaku <Terminology title="grupa polja s jednim prekidačem na kartici Polja" to="/docs/reference/terminology#field-group">grupu polja</Terminology> i potvrdnim okvirom za svako polje.
+
+## Šta vas čeka \{#what-waits-for-you}
+
+Grupa **Ostale postavke** je na početku isključena, pa se ove vrijednosti mijenjaju samo kada ih označite:
+
+- Udaljena strana VPN-a, na primjer udaljene IPsec i OpenVPN mreže te WireGuard peerovi, dozvoljene IP adrese i krajnje tačke.
+- Mrežni prolazi, statičke rute, nadjačavanja DNS domena, certifikati, tajne, vrijednosti kodirane u Base64 i opisi.
+- Port, URL i ostali tipovi aliasa.
+
+Sučelja koja adresu dobijaju putem DHCPv6, SLAAC ili <Terminology title="sučelje adresirano iz dodijeljenog prefiksa drugog sučelja" to="/docs/reference/terminology#tracked-interface">Track Interface</Terminology> nikada se ne mijenjaju, jer te adrese generiše pfSense. Isto vrijedi za IPv4 adrese, nazive hostova i IPv6 adrese izvan starog prefiksa. Potpuna lista nalazi se u odjeljku [Ostale postavke](/docs/configure/configuration-scopes#other-settings).
+
+## Kako radi provjera \{#how-a-check-works}
+
+1. Čita <Terminology title="javna IPv6 adresa unutar 2000::/3" to="/docs/reference/terminology#global-unicast-address">globalnu adresu</Terminology> svakog <Terminology title="sučelje čija adresa otkriva trenutni prefiks" to="/docs/reference/terminology#monitored-interface">nadziranog sučelja</Terminology> i izračunava njegov prefiks.
+2. Poredi ga s <Terminology title="prefiks s kojim se poredi sljedeća provjera" to="/docs/reference/terminology#last-successful-prefix">posljednjim uspješnim prefiksom</Terminology> i završava ishodom <Terminology title="ishod: prefiks nepromijenjen, ništa nije skenirano ni upisano" to="/docs/reference/terminology#no-change">Bez promjene</Terminology> ako se podudaraju.
+3. Pri <Terminology title="razlika u odnosu na posljednji uspješni prefiks ili dužinu" to="/docs/reference/terminology#prefix-transition">promjeni prefiksa</Terminology> sastavlja <Terminology title="potpuna lista promjena polja, sastavljena prije upisa" to="/docs/reference/terminology#change-plan">plan promjena</Terminology> za <Terminology title="tačno polje konfiguracije koje paket smije prepisati" to="/docs/reference/terminology#approved-field">odobrena polja</Terminology> koja još koriste stari prefiks.
+4. Pravi <Terminology title="kopija konfiguracije napravljena prije upisa" to="/docs/reference/terminology#configuration-backup">sigurnosnu kopiju konfiguracije</Terminology>, upisuje sve promjene jednim čuvanjem, ponovo učitava samo pogođene usluge i ponovo provjerava vrijednosti.
+5. Bilježi rezultat na kartici Status i šalje <Terminology title="obavještenje poslano nakon provjerenog uspješnog ažuriranja" to="/docs/reference/terminology#change-notification">obavještenje o promjeni</Terminology> ako je uključeno.
+
+Zaštite u svakom koraku opisuje stranica [Sigurnosni model](/docs/operations).
+
+## Prije početka \{#before-you-start}
+
+:::warning
+
+pfSense IPv6 Prefix Updater je <Terminology title="paket instaliran s GitHuba, ne iz Netgate repozitorija" to="/docs/reference/terminology#unofficial-package">nezvanični paket</Terminology>. Instalirate ga s GitHuba pomoću `pkg`, a Netgate ga ne pregleda niti podržava.
+
+:::
+
+Izdanja paketa objavljuju se na stranici GitHub Releases projekta. Izdanja verzije 1.x sadrže samo <Terminology title="originalna skripta update.php koju pokreće Cron paket" to="/docs/reference/terminology#legacy-updater">stari program za ažuriranje</Terminology>, a ne ovaj paket.
+
+## Jezici \{#languages}
+
+Sve kartice paketa, <Terminology title="rezultati samo za čitanje nakon Pokreni sada ili Probnog pokretanja" to="/docs/reference/terminology#command-output">Izlaz naredbe</Terminology> i poruke paketa prate jezik odabran u pfSense-u. Paket sadrži prijevode za 18 jezika dostupnih u pfSense-u, a za svaki drugi jezik koristi engleski.
+
+## Sljedeći koraci \{#next-steps}
+
+- **[Instalacija paketa](/docs/installation)**: dodajte paket iz izdanja na GitHubu.
+- **[Uspostavljanje početnog stanja](/docs/first-run)**: zabilježite i provjerite trenutni prefiks prije nego što uključite raspored.
+- **[Prelazak sa skripte](/docs/migrate-from-legacy)**: pređite sa skripte verzije 1.x.
+- **[Sigurnosni model](/docs/operations)**: pogledajte šta paket štiti i na šta još može uticati.

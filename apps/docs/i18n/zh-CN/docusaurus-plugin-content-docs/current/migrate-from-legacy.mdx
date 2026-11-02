@@ -1,0 +1,85 @@
+---
+id: migrate-from-legacy
+title: 从脚本迁移
+description: 在保留旧版 update.php 脚本的情况下直接安装此软件包，让它替你迁移 Cron 条目、已保存的前缀和备份，然后在“清理”选项卡中查看结果。
+keywords:
+  - pfsense ipv6 prefix updater
+  - 旧版更新器
+  - 迁移
+  - update.php
+  - Cron 软件包
+  - 清理
+tags:
+  - setup
+  - migration
+  - legacy updater
+sidebar_position: 5
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import cleanupBefore from './_assets_/migrate-from-legacy-1.png';
+import cleanupAfter from './_assets_/migrate-from-legacy-2.png';
+
+只需安装此软件包，即可从<Terminology title="由 Cron 软件包运行的原 update.php 脚本" to="/docs/reference/terminology#legacy-updater">旧版更新器</Terminology>迁移到软件包，它会自行接管该脚本的接口、已保存的前缀和备份。
+
+## 有哪些变化 \{#what-changes}
+
+| 方面    | <Terminology title="由 Cron 软件包运行的原 update.php 脚本" to="/docs/reference/terminology#legacy-updater">旧版更新器</Terminology> | 软件包                                                                                                                                                                                                                                        |
+|-------|-----------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 安装    | 由 `install.sh` 将文件复制到 `/root/pfsense-ipv6-prefix-updater`                                                             | 由 `pkg add` 安装 pfSense 软件包                                                                                                                                                                                                                 |
+| 计划运行  | 由你自行创建的 Cron 软件包条目                                                                                                    | **计划** 设置，配合由 pfSense 管理的 cron 条目                                                                                                                                                                                                          |
+| 接口    | 每个操作系统设备一个 Cron 条目，例如 `igb1`                                                                                          | 每个 pfSense 接口（例如 LAN）在 **监控接口** 中占一行，所有行在一次运行中检查                                                                                                                                                                                           |
+| 更改的内容 | 配置中任何位置的旧前缀文本，包括 base64 编码的值                                                                                          | 你在 **字段** 选项卡中选择的<Terminology title="软件包可改写的具体配置字段" to="/docs/reference/terminology#approved-field">已批准字段</Terminology>                                                                                                                    |
+| 备份    | `/root/pfsense-ipv6-prefix-updater-backups` 中所有用户均可读取的副本                                                              | 每次写入前保存在<Terminology title="pfSense 已保存配置修订版本的列表" to="/docs/reference/terminology#config-history">配置历史</Terminology>和 **备份** 选项卡中的<Terminology title="写入前保存的配置副本" to="/docs/reference/terminology#configuration-backup">配置备份</Terminology> |
+| 保存的前缀 | `/root/pfsense-ipv6-prefix-updater-cache`                                                                             | <Terminology title="保存基线和上次运行的软件包文件" to="/docs/reference/terminology#package-state">软件包状态</Terminology>，迁移时以旧版缓存为初始数据                                                                                                                      |
+| 通知    | 每次更改后发送                                                                                                               | <Terminology title="结果：字段已更新、保存、重新加载并验证" to="/docs/reference/terminology#success">成功</Terminology>后发送的可选<Terminology title="更新经验证成功后发送的提醒" to="/docs/reference/terminology#change-notification">变化通知</Terminology>                         |
+
+## 安装软件包 \{#install-the-package}
+
+在旧版更新器仍保留的情况下，使用 `pkg add` [安装软件包](/docs/installation)。无需事先移除任何内容，并且建议不要自行删除 Cron 条目或 `/root` 中的文件夹，因为软件包会在迁移时读取它们。
+
+再次运行旧的安装命令不会重新安装该脚本。从版本 2 起，它只会打印一条附带 `pkg add` 命令的错误信息，不做任何更改。
+
+## 自动执行的操作 \{#what-happens-automatically}
+
+安装步骤会找到旧版更新器，并按以下顺序将其迁移到软件包中：
+
+1. **备份**：在做出任何更改之前保存一份<Terminology title="写入前保存的配置副本" to="/docs/reference/terminology#configuration-backup">配置备份</Terminology>。
+2. **接口**：将每个 Cron 条目的设备（例如 `igb1.10`）映射到使用该设备的 pfSense 接口，从而把该条目转换为一行 **监控接口**，并保留其<Terminology title="前导网络位数，如 /56" to="/docs/reference/terminology#prefix-length">前缀长度</Terminology>。
+3. **计划**：选择检查频率不低于原 Cron 条目的软件包 **计划**，并开启<Terminology title="由 pfSense 管理的 cron 条目运行的自动检查" to="/docs/reference/terminology#scheduled-updates">计划更新</Terminology>。
+4. **基线**：将每个保存的前缀记录为对应接口的<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>，因此不会丢失任何前缀变化。
+5. **Cron 条目**：只删除运行 `update.php` 的条目，并与新设置在同一次配置写入中完成，因此两个更新器绝不会同时运行。
+6. **旧版备份**：将每个旧版备份复制到 **备份** 选项卡（仅 root 可读取），并在副本验证无误后删除原件。
+7. **旧文件**：从 `/root` 中删除该脚本、其保存的前缀、下载的压缩包和保存的安装程序。
+
+迁移完成后，会出现一条链接到“清理”选项卡的 WebGUI 通知。如果此时旧版脚本正在运行，软件包会等待，并在下一次计划检查时完成迁移。
+
+### 多个 Cron 条目 \{#several-cron-entries}
+
+每个指定不同设备的 Cron 条目都会成为单独的一行，一次运行即可检查所有行。共用同一个<Terminology title="ISP 路由到防火墙的 IPv6 网络" to="/docs/reference/terminology#delegated-prefix">委派前缀</Terminology>的接口只会更新一次共享字段，并在一次有备份的写入中完成。
+
+如果某个 Cron 条目的设备已不属于任何 pfSense 接口，该条目会被删除并列为一条警告，因为脚本不可能通过它更新任何内容。
+
+### 过期的已保存前缀 \{#saved-prefixes-that-are-out-of-date}
+
+如果 ISP 在旧版更新器最后一次运行后更换了前缀，其保存的前缀仍会作为<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>。随后，软件包的首次检查会找到仍在使用旧前缀的字段并将其更新。
+
+如果没有任何已批准字段使用旧的保存前缀，则改用当前前缀作为基线，因此首次检查不会报告<Terminology title="结果：前缀已变化，但没有匹配的已批准字段" to="/docs/reference/terminology#warning">警告</Terminology>。
+
+## 查看“清理”选项卡 \{#review-the-cleanup-tab}
+
+打开 **Services → IPv6 Prefix Updater** 的 **清理** 选项卡，查看每一项旧版遗留内容及其处理结果。
+
+<img src={cleanupBefore} alt="IPv6 Prefix Updater 的“清理”选项卡，在清理前列出两个旧版 Cron 条目、旧版脚本、两个设备的已保存前缀、一个旧版备份和两个安装程序下载文件" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+- **1.x 遗留内容**：Cron 条目、脚本、已保存的前缀、备份、安装程序下载文件和脚本锁，每项都标记为 **已找到** 或 **不存在**。
+- **上次清理**：迁移执行的每个步骤以及所有警告，例如某个设备未分配给任何接口。
+- **立即清理**：立即执行同样的迁移，而不必等待下一次计划检查。其他 Cron 条目绝不会受到影响。
+
+<img src={cleanupAfter} alt="IPv6 Prefix Updater 的“清理”选项卡，在执行“立即清理”后列出已保存的备份、已删除的 Cron 条目、已迁移的备份和已删除的旧版文件" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+## 检查覆盖范围 \{#check-coverage}
+
+首次真正发生<Terminology title="与上次成功前缀或长度不同" to="/docs/reference/terminology#prefix-transition">前缀变化</Terminology>后，将 **已更改字段** 和 **摘要** 与<Terminology title="由 Cron 软件包运行的原 update.php 脚本" to="/docs/reference/terminology#legacy-updater">旧版更新器</Terminology>以前更改的内容进行比较。旧版更新器还会改写网关、静态路由、描述和 Base64 编码的值。只有在 **字段** 选项卡的 **其他设置** 中勾选了这些值，软件包才会更改它们，因此建议在前缀变化之前勾选它们。
+
+迁移后，所有 pfSense <Terminology title="“字段”选项卡上由一个开关控制的一组字段" to="/docs/reference/terminology#field-group">字段组</Terminology>一开始都处于开启状态，与 **自动选择** 设置的状态相同。[字段](/docs/configure/configuration-scopes)列出了每个组以及如何关闭某个组。

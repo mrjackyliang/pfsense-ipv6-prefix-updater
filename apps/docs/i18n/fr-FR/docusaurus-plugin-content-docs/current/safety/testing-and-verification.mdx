@@ -1,0 +1,63 @@
+---
+id: testing-and-verification
+title: Vérifier avant d’automatiser
+description: Vérifiez l’interface, le préfixe, le chemin de récupération et les notifications sur votre propre pare-feu avant de laisser le paquet tourner seul selon une planification.
+keywords:
+  - pfsense ipv6 prefix updater
+  - liste de contrôle
+  - simulation
+  - config history
+  - mises à jour planifiées
+tags:
+  - safety
+  - checklist
+  - scheduled updates
+sidebar_position: 2
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Vérifiez l’interface, le préfixe, le chemin de récupération et les notifications sur votre pare-feu avant de laisser le paquet s’exécuter selon une planification.
+
+## 1. Confirmer la source \{#1-confirm-the-source}
+
+La case **<Terminology title="vérifications automatiques via une entrée cron gérée par pfSense" to="/docs/reference/terminology#scheduled-updates">Activer les mises à jour planifiées</Terminology>** décochée, enregistrez les paramètres et cliquez une fois sur **Exécuter maintenant**. Vérifiez ensuite l’onglet État :
+
+- **<Terminology title="interface dont l’adresse révèle le préfixe actuel" to="/docs/reference/terminology#monitored-interface">Interface surveillée</Terminology>** est bien le WAN ou l’<Terminology title="interface adressée depuis le préfixe délégué d’une autre interface" to="/docs/reference/terminology#tracked-interface">interface suivie</Terminology> prévus.
+- **<Terminology title="adresse globale signalée par pfSense pour l’interface surveillée" to="/docs/reference/terminology#source-address">Dernière adresse source réussie</Terminology>** correspond à l’adresse indiquée sous **Status → Interfaces**.
+- **<Terminology title="préfixe auquel la prochaine vérification se compare" to="/docs/reference/terminology#last-successful-prefix">Dernier préfixe réussi</Terminology>** correspond au préfixe que votre FAI délègue.
+- **Résultat** sous **Dernière exécution** vaut <Terminology title="résultat : référence enregistrée, configuration inchangée" to="/docs/reference/terminology#initialized">Initialisé</Terminology>, et **Champs modifiés** vaut `0`.
+
+Si une valeur est inattendue, il est recommandé de la corriger avant de continuer. [Interface et préfixe](/docs/configure/interface-and-prefix#changing-the-interfaces) explique l’effet d’un changement d’interface ou de longueur une fois qu’une <Terminology title="préfixe de départ enregistré sans modifier la configuration" to="/docs/reference/terminology#baseline">référence</Terminology> existe.
+
+## 2. Lancer un aperçu \{#2-run-a-preview}
+
+Cliquez sur **<Terminology title="aperçu qui ne sauvegarde ni n’écrit jamais" to="/docs/reference/terminology#dry-run">Simulation</Terminology>**. Le préfixe étant inchangé, elle signale <Terminology title="résultat : préfixe inchangé, rien d’analysé ni d’écrit" to="/docs/reference/terminology#no-change">Aucun changement</Terminology>, et **<Terminology title="copie de la configuration enregistrée avant une écriture" to="/docs/reference/terminology#configuration-backup">Sauvegarde de configuration créée</Terminology>** indique Non.
+
+Une <Terminology title="aperçu qui ne sauvegarde ni n’écrit jamais" to="/docs/reference/terminology#dry-run">simulation</Terminology> ne peut pas simuler un changement de préfixe ; elle ne liste donc les champs prévus qu’après un vrai <Terminology title="écart avec le dernier préfixe réussi ou sa longueur" to="/docs/reference/terminology#prefix-transition">changement de préfixe</Terminology>.
+
+## 3. Vérifier la récupération \{#3-check-recovery}
+
+Ouvrez **Diagnostics → Backup & Restore → Config History** et vérifiez que pfSense conserve l’historique de configuration. Une exécution qui écrit y enregistre sa <Terminology title="copie de la configuration enregistrée avant une écriture" to="/docs/reference/terminology#configuration-backup">sauvegarde de configuration</Terminology> avant la première modification.
+
+Il est recommandé de lire dès maintenant [Trouver la bonne révision](/docs/operate/backups-and-recovery#find-the-right-revision), car la révision qui porte le nom du paquet contient la configuration mise à jour. Une sauvegarde hors de l’appareil mérite aussi d’être téléchargée, car <Terminology title="liste pfSense des révisions de configuration enregistrées" to="/docs/reference/terminology#config-history">Config History</Terminology> se trouve sur le pare-feu.
+
+## 4. Tester les notifications \{#4-test-notifications}
+
+Si la case **<Terminology title="alerte envoyée après une mise à jour réussie et vérifiée" to="/docs/reference/terminology#change-notification">Envoyer les notifications de changement</Terminology>** est cochée, il est recommandé d’envoyer un test avec les boutons de pfSense sous **System → Advanced → Notifications**. Le paquet utilise les <Terminology title="services d’alerte distants configurés dans pfSense" to="/docs/reference/terminology#notification-channels">canaux de notification</Terminology> déjà configurés à cet endroit.
+
+Les alertes <Terminology title="résultat : préfixe changé, mais aucun champ approuvé correspondant" to="/docs/reference/terminology#warning">Avertissement</Terminology> et <Terminology title="résultat : une vérification ou une étape de sécurité a arrêté l’exécution" to="/docs/reference/terminology#failure">Échec</Terminology> restent dans la WebGUI et n’utilisent pas ces canaux.
+
+## 5. Activer la planification \{#5-turn-on-the-schedule}
+
+Cochez **<Terminology title="vérifications automatiques via une entrée cron gérée par pfSense" to="/docs/reference/terminology#scheduled-updates">Activer les mises à jour planifiées</Terminology>** une fois que les étapes ci-dessus montrent l’adresse et le préfixe attendus. **Toutes les heures** est la **Planification** par défaut.
+
+Après la première échéance planifiée, il est recommandé de vérifier **Horodatage (UTC)** et **Résultat** sous **Dernière exécution**.
+
+## Ce qui nécessite un vrai changement de préfixe \{#what-needs-a-real-prefix-change}
+
+Le <Terminology title="liste complète des modifications, établie avant l’écriture" to="/docs/reference/terminology#change-plan">plan de modifications</Terminology>, la <Terminology title="copie de la configuration enregistrée avant une écriture" to="/docs/reference/terminology#configuration-backup">sauvegarde de configuration</Terminology>, les <Terminology title="action pfSense qui applique les paramètres modifiés" to="/docs/reference/terminology#service-reload">rechargements de services</Terminology> et la <Terminology title="alerte envoyée après une mise à jour réussie et vérifiée" to="/docs/reference/terminology#change-notification">notification de changement</Terminology> n’ont lieu qu’après un vrai <Terminology title="écart avec le dernier préfixe réussi ou sa longueur" to="/docs/reference/terminology#prefix-transition">changement de préfixe</Terminology>. Un pare-feu de test dont le préfixe peut changer est l’endroit le plus sûr pour observer une exécution complète.
+
+Sur votre propre pare-feu, il est recommandé d’examiner le premier vrai changement dans l’onglet État, en commençant par **Champs modifiés**, **<Terminology title="action pfSense qui applique les paramètres modifiés" to="/docs/reference/terminology#service-reload">Services rechargés</Terminology>** et **Résumé**.
+
+Consultez [État et actions](/docs/operate/status-and-actions) pour chaque champ affiché après une exécution.

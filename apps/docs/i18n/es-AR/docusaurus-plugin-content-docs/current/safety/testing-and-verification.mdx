@@ -1,0 +1,63 @@
+---
+id: testing-and-verification
+title: Verificar antes de automatizar
+description: Verificá la interfaz, el prefijo, el camino de recuperación y las notificaciones en tu propio firewall antes de dejar que el paquete se ejecute programado sin supervisión.
+keywords:
+  - pfsense ipv6 prefix updater
+  - lista de verificación
+  - simulación
+  - historial de configuración
+  - actualizaciones programadas
+tags:
+  - safety
+  - checklist
+  - scheduled updates
+sidebar_position: 2
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Verificá la interfaz, el prefijo, el camino de recuperación y las notificaciones en tu firewall antes de dejar que el paquete se ejecute de forma programada.
+
+## 1. Confirmar el origen \{#1-confirm-the-source}
+
+Con **<Terminology title="comprobaciones automáticas desde una entrada de cron administrada por pfSense" to="/docs/reference/terminology#scheduled-updates">Activar actualizaciones programadas</Terminology>** destildada, guardá las opciones y hacé clic una vez en **Ejecutar ahora**. Después, revisá la pestaña Estado:
+
+- **<Terminology title="interfaz cuya dirección revela el prefijo actual" to="/docs/reference/terminology#monitored-interface">Interfaz supervisada</Terminology>** es la WAN o la <Terminology title="interfaz que toma su dirección del prefijo delegado de otra" to="/docs/reference/terminology#tracked-interface">interfaz rastreada</Terminology> prevista.
+- **<Terminology title="dirección global que pfSense informa para la interfaz supervisada" to="/docs/reference/terminology#source-address">Última dirección de origen correcta</Terminology>** coincide con la dirección de **Status → Interfaces**.
+- **<Terminology title="prefijo contra el que se compara la próxima comprobación" to="/docs/reference/terminology#last-successful-prefix">Último prefijo correcto</Terminology>** coincide con el prefijo que delega tu ISP.
+- **Resultado**, en **Última ejecución**, es <Terminology title="resultado: referencia registrada, configuración sin cambios" to="/docs/reference/terminology#initialized">Inicializado</Terminology>, y **Campos modificados** es `0`.
+
+Si algún valor no es el esperado, se recomienda corregirlo antes de seguir. [Interfaz y prefijo](/docs/configure/interface-and-prefix#changing-the-interfaces) explica qué pasa al cambiar la interfaz o la longitud cuando ya existe una <Terminology title="prefijo inicial registrado sin cambiar la configuración" to="/docs/reference/terminology#baseline">referencia</Terminology>.
+
+## 2. Ejecutar una vista previa \{#2-run-a-preview}
+
+Hacé clic en **<Terminology title="vista previa que nunca hace copias ni escribe" to="/docs/reference/terminology#dry-run">Simulación</Terminology>**. Con el prefijo sin cambios, devuelve <Terminology title="resultado: prefijo sin cambios, nada analizado ni escrito" to="/docs/reference/terminology#no-change">Sin cambios</Terminology>, y **<Terminology title="copia de la configuración guardada antes de escribir" to="/docs/reference/terminology#configuration-backup">Copia de seguridad de la configuración creada</Terminology>** muestra No.
+
+Una <Terminology title="vista previa que nunca hace copias ni escribe" to="/docs/reference/terminology#dry-run">simulación</Terminology> no puede imitar un cambio de prefijo, así que solo enumera los campos previstos después de un <Terminology title="cambio respecto del último prefijo o longitud correctos" to="/docs/reference/terminology#prefix-transition">cambio de prefijo</Terminology> real.
+
+## 3. Verificar la recuperación \{#3-check-recovery}
+
+Abrí **Diagnostics → Backup & Restore → Config History** y confirmá que pfSense guarda el historial de configuración. Una ejecución que escribe guarda ahí su <Terminology title="copia de la configuración guardada antes de escribir" to="/docs/reference/terminology#configuration-backup">copia de seguridad de la configuración</Terminology> antes del primer cambio.
+
+Se recomienda leer ahora [Encontrar la revisión correcta](/docs/operate/backups-and-recovery#find-the-right-revision), porque la revisión que lleva el nombre del paquete contiene la configuración actualizada. También vale la pena descargar una copia de seguridad para guardarla fuera del firewall, porque el <Terminology title="lista de pfSense con las revisiones guardadas de la configuración" to="/docs/reference/terminology#config-history">historial de configuración</Terminology> está en el mismo firewall.
+
+## 4. Probar las notificaciones \{#4-test-notifications}
+
+Si **<Terminology title="alerta enviada después de una actualización correcta verificada" to="/docs/reference/terminology#change-notification">Enviar notificaciones de cambios</Terminology>** está tildada, se recomienda enviar una prueba con los botones de pfSense en **System → Advanced → Notifications**. El paquete usa los <Terminology title="servicios de alertas remotas configurados en pfSense" to="/docs/reference/terminology#notification-channels">canales de notificación</Terminology> que ya están configurados ahí.
+
+Los avisos de <Terminology title="resultado: el prefijo cambió, pero ningún campo aprobado coincidió" to="/docs/reference/terminology#warning">Advertencia</Terminology> y <Terminology title="resultado: una verificación o etapa de seguridad detuvo la ejecución" to="/docs/reference/terminology#failure">Fallo</Terminology> quedan en la WebGUI y no usan esos canales.
+
+## 5. Activar la programación \{#5-turn-on-the-schedule}
+
+Tildá **<Terminology title="comprobaciones automáticas desde una entrada de cron administrada por pfSense" to="/docs/reference/terminology#scheduled-updates">Activar actualizaciones programadas</Terminology>** cuando los pasos anteriores muestren la dirección y el prefijo esperados. **Cada hora** es la **Programación** por defecto.
+
+Después de la primera hora programada, se recomienda revisar **Fecha y hora (UTC)** y **Resultado** en **Última ejecución**.
+
+## Qué necesita un cambio de prefijo real \{#what-needs-a-real-prefix-change}
+
+El <Terminology title="lista completa de cambios de campos, armada antes de escribir" to="/docs/reference/terminology#change-plan">plan de cambios</Terminology>, la <Terminology title="copia de la configuración guardada antes de escribir" to="/docs/reference/terminology#configuration-backup">copia de seguridad de la configuración</Terminology>, las <Terminology title="acción de pfSense que aplica la configuración modificada" to="/docs/reference/terminology#service-reload">recargas de servicios</Terminology> y la <Terminology title="alerta enviada después de una actualización correcta verificada" to="/docs/reference/terminology#change-notification">notificación de cambios</Terminology> solo ocurren después de un <Terminology title="cambio respecto del último prefijo o longitud correctos" to="/docs/reference/terminology#prefix-transition">cambio de prefijo</Terminology> real. Un firewall de laboratorio cuyo prefijo pueda cambiar es el lugar más seguro para observar una ejecución completa.
+
+En tu propio firewall, se recomienda revisar el primer cambio real en la pestaña Estado, empezando por **Campos modificados**, **<Terminology title="acción de pfSense que aplica la configuración modificada" to="/docs/reference/terminology#service-reload">Servicios recargados</Terminology>** y **Resumen**.
+
+Revisá [Estado y acciones](/docs/operate/status-and-actions) para ver todos los campos que aparecen después de una ejecución.

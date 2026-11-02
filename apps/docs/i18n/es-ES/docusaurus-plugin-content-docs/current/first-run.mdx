@@ -1,0 +1,76 @@
+---
+id: first-run
+title: Establecer la referencia
+description: Registra el prefijo IPv6 actual como referencia con Ejecutar ahora, comprueba la dirección y el prefijo indicados, revisa la pestaña Campos y solo entonces activa las actualizaciones programadas.
+keywords:
+  - pfsense ipv6 prefix updater
+  - primera ejecución
+  - referencia
+  - ejecutar ahora
+  - inicializado
+tags:
+  - setup
+  - baseline
+  - status
+sidebar_position: 3
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Registra el prefijo actual como <Terminology title="prefijo inicial registrado sin cambiar la configuración" to="/docs/reference/terminology#baseline">referencia</Terminology> y compruébalo antes de activar las <Terminology title="comprobaciones automáticas desde una entrada de cron gestionada por pfSense" to="/docs/reference/terminology#scheduled-updates">actualizaciones programadas</Terminology>.
+
+## Guardar los ajustes iniciales \{#save-the-initial-settings}
+
+1. Abre **Services → IPv6 Prefix Updater** y después la pestaña **Configuración**.
+2. Deja **<Terminology title="comprobaciones automáticas desde una entrada de cron gestionada por pfSense" to="/docs/reference/terminology#scheduled-updates">Activar actualizaciones programadas</Terminology>** desmarcada.
+3. Añade una fila de **<Terminology title="interfaz cuya dirección revela el prefijo actual" to="/docs/reference/terminology#monitored-interface">Interfaces supervisadas</Terminology>** por cada interfaz cuya <Terminology title="dirección IPv6 pública dentro de 2000::/3" to="/docs/reference/terminology#global-unicast-address">dirección global</Terminology> procede del <Terminology title="red IPv6 que tu ISP enruta al cortafuegos" to="/docs/reference/terminology#delegated-prefix">prefijo delegado</Terminology>, como se describe en [Interfaz y prefijo](/docs/configure/interface-and-prefix).
+4. En cada fila, selecciona en **<Terminology title="ajuste del tamaño del prefijo del ISP, de /48 a /64" to="/docs/reference/terminology#delegated-prefix-length">Longitud del prefijo delegado</Terminology>** la longitud que delega tu ISP.
+5. Guarda y confirma el mensaje `Configuración guardada.`
+
+## Ejecutar la primera comprobación \{#run-the-first-check}
+
+En la pestaña **Estado**, pulsa **Ejecutar ahora**. Como todavía no hay <Terminology title="prefijo inicial registrado sin cambiar la configuración" to="/docs/reference/terminology#baseline">referencia</Terminology>, la ejecución registra la <Terminology title="dirección global que pfSense indica para la interfaz supervisada" to="/docs/reference/terminology#source-address">dirección de origen</Terminology> y el prefijo de cada interfaz y devuelve <Terminology title="resultado: referencia registrada, configuración sin cambios" to="/docs/reference/terminology#initialized">Inicializado</Terminology>.
+
+Registrar una <Terminology title="prefijo inicial registrado sin cambiar la configuración" to="/docs/reference/terminology#baseline">referencia</Terminology> no cambia la configuración, no crea una copia de seguridad ni envía notificaciones.
+
+## Verificar el resultado \{#verify-the-result}
+
+Comprueba estos valores en cada fila de **Estado actual**:
+
+- **<Terminology title="interfaz cuya dirección revela el prefijo actual" to="/docs/reference/terminology#monitored-interface">Interfaz supervisada</Terminology>** muestra la interfaz prevista con su descripción y su nombre interno, como `LAN (lan)`.
+- **<Terminology title="dirección global que pfSense indica para la interfaz supervisada" to="/docs/reference/terminology#source-address">Última dirección de origen correcta</Terminology>** coincide con la dirección de esa interfaz en **Status → Interfaces**.
+- **<Terminology title="prefijo con el que se compara la siguiente comprobación" to="/docs/reference/terminology#last-successful-prefix">Último prefijo correcto</Terminology>** coincide con el prefijo que delega tu ISP.
+- **Última actualización correcta** muestra la hora de esta ejecución en UTC.
+
+La <Terminology title="resultados de solo lectura tras Ejecutar ahora o Simulación" to="/docs/reference/terminology#command-output">Salida del comando</Terminology> debería mostrar `Estado: Inicializado`, `Campos planificados o modificados: 0` y `Copia de seguridad de la configuración: No creada`. Por ejemplo, la dirección de documentación `2001:db8:abcd:78aa::1` con una longitud `/56` pertenece a `2001:db8:abcd:7800::/56`.
+
+:::warning
+
+Si la interfaz o la longitud no son correctas, se recomienda corregir los ajustes antes de activar la programación. Otra interfaz registra una nueva <Terminology title="prefijo inicial registrado sin cambiar la configuración" to="/docs/reference/terminology#baseline">referencia</Terminology>, mientras que otra longitud cuenta como un <Terminology title="cambio respecto al último prefijo o longitud correctos" to="/docs/reference/terminology#prefix-transition">cambio de prefijo</Terminology>, como explica [Interfaz y prefijo](/docs/configure/interface-and-prefix#changing-the-prefix-length).
+
+:::
+
+## Revisar los campos \{#review-the-fields}
+
+Abre la pestaña **Campos**. Con la <Terminology title="prefijo inicial registrado sin cambiar la configuración" to="/docs/reference/terminology#baseline">referencia</Terminology> ya registrada, enumera todas las direcciones del prefijo e indica cuáles actualizaría el siguiente cambio.
+
+1. Desactiva los <Terminology title="grupo de campos con un interruptor en la pestaña Campos" to="/docs/reference/terminology#field-group">grupos de campos</Terminology> que el cortafuegos no usa. Los once grupos de pfSense empiezan activados.
+2. Desmarca los campos individuales que deban conservar su valor, y marca cualquier campo de otro paquete que deba seguir al prefijo.
+3. Marca en **Otra configuración** cualquier campo que deba seguir al prefijo, como una puerta de enlace o una ruta estática.
+4. Pulsa **Guardar** y confirma el mensaje `Selección de campos guardada.`
+
+[Campos](/docs/configure/configuration-scopes) explica cada grupo y cada control.
+
+## Qué muestra ahora una simulación \{#what-a-dry-run-shows-now}
+
+Con el prefijo sin cambios, **<Terminology title="vista previa que nunca crea copias ni escribe" to="/docs/reference/terminology#dry-run">Simulación</Terminology>** devuelve <Terminology title="resultado: prefijo sin cambios, nada analizado ni escrito" to="/docs/reference/terminology#no-change">Sin cambios</Terminology> sin analizar la configuración, porque la planificación solo empieza tras un <Terminology title="cambio respecto al último prefijo o longitud correctos" to="/docs/reference/terminology#prefix-transition">cambio de prefijo</Terminology> real. La pestaña Campos muestra qué campos tocaría un cambio futuro.
+
+Una <Terminology title="vista previa que nunca crea copias ni escribe" to="/docs/reference/terminology#dry-run">simulación</Terminology> hecha antes de que exista una <Terminology title="prefijo inicial registrado sin cambiar la configuración" to="/docs/reference/terminology#baseline">referencia</Terminology> devuelve <Terminology title="resultado: simulación antes de que exista una referencia" to="/docs/reference/terminology#initialization-preview">Vista previa de la inicialización</Terminology> y no registra nada.
+
+## Activar la programación \{#turn-on-the-schedule}
+
+Cuando los valores coincidan, marca **<Terminology title="comprobaciones automáticas desde una entrada de cron gestionada por pfSense" to="/docs/reference/terminology#scheduled-updates">Activar actualizaciones programadas</Terminology>**, elige una **Programación** y guarda. [Programación y notificaciones](/docs/configure/schedule-and-notifications) explica cada opción.
+
+Después de la primera hora programada, **Fecha y hora (UTC)** en **Última ejecución** muestra cuándo se ejecutó esa comprobación.
+
+Continúa con [Comprobar antes de automatizar](/docs/safety/testing-and-verification) para ver una lista de comprobación completa.

@@ -1,0 +1,173 @@
+{
+  "home.meta.description": {
+    "message": "Delegierte Präfixänderungen erkennen, nur genehmigte pfSense-Felder aktualisieren, Hostbits bewahren und jede Transaktion prüfen."
+  },
+  "home.meta.title": {
+    "message": "IPv6-Präfixaktualisierung - Dynamische IPv6-Präfixe sicher abgleichen."
+  },
+  "home.hero.eyebrow": {
+    "message": "Natives pfSense-Paket"
+  },
+  "home.hero.heading": {
+    "message": "Dynamische IPv6-Präfixe sicher abgleichen."
+  },
+  "home.hero.tagline": {
+    "message": "Delegierte Präfixänderungen erkennen, nur genehmigte pfSense-Felder aktualisieren, Hostbits bewahren und jede Transaktion prüfen."
+  },
+  "home.hero.primaryAction": {
+    "message": "Installieren und konfigurieren"
+  },
+  "home.hero.secondaryAction": {
+    "message": "Sicherheitsverhalten prüfen"
+  },
+  "home.preview.ariaLabel": {
+    "message": "Länge des delegierten Präfixes: /56"
+  },
+  "home.preview.dryRun": {
+    "message": "Testlauf"
+  },
+  "home.preview.detected": {
+    "message": "Beobachtete Quelladresse"
+  },
+  "home.preview.previous": {
+    "message": "Vorheriges Präfix"
+  },
+  "home.preview.current": {
+    "message": "Aktuelles Präfix"
+  },
+  "home.preview.prefixChanged": {
+    "message": "Beobachtetes Präfix"
+  },
+  "home.preview.hostPreserved": {
+    "message": "Länge des delegierten Präfixes"
+  },
+  "home.preview.result": {
+    "message": "Der Testlauf fand 2 genehmigte Feldänderung(en) für 2001:db8:abcd:8800::/56; die Konfiguration wurde nicht geändert."
+  },
+  "home.workflow.eyebrow": {
+    "message": "Sicherheit und Betrieb"
+  },
+  "home.workflow.heading": {
+    "message": "Sichere Transaktion"
+  },
+  "home.workflow.detect": {
+    "message": "Beobachtete Quelladresse"
+  },
+  "home.workflow.plan": {
+    "message": "Geänderte Felder"
+  },
+  "home.workflow.backup": {
+    "message": "Konfigurationssicherung erstellt"
+  },
+  "home.workflow.write": {
+    "message": "Aktuelles Präfix"
+  },
+  "home.workflow.verify": {
+    "message": "Erfolg"
+  },
+  "home.workflow.notify": {
+    "message": "Benachrichtigungen"
+  },
+  "home.features.interface.title": {
+    "message": "Überwachte Schnittstellen"
+  },
+  "home.features.interface.description": {
+    "message": "Fügen Sie pro Schnittstelle eine Zeile hinzu, deren primäre aktive globale IPv6-Adresse ein delegiertes Präfix trägt. Wählen Sie bei DHCPv6 nur mit Präfix auf dem WAN eine nachgelagerte verfolgte Schnittstelle. Host-Bits nach der Präfixlänge bleiben exakt erhalten, und die Adresse, die pfSense für jede Schnittstelle wählt, steht auf der Registerkarte Status."
+  },
+  "home.features.prefix.title": {
+    "message": "Länge des delegierten Präfixes"
+  },
+  "home.features.prefix.description": {
+    "message": "Geben Sie die vom Internetanbieter delegierte Präfixgrenze ein. Hostbits nach dieser Grenze bleiben exakt erhalten."
+  },
+  "home.features.scopes.title": {
+    "message": "Felder"
+  },
+  "home.features.scopes.description": {
+    "message": "Wählen Sie auf der Registerkarte Felder, welche Konfigurationsfelder sich mit dem Präfix ändern."
+  },
+  "home.features.dryRun.title": {
+    "message": "Testlauf"
+  },
+  "home.features.dryRun.description": {
+    "message": "„Jetzt ausführen“ kann nach einer erkannten Änderung genehmigte Felder aktualisieren. Ein Testlauf speichert nur eine Vorschau und schreibt niemals die Firewallkonfiguration."
+  },
+  "home.features.backup.title": {
+    "message": "Konfigurationssicherung erstellt"
+  },
+  "home.features.backup.description": {
+    "message": "Konfigurationssicherung erstellt: Ja."
+  },
+  "home.features.notify.title": {
+    "message": "Benachrichtigungen"
+  },
+  "home.features.notify.description": {
+    "message": "Nach einer verifizierten erfolgreichen Präfixaktualisierung konfigurierte pfSense-Benachrichtigungskanäle verwenden. Prüfungen ohne Änderung benachrichtigen nie."
+  },
+  "home.stats.heading": {
+    "message": "Sicherheit und Betrieb"
+  },
+  "home.stats.boundaries": {
+    "message": "Länge des delegierten Präfixes"
+  },
+  "home.stats.backups": {
+    "message": "Konfigurationssicherung erstellt"
+  },
+  "home.stats.writes": {
+    "message": "Geänderte Felder"
+  },
+  "home.stats.noChange": {
+    "message": "Das aktive IPv6-Präfix ist unverändert; es wurden keine genehmigten Konfigurationsziele gelesen oder geschrieben."
+  },
+  "home.routes.eyebrow": {
+    "message": "Anleitungen"
+  },
+  "home.routes.heading": {
+    "message": "Installieren und konfigurieren"
+  },
+  "home.routes.install.title": {
+    "message": "Paket installieren"
+  },
+  "home.routes.install.description": {
+    "message": "Führen Sie diesen Befehl in einer pfSense-Shell aus, um die neueste Version direkt von GitHub zu installieren."
+  },
+  "home.routes.open": {
+    "message": "Jetzt lesen"
+  },
+  "home.routes.configure.title": {
+    "message": "Überwachte Schnittstellen / Länge des delegierten Präfixes"
+  },
+  "home.routes.configure.description": {
+    "message": "Fügen Sie pro Schnittstelle eine Zeile hinzu, deren primäre aktive globale IPv6-Adresse ein delegiertes Präfix trägt. Wählen Sie bei DHCPv6 nur mit Präfix auf dem WAN eine nachgelagerte verfolgte Schnittstelle. Host-Bits nach der Präfixlänge bleiben exakt erhalten, und die Adresse, die pfSense für jede Schnittstelle wählt, steht auf der Registerkarte Status."
+  },
+  "home.routes.status.title": {
+    "message": "Status / Befehlsausgabe"
+  },
+  "home.routes.status.description": {
+    "message": "„Jetzt ausführen“ kann nach einer erkannten Änderung genehmigte Felder aktualisieren. Ein Testlauf speichert nur eine Vorschau und schreibt niemals die Firewallkonfiguration."
+  },
+  "home.routes.troubleshoot.title": {
+    "message": "Fehlerbehebung"
+  },
+  "home.routes.troubleshoot.description": {
+    "message": "Ist die Quelladresse falsch, wählen Sie die nachgelagerte Track-Schnittstelle mit der tatsächlichen globalen Adresse; gleichen Sie dies nicht mit einer geratenen Länge aus."
+  },
+  "home.spotlight.heading": {
+    "message": "Befehlsausgabe"
+  },
+  "home.spotlight.description": {
+    "message": "Prüfen Sie jeden Lauf auf der Statusseite: Quelladresse, abgeleitetes Präfix, Sicherung und Ergebnis."
+  },
+  "home.spotlight.statusAction": {
+    "message": "Status / Befehlsausgabe"
+  },
+  "home.spotlight.testsAction": {
+    "message": "Ergebnisse und Tests"
+  },
+  "home.blogPreview.heading": {
+    "message": "Aus dem Blog"
+  },
+  "home.blogPreview.description": {
+    "message": "Release Notes, Einrichtungsanleitungen und Beiträge zu dynamischen IPv6-Präfixen."
+  }
+}

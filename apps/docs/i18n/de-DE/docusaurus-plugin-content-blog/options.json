@@ -1,0 +1,8 @@
+{
+  "description": {
+    "message": "Release Notes, Einrichtungsanleitungen und Beiträge dazu, wie pfSense-Adressen aktuell bleiben, wenn sich das IPv6-Präfix ändert."
+  },
+  "sidebar.title": {
+    "message": "Neueste Beiträge"
+  }
+}

@@ -1,0 +1,52 @@
+---
+id: settings
+title: Innstillingsreferanse
+description: Slå opp hvert felt i fanen Innstillinger i IPv6 Prefix Updater med standardverdi, godtatte verdier og valideringsmeldingen feltet kan vise.
+keywords:
+  - pfsense ipv6 prefix updater
+  - innstillinger
+  - standardverdier
+  - validering
+  - webgui
+tags:
+  - reference
+  - settings
+  - webgui
+sidebar_position: 2
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Slå opp hvert felt i fanen Innstillinger med standardverdien og verdiene feltet godtar.
+
+## Prefiksovervåking \{#prefix-monitoring}
+
+Fanen **Innstillinger** under **Services → IPv6 Prefix Updater** starter med disse feltene, og når skjemaet lagres, vises `Innstillingene er lagret.`
+
+| Felt                                                                                                                                                                                | Beskrivelse                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| <Terminology title="automatiske kontroller fra en cron-oppføring styrt av pfSense" to="/docs/reference/terminology#scheduled-updates">Aktiver planlagte oppdateringer</Terminology> | Kjører kontroller etter valgt **Tidsplan**. Av som standard, og lagring legger til eller fjerner cron-oppføringen.                                                                                                                                                                                                                                                                                                                                         |
+| <Terminology title="grensesnittet der adressen avslører gjeldende prefiks" to="/docs/reference/terminology#monitored-interface">Overvåkede grensesnitt</Terminology>                | Påkrevd. Én rad per grensesnitt der den <Terminology title="offentlig IPv6-adresse innenfor 2000::/3" to="/docs/reference/terminology#global-unicast-address">globale adressen</Terminology> bærer et <Terminology title="IPv6-nettverket internettleverandøren ruter til brannmuren" to="/docs/reference/terminology#delegated-prefix">delegert prefiks</Terminology>. **Legg til** legger til en rad, og hvert grensesnitt kan bare stå oppført én gang. |
+| <Terminology title="innstilling for leverandørens prefiksstørrelse, /48 til /64" to="/docs/reference/terminology#delegated-prefix-length">Lengde på delegert prefiks</Terminology>  | Påkrevd i hver rad. `/48` til `/64`, med `/56` valgt som standard.                                                                                                                                                                                                                                                                                                                                                                                         |
+| Tidsplan                                                                                                                                                                            | Hvert 15. minutt, Hver time, Hver 6. time eller Daglig ved midnatt. Hver time som standard.                                                                                                                                                                                                                                                                                                                                                                |
+
+## Feltutvalg \{#field-selection}
+
+Under **Tidsplan** viser fanen Innstillinger `Velg på Felt-fanen hvilke konfigurasjonsfelt som endres med prefikset.` <Terminology title="gruppe av felt med én bryter i fanen Felt" to="/docs/reference/terminology#field-group">Feltgruppene</Terminology> og enkeltfeltene velges i fanen **Felt** og lagres atskilt fra disse innstillingene, så de endres aldri når du lagrer fanen Innstillinger. [Felt](/docs/configure/configuration-scopes) beskriver hver gruppe og standardverdien for den.
+
+## Varsler \{#notifications}
+
+| Felt                                                                                                                                                                | Beskrivelse                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| <Terminology title="varsel sendt etter en verifisert vellykket oppdatering" to="/docs/reference/terminology#change-notification">Send endringsvarsler</Terminology> | Avmerket som standard. Sender et <Terminology title="varsel sendt etter en verifisert vellykket oppdatering" to="/docs/reference/terminology#change-notification">endringsvarsel</Terminology> etter hver kjøring med resultatet <Terminology title="resultat: felt oppdatert, lagret, lastet inn igjen og verifisert" to="/docs/reference/terminology#success">Vellykket</Terminology>, mens varsler ved <Terminology title="resultat: prefiks endret, men ingen godkjente felt samsvarte" to="/docs/reference/terminology#warning">Advarsel</Terminology> og <Terminology title="resultat: en kontroll eller et sikkerhetstrinn stoppet kjøringen" to="/docs/reference/terminology#failure">Feil</Terminology> vises uansett. |
+
+## Valideringsmeldinger \{#validation-messages}
+
+| Melding                                                                                   | Årsak                                                                                          |
+|-------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|
+| `Velg et konfigurert pfSense-grensesnitt som skal overvåkes.`                             | Det finnes ingen rad, eller grensesnittet i en rad er ikke et konfigurert pfSense-grensesnitt. |
+| `Hvert grensesnitt kan bare stå oppført én gang. Fjern den ekstra raden for <interface>.` | To rader i **Overvåkede grensesnitt** angir det samme grensesnittet.                           |
+| `Lengden på det delegerte prefikset må være fra 48 til 64.`                               | Lengden er utenfor det godtatte intervallet.                                                   |
+| `Velg en støttet pakketidsplan.`                                                          | Tidsplanen er ikke ett av de fire alternativene.                                               |
+
+Hver kjøring kontrollerer de lagrede innstillingene på nytt, fordi de kan ha blitt endret etter at skjemaet ble lagret. [Feilsøking](/docs/operate/troubleshooting#run-failed) viser meldingene en kjøring kan rapportere.

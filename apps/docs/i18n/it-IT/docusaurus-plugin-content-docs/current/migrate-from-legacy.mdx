@@ -1,0 +1,85 @@
+---
+id: migrate-from-legacy
+title: Migra dallo script
+description: Installa il pacchetto sopra il vecchio script update.php e lascia che sposti al posto tuo le voci Cron, i prefissi salvati e i backup, poi controlla il risultato nella scheda Pulizia.
+keywords:
+  - pfsense ipv6 prefix updater
+  - vecchio script di aggiornamento
+  - migrazione
+  - update.php
+  - pacchetto cron
+  - pulizia
+tags:
+  - setup
+  - migration
+  - legacy updater
+sidebar_position: 5
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import cleanupBefore from './_assets_/migrate-from-legacy-1.png';
+import cleanupAfter from './_assets_/migrate-from-legacy-2.png';
+
+Passa dal <Terminology title="script update.php originale eseguito dal pacchetto Cron" to="/docs/reference/terminology#legacy-updater">vecchio script di aggiornamento</Terminology> al pacchetto installandolo: il pacchetto prende in carico da solo le interfacce, i prefissi salvati e i backup dello script.
+
+## Cosa cambia \{#what-changes}
+
+| Area             | <Terminology title="script update.php originale eseguito dal pacchetto Cron" to="/docs/reference/terminology#legacy-updater">Vecchio script</Terminology> | Pacchetto                                                                                                                                                                                                                                                                                                                                                                                         |
+|------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Installazione    | `install.sh` copia i file in `/root/pfsense-ipv6-prefix-updater`                                                                                          | `pkg add` installa un pacchetto pfSense                                                                                                                                                                                                                                                                                                                                                           |
+| Pianificazione   | Una voce del pacchetto Cron creata da te                                                                                                                  | L’impostazione **Pianificazione**, con una voce cron gestita da pfSense                                                                                                                                                                                                                                                                                                                           |
+| Interfacce       | Una voce Cron per ogni dispositivo del sistema operativo, come `igb1`                                                                                     | Una riga **Interfacce monitorate** per ogni interfaccia pfSense, come LAN, tutte controllate in un’unica esecuzione                                                                                                                                                                                                                                                                               |
+| Cosa modifica    | Il testo del vecchio prefisso ovunque nella configurazione, compresi i valori codificati in base64                                                        | I <Terminology title="campo di configurazione preciso che il pacchetto può riscrivere" to="/docs/reference/terminology#approved-field">campi approvati</Terminology> che selezioni nella scheda **Campi**                                                                                                                                                                                         |
+| Backup           | Copie leggibili da tutti in `/root/pfsense-ipv6-prefix-updater-backups`                                                                                   | Un <Terminology title="copia della configurazione salvata prima di una scrittura" to="/docs/reference/terminology#configuration-backup">backup della configurazione</Terminology> in <Terminology title="elenco pfSense delle revisioni di configurazione salvate" to="/docs/reference/terminology#config-history">Config History</Terminology> e nella scheda **Backup** prima di ogni scrittura |
+| Prefisso salvato | `/root/pfsense-ipv6-prefix-updater-cache`                                                                                                                 | Lo <Terminology title="file del pacchetto con la linea di base e l’ultima esecuzione" to="/docs/reference/terminology#package-state">stato del pacchetto</Terminology>, popolato con la cache del vecchio script durante la migrazione                                                                                                                                                            |
+| Notifiche        | Inviate dopo ogni modifica                                                                                                                                | Una <Terminology title="messaggio inviato dopo un aggiornamento riuscito e verificato" to="/docs/reference/terminology#change-notification">notifica di modifica</Terminology> facoltativa dopo un risultato <Terminology title="risultato: campi aggiornati, salvati, ricaricati e verificati" to="/docs/reference/terminology#success">Riuscito</Terminology>                                   |
+
+## Installa il pacchetto \{#install-the-package}
+
+[Installa il pacchetto](/docs/installation) con `pkg add` mentre il vecchio script di aggiornamento è ancora al suo posto. Non c’è nulla da rimuovere prima, ed è consigliabile non eliminare di persona le voci Cron o le cartelle in `/root`, perché il pacchetto le legge durante la migrazione.
+
+Eseguire di nuovo il vecchio comando di installazione non reinstalla lo script. Dalla versione 2 in poi, stampa un errore con il comando `pkg add` e non modifica nulla.
+
+## Cosa succede automaticamente \{#what-happens-automatically}
+
+Il passaggio di installazione trova il vecchio script di aggiornamento e lo sposta nel pacchetto in questo ordine:
+
+1. **Backup**: salva un <Terminology title="copia della configurazione salvata prima di una scrittura" to="/docs/reference/terminology#configuration-backup">backup della configurazione</Terminology> prima di qualsiasi modifica.
+2. **Interfacce**: trasforma ogni voce Cron in una riga **Interfacce monitorate** associando il suo dispositivo, come `igb1.10`, all’interfaccia pfSense che lo usa, e ne mantiene la <Terminology title="numero di bit iniziali della rete, come /56" to="/docs/reference/terminology#prefix-length">lunghezza del prefisso</Terminology>.
+3. **Pianificazione**: sceglie la **Pianificazione** del pacchetto che controlla almeno con la stessa frequenza delle voci Cron e attiva gli <Terminology title="controlli automatici da una voce cron gestita da pfSense" to="/docs/reference/terminology#scheduled-updates">aggiornamenti pianificati</Terminology>.
+4. **Linee di base**: registra ogni prefisso salvato come <Terminology title="prefisso di partenza registrato senza modificare la configurazione" to="/docs/reference/terminology#baseline">linea di base</Terminology> della sua interfaccia, così nessun cambio di prefisso va perso.
+5. **Voci Cron**: rimuove solo le voci che eseguono `update.php`, nella stessa scrittura della configurazione delle nuove impostazioni, così i due strumenti non vengono mai eseguiti contemporaneamente.
+6. **Backup 1.x**: copia ogni backup del vecchio script nella scheda **Backup**, leggibile solo da root, ed elimina l’originale dopo aver verificato la copia.
+7. **Vecchi file**: elimina da `/root` lo script, i suoi prefissi salvati, l’archivio scaricato e lo script di installazione salvato.
+
+Al termine della migrazione, una segnalazione WebGUI rimanda alla scheda Pulizia. Se in quel momento il vecchio script è in esecuzione, il pacchetto attende e completa la migrazione al controllo pianificato successivo.
+
+### Più voci Cron \{#several-cron-entries}
+
+Ogni voce Cron che indica un dispositivo diverso diventa una riga a sé, e un’unica esecuzione le controlla tutte. Le interfacce che condividono uno stesso <Terminology title="rete IPv6 che il tuo ISP instrada verso il firewall" to="/docs/reference/terminology#delegated-prefix">prefisso delegato</Terminology> aggiornano i campi condivisi una sola volta, in un’unica scrittura preceduta da un backup.
+
+Una voce Cron il cui dispositivo non appartiene più ad alcuna interfaccia pfSense viene rimossa e segnalata come avviso, perché tramite essa lo script non avrebbe potuto aggiornare nulla.
+
+### Prefissi salvati non aggiornati \{#saved-prefixes-that-are-out-of-date}
+
+Se l’ISP ha cambiato il prefisso dopo l’ultima esecuzione del vecchio script di aggiornamento, il suo prefisso salvato resta la <Terminology title="prefisso di partenza registrato senza modificare la configurazione" to="/docs/reference/terminology#baseline">linea di base</Terminology>. Il primo controllo del pacchetto trova quindi i campi ancora sul vecchio prefisso e li aggiorna.
+
+Quando nessun campo approvato usa un vecchio prefisso salvato, diventa linea di base il prefisso attuale, così il primo controllo non riporta <Terminology title="risultato: prefisso cambiato, ma nessun campo approvato corrispondente" to="/docs/reference/terminology#warning">Avviso</Terminology>.
+
+## Esamina la scheda Pulizia \{#review-the-cleanup-tab}
+
+Apri **Services → IPv6 Prefix Updater → Pulizia** per vedere ogni residuo del vecchio script e cosa ne è stato.
+
+<img src={cleanupBefore} alt="Scheda Pulizia di IPv6 Prefix Updater che elenca due voci Cron del vecchio script, il vecchio script, i prefissi salvati per due dispositivi, un backup del vecchio script e due file di installazione scaricati prima della pulizia" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+- **Residui della versione 1.x**: le voci Cron, lo script, i prefissi salvati, i backup, i file di installazione scaricati e il blocco dello script, ciascuno contrassegnato come **Trovato** o **Non presente**.
+- **Ultima pulizia**: ogni passaggio eseguito dalla migrazione e ogni avviso, ad esempio un dispositivo non assegnato a un’interfaccia.
+- **Pulisci ora**: esegue subito la stessa migrazione invece di attendere il controllo pianificato successivo. Le altre voci Cron non vengono mai toccate.
+
+<img src={cleanupAfter} alt="Scheda Pulizia di IPv6 Prefix Updater dopo Pulisci ora, che elenca il backup, le voci Cron rimosse, il backup spostato e i file eliminati del vecchio script" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Verifica la copertura \{#check-coverage}
+
+Dopo il primo vero <Terminology title="differenza dall’ultimo prefisso riuscito o dalla sua lunghezza" to="/docs/reference/terminology#prefix-transition">cambio di prefisso</Terminology>, confronta **Campi modificati** e **Riepilogo** con ciò che il <Terminology title="script update.php originale eseguito dal pacchetto Cron" to="/docs/reference/terminology#legacy-updater">vecchio script di aggiornamento</Terminology> modificava. Il vecchio script riscriveva anche gateway, route statiche, descrizioni e valori codificati in Base64. Il pacchetto li modifica solo quando sono selezionati in **Altre impostazioni** nella scheda **Campi**, quindi è consigliabile selezionarli prima che il prefisso cambi.
+
+Una migrazione parte con tutti i <Terminology title="gruppo di campi con un unico interruttore nella scheda Campi" to="/docs/reference/terminology#field-group">gruppi di campi</Terminology> di pfSense attivi, come li imposta **Selezione automatica**. [Campi](/docs/configure/configuration-scopes) elenca ogni gruppo e spiega come disattivarne uno.

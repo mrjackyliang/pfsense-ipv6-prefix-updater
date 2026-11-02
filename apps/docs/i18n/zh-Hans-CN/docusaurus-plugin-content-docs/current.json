@@ -1,0 +1,20 @@
+{
+  "sidebar.docs.category.Start Here": {
+    "message": "入门"
+  },
+  "sidebar.docs.category.Configure": {
+    "message": "配置"
+  },
+  "sidebar.docs.category.Operate": {
+    "message": "日常运维"
+  },
+  "sidebar.docs.category.Safety": {
+    "message": "安全机制"
+  },
+  "sidebar.docs.category.Reference": {
+    "message": "参考"
+  },
+  "sidebar.docs.category.Contributing": {
+    "message": "参与贡献"
+  }
+}

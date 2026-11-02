@@ -1,0 +1,79 @@
+---
+id: how-updates-work
+title: 更新運作方式
+description: 逐一跟隨一次執行的各個階段：從讀取各介面位址開始，經過規劃、備份、單次寫入與服務重新載入，直到記錄結果。
+keywords:
+  - pfsense ipv6 prefix updater
+  - 更新流程
+  - 變更計畫
+  - 服務重新載入
+  - 驗證
+tags:
+  - safety
+  - update process
+  - service reload
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+跟隨一次執行從讀取各介面位址到記錄結果的完整過程，包括它可能停止的每個環節。
+
+## 1. 讀取與驗證 \{#1-read-and-validate}
+
+- **<Terminology title="由 pfSense 管理的 cron 項目執行的自動檢查" to="/docs/reference/terminology#scheduled-updates">啟用排程更新</Terminology>** 關閉時，排程檢查會立即以<Terminology title="結果：更新關閉時略過的排程檢查" to="/docs/reference/terminology#disabled">已停用</Terminology>停止。<Terminology title="從「狀態」分頁啟動的檢查" to="/docs/reference/terminology#manual-run">手動執行</Terminology>則會繼續。
+- 執行會再次檢查已儲存的設定，因為自表單儲存以來它們可能已經變更。
+- 它會重新讀取每個<Terminology title="其位址可反映目前前綴的介面" to="/docs/reference/terminology#monitored-interface">監控介面</Terminology>的<Terminology title="位於 2000::/3 內的公用 IPv6 位址" to="/docs/reference/terminology#global-unicast-address">全域位址</Terminology>（不會退回<Terminology title="僅在單一鏈路上有效的 fe80:: 位址" to="/docs/reference/terminology#link-local-address">鏈路本機位址</Terminology>），並轉換為<Terminology title="位址的小寫、最短標準寫法" to="/docs/reference/terminology#canonical-form">標準形式</Terminology>。
+- 它會依每個位址所屬列的<Terminology title="ISP 前綴大小設定，/48 至 /64" to="/docs/reference/terminology#delegated-prefix-length">委派前綴長度</Terminology>遮罩該位址，得到<Terminology title="依前綴長度遮罩後的來源位址" to="/docs/reference/terminology#observed-prefix">觀察到的前綴</Terminology>。
+
+## 2. 比較 \{#2-compare}
+
+- 如果該介面沒有<Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>，執行會記錄一個基準，並以<Terminology title="結果：已記錄基準，設定未變更" to="/docs/reference/terminology#initialized">已初始化</Terminology>結束。
+- 如果前綴及其長度與<Terminology title="下次檢查用來比較的前綴" to="/docs/reference/terminology#last-successful-prefix">上次成功前綴</Terminology>相同，執行會以<Terminology title="結果：前綴未變更，未掃描或寫入任何內容" to="/docs/reference/terminology#no-change">無變更</Terminology>結束，不會掃描設定。
+- 前綴或長度不同即為<Terminology title="與上次成功前綴或長度不同" to="/docs/reference/terminology#prefix-transition">前綴變更</Terminology>，執行會繼續進行。
+
+## 3. 規劃 \{#3-plan}
+
+- 執行會透過 pfSense 的設定函式讀取設定，並只保留在「欄位」分頁上選取的欄位。已不存在的已選取欄位會被略過，並列在 **略過的欄位** 下。
+- <Terminology title="套件可改寫的確切設定欄位" to="/docs/reference/terminology#approved-field">已核准欄位</Terminology>中每個屬於舊前綴（依儲存的長度計算）的位址，都會依目前長度換上新的前綴位元，同時保留其<Terminology title="委派前綴之後的位址位元" to="/docs/reference/terminology#host-portion">主機部分</Terminology>。這些變更共同構成完整的<Terminology title="寫入前建立的完整欄位變更清單" to="/docs/reference/terminology#change-plan">變更計畫</Terminology>。
+- 如果沒有需要變更的內容，執行會以<Terminology title="結果：前綴已變更，但沒有符合的已核准欄位" to="/docs/reference/terminology#warning">警告</Terminology>結束。有變更的<Terminology title="不備份也不寫入的預覽" to="/docs/reference/terminology#dry-run">試執行</Terminology>會在此處以<Terminology title="不備份也不寫入的預覽" to="/docs/reference/terminology#dry-run">試執行</Terminology>結束。
+
+## 4. 預檢 \{#4-preflight}
+
+- 執行會確認 pfSense 能重新載入計畫中的每個服務。對於 <Terminology title="指派給 pfSense WireGuard 通道的位址" to="/docs/reference/terminology#wireguard-tunnel-address">WireGuard 通道位址</Terminology>，這一步需要已安裝 WireGuard 套件。
+- 它會確認計畫中的每個欄位仍保有建立計畫時的值。
+
+## 5. 備份並一次寫入 \{#5-back-up-and-write-once}
+
+- pfSense 建立<Terminology title="寫入前儲存的設定副本" to="/docs/reference/terminology#configuration-backup">設定備份</Terminology>；如果 pfSense 未確認備份成功，執行就會停止。
+- 執行會套用所有變更並只儲存一次，描述為 `IPv6 前綴更新器為介面 <interface> 變更了 <count> 個已核准欄位`。
+- 如果 pfSense 回報儲存失敗，執行會將原始值放回記憶體中並停止。
+
+## 6. 驗證、重新載入、再驗證 \{#6-verify-reload-verify}
+
+- 執行會檢查已儲存的值是否與計畫一致，重新載入受影響的服務，然後再次檢查這些值。
+- 服務依[重新載入動作](/docs/reference/approved-fields#reload-actions)列出的固定順序重新載入，從介面到 WireGuard。重新載入介面之後會接著重新載入防火牆篩選器，之後不會再重複。
+- 防火牆篩選器、DNS 解析器與 DNS 轉送器的重新載入傳回失敗時，會讓執行失敗。其他重新載入只有在擲回錯誤時才會讓執行失敗。
+- 其他套件的設定會在重新載入及其驗證都完成後，最後才重新套用。無法套用的套件會被回報，已儲存的值則維持不變。
+- 此階段發生失敗時，新值仍保持已儲存狀態。
+
+## 7. 記錄與通知 \{#7-record-and-notify}
+
+- <Terminology title="不變更設定即記錄的起始前綴" to="/docs/reference/terminology#baseline">基準</Terminology>移到新前綴，**上次執行** 會記錄這次<Terminology title="結果：欄位已更新、儲存、重新載入並驗證" to="/docs/reference/terminology#success">成功</Terminology>，以及已變更欄位數與<Terminology title="套用已變更設定的 pfSense 動作" to="/docs/reference/terminology#service-reload">已重新載入的服務</Terminology>。
+- 執行會寫入一行<Terminology title="套件寫入的 pfSense 一般記錄" to="/docs/reference/terminology#system-log">系統記錄</Terminology>，並在已開啟時傳送<Terminology title="更新驗證成功後傳送的警示" to="/docs/reference/terminology#change-notification">變更通知</Terminology>。通知傳送失敗不會改變結果。
+
+## 執行可能停止的位置 \{#where-a-run-can-stop}
+
+| 停止位置                                                                                                                                                                                                      | 已寫入設定              | 已建立備份 | 已更新「上次執行」                                                                                               |
+|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------|-------|---------------------------------------------------------------------------------------------------------|
+| <Terminology title="結果：更新關閉時略過的排程檢查" to="/docs/reference/terminology#disabled">已停用</Terminology>的排程檢查                                                                                                     | 否                  | 否     | 否                                                                                                       |
+| 設定、位址問題或無法讀取的<Terminology title="保存基準與上次執行的套件檔案" to="/docs/reference/terminology#package-state">套件狀態</Terminology>                                                                                        | 否                  | 否     | 否                                                                                                       |
+| <Terminology title="結果：已記錄基準，設定未變更" to="/docs/reference/terminology#initialized">已初始化</Terminology>或<Terminology title="結果：前綴未變更，未掃描或寫入任何內容" to="/docs/reference/terminology#no-change">無變更</Terminology> | 否                  | 否     | 是                                                                                                       |
+| <Terminology title="結果：前綴已變更，但沒有符合的已核准欄位" to="/docs/reference/terminology#warning">警告</Terminology>或<Terminology title="不備份也不寫入的預覽" to="/docs/reference/terminology#dry-run">試執行</Terminology>            | 否                  | 否     | 是                                                                                                       |
+| 預檢失敗                                                                                                                                                                                                      | 否                  | 否     | 是                                                                                                       |
+| 備份失敗                                                                                                                                                                                                      | 否                  | 否     | 是                                                                                                       |
+| 寫入失敗                                                                                                                                                                                                      | 否（以 pfSense 的回報為準） | 是     | 是                                                                                                       |
+| 驗證或重新載入失敗                                                                                                                                                                                                 | 是                  | 是     | 是                                                                                                       |
+| 通知失敗                                                                                                                                                                                                      | 是                  | 是     | 是，記錄為<Terminology title="結果：欄位已更新、儲存、重新載入並驗證" to="/docs/reference/terminology#success">成功</Terminology> |
+
+[已核准欄位](/docs/reference/approved-fields)列出了每次重新載入背後的 pfSense 函式，[備份與復原](/docs/operate/backups-and-recovery)則說明了失敗後的復原方式。

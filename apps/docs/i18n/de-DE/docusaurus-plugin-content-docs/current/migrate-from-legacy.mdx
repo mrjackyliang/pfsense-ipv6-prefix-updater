@@ -1,0 +1,85 @@
+---
+id: migrate-from-legacy
+title: Vom Skript migrieren
+description: Installieren Sie das Paket über das alte update.php-Skript, lassen Sie es die Cron-Einträge, gespeicherten Präfixe und Sicherungen für Sie übernehmen und prüfen Sie dann das Ergebnis auf der Registerkarte Bereinigung.
+keywords:
+  - pfsense ipv6 prefix updater
+  - legacy-updater
+  - migration
+  - update.php
+  - cron-paket
+  - bereinigung
+tags:
+  - setup
+  - migration
+  - legacy updater
+sidebar_position: 5
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import cleanupBefore from './_assets_/migrate-from-legacy-1.png';
+import cleanupAfter from './_assets_/migrate-from-legacy-2.png';
+
+Wechseln Sie vom <Terminology title="ursprüngliches update.php-Skript, ausgeführt vom Cron-Paket" to="/docs/reference/terminology#legacy-updater">Legacy-Updater</Terminology> zum Paket, indem Sie das Paket installieren; es übernimmt die Schnittstellen, die gespeicherten Präfixe und die Sicherungen des Skripts selbstständig.
+
+## Was sich ändert \{#what-changes}
+
+| Aspekt               | <Terminology title="ursprüngliches update.php-Skript, ausgeführt vom Cron-Paket" to="/docs/reference/terminology#legacy-updater">Legacy-Updater</Terminology> | Paket                                                                                                                                                                                                                                                                                                                                                                                                   |
+|----------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Installation         | `install.sh` kopiert Dateien nach `/root/pfsense-ipv6-prefix-updater`                                                                                         | `pkg add` installiert ein pfSense-Paket                                                                                                                                                                                                                                                                                                                                                                 |
+| Zeitplanung          | Ein Eintrag im Cron-Paket, den Sie selbst anlegen                                                                                                             | Die Einstellung **Zeitplan** mit einem Cron-Eintrag, den pfSense verwaltet                                                                                                                                                                                                                                                                                                                              |
+| Schnittstellen       | Ein Cron-Eintrag pro Gerät des Betriebssystems, etwa `igb1`                                                                                                   | Eine Zeile unter **Überwachte Schnittstellen** pro pfSense-Schnittstelle, etwa LAN, alle in einem Lauf geprüft                                                                                                                                                                                                                                                                                          |
+| Was sich ändert      | Der alte Präfixtext an beliebiger Stelle der Konfiguration, auch in Base64-codierten Werten                                                                   | <Terminology title="exaktes Konfigurationsfeld, das das Paket umschreiben darf" to="/docs/reference/terminology#approved-field">Genehmigte Felder</Terminology>, die Sie auf der Registerkarte **Felder** auswählen                                                                                                                                                                                     |
+| Sicherungen          | Für alle Benutzer lesbare Kopien in `/root/pfsense-ipv6-prefix-updater-backups`                                                                               | Eine <Terminology title="Kopie der Konfiguration vor einem Schreibvorgang" to="/docs/reference/terminology#configuration-backup">Konfigurationssicherung</Terminology> in der <Terminology title="pfSense-Liste gespeicherter Konfigurationsrevisionen" to="/docs/reference/terminology#config-history">Config History</Terminology> und auf der Registerkarte **Sicherungen** vor jedem Schreibvorgang |
+| Gespeichertes Präfix | `/root/pfsense-ipv6-prefix-updater-cache`                                                                                                                     | Der <Terminology title="Paketdatei mit Basislinie und letztem Lauf" to="/docs/reference/terminology#package-state">Paketzustand</Terminology>, der bei der Umstellung aus dem Legacy-Cache befüllt wird                                                                                                                                                                                                 |
+| Benachrichtigungen   | Nach jeder Änderung gesendet                                                                                                                                  | Eine optionale <Terminology title="Meldung nach einer verifizierten erfolgreichen Aktualisierung" to="/docs/reference/terminology#change-notification">Änderungsbenachrichtigung</Terminology> nach einem <Terminology title="Ergebnis: Felder aktualisiert, gespeichert, neu geladen und verifiziert" to="/docs/reference/terminology#success">Erfolg</Terminology>                                    |
+
+## Paket installieren \{#install-the-package}
+
+[Installieren Sie das Paket](/docs/installation) mit `pkg add`, während der Legacy-Updater noch vorhanden ist. Vorher ist nichts zu entfernen, und es empfiehlt sich, die Cron-Einträge und die Ordner unter `/root` nicht selbst zu löschen, weil das Paket sie bei der Umstellung liest.
+
+Wenn Sie den alten Installationsbefehl erneut ausführen, wird das Skript nicht wieder installiert. Ab Version 2 gibt er einen Fehler mit dem Befehl `pkg add` aus und ändert nichts.
+
+## Was automatisch geschieht \{#what-happens-automatically}
+
+Der Installationsschritt findet den Legacy-Updater und übernimmt ihn in dieser Reihenfolge in das Paket:
+
+1. **Sicherung**: speichert eine <Terminology title="Kopie der Konfiguration vor einem Schreibvorgang" to="/docs/reference/terminology#configuration-backup">Konfigurationssicherung</Terminology>, bevor sich etwas ändert.
+2. **Schnittstellen**: macht aus jedem Cron-Eintrag eine Zeile unter **Überwachte Schnittstellen**, ordnet dazu sein Gerät, etwa `igb1.10`, der pfSense-Schnittstelle zu, die es verwendet, und behält seine <Terminology title="Anzahl der führenden Netzbits, etwa /56" to="/docs/reference/terminology#prefix-length">Präfixlänge</Terminology> bei.
+3. **Zeitplan**: wählt den **Zeitplan** des Pakets, der mindestens so oft prüft wie die Cron-Einträge, und schaltet <Terminology title="automatische Prüfungen über einen von pfSense verwalteten Cron-Eintrag" to="/docs/reference/terminology#scheduled-updates">geplante Aktualisierungen</Terminology> ein.
+4. **Basislinien**: zeichnet jedes gespeicherte Präfix als <Terminology title="Ausgangspräfix, aufgezeichnet ohne Konfigurationsänderung" to="/docs/reference/terminology#baseline">Basislinie</Terminology> für seine Schnittstelle auf, damit keine Präfixänderung verloren geht.
+5. **Cron-Einträge**: entfernt nur die Einträge, die `update.php` ausführen, im selben Schreibvorgang der Konfiguration wie die neuen Einstellungen, sodass die beiden Updater nie gleichzeitig laufen.
+6. **Sicherungen**: kopiert jede Legacy-Sicherung auf die Registerkarte **Sicherungen**, nur für root lesbar, und löscht das Original, nachdem die Kopie verifiziert wurde.
+7. **Alte Dateien**: löscht das Skript, seine gespeicherten Präfixe, das heruntergeladene Archiv und das gespeicherte Installationsprogramm aus `/root`.
+
+Ein WebGUI-Hinweis verlinkt auf die Registerkarte Bereinigung, sobald die Umstellung abgeschlossen ist. Läuft das Legacy-Skript in diesem Moment, wartet das Paket und schließt die Umstellung bei der nächsten geplanten Prüfung ab.
+
+### Mehrere Cron-Einträge \{#several-cron-entries}
+
+Jeder Cron-Eintrag, der ein anderes Gerät nennt, wird zu einer eigenen Zeile, und ein einziger Lauf prüft sie alle. Schnittstellen, die sich ein <Terminology title="IPv6-Netz, das Ihr Internetanbieter zur Firewall routet" to="/docs/reference/terminology#delegated-prefix">delegiertes Präfix</Terminology> teilen, aktualisieren gemeinsame Felder nur einmal, in einem einzigen gesicherten Schreibvorgang.
+
+Ein Cron-Eintrag, dessen Gerät zu keiner pfSense-Schnittstelle mehr gehört, wird entfernt und als Warnung aufgeführt, weil das Skript darüber nichts hätte aktualisieren können.
+
+### Veraltete gespeicherte Präfixe \{#saved-prefixes-that-are-out-of-date}
+
+Hat der Internetanbieter das Präfix geändert, nachdem der Legacy-Updater zuletzt lief, bleibt dessen gespeichertes Präfix die <Terminology title="Ausgangspräfix, aufgezeichnet ohne Konfigurationsänderung" to="/docs/reference/terminology#baseline">Basislinie</Terminology>. Die erste Prüfung des Pakets findet dann die Felder, die noch das alte Präfix verwenden, und aktualisiert sie.
+
+Verwendet kein genehmigtes Feld ein altes gespeichertes Präfix, wird stattdessen das aktuelle Präfix zur Basislinie, damit die erste Prüfung keine <Terminology title="Ergebnis: Präfix geändert, aber kein genehmigtes Feld passte" to="/docs/reference/terminology#warning">Warnung</Terminology> meldet.
+
+## Registerkarte Bereinigung prüfen \{#review-the-cleanup-tab}
+
+Öffnen Sie **Services → IPv6 Prefix Updater → Bereinigung**, um alle Reste des Legacy-Updaters zu sehen und was mit jedem davon geschehen ist.
+
+<img src={cleanupBefore} alt="Registerkarte Bereinigung von IPv6 Prefix Updater mit zwei Legacy-Cron-Einträgen, dem Legacy-Skript, gespeicherten Präfixen für zwei Geräte, einer Legacy-Sicherung und zwei heruntergeladenen Installationsdateien vor der Bereinigung" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+- **Reste von 1.x**: die Cron-Einträge, das Skript, die gespeicherten Präfixe, die Sicherungen, die heruntergeladenen Installationsdateien und die Sperre des Skripts, jeweils als **Gefunden** oder **Nicht vorhanden** markiert.
+- **Letzte Bereinigung**: jeder Schritt der Umstellung und jede Warnung, etwa zu einem Gerät, das keiner Schnittstelle zugewiesen ist.
+- **Jetzt bereinigen**: führt dieselbe Umstellung sofort aus, statt auf die nächste geplante Prüfung zu warten. Andere Cron-Einträge bleiben immer unberührt.
+
+<img src={cleanupAfter} alt="Registerkarte Bereinigung von IPv6 Prefix Updater nach Jetzt bereinigen mit der Sicherung, den entfernten Cron-Einträgen, der verschobenen Sicherung und den gelöschten Legacy-Dateien" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+## Abdeckung prüfen \{#check-coverage}
+
+Vergleichen Sie nach dem ersten echten <Terminology title="Abweichung vom letzten erfolgreichen Präfix oder dessen Länge" to="/docs/reference/terminology#prefix-transition">Präfixwechsel</Terminology> **Geänderte Felder** und **Zusammenfassung** mit dem, was der <Terminology title="ursprüngliches update.php-Skript, ausgeführt vom Cron-Paket" to="/docs/reference/terminology#legacy-updater">Legacy-Updater</Terminology> früher geändert hat. Der Legacy-Updater hat auch Gateways, statische Routen, Beschreibungen und Base64-codierte Werte umgeschrieben. Das Paket ändert diese nur, wenn sie unter **Weitere Einstellungen** auf der Registerkarte **Felder** angekreuzt sind, daher empfiehlt es sich, sie anzukreuzen, bevor sich das Präfix ändert.
+
+Nach einer Umstellung ist jede <Terminology title="Gruppe von Feldern mit einem Schalter auf der Registerkarte Felder" to="/docs/reference/terminology#field-group">Feldgruppe</Terminology> von pfSense eingeschaltet, so wie **Automatisch auswählen** sie einstellt. [Felder](/docs/configure/configuration-scopes) listet jede Gruppe auf und erklärt, wie Sie eine ausschalten.

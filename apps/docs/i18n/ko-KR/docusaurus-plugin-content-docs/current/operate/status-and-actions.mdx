@@ -1,0 +1,122 @@
+---
+id: status-and-actions
+title: 상태 및 작업
+description: 상태 탭의 현재 상태 및 마지막 실행 패널을 읽고, 확인과 미리 보기를 실행하고, 기준선을 복구하고, 명령 출력을 이해합니다.
+keywords:
+  - pfsense ipv6 prefix updater
+  - 상태 탭
+  - 지금 실행
+  - 시험 실행
+  - 명령 출력
+tags:
+  - operations
+  - status
+  - dry run
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+import unchangedRun from './_assets_/status-and-actions-1.png';
+import changedRun from './_assets_/status-and-actions-2.png';
+import runByInterface from './_assets_/status-and-actions-3.png';
+
+현재 기준선과 최근 실행이 기록한 내용을 확인하고, 상태 탭에서 확인, 미리 보기, 기준선 복구를 시작합니다.
+
+## 현재 상태 \{#current-state}
+
+**Services → IPv6 Prefix Updater** 아래의 **상태** 탭은 이 표로 시작합니다. 표에는 모니터링하는 인터페이스마다 행이 하나씩 있으며, 각 행은 다음 확인이 비교 대상으로 삼는 <Terminology title="구성을 바꾸지 않고 기록한 시작 접두사" to="/docs/reference/terminology#baseline">기준선</Terminology>을 설명합니다.
+
+- **<Terminology title="주소로 현재 접두사를 알려 주는 인터페이스" to="/docs/reference/terminology#monitored-interface">모니터링할 인터페이스</Terminology>**: `LAN (lan)`처럼 인터페이스 설명 뒤에 pfSense 내부 이름을 붙인 값.
+- **<Terminology title="다음 확인이 비교 기준으로 삼는 접두사" to="/docs/reference/terminology#last-successful-prefix">마지막 성공 접두사</Terminology>**: `2001:db8:abcd:7800::/56` 같은 접두사와 길이.
+- **<Terminology title="pfSense가 모니터링할 인터페이스에 보고하는 글로벌 주소" to="/docs/reference/terminology#source-address">마지막 성공 원본 주소</Terminology>**: <Terminology title="소문자로 쓴 가장 짧은 표준 주소 표기" to="/docs/reference/terminology#canonical-form">정규 형식</Terminology>의 주소. <Terminology title="결과: 접두사 그대로, 검색이나 쓰기 없음" to="/docs/reference/terminology#no-change">변경 없음</Terminology> 실행도 이 값을 새로 고칩니다.
+- **마지막 성공 업데이트**: <Terminology title="구성을 바꾸지 않고 기록한 시작 접두사" to="/docs/reference/terminology#baseline">기준선</Terminology>이 초기화되거나 수락되거나 마지막 <Terminology title="결과: 필드 업데이트, 저장, 다시 로드, 검증 완료" to="/docs/reference/terminology#success">성공</Terminology> 후 이동한 UTC 시각(예: `2026-10-24T14:00:00+00:00`).
+
+인터페이스의 첫 실행 전에는 그 행에 `초기화되지 않았습니다. 안전한 기준선을 설정하려면 일반 확인을 한 번 실행하십시오.`가 표시됩니다. 레거시 업데이터에서 넘겨받은 <Terminology title="구성을 바꾸지 않고 기록한 시작 접두사" to="/docs/reference/terminology#baseline">기준선</Terminology>은 첫 확인 전까지 원본 주소가 `이 패키지 버전에서 기록되지 않음`으로 표시됩니다.
+
+## 마지막 실행 \{#last-run}
+
+이 패널은 최근 실행을 기록합니다. 인터페이스 하나를 모니터링할 때는 그 인터페이스의 결과를 바로 표시합니다.
+
+- **결과**: 실행 결과로, [실행 결과](/docs/operate/run-outcomes)에서 설명합니다.
+- **타임스탬프(UTC)**: 실행이 끝난 시각.
+- **<Terminology title="pfSense가 모니터링할 인터페이스에 보고하는 글로벌 주소" to="/docs/reference/terminology#source-address">관찰된 원본 주소</Terminology>**: pfSense가 <Terminology title="주소로 현재 접두사를 알려 주는 인터페이스" to="/docs/reference/terminology#monitored-interface">모니터링할 인터페이스</Terminology>에 대해 반환한 주소.
+- **<Terminology title="접두사 길이로 마스킹한 원본 주소" to="/docs/reference/terminology#observed-prefix">관찰된 접두사</Terminology>**: 그 주소와 <Terminology title="ISP 접두사 크기 설정, /48~/64" to="/docs/reference/terminology#delegated-prefix-length">위임된 접두사 길이</Terminology>로 계산한 네트워크.
+- **변경된 필드**: 실행이 변경한 <Terminology title="패키지가 다시 쓸 수 있는 정확한 구성 필드" to="/docs/reference/terminology#approved-field">승인된 필드</Terminology>의 수, 또는 <Terminology title="백업도 쓰기도 하지 않는 미리 보기" to="/docs/reference/terminology#dry-run">시험 실행</Terminology> 후에는 변경할 필드의 수.
+- **<Terminology title="쓰기 전에 저장한 구성 사본" to="/docs/reference/terminology#configuration-backup">구성 백업 생성됨</Terminology>**: `예` 또는 `아니요 - 이 실행은 구성을 쓰지 않았습니다`.
+- **<Terminology title="변경된 설정을 적용하는 pfSense 동작" to="/docs/reference/terminology#service-reload">다시 로드된 서비스</Terminology>**: 실행이 다시 로드한 서비스, 또는 <Terminology title="백업도 쓰기도 하지 않는 미리 보기" to="/docs/reference/terminology#dry-run">시험 실행</Terminology> 후에는 다시 로드할 서비스.
+- **요약**: 결과를 설명하는 한 문장으로, <Terminology title="마지막 성공 접두사나 길이와 달라진 상태" to="/docs/reference/terminology#prefix-transition">접두사 전환</Terminology> 후에는 이전 접두사도 포함합니다.
+- **패키지**: 실행이 다른 패키지의 설정을 변경했을 때 표시되며, `<package> 패키지 설정을 다시 적용했습니다.`처럼 패키지마다 한 줄씩 나옵니다. 각 메시지는 [필드](/docs/configure/configuration-scopes#other-packages-settings)에 나와 있습니다.
+- **건너뛴 필드**: 선택한 필드가 더 이상 존재하지 않을 때 표시되며, `선택한 이 필드는 더 이상 존재하지 않으므로 실행에서 건너뛰었습니다. 필드 탭에서 확인하십시오.`와 각 필드의 식별자가 나옵니다.
+
+관찰된 주소와 접두사를 먼저 확인하는 것을 권장합니다. 이 두 값으로 pfSense가 의도한 주소를 반환했는지, 길이가 예상한 네트워크를 만들었는지 알 수 있습니다.
+
+다른 확인이 <Terminology title="두 확인이 동시에 실행되지 않게 막는 잠금" to="/docs/reference/terminology#run-lock">실행 잠금</Terminology>을 잡고 있거나, 모니터링하는 어떤 인터페이스에도 <Terminology title="2000::/3 범위의 공인 IPv6 주소" to="/docs/reference/terminology#global-unicast-address">글로벌 주소</Terminology>가 없을 때처럼 실행이 <Terminology title="기준선과 마지막 실행을 담은 패키지 파일" to="/docs/reference/terminology#package-state">패키지 상태</Terminology>를 읽기 전에 멈추면 **마지막 실행**은 업데이트되지 않습니다. [실행 결과](/docs/operate/run-outcomes#failures-after-the-save)에서 설명하듯이 <Terminology title="결과: 검사나 안전 단계가 실행을 중단함" to="/docs/reference/terminology#failure">실패</Terminology>는 항상 변경된 필드를 `0`으로 표시합니다.
+
+### 인터페이스별 마지막 실행 \{#last-run-by-interface}
+
+인터페이스를 둘 이상 모니터링하면 **마지막 실행**에는 합계가 표시되고, **요약**에는 업데이트된 인터페이스, 변경되지 않은 인터페이스, 확인이 필요한 인터페이스의 수가 표시됩니다. 그 아래의 **인터페이스별 마지막 실행** 표에는 각 인터페이스가 자신의 결과, 관찰된 접두사, 변경된 필드, 요약과 함께 나열됩니다.
+
+- **마지막 실행**의 **변경된 필드**는 <Terminology title="ISP가 방화벽으로 라우팅하는 IPv6 네트워크" to="/docs/reference/terminology#delegated-prefix">위임된 접두사</Terminology>를 공유하는 두 인터페이스가 같은 필드를 모두 계획했더라도 각 필드를 한 번만 셉니다.
+- <Terminology title="2000::/3 범위의 공인 IPv6 주소" to="/docs/reference/terminology#global-unicast-address">글로벌 주소</Terminology>가 없는 인터페이스는 자기 행에 <Terminology title="결과: 검사나 안전 단계가 실행을 중단함" to="/docs/reference/terminology#failure">실패</Terminology>를 보고하고, 다른 인터페이스는 그대로 확인됩니다.
+- 두 인터페이스가 같은 필드에 서로 다른 값을 계획하면 실행은 아무것도 쓰기 전에 멈추고 어느 필드가 일치하지 않았는지 보고합니다.
+
+## 작업 \{#actions}
+
+| 작업                                                                                                    | 수행 내용                                                                                                                                                                                                                                                                                                                                                                                                    |
+|-------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 지금 실행                                                                                                 | <Terminology title="pfSense가 관리하는 cron 항목으로 실행하는 자동 확인" to="/docs/reference/terminology#scheduled-updates">예약 업데이트</Terminology>가 꺼져 있어도 전체 확인을 실행합니다. <Terminology title="구성을 바꾸지 않고 기록한 시작 접두사" to="/docs/reference/terminology#baseline">기준선</Terminology>이 없으면 기록하고, <Terminology title="마지막 성공 접두사나 길이와 달라진 상태" to="/docs/reference/terminology#prefix-transition">접두사 전환</Terminology>을 찾으면 적용합니다. |
+| <Terminology title="백업도 쓰기도 하지 않는 미리 보기" to="/docs/reference/terminology#dry-run">시험 실행</Terminology> | 백업이나 쓰기 없이 같은 확인을 실행합니다. <Terminology title="구성을 바꾸지 않고 기록한 시작 접두사" to="/docs/reference/terminology#baseline">기준선</Terminology>이 생기기 전에는 <Terminology title="결과: 기준선이 생기기 전의 시험 실행" to="/docs/reference/terminology#initialization-preview">초기화 미리 보기</Terminology>를 보고합니다.                                                                                                                              |
+| 현재 접두사 수락                                                                                             | 확인을 거친 뒤 활성 원본 주소, 접두사, 길이를 새 <Terminology title="구성을 바꾸지 않고 기록한 시작 접두사" to="/docs/reference/terminology#baseline">기준선</Terminology>으로 기록합니다. 승인된 필드를 검사하거나, 백업을 만들거나, 구성을 쓰거나, 서비스를 다시 로드하지 않습니다.                                                                                                                                                                                                       |
+
+지금 실행과 <Terminology title="백업도 쓰기도 하지 않는 미리 보기" to="/docs/reference/terminology#dry-run">시험 실행</Terminology>은 <Terminology title="상태 탭에서 시작한 확인" to="/docs/reference/terminology#manual-run">수동 실행</Terminology>입니다. **현재 접두사 수락**은 복구 작업이므로 저장된 주소와 영향을 받는 서비스를 검증한 뒤에만 사용해야 합니다.
+
+각 작업은 완료 또는 경고 배너를 표시합니다. **현재 접두사 수락**의 확인 대화 상자는 패키지가 비교 기준선을 교체하기 전의 마지막 안전장치입니다.
+
+다른 실행이 진행 중인 것을 발견한 확인도 완료 배너를 표시하므로, <Terminology title="지금 실행이나 시험 실행 후 표시되는 읽기 전용 결과" to="/docs/reference/terminology#command-output">명령 출력</Terminology>도 함께 읽는 것을 권장합니다.
+
+## 명령 출력 \{#command-output}
+
+작업을 실행하면 **<Terminology title="지금 실행이나 시험 실행 후 표시되는 읽기 전용 결과" to="/docs/reference/terminology#command-output">명령 출력</Terminology>** 아래에 읽기 전용 **최근 실행** 상자가 나타납니다.
+
+```text
+상태: 변경 없음
+인터페이스: lan
+관찰된 원본 주소: 2001:db8:abcd:78aa::1
+이전 접두사: 2001:db8:abcd:7800::
+현재 접두사: 2001:db8:abcd:7800::/56
+계획되었거나 변경된 필드: 0
+구성 백업: 생성되지 않음
+다시 로드된 서비스: 없음
+요약: 활성 IPv6 접두사가 변경되지 않았습니다. 승인된 구성 대상을 읽거나 쓰지 않았습니다.
+```
+
+이전 접두사는 길이 없이 출력됩니다. 실패한 실행은 대신 `IPv6 접두사 업데이터 실패:`로 시작하는 한 줄을 표시합니다.
+
+<Terminology title="백업도 쓰기도 하지 않는 미리 보기" to="/docs/reference/terminology#dry-run">시험 실행</Terminology>이나 변경 후에는 `필드 변경:` 뒤에 실행이 바꾼, 또는 바꿀 각 주소와 그 주소가 속한 필드가 이어집니다.
+
+```text
+필드 변경:
+- aliases/alias/0/address: 2001:db8:abcd:78aa::10 → 2001:db8:abcd:88aa::10
+```
+
+## 필드 선택 \{#choosing-fields}
+
+실행이 업데이트할 필드는 각 <Terminology title="구성을 바꾸지 않고 기록한 시작 접두사" to="/docs/reference/terminology#baseline">기준선</Terminology> 접두사 안의 모든 주소를 나열하는 **필드** 탭에서 선택합니다. 그룹, 개별 필드 예외, 기타 설정 그룹은 [필드](/docs/configure/configuration-scopes)에서 설명합니다.
+
+## 스크린샷 \{#screenshots}
+
+첫 번째 스크린샷은 모니터링하는 인터페이스 두 개에 대해 변경된 필드도 백업도 없는 <Terminology title="결과: 접두사 그대로, 검색이나 쓰기 없음" to="/docs/reference/terminology#no-change">변경 없음</Terminology> 결과를 보여 줍니다.
+
+<img src={unchangedRun} alt="변경되지 않은 인터페이스 두 개에 대해 변경된 필드 0개와 백업 없음을 표시하는 마지막 실행 및 인터페이스별 마지막 실행이 있는 IPv6 Prefix Updater 상태 탭" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+두 번째 스크린샷은 <Terminology title="패키지가 다시 쓸 수 있는 정확한 구성 필드" to="/docs/reference/terminology#approved-field">승인된 필드</Terminology> 하나를 변경하고, <Terminology title="쓰기 전에 저장한 구성 사본" to="/docs/reference/terminology#configuration-backup">구성 백업</Terminology>을 만들고, 방화벽 필터를 다시 로드한 <Terminology title="결과: 필드 업데이트, 저장, 다시 로드, 검증 완료" to="/docs/reference/terminology#success">성공</Terminology>을 보여 줍니다.
+
+<img src={changedRun} alt="모니터링하는 인터페이스 두 개에 대해 변경된 필드 1개, 구성 백업, 방화벽 필터 다시 로드가 포함된 /56 접두사 전환 성공을 보여 주는 IPv6 Prefix Updater 상태 탭" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+세 번째 스크린샷은 그 실행의 **인터페이스별 마지막 실행** 표를 보여 줍니다. LAN과 LAB 두 인터페이스는 하나의 <Terminology title="ISP가 방화벽으로 라우팅하는 IPv6 네트워크" to="/docs/reference/terminology#delegated-prefix">위임된 접두사</Terminology>를 공유하며, 각각 같은 변경된 필드를 보고합니다.
+
+<img src={runByInterface} alt="같은 /56 접두사 전환에서 LAN과 LAB 모두 변경된 필드 1개와 함께 성공을 보고하는 IPv6 Prefix Updater 인터페이스별 마지막 실행 표" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
+
+이 스크린샷의 `2001:db8::/32` 주소는 문서용으로 예약된 예시입니다.
+
+변경이 있었던 실행을 신뢰하기 전에 모든 결과는 [실행 결과](/docs/operate/run-outcomes)에서, 복구 방법은 [백업 및 복구](/docs/operate/backups-and-recovery)에서 검토합니다.

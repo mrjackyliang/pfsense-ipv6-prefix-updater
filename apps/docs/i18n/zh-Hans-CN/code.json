@@ -1,0 +1,173 @@
+{
+  "home.meta.description": {
+    "message": "检测委派前缀变化，只更新已批准的 pfSense 字段，保留主机位，并验证每次事务。"
+  },
+  "home.meta.title": {
+    "message": "IPv6 前缀更新器 - 安全地保持动态 IPv6 前缀一致。"
+  },
+  "home.hero.eyebrow": {
+    "message": "原生 pfSense 软件包"
+  },
+  "home.hero.heading": {
+    "message": "安全地保持动态 IPv6 前缀一致。"
+  },
+  "home.hero.tagline": {
+    "message": "检测委派前缀变化，只更新已批准的 pfSense 字段，保留主机位，并验证每次事务。"
+  },
+  "home.hero.primaryAction": {
+    "message": "安装和配置"
+  },
+  "home.hero.secondaryAction": {
+    "message": "查看安全机制"
+  },
+  "home.preview.ariaLabel": {
+    "message": "委派前缀长度: /56"
+  },
+  "home.preview.dryRun": {
+    "message": "试运行"
+  },
+  "home.preview.detected": {
+    "message": "观察到的源地址"
+  },
+  "home.preview.previous": {
+    "message": "旧前缀"
+  },
+  "home.preview.current": {
+    "message": "当前前缀"
+  },
+  "home.preview.prefixChanged": {
+    "message": "观察到的前缀"
+  },
+  "home.preview.hostPreserved": {
+    "message": "委派前缀长度"
+  },
+  "home.preview.result": {
+    "message": "试运行发现 2 个针对 2001:db8:abcd:8800::/56 的已批准字段变化；配置未被修改。"
+  },
+  "home.workflow.eyebrow": {
+    "message": "安全与运行"
+  },
+  "home.workflow.heading": {
+    "message": "安全事务"
+  },
+  "home.workflow.detect": {
+    "message": "观察到的源地址"
+  },
+  "home.workflow.plan": {
+    "message": "已更改字段"
+  },
+  "home.workflow.backup": {
+    "message": "已创建配置备份"
+  },
+  "home.workflow.write": {
+    "message": "当前前缀"
+  },
+  "home.workflow.verify": {
+    "message": "成功"
+  },
+  "home.workflow.notify": {
+    "message": "通知"
+  },
+  "home.features.interface.title": {
+    "message": "监控接口"
+  },
+  "home.features.interface.description": {
+    "message": "为每个主活动全局 IPv6 地址带有委派前缀的接口添加一行。如果 WAN 上的 DHCPv6 只获取前缀，请选择下游的跟踪接口。前缀长度之后的主机位会完整保留，pfSense 为每个接口选择的地址显示在“状态”选项卡上。"
+  },
+  "home.features.prefix.title": {
+    "message": "委派前缀长度"
+  },
+  "home.features.prefix.description": {
+    "message": "输入 ISP 委派的前缀边界。该边界后的主机位会被完整保留。"
+  },
+  "home.features.scopes.title": {
+    "message": "字段"
+  },
+  "home.features.scopes.description": {
+    "message": "在“字段”选项卡中选择哪些配置字段随前缀变化。"
+  },
+  "home.features.dryRun.title": {
+    "message": "试运行"
+  },
+  "home.features.dryRun.description": {
+    "message": "“立即运行”可能在检测到变化后更新已批准字段。“试运行”仅记录预览，绝不会写入防火墙配置。"
+  },
+  "home.features.backup.title": {
+    "message": "已创建配置备份"
+  },
+  "home.features.backup.description": {
+    "message": "已创建配置备份: 是."
+  },
+  "home.features.notify.title": {
+    "message": "通知"
+  },
+  "home.features.notify.description": {
+    "message": "在前缀更新验证成功后使用已配置的 pfSense 通知渠道。无变化的检查绝不会发送通知。"
+  },
+  "home.stats.heading": {
+    "message": "安全与运行"
+  },
+  "home.stats.boundaries": {
+    "message": "委派前缀长度"
+  },
+  "home.stats.backups": {
+    "message": "已创建配置备份"
+  },
+  "home.stats.writes": {
+    "message": "已更改字段"
+  },
+  "home.stats.noChange": {
+    "message": "活动 IPv6 前缀未变化；未读取或写入任何已批准的配置目标。"
+  },
+  "home.routes.eyebrow": {
+    "message": "指南"
+  },
+  "home.routes.heading": {
+    "message": "安装和配置"
+  },
+  "home.routes.install.title": {
+    "message": "安装软件包"
+  },
+  "home.routes.install.description": {
+    "message": "在 pfSense shell 中运行以下命令，直接从 GitHub 安装最新版本。"
+  },
+  "home.routes.open": {
+    "message": "开始阅读"
+  },
+  "home.routes.configure.title": {
+    "message": "监控接口 / 委派前缀长度"
+  },
+  "home.routes.configure.description": {
+    "message": "为每个主活动全局 IPv6 地址带有委派前缀的接口添加一行。如果 WAN 上的 DHCPv6 只获取前缀，请选择下游的跟踪接口。前缀长度之后的主机位会完整保留，pfSense 为每个接口选择的地址显示在“状态”选项卡上。"
+  },
+  "home.routes.status.title": {
+    "message": "状态 / 命令输出"
+  },
+  "home.routes.status.description": {
+    "message": "“立即运行”可能在检测到变化后更新已批准字段。“试运行”仅记录预览，绝不会写入防火墙配置。"
+  },
+  "home.routes.troubleshoot.title": {
+    "message": "故障排除"
+  },
+  "home.routes.troubleshoot.description": {
+    "message": "如果源地址不正确，请选择真正拥有全局地址的下游跟踪接口，不要通过猜测前缀长度来补偿。若前缀变化后出现零匹配警告，请检查状态页的旧前缀和已启用范围。发生错误时，请查看 状态 → 命令输出和系统日志；必要时从原生 pfSense 配置历史恢复。"
+  },
+  "home.spotlight.heading": {
+    "message": "命令输出"
+  },
+  "home.spotlight.description": {
+    "message": "请在状态页检查每次运行的源地址、派生前缀、备份结果和最终状态。"
+  },
+  "home.spotlight.statusAction": {
+    "message": "状态 / 命令输出"
+  },
+  "home.spotlight.testsAction": {
+    "message": "结果与测试"
+  },
+  "home.blogPreview.heading": {
+    "message": "博客文章"
+  },
+  "home.blogPreview.description": {
+    "message": "版本说明、配置指南，以及有关动态 IPv6 前缀的文章。"
+  }
+}

@@ -1,0 +1,71 @@
+---
+id: build-and-release
+title: Build and Release
+description: Check, stage, and build the pfSense package on FreeBSD, then attach the .pkg and checksum files to a GitHub release with the publish workflow.
+keywords:
+  - pfsense ipv6 prefix updater
+  - build
+  - release workflow
+  - freebsd ports
+  - php tests
+tags:
+  - contributing
+  - build
+  - release
+sidebar_position: 1
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+Check, stage, and package pfSense IPv6 Prefix Updater, then publish the package to a GitHub release.
+
+## Requirements
+
+- **Node.js 22 or 24** — The root and workspace manifests accept `^22 || ^24`.
+- **PHP or Docker** — The PHP suites use a local `php` when one exists, or the `php:8.3-cli-alpine` image through Docker. `PHP_TEST_IMAGE` overrides the image.
+- **FreeBSD for packaging** — `npm run deploy` runs only on FreeBSD, with `PFSENSE_PORTS_DIR` pointing at a pfSense FreeBSD-ports checkout.
+
+## Check, Stage, and Package
+
+Run these commands from the repository root:
+
+```bash
+# Lint and type-check the scripts, run the PHP and Vitest suites, and validate the port.
+npm run check --workspace pfsense-pkg-ipv6-prefix-updater
+
+# Copy the port into packages/ipv6-prefix-updater/build/port with the workspace version.
+npm run build --workspace pfsense-pkg-ipv6-prefix-updater
+
+# Build the package on FreeBSD into packages/ipv6-prefix-updater/build/release.
+PFSENSE_PORTS_DIR=/path/to/FreeBSD-ports npm run deploy --workspace pfsense-pkg-ipv6-prefix-updater
+```
+
+- Staging turns `port/Makefile.template` into `build/port/Makefile` and stamps it with the `version` from `packages/ipv6-prefix-updater/package.json`.
+- Packaging copies the staged port to `sysutils/pfSense-pkg-Ipv6PrefixUpdater` in the ports checkout, runs `make package`, and removes that copy again. It stops if the destination already exists.
+- `build/release` then holds the versioned `.pkg`, a copy named `pfSense-pkg-Ipv6PrefixUpdater.pkg`, and a `.sha256` file for each that contains only the hash.
+
+## Release Workflow
+
+`.github/workflows/pfsense-ipv6-prefix-updater.yml` runs when a GitHub release is published, or manually with the tag of an existing release:
+
+1. Validates and stages the port on an Ubuntu runner.
+2. Starts a FreeBSD VM whose release comes from the `PFSENSE_FREEBSD_VERSION` repository variable, or `15` when it isn't set.
+3. Checks out the `devel` branch of pfSense's FreeBSD-ports repository and runs the package build.
+4. Uploads `build/release` as a workflow artifact kept for 7 days and attaches the same files to the release, replacing existing assets.
+
+It is recommended to set `PFSENSE_FREEBSD_VERSION` to the FreeBSD major of the pfSense release you target, and not to publish a package built against another major. The install guide's `pkg add` command fetches `pfSense-pkg-Ipv6PrefixUpdater.pkg` from whichever release GitHub marks as latest.
+
+## PHP Test Suites
+
+- **`tests/domain.php`**: <Terminology title="lowercase, shortest standard spelling of an address" to="/docs/reference/terminology#canonical-form">canonical form</Terminology>, the `/48` and `/64` bounds, masking, <Terminology title="address bits after the delegated prefix" to="/docs/reference/terminology#host-portion">host bits</Terminology> at `/53`, rejected addresses, no-op planning, previous-prefix filtering, and a length change treated as a <Terminology title="change from the last successful prefix or length" to="/docs/reference/terminology#prefix-transition">prefix transition</Terminology>.
+- **`tests/runtime.php`**: scanning every <Terminology title="group of fields with one switch on the Fields tab" to="/docs/reference/terminology#field-group">field group</Terminology>, single-field exceptions, applying other packages' settings again, atomic <Terminology title="package file holding the baseline and last run" to="/docs/reference/terminology#package-state">package state</Terminology>, the <Terminology title="guard that stops two checks running at once" to="/docs/reference/terminology#run-lock">run lock</Terminology>, unsupported platforms, and disabled scheduled checks. It also covers the transaction order and failures in the write, backup, reload preflight, reloads, and notification, plus the zero-match <Terminology title="outcome: prefix changed, but no approved field matched" to="/docs/reference/terminology#warning">Warning</Terminology>.
+- **`tests/pfsense-adapter.php`**: a forced address refresh without a <Terminology title="fe80:: address that works only on one link" to="/docs/reference/terminology#link-local-address">link-local</Terminology> fallback, the backup before the write-only save, and a failed backup that stops before the write.
+- **`tests/translations.php`** and **`tests/webgui-localization.php`**: complete catalogs for every pfSense language identifier and the localized Settings form and validation messages.
+
+## Documentation Site
+
+From `apps/docs`, `npm run check` runs ESLint, the translation tree check, three type checks, and the Vitest suites for `.env` files, frontmatter, links, tables, glossary links, and type declarations. `npm run build` builds every locale.
+
+Each locale's translated docs pages live in `apps/docs/i18n/<locale>/docusaurus-plugin-content-docs/current/` and mirror the English pages, so update them when an English page changes. The interface text (homepage, navbar, footer, blog, and sidebar labels) comes from `scripts/generate-locales.mjs`, which reads `scripts/locale-copies.json` and the package translations. `npm run i18n` runs that generator first, and it leaves the translated docs pages in place.
+
+`.github/workflows/nova-publish-project.yml` builds the site and deploys it to GitHub Pages when a release is published.

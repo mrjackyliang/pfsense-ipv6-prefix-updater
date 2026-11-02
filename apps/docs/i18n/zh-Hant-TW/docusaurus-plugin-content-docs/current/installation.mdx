@@ -1,0 +1,89 @@
+---
+id: installation
+title: 安裝套件
+description: 使用 pkg 從 GitHub 發行版本安裝 pfSense IPv6 Prefix Updater，以 SHA-256 檔案驗證下載內容，並在 WebGUI 中確認新頁面。
+keywords:
+  - pfsense ipv6 prefix updater
+  - 安裝
+  - pkg add
+  - GitHub 發行版本
+  - SHA-256 總和檢查碼
+tags:
+  - setup
+  - installation
+  - pfsense
+sidebar_position: 2
+---
+
+import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
+
+使用 pfSense 的 `pkg` 工具從 GitHub 發行版本安裝套件，然後確認其頁面已出現在 WebGUI 中。
+
+## 需求 \{#requirements}
+
+- **管理員 shell** — 透過 SSH 或主控台存取 pfSense shell。也可以在 WebGUI 的 **Diagnostics → Command Prompt**（診斷 → 命令提示字元）中執行單一命令。
+- **可透過 HTTPS 存取 GitHub** — 防火牆會從 GitHub Releases 下載套件。
+- **相符的套件建置** — 套件必須針對您的 pfSense 版本所使用的 FreeBSD 版本建置。
+- **最新的備份** — 安裝前，請先在 **Diagnostics → Backup & Restore**（診斷 → 備份與還原）下載一份設定副本。
+- **<Terminology title="由 Cron 套件執行的原始 update.php 指令碼" to="/docs/reference/terminology#legacy-updater">舊版更新器</Terminology>可以保留** — 如果 1.x 版指令碼仍透過 Cron 套件執行，請維持原狀。安裝步驟會將其遷移到套件中，如[從指令碼遷移](/docs/migrate-from-legacy)所述。
+
+:::warning
+
+pfSense IPv6 Prefix Updater 是<Terminology title="從 GitHub 而非 Netgate 套件庫安裝的套件" to="/docs/reference/terminology#unofficial-package">非官方套件</Terminology>。從 GitHub 安裝 `.pkg` 檔案會略過 Netgate 的套件審查與支援，因此建議先在已備份或可隨時重建的防火牆上試用。
+
+:::
+
+## 檢查發行版本 \{#check-the-release}
+
+套件版本列在 [GitHub Releases 頁面](https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases)上。每個套件版本都包含以下檔案：
+
+| 檔案                                            | 說明                         |
+|-----------------------------------------------|----------------------------|
+| `pfSense-pkg-Ipv6PrefixUpdater.pkg`           | 使用固定檔名的套件，本頁的命令使用此檔案。      |
+| `pfSense-pkg-Ipv6PrefixUpdater-<version>.pkg` | 同一個套件，檔名中含有版本號碼。           |
+| `.sha256` 檔案                                  | 每個套件檔案各對應一個 SHA-256 總和檢查碼。 |
+
+:::info
+
+1.x 版只包含<Terminology title="由 Cron 套件執行的原始 update.php 指令碼" to="/docs/reference/terminology#legacy-updater">舊版更新器</Terminology>。如果最新的發行版本中沒有 `.pkg` 檔案，本頁的命令會因找不到檔案（404）而失敗。
+
+:::
+
+## 安裝套件 \{#install-the-package}
+
+在 pfSense shell 中執行以下命令：
+
+```shell
+pkg add https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
+```
+
+`pkg` 會從最新的發行版本下載套件並執行其安裝步驟，在 pfSense 中註冊 **Services → IPv6 Prefix Updater**（服務 → IPv6 Prefix Updater）。
+
+## 先驗證下載的檔案 \{#verify-the-download-first}
+
+如果想在安裝前以總和檢查碼核對檔案，請將兩個檔案都下載到 `/tmp`，然後列出這兩個值：
+
+```shell
+cd /tmp
+fetch https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
+fetch https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg.sha256
+sha256 -q pfSense-pkg-Ipv6PrefixUpdater.pkg
+cat pfSense-pkg-Ipv6PrefixUpdater.pkg.sha256
+```
+
+下載內容完整無誤時，最後兩個命令會輸出相同的值。之後即可使用 `pkg add /tmp/pfSense-pkg-Ipv6PrefixUpdater.pkg` 安裝已驗證的檔案。
+
+## 在 WebGUI 中確認 \{#confirm-in-the-webgui}
+
+1. 登入 pfSense WebGUI。
+2. 開啟 **Services → IPv6 Prefix Updater**，確認出現 **設定**、**狀態**、**欄位**、**備份** 與 **清理** 分頁。
+3. 在「狀態」分頁中，確認 **目前狀態** 顯示 `尚未儲存任何監控介面。請在「設定」分頁上新增。` 從舊版更新器遷移後，這裡會改為列出遷移過來的介面。
+4. 在[建立基準](/docs/first-run)之前，讓 **<Terminology title="由 pfSense 管理的 cron 項目執行的自動檢查" to="/docs/reference/terminology#scheduled-updates">啟用排程更新</Terminology>** 維持預設的未勾選狀態。從舊版更新器遷移後，該選項已依舊的 Cron 排程開啟。
+
+## 安裝失敗時 \{#if-installation-fails}
+
+- **找不到檔案（404）**：最新的發行版本中沒有套件檔案。[檢查發行版本](/docs/installation#check-the-release)說明了哪些版本含有套件檔案。
+- **ABI 或作業系統版本不符**：套件是針對與您的 pfSense 版本不同的 FreeBSD 版本建置的。建議改用相符的建置，而不要強制安裝。
+- **DNS、TLS 或憑證錯誤**：pfSense 需要能解析 `github.com`、透過 HTTPS 連線到它，並維持正確的時間以便檢查憑證。
+
+套件出現在 WebGUI 中之後，請繼續閱讀[建立基準](/docs/first-run)。

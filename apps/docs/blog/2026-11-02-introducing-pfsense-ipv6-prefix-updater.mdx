@@ -1,0 +1,60 @@
+---
+title: "Introducing pfSense IPv6 Prefix Updater: A Safer Successor"
+description: pfSense IPv6 Prefix Updater, the successor to the update.php script, follows a new IPv6 prefix, keeps each host portion, and backs up before every change.
+slug: introducing-pfsense-ipv6-prefix-updater
+authors:
+  - mrjackyliang
+keywords:
+  - pfsense ipv6 prefix updater
+  - pfsense package
+  - dynamic ipv6 prefix
+  - ipv6 prefix delegation
+  - legacy updater
+tags:
+  - release
+  - ipv6
+  - pfsense
+---
+
+Many ISPs delegate an IPv6 prefix that can change without notice. When it does, addresses from the old prefix in pfSense aliases, interfaces, and VPN settings go stale together, and services can fail in ways that are hard to trace.
+
+pfSense IPv6 Prefix Updater is my answer: a native pfSense package that follows the new prefix and updates addresses in the settings areas you approve.
+
+{/* truncate */}
+
+## Why I Built It
+
+This project started as `update.php`, a script installed in `/root` and run from a Cron package entry. It proved that pfSense could detect a new prefix, back up the configuration, and rewrite old addresses.
+
+But installs and upgrades were fragile, and the script replaced the old prefix text anywhere in the configuration. I wanted a successor that changes only the fields it understands and shows what it did, without the manual install or the hand-made Cron entry.
+
+## What It Does
+
+The package watches the interfaces you choose. When a prefix changes, it:
+
+- **Keeps the host portion** — Only the prefix bits change, so each device keeps the same address suffix.
+- **Changes only approved fields** — Eleven pfSense groups, such as Aliases, Firewall Rules, DHCPv6 Server, and WireGuard, start on, and the Fields tab lets you turn a group off or untick a single field.
+- **Backs up before it writes** — A configuration backup goes to Config History, then every change is saved in one write.
+- **Verifies the result** — It checks the saved values, reloads only the affected services, and checks them again.
+
+Remote VPN networks and peers change only when you tick them under [Other Settings](/docs/configure/configuration-scopes#other-settings), and an optional change notification follows each successful update.
+
+## How You Set It Up
+
+On the Settings tab under **Services → IPv6 Prefix Updater**, add a Monitored Interfaces row with your ISP's Delegated Prefix Length for each interface to watch, and save.
+
+Then select **Run Now** on the Status tab. The first run only records a baseline, so you can check the address and prefix and review the Fields tab before turning on scheduled updates, which run hourly by default from a pfSense-managed cron entry.
+
+A check that finds the same prefix writes nothing, and **Dry Run** runs a check without a backup or a write.
+
+:::info
+
+This unofficial package installs from a GitHub release with `pkg`, and Netgate doesn't review or support it. Version 1.x releases contain only the script, so if the latest release has no `.pkg` file, `pkg add` fails with a not-found (404) error.
+
+:::
+
+## Moving From the Script
+
+If `update.php` still runs from the Cron package, leave it in place and install the package. It moves the script's Cron entries, saved prefixes, and backups into the package and deletes the old files, as [Migrate From the Script](/docs/migrate-from-legacy) explains.
+
+New to the project? Start with [Install the Package](/docs/installation).
