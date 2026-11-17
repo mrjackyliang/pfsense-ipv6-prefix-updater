@@ -19,30 +19,30 @@ sidebar_position: 3
 import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
 import backupList from './_assets_/backups-and-recovery-1.png';
 
-Найдите конфигурацию до обновления на вкладке **Резервные копии** или в <Terminology title="список сохранённых ревизий конфигурации pfSense" to="/docs/reference/terminology#config-history">Config History</Terminology> pfSense и восстановите её собственными средствами pfSense.
+Найдите конфигурацию до обновления на вкладке **Резервные копии** или в <Terminology title="Сохранённые в pfSense ревизии конфигурации для восстановления" to="/docs/reference/terminology#backups-and-service-reloads">Config History</Terminology> pfSense и восстановите её собственными средствами pfSense.
 
 ## Когда создаётся резервная копия \{#when-a-backup-is-created}
 
-Пакет создаёт <Terminology title="копия конфигурации, сохранённая перед записью" to="/docs/reference/terminology#configuration-backup">резервную копию конфигурации</Terminology> только при запуске с записью, непосредственно перед изменением любого поля. Поле **<Terminology title="копия конфигурации, сохранённая перед записью" to="/docs/reference/terminology#configuration-backup">Создана резервная копия конфигурации</Terminology>** на вкладке «Состояние» показывает, создал ли её последний запуск.
+Пакет создаёт <Terminology title="Копия конфигурации, снятая прямо перед любой записью" to="/docs/reference/terminology#backups-and-service-reloads">резервную копию конфигурации</Terminology> только при запуске с записью, непосредственно перед изменением любого поля. Поле **<Terminology title="Копия конфигурации, снятая прямо перед любой записью" to="/docs/reference/terminology#backups-and-service-reloads">Создана резервная копия конфигурации</Terminology>** на вкладке «Состояние» показывает, создал ли её последний запуск.
 
 Резервная копия не создаётся, если запуск завершается с результатом:
 
-- «<Terminology title="результат: базовое значение записано, конфигурация не изменена" to="/docs/reference/terminology#initialized">Инициализировано</Terminology>» или «<Terminology title="результат: пробный запуск до появления базового значения" to="/docs/reference/terminology#initialization-preview">Предварительная инициализация</Terminology>».
-- «<Terminology title="результат: префикс прежний, ничего не просмотрено и не записано" to="/docs/reference/terminology#no-change">Без изменений</Terminology>».
-- «<Terminology title="предварительный просмотр без резервной копии и записи" to="/docs/reference/terminology#dry-run">Пробный запуск</Terminology>».
-- «**Принято**», потому что принятие текущего префикса изменяет только <Terminology title="файл пакета с базовым значением и последним запуском" to="/docs/reference/terminology#package-state">состояние пакета</Terminology>.
-- «<Terminology title="результат: префикс сменился, но подходящих разрешённых полей нет" to="/docs/reference/terminology#warning">Предупреждение</Terminology>».
-- «<Terminology title="результат: проверка или этап безопасности остановили запуск" to="/docs/reference/terminology#failure">Ошибка</Terminology>» до этапа резервного копирования, например из-за проблемы с настройками, адресом или возможностью перезагрузки.
+- «<Terminology title="Первый взгляд: базовое значение записано, ничего не меняется" to="/docs/reference/terminology#run-outcomes">Инициализировано</Terminology>» или «<Terminology title="Пробный запуск, показывающий базовое значение, которое он записал бы" to="/docs/reference/terminology#run-outcomes">Предварительная инициализация</Terminology>».
+- «<Terminology title="Тот же префикс, что и в прошлый раз, делать нечего" to="/docs/reference/terminology#run-outcomes">Без изменений</Terminology>».
+- «<Terminology title="Предпросмотр изменений, который ничего не записывает" to="/docs/reference/terminology#running-checks">Пробный запуск</Terminology>».
+- «**Принято**», потому что принятие текущего префикса изменяет только <Terminology title="Файл с каждым базовым значением, переживает переустановку" to="/docs/reference/terminology#running-checks">состояние пакета</Terminology>.
+- «<Terminology title="Префикс сменился, но ни одно разрешённое поле не использовало старый" to="/docs/reference/terminology#run-outcomes">Предупреждение</Terminology>».
+- «<Terminology title="Запуск остановился на проверке или этапе безопасности" to="/docs/reference/terminology#run-outcomes">Ошибка</Terminology>» до этапа резервного копирования, например из-за проблемы с настройками, адресом или возможностью перезагрузки.
 
 ## Вкладка «Резервные копии» \{#backups-tab}
 
-В **Services → IPv6 Prefix Updater → Резервные копии** перечислены собственные копии `config.xml`, созданные пакетом, начиная с самых новых. Они остаются доступными и после того, как pfSense вытеснит старые ревизии из <Terminology title="список сохранённых ревизий конфигурации pfSense" to="/docs/reference/terminology#config-history">Config History</Terminology>.
+В **Services → IPv6 Prefix Updater → Резервные копии** перечислены собственные копии `config.xml`, созданные пакетом, начиная с самых новых. Они остаются доступными и после того, как pfSense вытеснит старые ревизии из <Terminology title="Сохранённые в pfSense ревизии конфигурации для восстановления" to="/docs/reference/terminology#backups-and-service-reloads">Config History</Terminology>.
 
 <img src={backupList} alt="Вкладка «Резервные копии» пакета IPv6 Prefix Updater: резервные копии пакета, созданные перед обновлениями префикса и перед переходом с устаревшего скрипта, а также копии, импортированные из устаревшего скрипта обновления, у каждой — действия «Скачать» и «Удалить»" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
 
 - **Перед обновлением префикса**: создаётся непосредственно перед тем, как запуск выполняет запись. В столбце **Подробности** указаны старый и новый префикс каждого интерфейса.
 - **Перед переходом с 1.x**: создана перед тем, как пакет [перенёс устаревший скрипт обновления](/docs/migrate-from-legacy) в свои настройки.
-- **Скрипт 1.x**: резервная копия, которую создал <Terminology title="исходный скрипт update.php, запускаемый пакетом Cron" to="/docs/reference/terminology#legacy-updater">устаревший скрипт обновления</Terminology>; она импортирована с исходным именем и временем.
+- **Скрипт 1.x**: резервная копия, которую создал <Terminology title="Версия 1.x: скрипт update.php, запускаемый пакетом Cron" to="/docs/reference/terminology#package-origins">устаревший скрипт обновления</Terminology>; она импортирована с исходным именем и временем.
 
 Пакет хранит только 10 самых новых собственных резервных копий, а импортированные копии устаревшего скрипта остаются, пока вы их не удалите. Каждая резервная копия находится в `/cf/conf/ipv6-prefix-updater/backups`, доступна для чтения только root и сохраняется после перезагрузок и удаления пакета.
 
@@ -50,9 +50,9 @@ import backupList from './_assets_/backups-and-recovery-1.png';
 
 ## Как подписываются ревизии \{#how-the-revisions-are-labelled}
 
-Каждое обновление оставляет в <Terminology title="список сохранённых ревизий конфигурации pfSense" to="/docs/reference/terminology#config-history">Config History</Terminology> две ревизии, и отменяет обновление только более старая из них:
+Каждое обновление оставляет в <Terminology title="Сохранённые в pfSense ревизии конфигурации для восстановления" to="/docs/reference/terminology#backups-and-service-reloads">Config History</Terminology> две ревизии, и отменяет обновление только более старая из них:
 
-- **Конфигурация до обновления**: <Terminology title="копия конфигурации, сохранённая перед записью" to="/docs/reference/terminology#configuration-backup">резервная копия конфигурации</Terminology> — это копия данной ревизии. Ревизия сохраняет описание того изменения, которое было сохранено перед обновлением.
+- **Конфигурация до обновления**: <Terminology title="Копия конфигурации, снятая прямо перед любой записью" to="/docs/reference/terminology#backups-and-service-reloads">резервная копия конфигурации</Terminology> — это копия данной ревизии. Ревизия сохраняет описание того изменения, которое было сохранено перед обновлением.
 - **Обновлённая конфигурация**: пакет сохраняет своё изменение как новую ревизию с описанием `Обновление префикса IPv6 изменило <count> разрешённых полей для интерфейса <interface>`.
 
 :::warning
@@ -72,13 +72,13 @@ import backupList from './_assets_/backups-and-recovery-1.png';
 ## Восстановление ревизии \{#restore-the-revision}
 
 1. Примените к ревизии до обновления действие восстановления pfSense и следуйте его подсказкам.
-2. Откройте **Services → IPv6 Prefix Updater → Настройки** и проверьте флажок **<Terminology title="автоматические проверки через запись cron под управлением pfSense" to="/docs/reference/terminology#scheduled-updates">Включить обновления по расписанию</Terminology>**, потому что восстановленная ревизия возвращает и настройки пакета на тот момент.
-3. На вкладке «Состояние» выберите **<Terminology title="предварительный просмотр без резервной копии и записи" to="/docs/reference/terminology#dry-run">Пробный запуск</Terminology>**, чтобы увидеть, что сделает следующий запуск.
+2. Откройте **Services → IPv6 Prefix Updater → Настройки** и проверьте флажок **<Terminology title="Автоматические проверки по расписанию, выключены, пока вы их не включите" to="/docs/reference/terminology#running-checks">Включить обновления по расписанию</Terminology>**, потому что восстановленная ревизия возвращает и настройки пакета на тот момент.
+3. На вкладке «Состояние» выберите **<Terminology title="Предпросмотр изменений, который ничего не записывает" to="/docs/reference/terminology#running-checks">Пробный запуск</Terminology>**, чтобы увидеть, что сделает следующий запуск.
 
 Что сделает следующий запуск, зависит от результата, который вы отменяете:
 
-- **После результата «<Terminology title="результат: проверка или этап безопасности остановили запуск" to="/docs/reference/terminology#failure">Ошибка</Terminology>»**: <Terminology title="начальный префикс, записанный без изменения конфигурации" to="/docs/reference/terminology#baseline">базовое значение</Terminology> всё ещё содержит прежний префикс, поэтому следующий запуск снова запланирует то же обновление.
-- **После результата «<Terminology title="результат: поля обновлены, сохранены, перезагружены и проверены" to="/docs/reference/terminology#success">Успешно</Terminology>»**: <Terminology title="начальный префикс, записанный без изменения конфигурации" to="/docs/reference/terminology#baseline">базовое значение</Terminology> уже содержит новый префикс, поэтому последующие запуски сообщают «<Terminology title="результат: префикс прежний, ничего не просмотрено и не записано" to="/docs/reference/terminology#no-change">Без изменений</Terminology>» и не применяют обновление повторно. Восстановленные адреса сохраняют прежний префикс, пока вы их не измените.
+- **После результата «<Terminology title="Запуск остановился на проверке или этапе безопасности" to="/docs/reference/terminology#run-outcomes">Ошибка</Terminology>»**: <Terminology title="Записанный исходный префикс, от которого отсчитываются изменения" to="/docs/reference/terminology#baselines-and-transitions">базовое значение</Terminology> всё ещё содержит прежний префикс, поэтому следующий запуск снова запланирует то же обновление.
+- **После результата «<Terminology title="Префикс сменился, и все разрешённые поля обновлены" to="/docs/reference/terminology#run-outcomes">Успешно</Terminology>»**: <Terminology title="Записанный исходный префикс, от которого отсчитываются изменения" to="/docs/reference/terminology#baselines-and-transitions">базовое значение</Terminology> уже содержит новый префикс, поэтому последующие запуски сообщают «<Terminology title="Тот же префикс, что и в прошлый раз, делать нечего" to="/docs/reference/terminology#run-outcomes">Без изменений</Terminology>» и не применяют обновление повторно. Восстановленные адреса сохраняют прежний префикс, пока вы их не измените.
 
 :::warning
 
@@ -88,18 +88,18 @@ import backupList from './_assets_/backups-and-recovery-1.png';
 
 ## После неудачного запуска \{#after-a-failed-run}
 
-Начните с полей **<Terminology title="копия конфигурации, сохранённая перед записью" to="/docs/reference/terminology#configuration-backup">Создана резервная копия конфигурации</Terminology>** и **Сводка** в разделе **Последний запуск**. При результате «<Terminology title="результат: проверка или этап безопасности остановили запуск" to="/docs/reference/terminology#failure">Ошибка</Terminology>» поле **Изменённые поля** всегда показывает `0`, даже если поля уже были записаны.
+Начните с полей **<Terminology title="Копия конфигурации, снятая прямо перед любой записью" to="/docs/reference/terminology#backups-and-service-reloads">Создана резервная копия конфигурации</Terminology>** и **Сводка** в разделе **Последний запуск**. При результате «<Terminology title="Запуск остановился на проверке или этапе безопасности" to="/docs/reference/terminology#run-outcomes">Ошибка</Terminology>» поле **Изменённые поля** всегда показывает `0`, даже если поля уже были записаны.
 
-- **<Terminology title="копия конфигурации, сохранённая перед записью" to="/docs/reference/terminology#configuration-backup">Создана резервная копия конфигурации</Terminology> показывает «Нет»**: запуск остановился до записи, поэтому конфигурация не изменилась. Причины перечислены в разделе [Устранение неполадок](/docs/operate/troubleshooting#run-failed).
+- **<Terminology title="Копия конфигурации, снятая прямо перед любой записью" to="/docs/reference/terminology#backups-and-service-reloads">Создана резервная копия конфигурации</Terminology> показывает «Нет»**: запуск остановился до записи, поэтому конфигурация не изменилась. Причины перечислены в разделе [Устранение неполадок](/docs/operate/troubleshooting#run-failed).
 - **Сводка содержит `Запуск завершился ошибкой: pfSense не удалось записать запланированную конфигурацию.`**: pfSense сообщил о неудачной записи. Перед остановкой пакет вернул исходные значения в памяти.
-- **Любая другая ошибка с резервной копией**: новые значения уже сохранены, и ничего не откачено. <Terminology title="начальный префикс, записанный без изменения конфигурации" to="/docs/reference/terminology#baseline">Базовое значение</Terminology> всё ещё содержит прежний префикс, поэтому последующие запуски сообщают «<Terminology title="результат: префикс сменился, но подходящих разрешённых полей нет" to="/docs/reference/terminology#warning">Предупреждение</Terminology>»: сохранённые значения к нему больше не относятся.
+- **Любая другая ошибка с резервной копией**: новые значения уже сохранены, и ничего не откачено. <Terminology title="Записанный исходный префикс, от которого отсчитываются изменения" to="/docs/reference/terminology#baselines-and-transitions">Базовое значение</Terminology> всё ещё содержит прежний префикс, поэтому последующие запуски сообщают «<Terminology title="Префикс сменился, но ни одно разрешённое поле не использовало старый" to="/docs/reference/terminology#run-outcomes">Предупреждение</Terminology>»: сохранённые значения к нему больше не относятся.
 
 В последнем случае выберите способ восстановления, который соответствует сохранённой конфигурации:
 
-- **Применить обновление повторно**: устраните причину неудачной проверки или перезагрузки, восстановите ревизию до обновления, выполните <Terminology title="предварительный просмотр без резервной копии и записи" to="/docs/reference/terminology#dry-run">пробный запуск</Terminology>, а затем выберите **Запустить сейчас**.
+- **Применить обновление повторно**: устраните причину неудачной проверки или перезагрузки, восстановите ревизию до обновления, выполните <Terminology title="Предпросмотр изменений, который ничего не записывает" to="/docs/reference/terminology#running-checks">пробный запуск</Terminology>, а затем выберите **Запустить сейчас**.
 - **Оставить сохранённые значения с новым префиксом**: сначала сами проверьте разрешённые адреса и затронутые службы. Затем откройте **Состояние → Действия → Восстановление базового значения**, выберите **Принять текущий префикс** и подтвердите действие.
 
-**Принять текущий префикс** записывает активный исходный адрес, префикс и длину префикса как новое <Terminology title="начальный префикс, записанный без изменения конфигурации" to="/docs/reference/terminology#baseline">базовое значение</Terminology>. Это действие не просматривает конфигурацию межсетевого экрана, не создаёт резервную копию, не записывает конфигурацию и не перезагружает службы; результат — «**Принято**», а следующая обычная проверка должна сообщить «<Terminology title="результат: префикс прежний, ничего не просмотрено и не записано" to="/docs/reference/terminology#no-change">Без изменений</Terminology>».
+**Принять текущий префикс** записывает активный исходный адрес, префикс и длину префикса как новое <Terminology title="Записанный исходный префикс, от которого отсчитываются изменения" to="/docs/reference/terminology#baselines-and-transitions">базовое значение</Terminology>. Это действие не просматривает конфигурацию межсетевого экрана, не создаёт резервную копию, не записывает конфигурацию и не перезагружает службы; результат — «**Принято**», а следующая обычная проверка должна сообщить «<Terminology title="Тот же префикс, что и в прошлый раз, делать нечего" to="/docs/reference/terminology#run-outcomes">Без изменений</Terminology>».
 
 :::warning
 
@@ -107,14 +107,14 @@ import backupList from './_assets_/backups-and-recovery-1.png';
 
 :::
 
-Если раздел **Последний запуск** вообще не изменился, запуск остановился до чтения <Terminology title="файл пакета с базовым значением и последним запуском" to="/docs/reference/terminology#package-state">состояния пакета</Terminology>. Причина указана в разделе «<Terminology title="результаты только для чтения после ручного или пробного запуска" to="/docs/reference/terminology#command-output">Вывод команды</Terminology>» и в <Terminology title="общий журнал pfSense, в который пишет пакет" to="/docs/reference/terminology#system-log">системном журнале</Terminology>.
+Если раздел **Последний запуск** вообще не изменился, запуск остановился до чтения <Terminology title="Файл с каждым базовым значением, переживает переустановку" to="/docs/reference/terminology#running-checks">состояния пакета</Terminology>. Причина указана в разделе «<Terminology title="Строки последнего запуска, видны сразу после старта" to="/docs/reference/terminology#running-checks">Вывод команды</Terminology>» и в <Terminology title="Общий журнал pfSense, где каждый запуск оставляет строки" to="/docs/reference/terminology#notifications-and-logs">системном журнале</Terminology>.
 
 ## Хранение резервных копий вне устройства \{#keep-off-device-backups}
 
-<Terminology title="список сохранённых ревизий конфигурации pfSense" to="/docs/reference/terminology#config-history">Config History</Terminology> хранится на самом межсетевом экране. Рекомендуется также загружать резервную копию из **Diagnostics → Backup & Restore** перед установкой или обновлением пакета и перед включением <Terminology title="автоматические проверки через запись cron под управлением pfSense" to="/docs/reference/terminology#scheduled-updates">обновлений по расписанию</Terminology>.
+<Terminology title="Сохранённые в pfSense ревизии конфигурации для восстановления" to="/docs/reference/terminology#backups-and-service-reloads">Config History</Terminology> хранится на самом межсетевом экране. Рекомендуется также загружать резервную копию из **Diagnostics → Backup & Restore** перед установкой или обновлением пакета и перед включением <Terminology title="Автоматические проверки по расписанию, выключены, пока вы их не включите" to="/docs/reference/terminology#running-checks">обновлений по расписанию</Terminology>.
 
 ## Сохранение сведений для диагностики \{#preserve-evidence}
 
-Перед восстановлением рекомендуется скопировать раздел **Последний запуск**, «<Terminology title="результаты только для чтения после ручного или пробного запуска" to="/docs/reference/terminology#command-output">Вывод команды</Terminology>» и строки <Terminology title="общий журнал pfSense, в который пишет пакет" to="/docs/reference/terminology#system-log">системного журнала</Terminology>, которые начинаются с `IPv6 Prefix Updater:`. Вместе они показывают, на каком этапе произошла остановка и была ли записана конфигурация.
+Перед восстановлением рекомендуется скопировать раздел **Последний запуск**, «<Terminology title="Строки последнего запуска, видны сразу после старта" to="/docs/reference/terminology#running-checks">Вывод команды</Terminology>» и строки <Terminology title="Общий журнал pfSense, где каждый запуск оставляет строки" to="/docs/reference/terminology#notifications-and-logs">системного журнала</Terminology>, которые начинаются с `IPv6 Prefix Updater:`. Вместе они показывают, на каком этапе произошла остановка и была ли записана конфигурация.
 
 Сообщения об ошибках разобраны в разделе [Устранение неполадок](/docs/operate/troubleshooting), а перед повторным включением расписания рекомендуется изучить раздел [Проверка перед автоматизацией](/docs/safety/testing-and-verification).

@@ -27,7 +27,7 @@ safe, observable pfSense package.
 
 ### Value Proposition
 
-pfSense IPv6 Prefix Updater will keep approved configuration references aligned with the
+IPv6 Prefix Updater for pfSense will keep approved configuration references aligned with the
 current delegated prefix while preserving host bits and firewall intent. A package-native
 configuration and scheduling experience will make installation, upgrades, backups,
 locking, notifications, and removal predictable from the pfSense interface.
@@ -94,7 +94,7 @@ write.
 
 ### Differentiators
 
-| pfSense IPv6 Prefix Updater                        | Manual script workflows                        |
+| IPv6 Prefix Updater for pfSense                    | Manual script workflows                        |
 |----------------------------------------------------|------------------------------------------------|
 | Package Manager lifecycle and WebGUI configuration | Files copied into a root home directory        |
 | Built-in scheduling and single-run coordination    | Separate Cron package and hand-written entries |
@@ -124,7 +124,7 @@ Keep pfSense IPv6 references current when your ISP changes the prefix.
 
 ### Elevator Pitch
 
-pfSense IPv6 Prefix Updater is a native package for networks with dynamic IPv6 Prefix
+IPv6 Prefix Updater for pfSense is a native package for networks with dynamic IPv6 Prefix
 Delegation. It detects a changed prefix, safely updates approved pfSense configuration
 references, preserves the host portion of each address, and reports what changed. Package
 Manager installation, built-in scheduling, backups, and visible status replace the

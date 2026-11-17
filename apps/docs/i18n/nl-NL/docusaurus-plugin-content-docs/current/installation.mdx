@@ -1,7 +1,7 @@
 ---
 id: installation
 title: Het pakket installeren
-description: Installeer pfSense IPv6 Prefix Updater met pkg vanuit een GitHub-release, controleer de download met het SHA-256-bestand en bevestig de nieuwe pagina's in de WebGUI.
+description: Installeer IPv6 Prefix Updater for pfSense met pkg vanuit een GitHub-release, controleer de download met het SHA-256-bestand en bevestig de nieuwe pagina's in de WebGUI.
 keywords:
   - pfsense ipv6 prefix updater
   - installatie
@@ -23,13 +23,13 @@ Installeer het pakket vanuit een GitHub-release met de pfSense-tool `pkg` en con
 
 - **Beheerdersshell** — SSH- of consoletoegang tot de pfSense-shell. Met **Diagnostics → Command Prompt** in de WebGUI kun je ook losse opdrachten uitvoeren.
 - **HTTPS-toegang tot GitHub** — De firewall downloadt het pakket van GitHub Releases.
-- **Een passende pakketbuild** — Het pakket moet gebouwd zijn voor de FreeBSD-versie waarop je pfSense-release draait.
+- **Ondersteunde pfSense-release** — Gebruik pfSense CE 2.9.0 of 2.8.1, of pfSense Plus 26.07 of 26.03.1. Het tabblad **Over** vermeldt de pfSense-releases waarop elke pakketversie is getest.
 - **Een recente back-up** — Download vóór de installatie een kopie van de configuratie via **Diagnostics → Backup & Restore**.
-- **De <Terminology title="oorspronkelijk update.php-script, uitgevoerd via het Cron-pakket" to="/docs/reference/terminology#legacy-updater">legacy-updater</Terminology> mag blijven** — Draait het script van versie 1.x nog via het Cron-pakket, laat het dan staan. De installatiestap verplaatst het naar het pakket, zoals [Migreren vanaf het script](/docs/migrate-from-legacy) uitlegt.
+- **De <Terminology title="Versie 1.x: het script update.php, gestart door het Cron-pakket" to="/docs/reference/terminology#package-origins">legacy-updater</Terminology> mag blijven** — Draait het script van versie 1.x nog via het Cron-pakket, laat het dan staan. De installatiestap verplaatst het naar het pakket, zoals [Migreren vanaf het script](/docs/migrate-from-legacy) uitlegt.
 
 :::warning
 
-pfSense IPv6 Prefix Updater is een <Terminology title="pakket van GitHub, niet uit de repository van Netgate" to="/docs/reference/terminology#unofficial-package">onofficieel pakket</Terminology>. Een `.pkg`-bestand van GitHub installeren omzeilt de pakketbeoordeling en ondersteuning van Netgate, dus het is aan te raden om het eerst te proberen op een firewall met een back-up of een firewall die je kunt missen.
+IPv6 Prefix Updater for pfSense is een <Terminology title="Geïnstalleerd vanaf GitHub, niet uit de pakketrepository van Netgate" to="/docs/reference/terminology#package-origins">onofficieel pakket</Terminology>. Een `.pkg`-bestand van GitHub installeren omzeilt de pakketbeoordeling en ondersteuning van Netgate, dus het is aan te raden om het eerst te proberen op een firewall met een back-up of een firewall die je kunt missen.
 
 :::
 
@@ -45,19 +45,19 @@ Pakketreleases staan op de [GitHub Releases-pagina](https://github.com/mrjackyli
 
 :::info
 
-Releases van versie 1.x bevatten alleen de <Terminology title="oorspronkelijk update.php-script, uitgevoerd via het Cron-pakket" to="/docs/reference/terminology#legacy-updater">legacy-updater</Terminology>. Heeft de nieuwste release geen `.pkg`-bestand, dan mislukken de opdrachten op deze pagina met een fout Not Found (404).
+Releases van versie 1.x bevatten alleen de <Terminology title="Versie 1.x: het script update.php, gestart door het Cron-pakket" to="/docs/reference/terminology#package-origins">legacy-updater</Terminology>. Heeft de nieuwste release geen `.pkg`-bestand, dan mislukken de opdrachten op deze pagina met een fout Not Found (404).
 
 :::
 
 ## Het pakket installeren \{#install-the-package}
 
-Voer deze opdracht uit in de pfSense-shell:
+Voer dezelfde opdracht uit in de pfSense-shell voor een eerste installatie, een update of een herinstallatie:
 
 ```shell
 pkg add -f https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
 ```
 
-`pkg` downloadt het pakket uit de nieuwste release en voert de installatiestap uit, die **Services → IPv6 Prefix Updater** bij pfSense registreert.
+`pkg` downloadt het pakket uit de nieuwste release en voert de installatiestap uit, die **Services → IPv6 Prefix Updater** bij pfSense registreert. Met de optie `-f` kan dezelfde opdracht het pakket installeren, een oudere versie bijwerken of de huidige versie opnieuw installeren. Zonder deze optie meldt pfSense CE 2.8 dat een update al is geïnstalleerd en blijft de geïnstalleerde versie ongewijzigd.
 
 ## Eerst de download verifiëren \{#verify-the-download-first}
 
@@ -76,14 +76,14 @@ De laatste twee opdrachten tonen dezelfde waarde als de download intact is. Daar
 ## Bevestigen in de WebGUI \{#confirm-in-the-webgui}
 
 1. Meld je aan bij de pfSense-WebGUI.
-2. Open **Services → IPv6 Prefix Updater** en controleer of de tabbladen **Instellingen**, **Status**, **Velden**, **Back-ups** en **Opruimen** verschijnen.
+2. Open **Services → IPv6 Prefix Updater** en controleer of de tabbladen **Instellingen**, **Status**, **Velden**, **Back-ups**, **Opruimen** en **Over** verschijnen.
 3. Controleer op het tabblad Status of **Huidige status** `Er zijn nog geen bewaakte interfaces opgeslagen. Voeg ze toe op het tabblad Instellingen.` toont. Na de overstap van de legacy-updater staan daar in plaats daarvan de verplaatste interfaces.
-4. Laat **<Terminology title="automatische controles via een door pfSense beheerde cronjob" to="/docs/reference/terminology#scheduled-updates">Geplande updates inschakelen</Terminology>** uitgevinkt, zoals standaard het geval is, totdat je [de baseline hebt vastgelegd](/docs/first-run). Na de overstap van de legacy-updater is deze optie al ingeschakeld, passend bij het oude Cron-schema.
+4. Laat **<Terminology title="Automatische controles volgens schema, uit tot u ze inschakelt" to="/docs/reference/terminology#running-checks">Geplande updates inschakelen</Terminology>** uitgevinkt, zoals standaard het geval is, totdat je [de baseline hebt vastgelegd](/docs/first-run). Na de overstap van de legacy-updater is deze optie al ingeschakeld, passend bij het oude Cron-schema.
 
 ## Als de installatie mislukt \{#if-installation-fails}
 
 - **Not Found (404)**: de nieuwste release heeft geen pakketbestand. [De release controleren](/docs/installation#check-the-release) legt uit welke releases er een bevatten.
-- **ABI- of OS-versieconflict**: het pakket is gebouwd voor een andere FreeBSD-versie dan die van je pfSense-release. Het is aan te raden om een passende build te gebruiken in plaats van de installatie te forceren.
+- **Verkeerde architectuur op pfSense CE 2.9.0**: releases tot en met 2.0.1 zijn alleen voor FreeBSD 15 gebouwd, waardoor pfSense CE 2.9.0 daarvoor een melding over een verkeerde architectuur toont. Installeer de nieuwste release.
 - **DNS-, TLS- of certificaatfouten**: pfSense moet `github.com` kunnen omzetten, het via HTTPS kunnen bereiken en de juiste tijd hebben voor certificaatcontroles.
 
 Ga verder met [De baseline vastleggen](/docs/first-run) zodra het pakket in de WebGUI verschijnt.

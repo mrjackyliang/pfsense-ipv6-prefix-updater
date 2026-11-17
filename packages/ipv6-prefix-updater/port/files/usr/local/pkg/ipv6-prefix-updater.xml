@@ -43,6 +43,10 @@
 			<text>Cleanup</text>
 			<url>/ipv6-prefix-updater-cleanup.php</url>
 		</tab>
+		<tab>
+			<text>About</text>
+			<url>/ipv6-prefix-updater-about.php</url>
+		</tab>
 	</tabs>
 	<fields>
 		<field>
@@ -124,6 +128,29 @@
 			<type>checkbox</type>
 			<default_value>on</default_value>
 			<description>Use configured pfSense notification channels after a verified successful prefix update. No-op checks never notify.</description>
+		</field>
+		<field>
+			<type>listtopic</type>
+			<name>Package Updates</name>
+		</field>
+		<field>
+			<fielddescr>Update Checks</fielddescr>
+			<fieldname>update_check_frequency</fieldname>
+			<type>select</type>
+			<default_value>weekly</default_value>
+			<options>
+				<option><name>Daily</name><value>daily</value></option>
+				<option><name>Weekly</name><value>weekly</value></option>
+				<option><name>Monthly</name><value>monthly</value></option>
+				<option><name>Never</name><value>never</value></option>
+			</options>
+			<description>Choose how often pfSense checks GitHub for a new package release. The check runs at a stable randomized time.</description>
+		</field>
+		<field>
+			<fielddescr>Remote Notifications</fielddescr>
+			<fieldname>update_remote_notifications</fieldname>
+			<type>checkbox</type>
+			<description>Also send each new-version notice through configured pfSense email, Telegram, Pushover, or other remote notification channels.</description>
 		</field>
 	</fields>
 	<custom_php_install_command>

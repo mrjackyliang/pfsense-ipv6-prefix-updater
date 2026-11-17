@@ -1,7 +1,7 @@
 ---
 id: installation
 title: Installer pakken
-description: Installer pfSense IPv6 Prefix Updater fra en GitHub-utgivelse med pkg, kontroller nedlastingen mot SHA-256-filen og bekreft de nye sidene i WebGUI.
+description: Installer IPv6 Prefix Updater for pfSense fra en GitHub-utgivelse med pkg, kontroller nedlastingen mot SHA-256-filen og bekreft de nye sidene i WebGUI.
 keywords:
   - pfsense ipv6 prefix updater
   - installasjon
@@ -23,13 +23,13 @@ Installer pakken fra en GitHub-utgivelse med pfSense-verktøyet `pkg`, og bekref
 
 - **Administratorskall** — SSH- eller konsolltilgang til pfSense-skallet. **Diagnostics → Command Prompt** i WebGUI kan også kjøre enkeltkommandoer.
 - **HTTPS-tilgang til GitHub** — Brannmuren laster ned pakken fra GitHub Releases.
-- **Et passende pakkebygg** — Pakken må være bygget for FreeBSD-versjonen som pfSense-utgaven din kjører på.
+- **Støttet pfSense-utgave** — Bruk pfSense CE 2.9.0 eller 2.8.1, eller pfSense Plus 26.07 eller 26.03.1. Fanen **Om** viser pfSense-utgavene som hver pakkeversjon ble testet på.
 - **En fersk sikkerhetskopi** — Last ned en kopi av konfigurasjonen fra **Diagnostics → Backup & Restore** før du installerer.
-- **Det <Terminology title="opprinnelig update.php-skript kjørt av Cron-pakken" to="/docs/reference/terminology#legacy-updater">eldre oppdateringsskriptet</Terminology> kan bli værende** — Hvis skriptet fra versjon 1.x fortsatt kjøres fra Cron-pakken, lar du det stå. Installasjonstrinnet flytter det inn i pakken, slik [Migrer fra skriptet](/docs/migrate-from-legacy) forklarer.
+- **Det <Terminology title="Versjon 1.x: skriptet update.php, kjørt av Cron-pakken" to="/docs/reference/terminology#package-origins">eldre oppdateringsskriptet</Terminology> kan bli værende** — Hvis skriptet fra versjon 1.x fortsatt kjøres fra Cron-pakken, lar du det stå. Installasjonstrinnet flytter det inn i pakken, slik [Migrer fra skriptet](/docs/migrate-from-legacy) forklarer.
 
 :::warning
 
-pfSense IPv6 Prefix Updater er en <Terminology title="pakke installert fra GitHub, ikke fra Netgates pakkebrønn" to="/docs/reference/terminology#unofficial-package">uoffisiell pakke</Terminology>. Når du installerer en `.pkg`-fil fra GitHub, går du utenom pakkegjennomgangen og brukerstøtten til Netgate, så det anbefales å prøve den på en sikkerhetskopiert brannmur eller en testbrannmur først.
+IPv6 Prefix Updater for pfSense er en <Terminology title="Installert fra GitHub, ikke fra Netgates pakkearkiv" to="/docs/reference/terminology#package-origins">uoffisiell pakke</Terminology>. Når du installerer en `.pkg`-fil fra GitHub, går du utenom pakkegjennomgangen og brukerstøtten til Netgate, så det anbefales å prøve den på en sikkerhetskopiert brannmur eller en testbrannmur først.
 
 :::
 
@@ -45,19 +45,19 @@ Pakkeutgivelsene står oppført på [GitHub Releases-siden](https://github.com/m
 
 :::info
 
-Utgivelser av versjon 1.x inneholder bare det <Terminology title="opprinnelig update.php-skript kjørt av Cron-pakken" to="/docs/reference/terminology#legacy-updater">eldre oppdateringsskriptet</Terminology>. Hvis den nyeste utgivelsen ikke har noen `.pkg`-fil, feiler kommandoene på denne siden med feilen «not found» (404).
+Utgivelser av versjon 1.x inneholder bare det <Terminology title="Versjon 1.x: skriptet update.php, kjørt av Cron-pakken" to="/docs/reference/terminology#package-origins">eldre oppdateringsskriptet</Terminology>. Hvis den nyeste utgivelsen ikke har noen `.pkg`-fil, feiler kommandoene på denne siden med feilen «not found» (404).
 
 :::
 
 ## Installer pakken \{#install-the-package}
 
-Kjør denne kommandoen fra pfSense-skallet:
+Kjør den samme kommandoen fra pfSense-skallet ved første installasjon, oppdatering eller ny installasjon:
 
 ```shell
 pkg add -f https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
 ```
 
-`pkg` laster ned pakken fra den nyeste utgivelsen og kjører installasjonstrinnet, som registrerer **Services → IPv6 Prefix Updater** i pfSense.
+`pkg` laster ned pakken fra den nyeste utgivelsen og kjører installasjonstrinnet, som registrerer **Services → IPv6 Prefix Updater** i pfSense. Flagget `-f` gjør at den samme kommandoen kan installere pakken, oppdatere en eldre versjon eller installere gjeldende versjon på nytt. Uten flagget rapporterer pfSense CE 2.8 at en oppdatering allerede er installert, og lar den installerte versjonen være uendret.
 
 ## Kontroller nedlastingen først \{#verify-the-download-first}
 
@@ -76,14 +76,14 @@ De to siste kommandoene skriver ut samme verdi når nedlastingen er intakt. Dere
 ## Bekreft i WebGUI \{#confirm-in-the-webgui}
 
 1. Logg inn i pfSense WebGUI.
-2. Åpne **Services → IPv6 Prefix Updater**, og bekreft at fanene **Innstillinger**, **Status**, **Felt**, **Sikkerhetskopier** og **Opprydding** vises.
+2. Åpne **Services → IPv6 Prefix Updater**, og bekreft at fanene **Innstillinger**, **Status**, **Felt**, **Sikkerhetskopier**, **Opprydding** og **Om** vises.
 3. Bekreft i fanen Status at **Gjeldende tilstand** viser `Ingen overvåkede grensesnitt er lagret ennå. Legg dem til på Innstillinger-fanen.` Etter flyttingen fra det eldre oppdateringsskriptet viser den i stedet de flyttede grensesnittene.
-4. La **<Terminology title="automatiske kontroller fra en cron-oppføring styrt av pfSense" to="/docs/reference/terminology#scheduled-updates">Aktiver planlagte oppdateringer</Terminology>** være umerket, slik den er som standard, til du har [opprettet grunnlinjen](/docs/first-run). Etter flyttingen fra det eldre oppdateringsskriptet er den allerede slått på, i tråd med den gamle Cron-planen.
+4. La **<Terminology title="Automatiske kontroller etter plan, av til du slår dem på" to="/docs/reference/terminology#running-checks">Aktiver planlagte oppdateringer</Terminology>** være umerket, slik den er som standard, til du har [opprettet grunnlinjen](/docs/first-run). Etter flyttingen fra det eldre oppdateringsskriptet er den allerede slått på, i tråd med den gamle Cron-planen.
 
 ## Hvis installasjonen mislykkes \{#if-installation-fails}
 
 - **Not found (404)**: den nyeste utgivelsen har ingen pakkefil. [Kontroller utgivelsen](/docs/installation#check-the-release) forklarer hvilke utgivelser som har en.
-- **Avvik i ABI eller OS-versjon**: pakken ble bygget for en annen FreeBSD-versjon enn pfSense-utgaven din. Det anbefales å bruke et passende bygg i stedet for å tvinge gjennom installasjonen.
+- **Feil arkitektur på pfSense CE 2.9.0**: utgaver til og med 2.0.1 ble bare bygget for FreeBSD 15, så pfSense CE 2.9.0 viser en melding om feil arkitektur for dem. Installer den nyeste utgaven.
 - **DNS-, TLS- eller sertifikatfeil**: pfSense må kunne slå opp `github.com`, nå nettstedet over HTTPS og ha riktig klokkeslett for sertifikatkontrollene.
 
 Fortsett med [Opprett grunnlinjen](/docs/first-run) når pakken vises i WebGUI.

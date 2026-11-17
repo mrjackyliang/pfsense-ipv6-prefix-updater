@@ -1,14 +1,38 @@
 {
-  "item.label.Home": {
-    "message": "Početna"
-  },
-  "item.label.Guides": {
+  "item.label.Docs": {
     "message": "Dokumentacija"
   },
+  "item.label.Overview": {
+    "message": "Pregled"
+  },
+  "item.label.Quick Start": {
+    "message": "Brzi početak"
+  },
+  "item.label.Configure": {
+    "message": "Podešavanje"
+  },
+  "item.label.Operate": {
+    "message": "Upotreba"
+  },
   "item.label.Safety": {
-    "message": "Sigurnost i rad"
+    "message": "Sigurnost"
+  },
+  "item.label.Reference": {
+    "message": "Tehničke informacije"
+  },
+  "item.label.Contributing": {
+    "message": "Doprinos"
+  },
+  "item.label.Resources": {
+    "message": "Resursi"
   },
   "item.label.Troubleshooting": {
     "message": "Rješavanje problema"
+  },
+  "item.label.Changelog": {
+    "message": "Dnevnik promjena"
+  },
+  "item.label.Report an Issue": {
+    "message": "Prijavi problem"
   }
 }

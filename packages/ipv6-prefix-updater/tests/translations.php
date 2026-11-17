@@ -73,6 +73,125 @@ $expectedLocales = [
     'es_AR',
 ];
 
+$expectedAboutKeys = [
+    'about',
+    'version',
+    'documentation',
+    'tagline',
+    'source_code',
+    'report_an_issue',
+    'release_notes',
+    'tested_pfsense_releases',
+    'release',
+    'this_firewall',
+    'not_tested',
+    'tested_releases_footnote',
+    'support_project',
+    'support_message',
+    'mit_license',
+];
+$aboutMessagesByLocale = require(__DIR__ . '/../port/files/usr/local/pkg/ipv6-prefix-updater/AboutTranslations.php');
+
+foreach ($expectedLocales as $locale) {
+    assertTranslationSame(
+        $expectedAboutKeys,
+        array_keys($aboutMessagesByLocale[$locale]),
+        sprintf('Locale %s must contain every About tab key in canonical order.', $locale),
+    );
+}
+
+$updateMessagesByLocale = require(__DIR__ . '/../port/files/usr/local/pkg/ipv6-prefix-updater/UpdateTranslations.php');
+$expectedUpdateKeys = array_keys($updateMessagesByLocale['en_US']);
+$requiredUpdateKeys = [
+    'package_updates',
+    'update_checks',
+    'update_checks_daily',
+    'update_checks_weekly',
+    'update_checks_monthly',
+    'update_checks_never',
+    'update_checks_help',
+    'update_remote_notifications',
+    'update_remote_notifications_help',
+    'update_schedule_error',
+    'update_available',
+    'update_checked',
+    'update_to_version',
+    'whats_new',
+    'update_up_to_date',
+    'check_now',
+    'update_check_failed',
+    'update_checks_off',
+    'update_not_checked',
+    'update_available_notice',
+    'update_status_checking',
+    'update_status_current',
+    'update_status_downloading',
+    'update_status_installing',
+    'update_status_queued',
+    'update_status_succeeded',
+    'update_status_verifying',
+    'update_checksum_missing',
+    'update_signature_missing',
+    'update_signature_invalid',
+    'update_signing_keys_invalid',
+    'update_signature_tool_unavailable',
+    'update_download_too_large',
+];
+
+foreach ($requiredUpdateKeys as $requiredUpdateKey) {
+    assertTranslationSame(
+        true,
+        array_key_exists($requiredUpdateKey, $updateMessagesByLocale['en_US']),
+        sprintf('The update catalog must contain %s.', $requiredUpdateKey),
+    );
+}
+
+foreach ($expectedLocales as $locale) {
+    assertTranslationSame(
+        $expectedUpdateKeys,
+        array_keys($updateMessagesByLocale[$locale]),
+        sprintf('Locale %s must contain every update key in canonical order.', $locale),
+    );
+
+    if ($locale === 'en_US') {
+        continue;
+    }
+
+    foreach ($requiredUpdateKeys as $requiredUpdateKey) {
+        if ($updateMessagesByLocale[$locale][$requiredUpdateKey] === $updateMessagesByLocale['en_US'][$requiredUpdateKey]) {
+            throw new RuntimeException(sprintf(
+                'Locale %s must translate update message %s.',
+                $locale,
+                $requiredUpdateKey,
+            ));
+        }
+    }
+}
+
+foreach ([
+    'about_description',
+    'homepage',
+    'github_repository',
+    'project_links',
+    'issue_tracker',
+    'license',
+    'donate_github_sponsors',
+    'donate_paypal',
+    'support_open_source_prefix',
+    'support_prompt',
+    'important_information',
+    'important_unofficial',
+    'important_compatibility',
+    'important_freebsd',
+    'important_issues',
+] as $removedAboutKey) {
+    assertTranslationSame(
+        false,
+        array_key_exists($removedAboutKey, $aboutMessagesByLocale['en_US']),
+        sprintf('The removed About tab key %s must not return.', $removedAboutKey),
+    );
+}
+
 assertTranslationSame(
     $expectedLocales,
     Translator::supportedLocales(),

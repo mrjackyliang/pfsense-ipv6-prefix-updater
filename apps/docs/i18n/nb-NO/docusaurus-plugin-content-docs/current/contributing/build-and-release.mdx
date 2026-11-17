@@ -1,11 +1,12 @@
 ---
 id: build-and-release
 title: Bygging og utgivelse
-description: Kontroller, klargjør og bygg pfSense-pakken på FreeBSD, og legg deretter ved .pkg-filen og sjekksumfilene i en GitHub-utgivelse med publiseringsarbeidsflyten.
+description: Kontroller, klargjør, bygg og signer pfSense-pakken på FreeBSD, og legg pakker, sjekksummer og signaturer ved en GitHub-utgivelse.
 keywords:
   - pfsense ipv6 prefix updater
   - bygging
   - utgivelsesarbeidsflyt
+  - utgivelsessignering
   - freebsd-porter
   - php-tester
 tags:
@@ -17,11 +18,11 @@ sidebar_position: 1
 
 import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
 
-Kontroller, klargjør og pakk pfSense IPv6 Prefix Updater, og publiser deretter pakken i en GitHub-utgivelse.
+Kontroller, klargjør og pakk IPv6 Prefix Updater for pfSense, og publiser deretter pakken i en GitHub-utgivelse.
 
 ## Krav \{#requirements}
 
-- **Node.js 22 eller 24** — Manifestene i roten og i arbeidsområdet godtar `^22 || ^24`.
+- **Node.js 22, 24 eller 26** — Manifestene i roten og i arbeidsområdet godtar `^22 || ^24 || ^26`.
 - **PHP eller Docker** — PHP-testsuitene bruker en lokal `php` når den finnes, ellers bildet `php:8.3-cli-alpine` gjennom Docker. `PHP_TEST_IMAGE` overstyrer bildet.
 - **FreeBSD for pakking** — `npm run deploy` kjører bare på FreeBSD, med `PFSENSE_PORTS_DIR` som peker på en utsjekk av FreeBSD-ports fra pfSense.
 
@@ -46,20 +47,66 @@ PFSENSE_PORTS_DIR=/path/to/FreeBSD-ports npm run deploy --workspace pfsense-pkg-
 
 ## Utgivelsesarbeidsflyt \{#release-workflow}
 
-`.github/workflows/pfsense-ipv6-prefix-updater.yml` kjører når en GitHub-utgivelse publiseres, eller manuelt med taggen til en eksisterende utgivelse:
+Jobben `publish-pfsense-packages-ipv6-prefix-updater` i `.github/workflows/nova-publish-project.yml`, som genereres av Nova, kjører i publiseringsarbeidsflyten:
 
 1. Validerer og klargjør porten på en Ubuntu-runner.
-2. Starter en FreeBSD-VM der utgaven kommer fra kodelagervariabelen `PFSENSE_FREEBSD_VERSION`, eller `15` når den ikke er satt.
-3. Sjekker ut grenen `devel` i FreeBSD-ports-kodelageret til pfSense og kjører pakkebyggingen.
-4. Laster opp `build/release` som en arbeidsflytartefakt som beholdes i 7 dager, og legger ved de samme filene i utgivelsen, der de erstatter eksisterende filer.
+2. Når hemmeligheten `PFSENSE_RELEASE_SIGNING_KEY` er satt, utleder den offentlige nøkkelen fra `PFSENSE_RELEASE_SIGNING_KEY` og legger den til i filen `usr/local/share/pfSense-pkg-Ipv6PrefixUpdater/release-signing.pub` i den klargjorte porten.
+3. Bygger pakken på FreeBSD med den konfigurerte utsjekkingen av pfSense FreeBSD-ports.
+4. Når hemmeligheten er satt, signerer hver `.pkg` som `<file>.pkg.sig` med `ssh-keygen -Y sign -n pfSense-pkg-Ipv6PrefixUpdater`.
+5. Laster opp pakker, sjekksummer og signaturer som en arbeidsflytartefakt som beholdes i 7 dager, og legger de samme filene ved utgivelsen.
 
-Det anbefales å sette `PFSENSE_FREEBSD_VERSION` til FreeBSD-hovedversjonen for pfSense-utgaven du sikter mot, og ikke publisere en pakke som er bygget mot en annen hovedversjon. `pkg add`-kommandoen i installasjonsveiledningen henter `pfSense-pkg-Ipv6PrefixUpdater.pkg` fra den utgivelsen GitHub merker som nyeste.
+Bygget merker pakken for alle FreeBSD-versjoner fordi den ikke inneholder kompilert kode, slik at én pakke kan installeres på alle støttede pfSense-utgaver. `PFSENSE_FREEBSD_VERSION` velger bare FreeBSD-utgaven som brukes av bygg-VM-en. `pkg add`-kommandoen i installasjonsveiledningen henter `pfSense-pkg-Ipv6PrefixUpdater.pkg` fra den utgivelsen GitHub merker som nyeste.
+
+## Utgivelsessignering \{#release-signing}
+
+Det eneste signeringsoppsettet er kodelagerhemmeligheten `PFSENSE_RELEASE_SIGNING_KEY`, som inneholder en ukryptert privat OpenSSH Ed25519-nøkkel.
+
+1. Velg **New Item → SSH Key → Generate a New Key → Ed25519** i 1Password.
+2. Velg **Export** i feltet for den private nøkkelen, velg OpenSSH-format og la passordet stå tomt.
+3. Kontroller utklippstavlen før hemmeligheten lagres:
+
+   ```bash
+   pbpaste | head -1
+   ```
+
+   Kommandoen skal skrive ut `-----BEGIN OPENSSH PRIVATE KEY-----`.
+
+4. Send utklippstavlen direkte til GitHub, eller les en eksportert fil:
+
+   ```bash
+   pbpaste | gh secret set PFSENSE_RELEASE_SIGNING_KEY
+   gh secret set PFSENSE_RELEASE_SIGNING_KEY < <file>
+   ```
+
+5. Slett den eksporterte private nøkkelfilen etter at hemmeligheten er lagret.
+
+Uten hemmeligheten leveres pakkene uten offentlig nøkkel, og utgivelsene er usignerte. For å bytte nøkkel legger du den nye offentlige nøkkelen `ssh-ed25519 ...` til i `release-signing.pub`, publiserer én utgivelse mens den gamle nøkkelen fortsatt er hemmeligheten, og erstatter deretter hemmeligheten med den nye nøkkelen.
+
+Hvis signeringsnøkkelen går tapt, kan installerte kopier ikke autentisere en utgivelse som er signert med erstatningsnøkkelen. Hver berørte installasjon må bruke den manuelle kommandoen `pkg add -f` én gang for å installere en pakke med den nye offentlige nøkkelen.
+
+## Test oppdateringsendepunkter i en VM \{#test-update-endpoints-in-a-vm}
+
+CLI-en godtar to miljøvariabler utelukkende for kontrollerte VM-tester:
+
+- `IPV6_PREFIX_UPDATER_RELEASES_API` erstatter API-URL-en for nyeste utgivelse.
+- `IPV6_PREFIX_UPDATER_DOWNLOAD_PREFIX` erstatter det tillatte URL-prefikset for utgivelsesfiler.
+
+De leses bare av `/usr/local/sbin/ipv6-prefix-updater`; de lagres aldri i pakkekonfigurasjonen eller leses direkte av WebGUI. Sett alle nødvendige overstyringer i samme CLI-kall:
+
+```shell
+IPV6_PREFIX_UPDATER_RELEASES_API=http://192.0.2.10/latest.json \
+IPV6_PREFIX_UPDATER_DOWNLOAD_PREFIX=http://192.0.2.10/releases/ \
+/usr/local/sbin/ipv6-prefix-updater --check-updates
+```
+
+Bruk `--self-update` i stedet for `--check-updates` for å teste hele forløpet med nedlasting, SHA-256-kontrollsum, utgivelsessignatur, pakkemetadata og `pkg add -f`.
 
 ## PHP-testsuiter \{#php-test-suites}
 
-- **`tests/domain.php`**: <Terminology title="korteste standardskrivemåte for en adresse, med små bokstaver" to="/docs/reference/terminology#canonical-form">kanonisk form</Terminology>, grensene `/48` og `/64`, maskering, <Terminology title="adressebitene etter det delegerte prefikset" to="/docs/reference/terminology#host-portion">vertsbiter</Terminology> ved `/53`, avviste adresser, planlegging uten endringer, filtrering på forrige prefiks og en lengdeendring som behandles som en <Terminology title="endring fra siste vellykkede prefiks eller lengde" to="/docs/reference/terminology#prefix-transition">prefiksovergang</Terminology>.
-- **`tests/runtime.php`**: gjennomsøking av alle <Terminology title="gruppe av felt med én bryter i fanen Felt" to="/docs/reference/terminology#field-group">feltgrupper</Terminology>, unntak for enkeltfelt, ny bruk av innstillingene til andre pakker, atomisk <Terminology title="pakkefil med grunnlinjen og siste kjøring" to="/docs/reference/terminology#package-state">pakketilstand</Terminology>, <Terminology title="sperre som hindrer to kontroller i å kjøre samtidig" to="/docs/reference/terminology#run-lock">kjørelåsen</Terminology>, plattformer som ikke støttes, og deaktiverte planlagte kontroller. Den dekker også transaksjonsrekkefølgen og feil i skrivingen, sikkerhetskopien, forhåndskontrollen av innlastingene, innlastingene og varslingen, samt <Terminology title="resultat: prefiks endret, men ingen godkjente felt samsvarte" to="/docs/reference/terminology#warning">Advarsel</Terminology> uten treff.
-- **`tests/pfsense-adapter.php`**: en tvungen ny avlesning av adressen uten å falle tilbake til <Terminology title="fe80::-adresse som bare virker på én lenke" to="/docs/reference/terminology#link-local-address">link-local</Terminology>, sikkerhetskopien før lagringen som bare skriver, og en mislykket sikkerhetskopi som stopper før skrivingen.
+- **`tests/domain.php`**: <Terminology title="Den korte skrivemåten med små bokstaver, for eksempel 2001:db8::1" to="/docs/reference/terminology#addresses-and-prefixes">kanonisk form</Terminology>, grensene `/48` og `/64`, maskering, <Terminology title="Bitene etter prefikset, alltid kopiert uendret" to="/docs/reference/terminology#addresses-and-prefixes">vertsbiter</Terminology> ved `/53`, avviste adresser, planlegging uten endringer, filtrering på forrige prefiks og en lengdeendring som behandles som en <Terminology title="Prefikset ditt er endret, så pakken setter i gang" to="/docs/reference/terminology#baselines-and-transitions">prefiksovergang</Terminology>.
+- **`tests/runtime.php`**: gjennomsøking av alle <Terminology title="Én bryter for en hel type innstilling" to="/docs/reference/terminology#fields-and-change-plans">feltgrupper</Terminology>, unntak for enkeltfelt, ny bruk av innstillingene til andre pakker, atomisk <Terminology title="Filen med hver grunnlinje, beholdt ved ny installasjon" to="/docs/reference/terminology#running-checks">pakketilstand</Terminology>, <Terminology title="Hindrer at to kontroller kjører samtidig" to="/docs/reference/terminology#running-checks">kjørelåsen</Terminology>, plattformer som ikke støttes, og deaktiverte planlagte kontroller. Den dekker også transaksjonsrekkefølgen og feil i skrivingen, sikkerhetskopien, forhåndskontrollen av innlastingene, innlastingene og varslingen, samt <Terminology title="Prefikset er endret, men ingen godkjente felt brukte det gamle" to="/docs/reference/terminology#run-outcomes">Advarsel</Terminology> uten treff.
+- **`tests/pfsense-adapter.php`**: en tvungen ny avlesning av adressen uten å falle tilbake til <Terminology title="En fe80-adresse som aldri brukes som kilde" to="/docs/reference/terminology#addresses-and-prefixes">link-local</Terminology>, sikkerhetskopien før lagringen som bare skriver, og en mislykket sikkerhetskopi som stopper før skrivingen.
+- **`tests/updates.php`**: versjonssammenligning, behandling av utgivelser og URL-validering, stabile randomiserte tidsplaner, deduplisering av varsler, GitHub API-kontrollsummer, `.sha256`-reserver, behandling av signeringsnøkler, allowed-signers-utdata, nøyaktige `ssh-keygen`-argumenter og standardinndata, gyldige signaturer, feil nøkler og navnerom samt manipulerte pakker.
 - **`tests/translations.php`** og **`tests/webgui-localization.php`**: fullstendige kataloger for alle språkidentifikatorer i pfSense og det lokaliserte skjemaet Innstillinger med valideringsmeldingene.
 
 ## Dokumentasjonsnettstedet \{#documentation-site}

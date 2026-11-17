@@ -17,44 +17,44 @@ sidebar_position: 3
 
 import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
 
-Record the current prefix as a <Terminology title="starting prefix recorded without changing configuration" to="/docs/reference/terminology#baseline">baseline</Terminology> and check it before you turn on <Terminology title="automatic checks run from a pfSense-managed cron entry" to="/docs/reference/terminology#scheduled-updates">scheduled updates</Terminology>.
+Record the current prefix as a <Terminology title="The recorded starting prefix that changes are measured from" to="/docs/reference/terminology#baselines-and-transitions">baseline</Terminology> and check it before you turn on <Terminology title="Automatic checks on a schedule, off until you enable them" to="/docs/reference/terminology#running-checks">scheduled updates</Terminology>.
 
 ## Save the Initial Settings
 
 1. Open **Services → IPv6 Prefix Updater**, then the **Settings** tab.
-2. Leave **<Terminology title="automatic checks run from a pfSense-managed cron entry" to="/docs/reference/terminology#scheduled-updates">Enable Scheduled Updates</Terminology>** cleared.
-3. Add a **<Terminology title="interface whose address reveals the current prefix" to="/docs/reference/terminology#monitored-interface">Monitored Interfaces</Terminology>** row for each interface whose <Terminology title="public IPv6 address inside 2000::/3" to="/docs/reference/terminology#global-unicast-address">global address</Terminology> comes from the <Terminology title="IPv6 network your ISP routes to the firewall" to="/docs/reference/terminology#delegated-prefix">delegated prefix</Terminology>, as described in [Interface and Prefix](/docs/configure/interface-and-prefix).
-4. In each row, select the **<Terminology title="setting for the ISP prefix size, /48 to /64" to="/docs/reference/terminology#delegated-prefix-length">Delegated Prefix Length</Terminology>** your ISP delegates.
+2. Leave **<Terminology title="Automatic checks on a schedule, off until you enable them" to="/docs/reference/terminology#running-checks">Enable Scheduled Updates</Terminology>** cleared.
+3. Add a **<Terminology title="The interface whose address reveals your current prefix" to="/docs/reference/terminology#interfaces-and-detection">Monitored Interfaces</Terminology>** row for each interface whose <Terminology title="A public IPv6 address in 2000::/3, the only kind used" to="/docs/reference/terminology#addresses-and-prefixes">global address</Terminology> comes from the <Terminology title="The IPv6 network your ISP hands you, which can change" to="/docs/reference/terminology#addresses-and-prefixes">delegated prefix</Terminology>, as described in [Interface and Prefix](/docs/configure/interface-and-prefix).
+4. In each row, select the **<Terminology title="How big your ISP's prefix is, like /56; you set it" to="/docs/reference/terminology#addresses-and-prefixes">Delegated Prefix Length</Terminology>** your ISP delegates.
 5. Save and confirm the `Settings saved.` message.
 
 ## Run the First Check
 
-On the **Status** tab, select **Run Now**. With no <Terminology title="starting prefix recorded without changing configuration" to="/docs/reference/terminology#baseline">baseline</Terminology> yet, the run records each interface's <Terminology title="global address pfSense reports for the monitored interface" to="/docs/reference/terminology#source-address">source address</Terminology> and prefix and reports <Terminology title="outcome: baseline recorded, configuration unchanged" to="/docs/reference/terminology#initialized">Initialized</Terminology>.
+On the **Status** tab, select **Run Now**. With no <Terminology title="The recorded starting prefix that changes are measured from" to="/docs/reference/terminology#baselines-and-transitions">baseline</Terminology> yet, the run records each interface's <Terminology title="The live address the prefix is read from on each run" to="/docs/reference/terminology#interfaces-and-detection">source address</Terminology> and prefix and reports <Terminology title="First look: a baseline is recorded, nothing changes" to="/docs/reference/terminology#run-outcomes">Initialized</Terminology>.
 
-Recording a <Terminology title="starting prefix recorded without changing configuration" to="/docs/reference/terminology#baseline">baseline</Terminology> doesn't change the configuration, create a backup, or send a notification.
+Recording a <Terminology title="The recorded starting prefix that changes are measured from" to="/docs/reference/terminology#baselines-and-transitions">baseline</Terminology> doesn't change the configuration, create a backup, or send a notification.
 
 ## Verify the Result
 
 Check these values in each row under **Current State**:
 
-- **<Terminology title="interface whose address reveals the current prefix" to="/docs/reference/terminology#monitored-interface">Monitored Interface</Terminology>** shows the intended interface by its description and internal name, such as `LAN (lan)`.
-- **<Terminology title="global address pfSense reports for the monitored interface" to="/docs/reference/terminology#source-address">Last Successful Source Address</Terminology>** matches the address under **Status → Interfaces** for that interface.
-- **<Terminology title="prefix the next check compares against" to="/docs/reference/terminology#last-successful-prefix">Last Successful Prefix</Terminology>** matches the prefix your ISP delegates.
+- **<Terminology title="The interface whose address reveals your current prefix" to="/docs/reference/terminology#interfaces-and-detection">Monitored Interface</Terminology>** shows the intended interface by its description and internal name, such as `LAN (lan)`.
+- **<Terminology title="The live address the prefix is read from on each run" to="/docs/reference/terminology#interfaces-and-detection">Last Successful Source Address</Terminology>** matches the address under **Status → Interfaces** for that interface.
+- **<Terminology title="The stored prefix each check compares against" to="/docs/reference/terminology#baselines-and-transitions">Last Successful Prefix</Terminology>** matches the prefix your ISP delegates.
 - **Last Successful Update** shows the time of this run in UTC.
 
-The <Terminology title="read-only results shown after Run Now or Dry Run" to="/docs/reference/terminology#command-output">Command Output</Terminology> should show `Status: Initialized`, `Planned or changed fields: 0`, and `Configuration backup: Not created`. For example, the documentation address `2001:db8:abcd:78aa::1` with a `/56` length belongs to `2001:db8:abcd:7800::/56`.
+The <Terminology title="The latest run's lines, shown right after you start it" to="/docs/reference/terminology#running-checks">Command Output</Terminology> should show `Status: Initialized`, `Planned or changed fields: 0`, and `Configuration backup: Not created`. For example, the documentation address `2001:db8:abcd:78aa::1` with a `/56` length belongs to `2001:db8:abcd:7800::/56`.
 
 :::warning
 
-If the interface or the length is wrong, it is recommended to correct Settings before you turn on the schedule. A different interface records a new <Terminology title="starting prefix recorded without changing configuration" to="/docs/reference/terminology#baseline">baseline</Terminology>, while a different length counts as a <Terminology title="change from the last successful prefix or length" to="/docs/reference/terminology#prefix-transition">prefix transition</Terminology>, as [Interface and Prefix](/docs/configure/interface-and-prefix#changing-the-prefix-length) explains.
+If the interface or the length is wrong, it is recommended to correct Settings before you turn on the schedule. A different interface records a new <Terminology title="The recorded starting prefix that changes are measured from" to="/docs/reference/terminology#baselines-and-transitions">baseline</Terminology>, while a different length counts as a <Terminology title="Your prefix changed, so the package goes to work" to="/docs/reference/terminology#baselines-and-transitions">prefix transition</Terminology>, as [Interface and Prefix](/docs/configure/interface-and-prefix#changing-the-prefix-length) explains.
 
 :::
 
 ## Review the Fields
 
-Open the **Fields** tab. With the <Terminology title="starting prefix recorded without changing configuration" to="/docs/reference/terminology#baseline">baseline</Terminology> recorded, it lists every address inside the prefix and which ones the next change would update.
+Open the **Fields** tab. With the <Terminology title="The recorded starting prefix that changes are measured from" to="/docs/reference/terminology#baselines-and-transitions">baseline</Terminology> recorded, it lists every address inside the prefix and which ones the next change would update.
 
-1. Turn off the <Terminology title="group of fields with one switch on the Fields tab" to="/docs/reference/terminology#field-group">field groups</Terminology> the firewall doesn't use. All eleven pfSense groups start on.
+1. Turn off the <Terminology title="One switch for a whole kind of setting" to="/docs/reference/terminology#fields-and-change-plans">field groups</Terminology> the firewall doesn't use. All eleven pfSense groups start on.
 2. Untick single fields that should keep their value, and tick any field of another package that should follow the prefix.
 3. Tick any field under **Other Settings**, such as a gateway or static route, that should follow the prefix.
 4. Select **Save** and confirm the `Field selection saved.` message.
@@ -63,13 +63,13 @@ Open the **Fields** tab. With the <Terminology title="starting prefix recorded w
 
 ## What a Dry Run Shows Now
 
-With the prefix unchanged, **<Terminology title="preview that never backs up or writes" to="/docs/reference/terminology#dry-run">Dry Run</Terminology>** reports <Terminology title="outcome: prefix unchanged, nothing scanned or written" to="/docs/reference/terminology#no-change">No change</Terminology> without scanning the configuration, because planning starts only after a real <Terminology title="change from the last successful prefix or length" to="/docs/reference/terminology#prefix-transition">prefix transition</Terminology>. The Fields tab shows which fields a future change would touch.
+With the prefix unchanged, **<Terminology title="A preview of the changes that writes nothing" to="/docs/reference/terminology#running-checks">Dry Run</Terminology>** reports <Terminology title="Same prefix as last time, so there is nothing to do" to="/docs/reference/terminology#run-outcomes">No change</Terminology> without scanning the configuration, because planning starts only after a real <Terminology title="Your prefix changed, so the package goes to work" to="/docs/reference/terminology#baselines-and-transitions">prefix transition</Terminology>. The Fields tab shows which fields a future change would touch.
 
-A <Terminology title="preview that never backs up or writes" to="/docs/reference/terminology#dry-run">dry run</Terminology> made before any <Terminology title="starting prefix recorded without changing configuration" to="/docs/reference/terminology#baseline">baseline</Terminology> exists reports <Terminology title="outcome: dry run before a baseline exists" to="/docs/reference/terminology#initialization-preview">Initialization preview</Terminology> and records nothing.
+A <Terminology title="A preview of the changes that writes nothing" to="/docs/reference/terminology#running-checks">dry run</Terminology> made before any <Terminology title="The recorded starting prefix that changes are measured from" to="/docs/reference/terminology#baselines-and-transitions">baseline</Terminology> exists reports <Terminology title="A dry run showing the baseline it would record" to="/docs/reference/terminology#run-outcomes">Initialization preview</Terminology> and records nothing.
 
 ## Turn On the Schedule
 
-When the values match, select **<Terminology title="automatic checks run from a pfSense-managed cron entry" to="/docs/reference/terminology#scheduled-updates">Enable Scheduled Updates</Terminology>**, choose a **Schedule**, and save. [Schedule and Notifications](/docs/configure/schedule-and-notifications) explains each option.
+When the values match, select **<Terminology title="Automatic checks on a schedule, off until you enable them" to="/docs/reference/terminology#running-checks">Enable Scheduled Updates</Terminology>**, choose a **Schedule**, and save. [Schedule and Notifications](/docs/configure/schedule-and-notifications) explains each option.
 
 After the first scheduled time, **Timestamp (UTC)** under **Last Run** shows when that check ran.
 

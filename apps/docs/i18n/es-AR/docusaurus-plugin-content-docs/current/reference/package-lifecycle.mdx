@@ -35,31 +35,35 @@ Se recomienda descargar primero una copia de la configuración desde **Diagnosti
 pkg add -f https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
 ```
 
-El paso de instalación vuelve a sincronizar la entrada de cron con las opciones guardadas y conserva todas las <Terminology title="prefijo inicial registrado sin cambiar la configuración" to="/docs/reference/terminology#baseline">referencias</Terminology>. Los pasos de la suma de verificación de [Instalar el paquete](/docs/installation#verify-the-download-first) también sirven para las actualizaciones.
+El paso de instalación vuelve a sincronizar las dos entradas de cron, la comprobación del prefijo y la comprobación de versiones, con las opciones guardadas y conserva todas las <Terminology title="El prefijo inicial registrado con el que se miden los cambios" to="/docs/reference/terminology#baselines-and-transitions">referencias</Terminology>. Los pasos de la suma de verificación de [Instalar el paquete](/docs/installation#verify-the-download-first) también sirven para las actualizaciones.
 
 Después de la actualización:
 
 1. Abrí la pestaña **Configuración** de **Services → IPv6 Prefix Updater** y confirmá los valores guardados.
-2. En la pestaña Estado, revisá **Estado actual**. Cada interfaz conserva su <Terminology title="prefijo inicial registrado sin cambiar la configuración" to="/docs/reference/terminology#baseline">referencia</Terminology>.
+2. En la pestaña Estado, revisá **Estado actual**. Cada interfaz conserva su <Terminology title="El prefijo inicial registrado con el que se miden los cambios" to="/docs/reference/terminology#baselines-and-transitions">referencia</Terminology>.
 
-Si una fila muestra `No inicializado`, **Ejecutar ahora** registra una <Terminology title="prefijo inicial registrado sin cambiar la configuración" to="/docs/reference/terminology#baseline">referencia</Terminology> nueva para ella. En ese caso, las direcciones que todavía usan un prefijo anterior a esa referencia no cambian.
+Si una fila muestra `No inicializado`, **Ejecutar ahora** registra una <Terminology title="El prefijo inicial registrado con el que se miden los cambios" to="/docs/reference/terminology#baselines-and-transitions">referencia</Terminology> nueva para ella. En ese caso, las direcciones que todavía usan un prefijo anterior a esa referencia no cambian.
 
 ## Desinstalar el paquete \{#remove-the-package}
 
-Si primero destildás **<Terminology title="comprobaciones automáticas desde una entrada de cron administrada por pfSense" to="/docs/reference/terminology#scheduled-updates">Activar actualizaciones programadas</Terminology>**, evitás que una reinstalación posterior active la programación enseguida en caso de que pfSense conserve las opciones guardadas. Después, ejecutá:
+Si primero destildás **<Terminology title="Comprobaciones automáticas programadas, apagadas por defecto" to="/docs/reference/terminology#running-checks">Activar actualizaciones programadas</Terminology>**, evitás que una reinstalación posterior active la programación enseguida en caso de que pfSense conserve las opciones guardadas. Después, ejecutá:
 
 ```shell
-pkg delete pfSense-pkg-Ipv6PrefixUpdater
+pkg delete -f pfSense-pkg-Ipv6PrefixUpdater
 ```
 
-La desinstalación borra la entrada de cron del paquete y su archivo de <Terminology title="protección que evita dos comprobaciones al mismo tiempo" to="/docs/reference/terminology#run-lock">bloqueo de ejecución</Terminology>. Conserva el <Terminology title="archivo del paquete con la referencia y la última ejecución" to="/docs/reference/terminology#package-state">estado del paquete</Terminology> y las copias de la pestaña **Copias de seguridad** en `/cf/conf/ipv6-prefix-updater`, para que la desinstalación y reinstalación que hace el mismo pfSense durante las actualizaciones nunca pierda una <Terminology title="prefijo inicial registrado sin cambiar la configuración" to="/docs/reference/terminology#baseline">referencia</Terminology>.
+El paquete está marcado como `vital`, por lo que las actualizaciones propias de pfSense lo mantienen instalado y `pkg delete` sin `-f` rechaza los paquetes vitales.
 
-La desinstalación no deshace las direcciones ya guardadas en la configuración, y las revisiones del paquete quedan en el <Terminology title="lista de pfSense con las revisiones guardadas de la configuración" to="/docs/reference/terminology#config-history">historial de configuración</Terminology>. Para borrar también los archivos conservados, ejecutá `rm -rf /cf/conf/ipv6-prefix-updater` después de desinstalar el paquete.
+La desinstalación borra las dos entradas de cron (comprobación del prefijo y comprobación de versiones), cierra el aviso de actualización disponible y borra el archivo de <Terminology title="Impide que dos comprobaciones se ejecuten a la vez" to="/docs/reference/terminology#running-checks">bloqueo de ejecución</Terminology> cuando ninguna ejecución lo tiene. Conserva el <Terminology title="El archivo con cada referencia, que sobrevive a una reinstalación" to="/docs/reference/terminology#running-checks">estado del paquete</Terminology>, `updates.json`, `update-status.json` y las copias de la pestaña **Copias de seguridad** en `/cf/conf/ipv6-prefix-updater`.
+
+Las actualizaciones propias de pfSense mantienen el paquete instalado (es `vital`), y el estado conservado hace que una desinstalación y reinstalación nunca pierda una <Terminology title="El prefijo inicial registrado con el que se miden los cambios" to="/docs/reference/terminology#baselines-and-transitions">referencia</Terminology>.
+
+La desinstalación no deshace las direcciones ya guardadas en la configuración, y las revisiones del paquete quedan en el <Terminology title="Las revisiones de configuración guardadas en pfSense que podés restaurar" to="/docs/reference/terminology#backups-and-service-reloads">historial de configuración</Terminology>. Para borrar también los archivos conservados, ejecutá `rm -rf /cf/conf/ipv6-prefix-updater` después de desinstalar el paquete.
 
 ## Reinstalar más adelante \{#reinstall-later}
 
-Una reinstalación encuentra el <Terminology title="archivo del paquete con la referencia y la última ejecución" to="/docs/reference/terminology#package-state">estado del paquete</Terminology> conservado, así que la primera ejecución compara contra cada <Terminology title="prefijo inicial registrado sin cambiar la configuración" to="/docs/reference/terminology#baseline">referencia</Terminology> guardada y actualiza los campos que quedaron en un prefijo más viejo. Si las opciones anteriores siguen presentes con **<Terminology title="comprobaciones automáticas desde una entrada de cron administrada por pfSense" to="/docs/reference/terminology#scheduled-updates">Activar actualizaciones programadas</Terminology>** tildada, el paso de instalación activa la programación enseguida.
+Una reinstalación encuentra el <Terminology title="El archivo con cada referencia, que sobrevive a una reinstalación" to="/docs/reference/terminology#running-checks">estado del paquete</Terminology> conservado, así que la primera ejecución compara contra cada <Terminology title="El prefijo inicial registrado con el que se miden los cambios" to="/docs/reference/terminology#baselines-and-transitions">referencia</Terminology> guardada y actualiza los campos que quedaron en un prefijo más viejo. Si las opciones anteriores siguen presentes con **<Terminology title="Comprobaciones automáticas programadas, apagadas por defecto" to="/docs/reference/terminology#running-checks">Activar actualizaciones programadas</Terminology>** tildada, el paso de instalación activa la programación enseguida.
 
-Para empezar de cero, borrá `/cf/conf/ipv6-prefix-updater` antes de reinstalar. Así, la primera ejecución registra una <Terminology title="prefijo inicial registrado sin cambiar la configuración" to="/docs/reference/terminology#baseline">referencia</Terminology> nueva y devuelve <Terminology title="resultado: referencia registrada, configuración sin cambios" to="/docs/reference/terminology#initialized">Inicializado</Terminology> sin cambiar la configuración.
+Para empezar de cero, borrá `/cf/conf/ipv6-prefix-updater` antes de reinstalar. Así, la primera ejecución registra una <Terminology title="El prefijo inicial registrado con el que se miden los cambios" to="/docs/reference/terminology#baselines-and-transitions">referencia</Terminology> nueva y devuelve <Terminology title="Primer vistazo: se registra la referencia y nada cambia" to="/docs/reference/terminology#run-outcomes">Inicializado</Terminology> sin cambiar la configuración.
 
 Revisá [Copias de seguridad y recuperación](/docs/operate/backups-and-recovery) antes del mantenimiento y [Establecer la referencia](/docs/first-run) después de una reinstalación.

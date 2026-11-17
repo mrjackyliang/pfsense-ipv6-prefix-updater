@@ -1,14 +1,38 @@
 {
-  "item.label.Home": {
-    "message": "Strona główna"
-  },
-  "item.label.Guides": {
+  "item.label.Docs": {
     "message": "Dokumentacja"
   },
+  "item.label.Overview": {
+    "message": "Przegląd"
+  },
+  "item.label.Quick Start": {
+    "message": "Szybki start"
+  },
+  "item.label.Configure": {
+    "message": "Konfiguracja"
+  },
+  "item.label.Operate": {
+    "message": "Obsługa"
+  },
   "item.label.Safety": {
-    "message": "Bezpieczeństwo i działanie"
+    "message": "Bezpieczeństwo"
+  },
+  "item.label.Reference": {
+    "message": "Informacje techniczne"
+  },
+  "item.label.Contributing": {
+    "message": "Współtworzenie"
+  },
+  "item.label.Resources": {
+    "message": "Zasoby"
   },
   "item.label.Troubleshooting": {
     "message": "Rozwiązywanie problemów"
+  },
+  "item.label.Changelog": {
+    "message": "Dziennik zmian"
+  },
+  "item.label.Report an Issue": {
+    "message": "Zgłoś problem"
   }
 }

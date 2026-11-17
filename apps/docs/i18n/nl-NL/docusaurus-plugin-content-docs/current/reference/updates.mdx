@@ -1,0 +1,74 @@
+---
+id: updates
+title: Updates
+description: Stel GitHub-releasecontroles in en installeer vanaf het tabblad Over pakketupdates die zijn beschermd met SHA-256-controlesommen en releasehandtekeningen.
+keywords:
+  - pfsense ipv6 prefix updater
+  - updatecontroles
+  - sha-256-controlesom
+  - releasehandtekeningen
+  - pfsense meldingen
+  - zelfupdate
+tags:
+  - reference
+  - updates
+  - security
+sidebar_position: 5
+---
+
+IPv6 Prefix Updater controleert zijn eigen GitHub-releases, omdat pfSense Package Manager pakketten die rechtstreeks vanaf GitHub zijn geïnstalleerd niet vermeldt.
+
+## Wat wordt gecontroleerd \{#what-is-checked}
+
+De controle vraagt de metadata van de nieuwste release op bij GitHub en vergelijkt de versie ervan met de geïnstalleerde pakketversie. De controletijd, nieuwste versie, releaselink, publicatietijd, meldingsstatus en laatste fout worden opgeslagen in `/cf/conf/ipv6-prefix-updater/updates.json`. De firewallconfiguratie wordt nooit naar GitHub gestuurd.
+
+Kies de frequentie onder **Services → IPv6 Prefix Updater → Instellingen → Pakketupdates**:
+
+- **Dagelijks** draait één keer per dag, op een tijdstip dat tijdens de installatie willekeurig is gekozen.
+- **Wekelijks** is de standaard en kiest ook één vaste weekdag en één vast tijdstip.
+- **Maandelijks** kiest één vaste dag van 1 tot en met 28 en één vast tijdstip.
+- **Nooit** verwijdert de geplande releasecontrole.
+
+Het willekeurige schema wordt in de pfSense-configuratie opgeslagen, dus het opslaan van de instellingen of het opnieuw installeren van het pakket verschuift het niet. **Nu controleren** op het tabblad Over voert altijd een handmatige controle uit, ook als de frequentie **Nooit** is.
+
+## Netwerkbestemmingen \{#network-destinations}
+
+Een updatecontrole of update kan deze door GitHub beheerde hosts benaderen:
+
+- `api.github.com` voor de metadata van de nieuwste release en de gepubliceerde SHA-256-digest.
+- `github.com` voor de URL van het releasebestand.
+- `release-assets.githubusercontent.com`, de downloadhost van GitHub voor releases, nadat de aanvraag voor het bestand is omgeleid.
+
+Aanvragen gebruiken verificatie van TLS-certificaten, korte time-outs, een User-Agent van het pakket en de proxy die in pfSense is ingesteld. Een antwoord `403` of `429` geldt als snelheidsbeperking en wist de laatste geldige releasegegevens niet.
+
+## Meldingen \{#notices}
+
+Zodra een nieuwere versie voor het eerst verschijnt, voegt het pakket voor die versie één pfSense-belmelding toe. De melding linkt naar het tabblad Over en blijft standaard lokaal.
+
+Selecteer **Externe meldingen** om ook de in pfSense ingestelde e-mail, Telegram, Pushover of andere externe kanalen te gebruiken. Het pakket maakt nog steeds maar één melding per nieuwe versie. Het sluit de melding zodra die versie is geïnstalleerd of een latere controle vaststelt dat het geïnstalleerde pakket actueel is.
+
+## Een update installeren \{#install-an-update}
+
+Open **Services → IPv6 Prefix Updater → Over**. Als er een nieuwere versie beschikbaar is, start **Bijwerken naar _versie_** een achtergrondtaak en toont de pagina de voortgang ervan.
+
+De taak haalt de release opnieuw op en downloadt de `.pkg` met versienummer. Ze controleert het pakket met de digest `sha256:<hex>` van het bestand in de GitHub API; ontbreekt die digest, dan downloadt ze in plaats daarvan het bijpassende bestand `.pkg.sha256` uit dezelfde release.
+
+Releasepakketten bevatten de openbare ondertekeningssleutels van de release-workflow in `/usr/local/share/pfSense-pkg-Ipv6PrefixUpdater/release-signing.pub`. Staan er in dat bestand een of meer sleutels, dan accepteert een geïnstalleerd exemplaar alleen updates die met een van die sleutels zijn ondertekend; een ontbrekend bestand of een bestand met alleen commentaar laat de handtekeningcontrole uit, en updates vertrouwen dan alleen op de SHA-256-controle.
+
+Bevat het geïnstalleerde sleutelbestand een sleutel, dan downloadt de taak na de SHA-256-controle het bijpassende bestand `.pkg.sig` uit dezelfde release en controleert het met `ssh-keygen -Y verify` voordat het archief wordt gelezen. Een release zonder die handtekening, of een release die met een andere sleutel is ondertekend, wordt geweigerd en de geïnstalleerde versie blijft staan.
+
+Daarna bevestigt de taak de pakketnaam en -versie in het archief voordat `pkg add -f` wordt uitgevoerd. Bestaat geen van beide controlesombronnen, dan weigert ze de update en blijft de geïnstalleerde versie staan; de pakketvergrendeling voorkomt dat een prefixuitvoering en een update elkaar overlappen.
+
+## Handmatig installeren \{#install-manually}
+
+Een beheerder kan het bestand nog steeds vanuit een pfSense-shell installeren:
+
+```shell
+pkg add -f https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
+```
+
+Deze handmatige opdracht omzeilt zowel de SHA-256-controle als de controle van de releasehandtekening van het tabblad Over. Controleer vóór gebruik de release, de controlesom en de handtekening.
+
+## Controles uitschakelen \{#turn-checks-off}
+
+Stel **Updatecontroles** in op **Nooit** en sla het tabblad Instellingen op. Het pakket verwijdert zijn cronjob voor updatecontroles en doet geen geplande uitgaande updateaanvragen meer. De prefixbewaking houdt haar eigen, onafhankelijke schema, en **Nu controleren** blijft beschikbaar voor een aanvraag die een beheerder zelf start.

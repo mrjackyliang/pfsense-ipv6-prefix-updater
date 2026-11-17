@@ -19,6 +19,11 @@ on:
         required: false
         type: "boolean"
         default: true
+      tag:
+        description: "Existing GitHub release tag that receives the package"
+        required: true
+        type: "string"
+        default: ""
 
 permissions:
   contents: "read"
@@ -33,37 +38,45 @@ env:
 
 jobs:
   build:
-    runs-on: "ubuntu-latest"
+    runs-on: "ubuntu-24.04"
     timeout-minutes: 15
     permissions:
       contents: "read"
     steps:
       - name: "Checkout repository"
         uses: "actions/checkout@v7"
+        timeout-minutes: 5
         with:
           fetch-depth: 0
 
       - name: "Setup Node.js"
         uses: "actions/setup-node@v7"
+        timeout-minutes: 10
         with:
           node-version-file: "${{ env.ROOT_DIR }}/package.json"
           package-manager-cache: false
 
       - name: "Install packages"
+        timeout-minutes: 15
         run: "npm install"
         working-directory: "${{ env.ROOT_DIR }}"
 
       - name: "Check project"
+        timeout-minutes: 15
+        env:
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
         run: |
-          npm run check -- --workspace pfsense-ipv6-prefix-updater-docs
+          npm run check -- --workspace pfsense-ipv6-prefix-updater-docs --workspace pfsense-pkg-ipv6-prefix-updater --exclude-workspace ./
         working-directory: "${{ env.ROOT_DIR }}"
 
       - name: "Build project"
+        timeout-minutes: 15
         run: |
-          npm run build -- --workspace pfsense-ipv6-prefix-updater-docs --artifact documentation
+          npm run build -- --workspace pfsense-ipv6-prefix-updater-docs --workspace pfsense-pkg-ipv6-prefix-updater --artifact documentation
         working-directory: "${{ env.ROOT_DIR }}"
 
       - name: "Validate build artifacts"
+        timeout-minutes: 15
         run: |
           set -euo pipefail
 
@@ -156,6 +169,7 @@ jobs:
 
       - name: "Upload assembled artifact (documentation)"
         uses: "actions/upload-artifact@v7"
+        timeout-minutes: 15
         with:
           name: "artifact-documentation"
           retention-days: 1
@@ -166,7 +180,7 @@ jobs:
 
   publish-github-pages-apps-docs:
     needs: "build"
-    runs-on: "ubuntu-latest"
+    runs-on: "ubuntu-24.04"
     timeout-minutes: 15
     permissions:
       contents: "read"
@@ -175,14 +189,17 @@ jobs:
     steps:
       - name: "Checkout repository"
         uses: "actions/checkout@v7"
+        timeout-minutes: 5
 
       - name: "Download build artifacts"
         uses: "actions/download-artifact@v8"
+        timeout-minutes: 15
         with:
           name: "artifact-documentation"
           path: "build/documentation"
 
       - name: "Check GitHub Pages status"
+        timeout-minutes: 15
         run: |
           if gh api "repos/${{ github.repository }}/pages" > /dev/null 2>&1; then
             echo "[Pages] GitHub Pages is enabled."
@@ -197,13 +214,213 @@ jobs:
       - name: "Setup GitHub Pages"
         if: "${{ env.PUBLISH == 'true' && env.PAGES_ENABLED == 'true' }}"
         uses: "actions/configure-pages@v6"
+        timeout-minutes: 10
 
       - name: "Upload artifact to GitHub Pages"
         if: "${{ env.PUBLISH == 'true' && env.PAGES_ENABLED == 'true' }}"
         uses: "actions/upload-pages-artifact@v5"
+        timeout-minutes: 15
         with:
           path: "build/documentation"
 
       - name: "Deploy to GitHub Pages"
         if: "${{ env.PUBLISH == 'true' && env.PAGES_ENABLED == 'true' }}"
         uses: "actions/deploy-pages@v5"
+        timeout-minutes: 15
+
+  publish-pfsense-packages-ipv6-prefix-updater:
+    needs: "build"
+    runs-on: "ubuntu-24.04"
+    timeout-minutes: 15
+    permissions:
+      contents: "write"
+    steps:
+      - name: "Checkout repository"
+        uses: "actions/checkout@v7"
+        timeout-minutes: 5
+
+      - name: "Validate and stage port"
+        timeout-minutes: 15
+        run: |
+          node "./packages/ipv6-prefix-updater/scripts/check-package.mjs"
+          node "./packages/ipv6-prefix-updater/scripts/stage-package.mjs"
+
+      - name: "Add release signing key"
+        timeout-minutes: 10
+        env:
+          RELEASE_SIGNING_KEY: "${{ secrets.PFSENSE_RELEASE_SIGNING_KEY }}"
+        run: |
+          set -eu
+
+          staged_share_directory="./packages/ipv6-prefix-updater/build/port/files/usr/local/share"
+
+          if [ -z "${RELEASE_SIGNING_KEY:-}" ]; then
+            echo "::notice::The release signing secret is not set, so the package ships without a release signing key."
+            exit 0
+          fi
+
+          umask 077
+          key_directory="$(mktemp -d "${RUNNER_TEMP:-/tmp}/release-signing.XXXXXX")"
+          trap 'rm -rf "$key_directory"' EXIT
+          printf '%s\n' "$RELEASE_SIGNING_KEY" | tr -d '\r' > "${key_directory}/signing-key"
+
+          if ! ssh-keygen -y -P '' -f "${key_directory}/signing-key" > "${key_directory}/signing-key.pub" 2> /dev/null; then
+            echo "::error::The release signing secret must be an unencrypted OpenSSH private key that starts with \"-----BEGIN OPENSSH PRIVATE KEY-----\"."
+            exit 1
+          fi
+
+          public_key="$(awk '{ print $1 " " $2 }' "${key_directory}/signing-key.pub")"
+
+          case "$public_key" in
+            "ssh-ed25519 "*)
+              ;;
+            *)
+              echo "::error::The release signing secret must be an Ed25519 key."
+              exit 1
+              ;;
+          esac
+
+          key_file_count=0
+
+          for public_key_file in "${staged_share_directory}"/*/release-signing.pub; do
+            if [ ! -f "$public_key_file" ]; then
+              continue
+            fi
+
+            key_file_count=$((key_file_count + 1))
+
+            if [ -s "$public_key_file" ] && [ -n "$(tail -c 1 "$public_key_file")" ]; then
+              printf '\n' >> "$public_key_file"
+            fi
+
+            if ! tr -d '\r' < "$public_key_file" | awk '{ print $1 " " $2 }' | grep -Fxq "$public_key"; then
+              printf '%s added by the publish workflow\n' "$public_key" >> "$public_key_file"
+            fi
+          done
+
+          if [ "$key_file_count" -eq 0 ]; then
+            echo "::warning::The staged port has no usr/local/share/<package>/release-signing.pub file, so installed copies won't check release signatures."
+          fi
+
+
+      - name: "Build on FreeBSD"
+        uses: "vmactions/freebsd-vm@v1"
+        timeout-minutes: 15
+        with:
+          release: "${{ vars.PFSENSE_FREEBSD_VERSION || '15' }}"
+          copyback: true
+          prepare: |
+            pkg install -y ca_root_nss git
+          run: |
+            git clone --depth 1 --single-branch --branch devel --filter=blob:none --sparse https://github.com/pfsense/FreeBSD-ports.git /usr/ports
+            git -C /usr/ports sparse-checkout set Mk Templates Keywords
+            PFSENSE_PORTS_DIR=/usr/ports sh "./packages/ipv6-prefix-updater/scripts/build-package.sh"
+
+      - name: "Sign release packages"
+        timeout-minutes: 10
+        env:
+          RELEASE_SIGNING_KEY: "${{ secrets.PFSENSE_RELEASE_SIGNING_KEY }}"
+        run: |
+          set -eu
+
+          release_directory="./packages/ipv6-prefix-updater/build/release"
+          share_directory="./packages/ipv6-prefix-updater/build/port/files/usr/local/share"
+
+          # Prints the key lines of a release-signing.pub file. Blank lines and "#"
+          # comments are skipped, the same way the installed package reads the file.
+          read_key_lines() {
+            tr -d '\r' < "$1" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' | grep -v -e '^$' -e '^#' || true
+          }
+
+          package_count=0
+
+          for package_file in "${release_directory}"/*.pkg; do
+            if [ -f "$package_file" ]; then
+              package_count=$((package_count + 1))
+            fi
+          done
+
+          if [ "$package_count" -eq 0 ]; then
+            echo "::error::No .pkg files were found in ${release_directory}."
+            exit 1
+          fi
+
+          if [ -z "${RELEASE_SIGNING_KEY:-}" ]; then
+            echo "::notice::The release signing secret is not set, so the release packages are not signed."
+            exit 0
+          fi
+
+          umask 077
+          key_directory="$(mktemp -d "${RUNNER_TEMP:-/tmp}/release-signing.XXXXXX")"
+          trap 'rm -rf "$key_directory"' EXIT
+          printf '%s\n' "$RELEASE_SIGNING_KEY" | tr -d '\r' > "${key_directory}/signing-key"
+
+          if ! ssh-keygen -y -P '' -f "${key_directory}/signing-key" > "${key_directory}/signing-key.pub" 2> /dev/null; then
+            echo "::error::The release signing secret must be an unencrypted OpenSSH private key that starts with \"-----BEGIN OPENSSH PRIVATE KEY-----\"."
+            exit 1
+          fi
+
+          for package_file in "${release_directory}"/*.pkg; do
+            package_name="$(basename "$package_file" .pkg)"
+
+            # Versioned files end in -<version>; a stable copy such as pfSense-pkg-Demo.pkg
+            # already is the package name, so only a suffix that starts with a digit is removed.
+            case "${package_name##*-}" in
+              [0-9]*) package_name="${package_name%-*}" ;;
+            esac
+
+            public_key_file="${share_directory}/${package_name}/release-signing.pub"
+
+            rm -f "${package_file}.sig"
+            ssh-keygen -Y sign -f "${key_directory}/signing-key" -n "$package_name" "$package_file"
+
+            key_lines=""
+
+            if [ -f "$public_key_file" ]; then
+              key_lines="$(read_key_lines "$public_key_file")"
+            fi
+
+            if [ -z "$key_lines" ]; then
+              echo "::warning::${package_name} lists no key in release-signing.pub, so installed copies won't check this signature."
+              continue
+            fi
+
+            : > "${key_directory}/allowed_signers"
+
+            while IFS= read -r key_line; do
+              if ! printf '%s\n' "$key_line" | grep -Eq '^ssh-ed25519[[:space:]]+AAAAC3NzaC1lZDI1NTE5AAAAI[A-Za-z0-9+/]{43}([[:space:]].*)?$'; then
+                echo "::error::${public_key_file} has a line that isn't an \"ssh-ed25519\" public key."
+                exit 1
+              fi
+
+              key_data="$(printf '%s\n' "$key_line" | awk '{ print $2 }')"
+              printf '%s namespaces="%s" ssh-ed25519 %s\n' "$package_name" "$package_name" "$key_data" >> "${key_directory}/allowed_signers"
+            done <<KEY_LINES
+          ${key_lines}
+          KEY_LINES
+
+            if ! ssh-keygen -Y verify -f "${key_directory}/allowed_signers" -I "$package_name" -n "$package_name" -s "${package_file}.sig" < "$package_file"; then
+              echo "::error::The release signing secret doesn't match a key in ${public_key_file}."
+              exit 1
+            fi
+          done
+
+
+      - name: "Upload workflow artifact"
+        uses: "actions/upload-artifact@v7"
+        timeout-minutes: 15
+        with:
+          name: "pfsense-ipv6-prefix-updater"
+          path: "./packages/ipv6-prefix-updater/build/release/*"
+          if-no-files-found: "error"
+          retention-days: 7
+          include-hidden-files: true
+
+      - name: "Upload GitHub release assets"
+        if: "${{ env.PUBLISH == 'true' }}"
+        timeout-minutes: 15
+        env:
+          GH_TOKEN: "${{ github.token }}"
+          RELEASE_TAG: "${{ github.event.release.tag_name || inputs.tag }}"
+        run: |
+          gh release upload "$RELEASE_TAG" "./packages/ipv6-prefix-updater/build/release/"* --clobber

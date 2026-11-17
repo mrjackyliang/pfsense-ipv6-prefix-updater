@@ -5,8 +5,9 @@ MASTER_SITES=	# empty
 DISTFILES=	# empty
 EXTRACT_ONLY=	# empty
 
-MAINTAINER?=	maintainer@example.invalid
+MAINTAINER?=	hello@mrjackyliang.com
 COMMENT=	IPv6 Prefix Updater package for pfSense
+WWW=	https://mrjackyliang.github.io/pfsense-ipv6-prefix-updater/
 
 LICENSE=	MIT
 
@@ -30,6 +31,8 @@ do-install:
 		${STAGEDIR}${PREFIX}/pkg
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater.xml \
 		${STAGEDIR}${PREFIX}/pkg
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/AboutTranslations.php \
+		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/BackupStore.php \
 		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/ConfigurationChangePlanner.php \
@@ -66,12 +69,20 @@ do-install:
 		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/StateStore.php \
 		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/TestedReleases.php \
+		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/Translations.php \
 		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/Translator.php \
 		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/UpdateManager.php \
+		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/UpdateTranslations.php \
+		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
 	${INSTALL_SCRIPT} ${FILESDIR}${PREFIX}/sbin/ipv6-prefix-updater \
 		${STAGEDIR}${PREFIX}/sbin
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/www/ipv6-prefix-updater-about.php \
+		${STAGEDIR}${PREFIX}/www
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/www/ipv6-prefix-updater-backups.php \
 		${STAGEDIR}${PREFIX}/www
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/www/ipv6-prefix-updater-cleanup.php \
@@ -81,6 +92,10 @@ do-install:
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/www/ipv6-prefix-updater-status.php \
 		${STAGEDIR}${PREFIX}/www
 	${INSTALL_DATA} ${FILESDIR}${DATADIR}/info.xml \
+		${STAGEDIR}${DATADIR}
+	${INSTALL_DATA} ${FILESDIR}${DATADIR}/logo.svg \
+		${STAGEDIR}${DATADIR}
+	${INSTALL_DATA} ${FILESDIR}${DATADIR}/release-signing.pub \
 		${STAGEDIR}${DATADIR}
 	@${REINPLACE_CMD} -e "s|%%PKGVERSION%%|${PKGVERSION}|" \
 		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater.xml \

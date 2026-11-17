@@ -25,24 +25,24 @@ import otherSettings from './_assets_/configuration-scopes-3.png';
 
 ## “字段”选项卡 \{#the-fields-tab}
 
-**Services → IPv6 Prefix Updater** 下的 **字段** 选项卡按类型分组，列出每个<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>前缀内的所有地址。**基线** 一行列出它用于比较的前缀。在首次检查记录基线之前，该选项卡只显示各组的开关。
+**Services → IPv6 Prefix Updater** 下的 **字段** 选项卡按类型分组，列出每个<Terminology title="记录下来的起始前缀，变化以它为准" to="/docs/reference/terminology#baselines-and-transitions">基线</Terminology>前缀内的所有地址。**基线** 一行列出它用于比较的前缀。在首次检查记录基线之前，该选项卡只显示各组的开关。
 
 <img src={fieldsTab} alt="IPv6 Prefix Updater 的“字段”选项卡，带有“自动选择”和“全部清除”按钮、一个搜索框和一个筛选器，“静态接口”组列出了 LAN 和 LAB 的地址，其中的前缀部分以高亮显示" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
 
 每一行显示：
 
-- **复选框**：勾选表示下一次<Terminology title="与上次成功前缀或长度不同" to="/docs/reference/terminology#prefix-transition">前缀变化</Terminology>会更新该字段。
+- **复选框**：勾选表示下一次<Terminology title="前缀变了，软件包开始工作" to="/docs/reference/terminology#baselines-and-transitions">前缀变化</Terminology>会更新该字段。
 - **字段**：先是条目（例如规则描述或别名名称），然后是字段标签及其配置路径。
-- **当前值**：字段的值，其中每个地址的前缀部分以高亮显示。只有高亮部分会变化，<Terminology title="委派前缀之后的地址位" to="/docs/reference/terminology#host-portion">主机部分</Terminology>保持不变。
+- **当前值**：字段的值，其中每个地址的前缀部分以高亮显示。只有高亮部分会变化，<Terminology title="前缀之后的位，始终原样复制" to="/docs/reference/terminology#addresses-and-prefixes">主机部分</Terminology>保持不变。
 
 ## 组开关与例外 \{#group-switches-and-exceptions}
 
-每个<Terminology title="“字段”选项卡上由一个开关控制的一组字段" to="/docs/reference/terminology#field-group">字段组</Terminology>的标题栏中都有一个开关：
+每个<Terminology title="一个开关管住一整类设置" to="/docs/reference/terminology#fields-and-change-plans">字段组</Terminology>的标题栏中都有一个开关：
 
 - **开启**：该类型的所有字段都随前缀变化，包括以后添加的字段，但你取消勾选的字段除外。
 - **关闭**：只有你勾选的字段会变化。
 
-勾选状态与所在组开关不一致的字段即为<Terminology title="勾选状态与所在组开关相反的单个字段" to="/docs/reference/terminology#field-exception">字段例外</Terminology>。组中存在例外时，其标题栏会显示一个短横线，**已选择 N / M** 会统计已勾选的字段数。点击标题栏会开启或关闭该组，并将组内的每个勾选状态重置为与开关一致。选择 **保存** 即可保留更改。
+勾选状态与所在组开关不一致的字段即为<Terminology title="勾选状态与所在组开关不同的单个字段" to="/docs/reference/terminology#fields-and-change-plans">字段例外</Terminology>。组中存在例外时，其标题栏会显示一个短横线，**已选择 N / M** 会统计已勾选的字段数。点击标题栏会开启或关闭该组，并将组内的每个勾选状态重置为与开关一致。选择 **保存** 即可保留更改。
 
 <img src={fieldException} alt="“字段”选项卡，“防火墙规则”组已开启，其中一条规则被取消勾选，因此标题栏显示短横线和“已选择 2 / 3”，另有一条没有跟踪 ID 的规则跟随组开关" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
 
@@ -62,23 +62,23 @@ import otherSettings from './_assets_/configuration-scopes-3.png';
 
 ## pfSense 组 \{#pfsense-groups}
 
-十一个组涵盖 pfSense 自身的设置。全新安装和从<Terminology title="由 Cron 软件包运行的原 update.php 脚本" to="/docs/reference/terminology#legacy-updater">旧版更新器</Terminology>迁移时，这些组一开始全部开启。
+十一个组涵盖 pfSense 自身的设置。全新安装和从<Terminology title="1.x 版本：由 Cron 软件包运行的 update.php 脚本" to="/docs/reference/terminology#package-origins">旧版更新器</Terminology>迁移时，这些组一开始全部开启。
 
-| 组                                                                                                                 | 涵盖内容                                                                                                                                                                                                                    |
-|-------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| 静态接口                                                                                                              | 配置类型为 Static IPv6 的接口地址。DHCPv6、SLAAC、<Terminology title="地址来自另一接口委派前缀的接口" to="/docs/reference/terminology#tracked-interface">Track Interface</Terminology> 及其他模式会被跳过。                                                   |
-| <Terminology title="额外的接口地址，如 CARP 或 IP Alias" to="/docs/reference/terminology#virtual-ip">虚拟 IP 地址</Terminology> | CARP 和 IP Alias 类型的<Terminology title="额外的接口地址，如 CARP 或 IP Alias" to="/docs/reference/terminology#virtual-ip">虚拟 IP</Terminology>。Proxy ARP 和 Other 类型属于“其他设置”组，CIDR 掩码保持不变。                                            |
-| 别名                                                                                                                | 主机别名和网络别名中的地址和网络。端口、URL、URL 表及其他类型的别名属于“其他设置”组。                                                                                                                                                                         |
-| 防火墙规则                                                                                                             | 防火墙规则（包括浮动规则）中直接填写的源地址和目标地址。别名、**LAN subnets** 等接口网络以及 **any** 会被跳过。                                                                                                                                                    |
-| NAT 和 NPt                                                                                                         | 端口转发、出站 NAT 和 1:1 NAT 中直接填写的地址，以及 NPt 条目的前缀。跟踪某个接口的 NPt 条目会被跳过。                                                                                                                                                         |
-| DHCPv6 服务器                                                                                                        | 地址范围、前缀委派范围和附加地址池范围、静态映射地址，以及分配给客户端的 DNS 和 NTP 服务器。                                                                                                                                                                     |
-| 路由器通告                                                                                                             | 每个接口通告的 DNS 服务器和 RA 子网。                                                                                                                                                                                                 |
-| DNS 主机覆盖                                                                                                          | DNS 解析器和 DNS 转发器中的主机覆盖地址，包括逗号分隔列表中的每个地址。域覆盖属于“其他设置”组。                                                                                                                                                                   |
-| IPsec                                                                                                             | Tunnel IPv6 和 Routed (VTI) 模式<Terminology title="描述本地和远程网络的 IPsec 条目" to="/docs/reference/terminology#ipsec-phase-2">阶段 2</Terminology> 条目中的 Local Network（本地网络）及其 NAT/BINAT 转换，前提是类型为 Address 或 Network。远程网络属于“其他设置”组。 |
-| OpenVPN                                                                                                           | 服务器上的 IPv6 隧道网络和本地网络、客户端上的 IPv6 隧道网络，以及<Terminology title="服务器上针对单个客户端的 OpenVPN 设置" to="/docs/reference/terminology#client-specific-override">客户端特定覆盖</Terminology>中的 IPv6 隧道网络和本地网络。远程网络属于“其他设置”组，跟踪某个接口的服务器隧道网络会被跳过。  |
-| WireGuard                                                                                                         | pfSense WireGuard 隧道上的<Terminology title="分配给 pfSense WireGuard 隧道的地址" to="/docs/reference/terminology#wireguard-tunnel-address">隧道地址</Terminology>。对等端、允许的 IP 和端点属于“其他设置”组。                                            |
+| 组                                                                                                                  | 涵盖内容                                                                                                                                                                                                                         |
+|--------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 静态接口                                                                                                               | 配置类型为 Static IPv6 的接口地址。DHCPv6、SLAAC、<Terminology title="用另一个接口的前缀生成 IPv6 的接口" to="/docs/reference/terminology#interfaces-and-detection">Track Interface</Terminology> 及其他模式会被跳过。                                            |
+| <Terminology title="接口上的额外地址，例如 CARP VIP" to="/docs/reference/terminology#pfsense-features">虚拟 IP 地址</Terminology> | CARP 和 IP Alias 类型的<Terminology title="接口上的额外地址，例如 CARP VIP" to="/docs/reference/terminology#pfsense-features">虚拟 IP</Terminology>。Proxy ARP 和 Other 类型属于“其他设置”组，CIDR 掩码保持不变。                                                |
+| 别名                                                                                                                 | 主机别名和网络别名中的地址和网络。端口、URL、URL 表及其他类型的别名属于“其他设置”组。                                                                                                                                                                              |
+| 防火墙规则                                                                                                              | 防火墙规则（包括浮动规则）中直接填写的源地址和目标地址。别名、**LAN subnets** 等接口网络以及 **any** 会被跳过。                                                                                                                                                         |
+| NAT 和 NPt                                                                                                          | 端口转发、出站 NAT 和 1:1 NAT 中直接填写的地址，以及 NPt 条目的前缀。跟踪某个接口的 NPt 条目会被跳过。                                                                                                                                                              |
+| DHCPv6 服务器                                                                                                         | 地址范围、前缀委派范围和附加地址池范围、静态映射地址，以及分配给客户端的 DNS 和 NTP 服务器。                                                                                                                                                                          |
+| 路由器通告                                                                                                              | 每个接口通告的 DNS 服务器和 RA 子网。                                                                                                                                                                                                      |
+| DNS 主机覆盖                                                                                                           | DNS 解析器和 DNS 转发器中的主机覆盖地址，包括逗号分隔列表中的每个地址。域覆盖属于“其他设置”组。                                                                                                                                                                        |
+| IPsec                                                                                                              | Tunnel IPv6 和 Routed (VTI) 模式<Terminology title="定义隧道本地和远程网络的 IPsec 条目" to="/docs/reference/terminology#pfsense-features">阶段 2</Terminology> 条目中的 Local Network（本地网络）及其 NAT/BINAT 转换，前提是类型为 Address 或 Network。远程网络属于“其他设置”组。 |
+| OpenVPN                                                                                                            | 服务器上的 IPv6 隧道网络和本地网络、客户端上的 IPv6 隧道网络，以及<Terminology title="只对一个客户端生效的 OpenVPN 设置" to="/docs/reference/terminology#pfsense-features">客户端特定覆盖</Terminology>中的 IPv6 隧道网络和本地网络。远程网络属于“其他设置”组，跟踪某个接口的服务器隧道网络会被跳过。                 |
+| WireGuard                                                                                                          | pfSense WireGuard 隧道上的<Terminology title="WireGuard 隧道接口上的地址" to="/docs/reference/terminology#pfsense-features">隧道地址</Terminology>。对等端、允许的 IP 和端点属于“其他设置”组。                                                                  |
 
-关闭防火墙用不到的组，可避免意外的值进入<Terminology title="写入前生成的完整字段变更列表" to="/docs/reference/terminology#change-plan">变更计划</Terminology>。
+关闭防火墙用不到的组，可避免意外的值进入<Terminology title="在任何改动之前就列好的全部改写" to="/docs/reference/terminology#fields-and-change-plans">变更计划</Terminology>。
 
 ## 按钮、搜索和筛选 \{#buttons-search-and-filters}
 
@@ -101,7 +101,7 @@ import otherSettings from './_assets_/configuration-scopes-3.png';
 - `没有已安装的软件包拥有 <section> 设置。请手动重启使用它们的服务。` 这些值仍然会被保存。如果某个软件包把部分设置保存在名称不同的配置节下，也会出现这种情况。
 - `无法重新应用 <package> 软件包的设置：<reason>` 新值会保持已保存状态，不会回滚任何内容。
 
-出现这两种问题时，还会添加一条 <Terminology title="显示在 pfSense 通知列表中的提醒" to="/docs/reference/terminology#webgui-notice">WebGUI 通知</Terminology>。
+出现这两种问题时，还会添加一条 <Terminology title="pfSense 自带通知列表中的提醒" to="/docs/reference/terminology#notifications-and-logs">WebGUI 通知</Terminology>。
 
 ## 已不存在的字段 \{#fields-that-no-longer-exist}
 
@@ -133,21 +133,21 @@ import otherSettings from './_assets_/configuration-scopes-3.png';
 
 ## 值的匹配方式 \{#how-values-are-matched}
 
-- 只有当地址属于<Terminology title="下次检查用于比较的前缀" to="/docs/reference/terminology#last-successful-prefix">上次成功前缀</Terminology>（按<Terminology title="不更改配置即记录的起始前缀" to="/docs/reference/terminology#baseline">基线</Terminology>中保存的长度计算）时，才会被更改。其他网络的地址、IPv4 地址、主机名和别名名称都保持不变，选项卡也不会列出它们。
+- 只有当地址属于<Terminology title="每次检查用来比较的已存前缀" to="/docs/reference/terminology#baselines-and-transitions">上次成功前缀</Terminology>（按<Terminology title="记录下来的起始前缀，变化以它为准" to="/docs/reference/terminology#baselines-and-transitions">基线</Terminology>中保存的长度计算）时，才会被更改。其他网络的地址、IPv4 地址、主机名和别名名称都保持不变，选项卡也不会列出它们。
 - 在列表中（例如别名条目、OpenVPN 本地网络和 DNS 解析器主机覆盖），每一项都会单独检查，分隔符保持原样。
 - 在其他软件包的设置和“其他设置”组中，文本里的每个地址都会单独检查，其余文本保持原样。
-- `/64` 等 CIDR 后缀保持原样，每个地址的<Terminology title="委派前缀之后的地址位" to="/docs/reference/terminology#host-portion">主机部分</Terminology>也会保留。
-- 在<Terminology title="地址来自另一接口委派前缀的接口" to="/docs/reference/terminology#tracked-interface">跟踪接口</Terminology>上，DHCPv6 范围和静态映射保存的是 `::1000` 这样的主机后缀，这些后缀保持不变。
-- 改写后的地址以<Terminology title="地址的小写、最短标准写法" to="/docs/reference/terminology#canonical-form">规范形式</Terminology>保存，因此写法可能与原先输入的不同。
+- `/64` 等 CIDR 后缀保持原样，每个地址的<Terminology title="前缀之后的位，始终原样复制" to="/docs/reference/terminology#addresses-and-prefixes">主机部分</Terminology>也会保留。
+- 在<Terminology title="用另一个接口的前缀生成 IPv6 的接口" to="/docs/reference/terminology#interfaces-and-detection">跟踪接口</Terminology>上，DHCPv6 范围和静态映射保存的是 `::1000` 这样的主机后缀，这些后缀保持不变。
+- 改写后的地址以<Terminology title="简短的小写写法，例如 2001:db8::1" to="/docs/reference/terminology#addresses-and-prefixes">规范形式</Terminology>保存，因此写法可能与原先输入的不同。
 
 ## 预览更改 \{#previewing-changes}
 
-<Terminology title="不备份也不写入的预览" to="/docs/reference/terminology#dry-run">试运行</Terminology>只有在发生<Terminology title="与上次成功前缀或长度不同" to="/docs/reference/terminology#prefix-transition">前缀变化</Terminology>后才会读取所选字段。前缀未变化时它会报告<Terminology title="结果：前缀未变化，未扫描或写入任何内容" to="/docs/reference/terminology#no-change">无变化</Terminology>，因此要预览新的选择，应使用“字段”选项卡。发生变化后，试运行的<Terminology title="立即运行或试运行后显示的只读结果" to="/docs/reference/terminology#command-output">命令输出</Terminology>会在 `字段变更` 下列出它将替换的每个地址。
+<Terminology title="预览改动，但不写入任何内容" to="/docs/reference/terminology#running-checks">试运行</Terminology>只有在发生<Terminology title="前缀变了，软件包开始工作" to="/docs/reference/terminology#baselines-and-transitions">前缀变化</Terminology>后才会读取所选字段。前缀未变化时它会报告<Terminology title="前缀与上次相同，无需任何操作" to="/docs/reference/terminology#run-outcomes">无变化</Terminology>，因此要预览新的选择，应使用“字段”选项卡。发生变化后，试运行的<Terminology title="最近一次运行的输出行，启动后立即显示" to="/docs/reference/terminology#running-checks">命令输出</Terminology>会在 `字段变更` 下列出它将替换的每个地址。
 
-<Terminology title="不备份也不写入的预览" to="/docs/reference/terminology#dry-run">试运行</Terminology>还会跳过“pfSense 能否重新加载受影响服务”的检查。因此，缺少 WireGuard 软件包的问题只会在实际运行中暴露出来。
+<Terminology title="预览改动，但不写入任何内容" to="/docs/reference/terminology#running-checks">试运行</Terminology>还会跳过“pfSense 能否重新加载受影响服务”的检查。因此，缺少 WireGuard 软件包的问题只会在实际运行中暴露出来。
 
 ## WireGuard 软件包 \{#wireguard-package}
 
-更新 <Terminology title="分配给 pfSense WireGuard 隧道的地址" to="/docs/reference/terminology#wireguard-tunnel-address">WireGuard 隧道地址</Terminology>需要 WireGuard 软件包。如果这些地址需要更改而该软件包未安装，实际运行会在备份之前停止，并显示 `所需的 pfSense 依赖项“/usr/local/pkg/wireguard/includes/wg.inc”不可用。`
+更新 <Terminology title="WireGuard 隧道接口上的地址" to="/docs/reference/terminology#pfsense-features">WireGuard 隧道地址</Terminology>需要 WireGuard 软件包。如果这些地址需要更改而该软件包未安装，实际运行会在备份之前停止，并显示 `所需的 pfSense 依赖项“/usr/local/pkg/wireguard/includes/wg.inc”不可用。`
 
 [已批准字段](/docs/reference/approved-fields)列出了每个组背后的具体配置路径，以及每个选择保存时所用的标识。

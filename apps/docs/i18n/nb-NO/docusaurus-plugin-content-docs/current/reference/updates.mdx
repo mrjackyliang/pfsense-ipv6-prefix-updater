@@ -1,0 +1,74 @@
+---
+id: updates
+title: Oppdateringer
+description: Konfigurer GitHub-utgivelseskontroller og installer pakkeoppdateringer beskyttet av SHA-256-kontrollsummer og utgivelsessignaturer.
+keywords:
+  - pfsense ipv6 prefix updater
+  - oppdateringskontroller
+  - sha-256-kontrollsum
+  - utgivelsessignaturer
+  - pfsense varsler
+  - egenoppdatering
+tags:
+  - reference
+  - updates
+  - security
+sidebar_position: 5
+---
+
+IPv6 Prefix Updater kontrollerer GitHub-utgivelsene sine fordi pfSense Package Manager ikke viser pakker som er installert direkte fra GitHub.
+
+## Hva som kontrolleres \{#what-is-checked}
+
+Kontrollen ber GitHub om metadata for den nyeste utgivelsen og sammenligner versjonen med versjonen av den installerte pakken. Den lagrer kontrolltidspunkt, nyeste versjon, utgivelseslenke, publiseringstidspunkt, varslingsstatus og siste feil i `/cf/conf/ipv6-prefix-updater/updates.json`. Den sender aldri brannmurkonfigurasjonen til GitHub.
+
+Velg frekvensen under **Services → IPv6 Prefix Updater → Innstillinger → Pakkeoppdateringer**:
+
+- **Daglig** kjører én gang hver dag på et tidspunkt som velges tilfeldig under installasjonen.
+- **Ukentlig** er standard og velger også en fast ukedag og et fast tidspunkt.
+- **Månedlig** velger en fast dag fra 1 til 28 og et fast tidspunkt.
+- **Aldri** fjerner den planlagte utgivelseskontrollen.
+
+Den tilfeldige tidsplanen lagres i pfSense-konfigurasjonen, så den flyttes ikke når du lagrer innstillingene eller installerer pakken på nytt. **Sjekk nå** i fanen **Om** utfører alltid en manuell kontroll, også når frekvensen er **Aldri**.
+
+## Nettverksmål \{#network-destinations}
+
+En oppdateringskontroll eller oppdatering kan kontakte disse vertene som drives av GitHub:
+
+- `api.github.com` for metadata om nyeste utgivelse og den publiserte SHA-256-kontrollsummen.
+- `github.com` for URL-en til utgivelsesfilen.
+- `release-assets.githubusercontent.com`, GitHubs nedlastingsvert for utgivelser, etter at forespørselen om filen er omdirigert.
+
+Forespørslene bruker verifisering av TLS-sertifikater, korte tidsavbrudd, en egen User-Agent for pakken og proxyen som er konfigurert i pfSense. Svarene `403` og `429` behandles som frekvensbegrensning og sletter ikke de siste gyldige utgivelsesdetaljene.
+
+## Varsler \{#notices}
+
+Når en nyere versjon dukker opp for første gang, legger pakken til ett pfSense-klokkevarsel for den versjonen. Varselet lenker til fanen **Om** og er lokalt som standard.
+
+Velg **Eksterne varsler** for også å sende det via e-post, Telegram, Pushover eller andre eksterne kanaler som er konfigurert i pfSense. Pakken oppretter fortsatt bare ett varsel per ny versjon. Den lukker varselet når versjonen er installert, eller når en senere kontroll finner at den installerte pakken er oppdatert.
+
+## Installer en oppdatering \{#install-an-update}
+
+Åpne **Services → IPv6 Prefix Updater → Om**. Når en nyere versjon er tilgjengelig, starter **Oppdater til _versjon_** en bakgrunnsjobb, og siden viser fremdriften.
+
+Jobben henter utgivelsen på nytt og laster ned den versjonerte `.pkg`-filen. Den kontrollerer pakken mot `sha256:<hex>`-kontrollsummen for filen i GitHub API-et; når den mangler, laster den i stedet ned den samsvarende `.pkg.sha256`-filen fra samme utgivelse.
+
+Utgivelsespakker inneholder de offentlige signeringsnøklene til utgivelsesarbeidsflyten i `/usr/local/share/pfSense-pkg-Ipv6PrefixUpdater/release-signing.pub`. Når filen inneholder én eller flere nøkler, godtar en installert kopi bare oppdateringer som er signert med en av dem; en manglende fil, eller en fil med bare kommentarer, lar signaturkontrollene være av, og oppdateringer baserer seg da bare på SHA-256-kontrollen.
+
+Etter SHA-256-kontrollen laster jobben ned den samsvarende `.pkg.sig`-filen fra samme utgivelse når den installerte nøkkelfilen inneholder en nøkkel, og kontrollerer den med `ssh-keygen -Y verify` før arkivet leses. En utgivelse uten signaturen eller signert med en annen nøkkel avvises, og den installerte versjonen beholdes.
+
+Jobben bekrefter deretter pakkenavnet og versjonen i arkivet før `pkg add -f` kjøres. Hvis ingen av kontrollsumkildene finnes, avviser den oppdateringen og beholder den installerte versjonen; pakkelåsen hindrer at en prefikskjøring og en oppdatering overlapper.
+
+## Installer manuelt \{#install-manually}
+
+En administrator kan fortsatt installere filen fra et pfSense-skall:
+
+```shell
+pkg add -f https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
+```
+
+Denne manuelle kommandoen omgår både SHA-256-kontrollen og signaturkontrollen på fanen Om. Kontroller utgivelsen, kontrollsummen og signaturen før bruk.
+
+## Slå av kontroller \{#turn-checks-off}
+
+Sett **Oppdateringskontroller** til **Aldri** og lagre fanen Innstillinger. Pakken fjerner cron-oppføringen for oppdateringskontroller og sender ingen planlagte utgående oppdateringsforespørsler. Prefiksovervåkingen beholder sin egen uavhengige tidsplan, og **Sjekk nå** er fortsatt tilgjengelig for en forespørsel som en administrator starter.

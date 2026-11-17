@@ -17,44 +17,44 @@ sidebar_position: 3
 
 import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
 
-Запишите текущий префикс как <Terminology title="начальный префикс, записанный без изменения конфигурации" to="/docs/reference/terminology#baseline">базовое значение</Terminology> и проверьте его, прежде чем включать <Terminology title="автоматические проверки через запись cron под управлением pfSense" to="/docs/reference/terminology#scheduled-updates">обновления по расписанию</Terminology>.
+Запишите текущий префикс как <Terminology title="Записанный исходный префикс, от которого отсчитываются изменения" to="/docs/reference/terminology#baselines-and-transitions">базовое значение</Terminology> и проверьте его, прежде чем включать <Terminology title="Автоматические проверки по расписанию, выключены, пока вы их не включите" to="/docs/reference/terminology#running-checks">обновления по расписанию</Terminology>.
 
 ## Сохранение начальных настроек \{#save-the-initial-settings}
 
 1. Откройте **Services → IPv6 Prefix Updater**, затем вкладку **Настройки**.
-2. Оставьте флажок **<Terminology title="автоматические проверки через запись cron под управлением pfSense" to="/docs/reference/terminology#scheduled-updates">Включить обновления по расписанию</Terminology>** снятым.
-3. Добавьте в поле **<Terminology title="интерфейс, по адресу которого определяется текущий префикс" to="/docs/reference/terminology#monitored-interface">Контролируемые интерфейсы</Terminology>** строку для каждого интерфейса, <Terminology title="публичный IPv6-адрес из диапазона 2000::/3" to="/docs/reference/terminology#global-unicast-address">глобальный адрес</Terminology> которого получен из <Terminology title="сеть IPv6, которую провайдер направляет на межсетевой экран" to="/docs/reference/terminology#delegated-prefix">делегированного префикса</Terminology>, как описано в разделе [Интерфейс и префикс](/docs/configure/interface-and-prefix).
-4. В каждой строке в поле **<Terminology title="размер префикса провайдера, от /48 до /64" to="/docs/reference/terminology#delegated-prefix-length">Длина делегированного префикса</Terminology>** выберите длину, которую делегирует ваш провайдер.
+2. Оставьте флажок **<Terminology title="Автоматические проверки по расписанию, выключены, пока вы их не включите" to="/docs/reference/terminology#running-checks">Включить обновления по расписанию</Terminology>** снятым.
+3. Добавьте в поле **<Terminology title="Контролируемый интерфейс, адрес которого выдаёт текущий префикс" to="/docs/reference/terminology#interfaces-and-detection">Контролируемые интерфейсы</Terminology>** строку для каждого интерфейса, <Terminology title="Публичный адрес IPv6 из 2000::/3, единственный используемый вид" to="/docs/reference/terminology#addresses-and-prefixes">глобальный адрес</Terminology> которого получен из <Terminology title="Сеть IPv6, которую выдаёт провайдер; она может меняться" to="/docs/reference/terminology#addresses-and-prefixes">делегированного префикса</Terminology>, как описано в разделе [Интерфейс и префикс](/docs/configure/interface-and-prefix).
+4. В каждой строке в поле **<Terminology title="Размер префикса от провайдера, например /56; задаёте его вы" to="/docs/reference/terminology#addresses-and-prefixes">Длина делегированного префикса</Terminology>** выберите длину, которую делегирует ваш провайдер.
 5. Сохраните настройки и убедитесь, что появилось сообщение `Настройки сохранены.`
 
 ## Запуск первой проверки \{#run-the-first-check}
 
-На вкладке **Состояние** выберите **Запустить сейчас**. Поскольку <Terminology title="начальный префикс, записанный без изменения конфигурации" to="/docs/reference/terminology#baseline">базового значения</Terminology> ещё нет, запуск записывает <Terminology title="глобальный адрес контролируемого интерфейса по данным pfSense" to="/docs/reference/terminology#source-address">исходный адрес</Terminology> и префикс каждого интерфейса и сообщает результат «<Terminology title="результат: базовое значение записано, конфигурация не изменена" to="/docs/reference/terminology#initialized">Инициализировано</Terminology>».
+На вкладке **Состояние** выберите **Запустить сейчас**. Поскольку <Terminology title="Записанный исходный префикс, от которого отсчитываются изменения" to="/docs/reference/terminology#baselines-and-transitions">базового значения</Terminology> ещё нет, запуск записывает <Terminology title="Текущий адрес, из которого каждый запуск читает префикс" to="/docs/reference/terminology#interfaces-and-detection">исходный адрес</Terminology> и префикс каждого интерфейса и сообщает результат «<Terminology title="Первый взгляд: базовое значение записано, ничего не меняется" to="/docs/reference/terminology#run-outcomes">Инициализировано</Terminology>».
 
-Запись <Terminology title="начальный префикс, записанный без изменения конфигурации" to="/docs/reference/terminology#baseline">базового значения</Terminology> не изменяет конфигурацию, не создаёт резервную копию и не отправляет уведомление.
+Запись <Terminology title="Записанный исходный префикс, от которого отсчитываются изменения" to="/docs/reference/terminology#baselines-and-transitions">базового значения</Terminology> не изменяет конфигурацию, не создаёт резервную копию и не отправляет уведомление.
 
 ## Проверка результата \{#verify-the-result}
 
 Проверьте эти значения в каждой строке раздела **Текущее состояние**:
 
-- **<Terminology title="интерфейс, по адресу которого определяется текущий префикс" to="/docs/reference/terminology#monitored-interface">Контролируемый интерфейс</Terminology>** показывает нужный интерфейс по описанию и внутреннему имени, например `LAN (lan)`.
-- **<Terminology title="глобальный адрес контролируемого интерфейса по данным pfSense" to="/docs/reference/terminology#source-address">Последний успешный исходный адрес</Terminology>** совпадает с адресом этого интерфейса в **Status → Interfaces**.
-- **<Terminology title="префикс, с которым сравнивает следующая проверка" to="/docs/reference/terminology#last-successful-prefix">Последний успешный префикс</Terminology>** совпадает с префиксом, который делегирует ваш провайдер.
+- **<Terminology title="Контролируемый интерфейс, адрес которого выдаёт текущий префикс" to="/docs/reference/terminology#interfaces-and-detection">Контролируемый интерфейс</Terminology>** показывает нужный интерфейс по описанию и внутреннему имени, например `LAN (lan)`.
+- **<Terminology title="Текущий адрес, из которого каждый запуск читает префикс" to="/docs/reference/terminology#interfaces-and-detection">Последний успешный исходный адрес</Terminology>** совпадает с адресом этого интерфейса в **Status → Interfaces**.
+- **<Terminology title="Сохранённый префикс, с которым сравнивает каждая проверка" to="/docs/reference/terminology#baselines-and-transitions">Последний успешный префикс</Terminology>** совпадает с префиксом, который делегирует ваш провайдер.
 - **Последнее успешное обновление** показывает время этого запуска в UTC.
 
-«<Terminology title="результаты только для чтения после ручного или пробного запуска" to="/docs/reference/terminology#command-output">Вывод команды</Terminology>» должен показывать `Состояние: Инициализировано`, `Запланированные или изменённые поля: 0` и `Резервная копия конфигурации: Не создана`. Например, адрес для документации `2001:db8:abcd:78aa::1` при длине `/56` относится к сети `2001:db8:abcd:7800::/56`.
+«<Terminology title="Строки последнего запуска, видны сразу после старта" to="/docs/reference/terminology#running-checks">Вывод команды</Terminology>» должен показывать `Состояние: Инициализировано`, `Запланированные или изменённые поля: 0` и `Резервная копия конфигурации: Не создана`. Например, адрес для документации `2001:db8:abcd:78aa::1` при длине `/56` относится к сети `2001:db8:abcd:7800::/56`.
 
 :::warning
 
-Если интерфейс или длина указаны неверно, рекомендуется исправить настройки до включения расписания. Другой интерфейс приводит к записи нового <Terminology title="начальный префикс, записанный без изменения конфигурации" to="/docs/reference/terminology#baseline">базового значения</Terminology>, а другая длина считается <Terminology title="отличие от последнего успешного префикса или длины" to="/docs/reference/terminology#prefix-transition">сменой префикса</Terminology>, как объясняется в разделе [Интерфейс и префикс](/docs/configure/interface-and-prefix#changing-the-prefix-length).
+Если интерфейс или длина указаны неверно, рекомендуется исправить настройки до включения расписания. Другой интерфейс приводит к записи нового <Terminology title="Записанный исходный префикс, от которого отсчитываются изменения" to="/docs/reference/terminology#baselines-and-transitions">базового значения</Terminology>, а другая длина считается <Terminology title="Префикс сменился, и пакет берётся за работу" to="/docs/reference/terminology#baselines-and-transitions">сменой префикса</Terminology>, как объясняется в разделе [Интерфейс и префикс](/docs/configure/interface-and-prefix#changing-the-prefix-length).
 
 :::
 
 ## Просмотр полей \{#review-the-fields}
 
-Откройте вкладку **Поля**. Когда <Terminology title="начальный префикс, записанный без изменения конфигурации" to="/docs/reference/terminology#baseline">базовое значение</Terminology> записано, она перечисляет все адреса внутри префикса и показывает, какие из них обновит следующее изменение.
+Откройте вкладку **Поля**. Когда <Terminology title="Записанный исходный префикс, от которого отсчитываются изменения" to="/docs/reference/terminology#baselines-and-transitions">базовое значение</Terminology> записано, она перечисляет все адреса внутри префикса и показывает, какие из них обновит следующее изменение.
 
-1. Выключите <Terminology title="группа полей с одним переключателем на вкладке «Поля»" to="/docs/reference/terminology#field-group">группы полей</Terminology>, которые межсетевой экран не использует. Все одиннадцать групп pfSense изначально включены.
+1. Выключите <Terminology title="Один переключатель на целый вид настроек" to="/docs/reference/terminology#fields-and-change-plans">группы полей</Terminology>, которые межсетевой экран не использует. Все одиннадцать групп pfSense изначально включены.
 2. Снимите отметку с отдельных полей, которые должны сохранить своё значение, и отметьте поля других пакетов, которые должны следовать за префиксом.
 3. Отметьте в группе **Другие настройки** поля, которые должны следовать за префиксом, например шлюз или статический маршрут.
 4. Выберите **Сохранить** и убедитесь, что появилось сообщение `Выбор полей сохранён.`
@@ -63,13 +63,13 @@ import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
 
 ## Что сейчас показывает пробный запуск \{#what-a-dry-run-shows-now}
 
-Пока префикс не изменился, **<Terminology title="предварительный просмотр без резервной копии и записи" to="/docs/reference/terminology#dry-run">Пробный запуск</Terminology>** сообщает «<Terminology title="результат: префикс прежний, ничего не просмотрено и не записано" to="/docs/reference/terminology#no-change">Без изменений</Terminology>», не просматривая конфигурацию, потому что планирование начинается только после реальной <Terminology title="отличие от последнего успешного префикса или длины" to="/docs/reference/terminology#prefix-transition">смены префикса</Terminology>. Какие поля затронет будущее изменение, показывает вкладка «Поля».
+Пока префикс не изменился, **<Terminology title="Предпросмотр изменений, который ничего не записывает" to="/docs/reference/terminology#running-checks">Пробный запуск</Terminology>** сообщает «<Terminology title="Тот же префикс, что и в прошлый раз, делать нечего" to="/docs/reference/terminology#run-outcomes">Без изменений</Terminology>», не просматривая конфигурацию, потому что планирование начинается только после реальной <Terminology title="Префикс сменился, и пакет берётся за работу" to="/docs/reference/terminology#baselines-and-transitions">смены префикса</Terminology>. Какие поля затронет будущее изменение, показывает вкладка «Поля».
 
-<Terminology title="предварительный просмотр без резервной копии и записи" to="/docs/reference/terminology#dry-run">Пробный запуск</Terminology>, выполненный до появления <Terminology title="начальный префикс, записанный без изменения конфигурации" to="/docs/reference/terminology#baseline">базового значения</Terminology>, сообщает «<Terminology title="результат: пробный запуск до появления базового значения" to="/docs/reference/terminology#initialization-preview">Предварительная инициализация</Terminology>» и ничего не записывает.
+<Terminology title="Предпросмотр изменений, который ничего не записывает" to="/docs/reference/terminology#running-checks">Пробный запуск</Terminology>, выполненный до появления <Terminology title="Записанный исходный префикс, от которого отсчитываются изменения" to="/docs/reference/terminology#baselines-and-transitions">базового значения</Terminology>, сообщает «<Terminology title="Пробный запуск, показывающий базовое значение, которое он записал бы" to="/docs/reference/terminology#run-outcomes">Предварительная инициализация</Terminology>» и ничего не записывает.
 
 ## Включение расписания \{#turn-on-the-schedule}
 
-Когда значения совпадают, установите флажок **<Terminology title="автоматические проверки через запись cron под управлением pfSense" to="/docs/reference/terminology#scheduled-updates">Включить обновления по расписанию</Terminology>**, выберите **Расписание** и сохраните настройки. Каждый вариант описан в разделе [Расписание и уведомления](/docs/configure/schedule-and-notifications).
+Когда значения совпадают, установите флажок **<Terminology title="Автоматические проверки по расписанию, выключены, пока вы их не включите" to="/docs/reference/terminology#running-checks">Включить обновления по расписанию</Terminology>**, выберите **Расписание** и сохраните настройки. Каждый вариант описан в разделе [Расписание и уведомления](/docs/configure/schedule-and-notifications).
 
 После первого запланированного времени поле **Время (UTC)** в разделе **Последний запуск** показывает, когда выполнилась эта проверка.
 

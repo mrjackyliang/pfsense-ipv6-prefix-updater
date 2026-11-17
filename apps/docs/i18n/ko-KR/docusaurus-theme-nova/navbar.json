@@ -1,17 +1,41 @@
 {
-  "item.label.Home": {
-    "message": "홈"
-  },
-  "item.label.Guides": {
+  "item.label.Docs": {
     "message": "문서"
   },
+  "item.label.Overview": {
+    "message": "개요"
+  },
+  "item.label.Quick Start": {
+    "message": "빠른 시작"
+  },
+  "item.label.Configure": {
+    "message": "구성"
+  },
+  "item.label.Operate": {
+    "message": "운영"
+  },
   "item.label.Safety": {
-    "message": "안전 및 운영"
+    "message": "안전"
+  },
+  "item.label.Reference": {
+    "message": "참조"
+  },
+  "item.label.Contributing": {
+    "message": "기여하기"
+  },
+  "item.label.Blog": {
+    "message": "블로그"
+  },
+  "item.label.Resources": {
+    "message": "리소스"
   },
   "item.label.Troubleshooting": {
     "message": "문제 해결"
   },
-  "item.label.Blog": {
-    "message": "블로그"
+  "item.label.Changelog": {
+    "message": "변경 로그"
+  },
+  "item.label.Report an Issue": {
+    "message": "문제 신고"
   }
 }

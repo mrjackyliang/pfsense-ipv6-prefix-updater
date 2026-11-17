@@ -1,36 +1,63 @@
 {
-  "layout.learn.title": {
-    "message": "指南"
+  "layout.docs.title": {
+    "message": "文档"
   },
   "layout.resources.title": {
     "message": "资源"
   },
-  "sections.learn.0.label": {
-    "message": "安装和配置"
+  "layout.project.title": {
+    "message": "项目"
   },
-  "sections.learn.1.label": {
-    "message": "监控接口 / 委派前缀长度"
+  "layout.legal.title": {
+    "message": "法律信息"
   },
-  "sections.learn.2.label": {
-    "message": "状态 / 操作"
+  "sections.docs.0.label": {
+    "message": "概述"
   },
-  "sections.learn.3.label": {
-    "message": "故障排除"
+  "sections.docs.1.label": {
+    "message": "配置"
+  },
+  "sections.docs.2.label": {
+    "message": "日常运维"
+  },
+  "sections.docs.3.label": {
+    "message": "安全机制"
+  },
+  "sections.docs.4.label": {
+    "message": "参考"
+  },
+  "sections.docs.5.label": {
+    "message": "参与贡献"
   },
   "sections.resources.0.label": {
-    "message": "安全与运行"
+    "message": "博客"
   },
   "sections.resources.1.label": {
-    "message": "结果与测试"
+    "message": "故障排除"
   },
   "sections.resources.2.label": {
-    "message": "pfSense 文档"
+    "message": "更新日志"
   },
   "sections.resources.3.label": {
-    "message": "源代码"
+    "message": "报告问题"
   },
   "sections.resources.4.label": {
-    "message": "博客"
+    "message": "源代码"
+  },
+  "sections.project.0.label": {
+    "message": "赞助"
+  },
+  "sections.project.1.label": {
+    "message": "pfSense 文档"
+  },
+  "sections.project.2.label": {
+    "message": "其他项目"
+  },
+  "sections.legal.0.label": {
+    "message": "许可证"
+  },
+  "cta.label": {
+    "message": "准备好让 IPv6 前缀始终保持一致了吗？"
   },
   "copyright": {
     "message": "版权所有 © 2023-2026 Jacky Liang。采用 MIT 许可证发布。"

@@ -35,31 +35,35 @@ Het is aan te raden om eerst een kopie van de configuratie te downloaden via **D
 pkg add -f https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
 ```
 
-De installatiestap stemt de cronjob opnieuw af op de opgeslagen instellingen en behoudt elke <Terminology title="startprefix, vastgelegd zonder de configuratie te wijzigen" to="/docs/reference/terminology#baseline">baseline</Terminology>. De stappen met de controlesom in [Het pakket installeren](/docs/installation#verify-the-download-first) werken ook voor updates.
+De installatiestap stemt beide cronjobs, de prefixcontrole en de releasecontrole, opnieuw af op de opgeslagen instellingen en behoudt elke <Terminology title="De vastgelegde startprefix waaraan wijzigingen worden gemeten" to="/docs/reference/terminology#baselines-and-transitions">baseline</Terminology>. De stappen met de controlesom in [Het pakket installeren](/docs/installation#verify-the-download-first) werken ook voor updates.
 
 Na de update:
 
 1. Open **Services → IPv6 Prefix Updater → Instellingen** en controleer de opgeslagen waarden.
-2. Controleer op het tabblad Status **Huidige status**. Elke interface behoudt haar <Terminology title="startprefix, vastgelegd zonder de configuratie te wijzigen" to="/docs/reference/terminology#baseline">baseline</Terminology>.
+2. Controleer op het tabblad Status **Huidige status**. Elke interface behoudt haar <Terminology title="De vastgelegde startprefix waaraan wijzigingen worden gemeten" to="/docs/reference/terminology#baselines-and-transitions">baseline</Terminology>.
 
-Toont een rij `Niet geïnitialiseerd`, dan legt **Nu uitvoeren** er een nieuwe <Terminology title="startprefix, vastgelegd zonder de configuratie te wijzigen" to="/docs/reference/terminology#baseline">baseline</Terminology> voor vast. Adressen die nog een prefix van vóór die baseline gebruiken, blijven dan ongewijzigd.
+Toont een rij `Niet geïnitialiseerd`, dan legt **Nu uitvoeren** er een nieuwe <Terminology title="De vastgelegde startprefix waaraan wijzigingen worden gemeten" to="/docs/reference/terminology#baselines-and-transitions">baseline</Terminology> voor vast. Adressen die nog een prefix van vóór die baseline gebruiken, blijven dan ongewijzigd.
 
 ## Het pakket verwijderen \{#remove-the-package}
 
-Vink je eerst **<Terminology title="automatische controles via een door pfSense beheerde cronjob" to="/docs/reference/terminology#scheduled-updates">Geplande updates inschakelen</Terminology>** uit, dan start een latere herinstallatie het schema niet meteen als pfSense de opgeslagen instellingen bewaart. Voer daarna uit:
+Vink je eerst **<Terminology title="Automatische controles volgens schema, uit tot u ze inschakelt" to="/docs/reference/terminology#running-checks">Geplande updates inschakelen</Terminology>** uit, dan start een latere herinstallatie het schema niet meteen als pfSense de opgeslagen instellingen bewaart. Voer daarna uit:
 
 ```shell
-pkg delete pfSense-pkg-Ipv6PrefixUpdater
+pkg delete -f pfSense-pkg-Ipv6PrefixUpdater
 ```
 
-Het verwijderen wist de cronjob van het pakket en het bestand van de <Terminology title="vergrendeling die twee gelijktijdige controles voorkomt" to="/docs/reference/terminology#run-lock">uitvoeringsvergrendeling</Terminology>. De <Terminology title="pakketbestand met de baseline en de laatste uitvoering" to="/docs/reference/terminology#package-state">pakketstatus</Terminology> en de kopieën van het tabblad **Back-ups** in `/cf/conf/ipv6-prefix-updater` blijven bewaard, zodat pfSense bij het eigen verwijderen en herinstalleren tijdens updates nooit een <Terminology title="startprefix, vastgelegd zonder de configuratie te wijzigen" to="/docs/reference/terminology#baseline">baseline</Terminology> verliest.
+Het pakket is gemarkeerd als `vital`, zodat de eigen upgrades van pfSense het geïnstalleerd houden en een gewone `pkg delete` vitale pakketten weigert.
 
-Het verwijderen draait adressen die al in de configuratie zijn opgeslagen niet terug, en de revisies van het pakket blijven in <Terminology title="pfSense-lijst met opgeslagen configuratierevisies" to="/docs/reference/terminology#config-history">Config History</Terminology>. Wil je de bewaarde bestanden ook verwijderen, voer dan na het verwijderen van het pakket `rm -rf /cf/conf/ipv6-prefix-updater` uit.
+Het verwijderen wist beide cronjobs (prefixcontrole en releasecontrole), sluit de melding over een beschikbare update en verwijdert het bestand van de <Terminology title="Voorkomt dat twee controles tegelijk lopen" to="/docs/reference/terminology#running-checks">uitvoeringsvergrendeling</Terminology> als geen uitvoering het vasthoudt. De <Terminology title="Het bestand met elke baseline, bewaard bij herinstallatie" to="/docs/reference/terminology#running-checks">pakketstatus</Terminology>, `updates.json`, `update-status.json` en de kopieën van het tabblad **Back-ups** in `/cf/conf/ipv6-prefix-updater` blijven bewaard.
+
+De eigen upgrades van pfSense houden het pakket geïnstalleerd (het is `vital`), en door de bewaarde status gaat bij verwijderen en herinstalleren nooit een <Terminology title="De vastgelegde startprefix waaraan wijzigingen worden gemeten" to="/docs/reference/terminology#baselines-and-transitions">baseline</Terminology> verloren.
+
+Het verwijderen draait adressen die al in de configuratie zijn opgeslagen niet terug, en de revisies van het pakket blijven in <Terminology title="De opgeslagen configuratierevisies van pfSense om te herstellen" to="/docs/reference/terminology#backups-and-service-reloads">Config History</Terminology>. Wil je de bewaarde bestanden ook verwijderen, voer dan na het verwijderen van het pakket `rm -rf /cf/conf/ipv6-prefix-updater` uit.
 
 ## Later opnieuw installeren \{#reinstall-later}
 
-Een herinstallatie vindt de bewaarde <Terminology title="pakketbestand met de baseline en de laatste uitvoering" to="/docs/reference/terminology#package-state">pakketstatus</Terminology>, dus de eerste uitvoering vergelijkt met elke opgeslagen <Terminology title="startprefix, vastgelegd zonder de configuratie te wijzigen" to="/docs/reference/terminology#baseline">baseline</Terminology> en werkt velden bij die nog op een oudere prefix staan. Zijn de eerdere instellingen er nog met **<Terminology title="automatische controles via een door pfSense beheerde cronjob" to="/docs/reference/terminology#scheduled-updates">Geplande updates inschakelen</Terminology>** aangevinkt, dan schakelt de installatiestap het schema meteen in.
+Een herinstallatie vindt de bewaarde <Terminology title="Het bestand met elke baseline, bewaard bij herinstallatie" to="/docs/reference/terminology#running-checks">pakketstatus</Terminology>, dus de eerste uitvoering vergelijkt met elke opgeslagen <Terminology title="De vastgelegde startprefix waaraan wijzigingen worden gemeten" to="/docs/reference/terminology#baselines-and-transitions">baseline</Terminology> en werkt velden bij die nog op een oudere prefix staan. Zijn de eerdere instellingen er nog met **<Terminology title="Automatische controles volgens schema, uit tot u ze inschakelt" to="/docs/reference/terminology#running-checks">Geplande updates inschakelen</Terminology>** aangevinkt, dan schakelt de installatiestap het schema meteen in.
 
-Verwijder voor een frisse start `/cf/conf/ipv6-prefix-updater` voordat je opnieuw installeert. De eerste uitvoering legt dan een nieuwe <Terminology title="startprefix, vastgelegd zonder de configuratie te wijzigen" to="/docs/reference/terminology#baseline">baseline</Terminology> vast en meldt <Terminology title="resultaat: baseline vastgelegd, configuratie ongewijzigd" to="/docs/reference/terminology#initialized">Geïnitialiseerd</Terminology> zonder de configuratie te wijzigen.
+Verwijder voor een frisse start `/cf/conf/ipv6-prefix-updater` voordat je opnieuw installeert. De eerste uitvoering legt dan een nieuwe <Terminology title="De vastgelegde startprefix waaraan wijzigingen worden gemeten" to="/docs/reference/terminology#baselines-and-transitions">baseline</Terminology> vast en meldt <Terminology title="Eerste blik: baseline vastgelegd, er verandert niets" to="/docs/reference/terminology#run-outcomes">Geïnitialiseerd</Terminology> zonder de configuratie te wijzigen.
 
 Lees [Back-ups en herstel](/docs/operate/backups-and-recovery) vóór onderhoud en [De baseline vastleggen](/docs/first-run) na een herinstallatie.

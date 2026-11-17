@@ -1,0 +1,74 @@
+---
+id: updates
+title: 更新
+description: 配置 GitHub 版本检查，并从“关于”选项卡安装受 SHA-256 校验和及版本签名保护的软件包更新。
+keywords:
+  - pfsense ipv6 prefix updater
+  - 更新检查
+  - sha-256 校验和
+  - 版本签名
+  - pfsense 通知
+  - 自更新
+tags:
+  - reference
+  - updates
+  - security
+sidebar_position: 5
+---
+
+pfSense 软件包管理器不会列出直接从 GitHub 安装的软件包，因此 IPv6 Prefix Updater 会自行检查其 GitHub 版本。
+
+## 检查内容 \{#what-is-checked}
+
+检查会从 GitHub 请求最新版本的元数据，并将其版本与已安装的软件包版本进行比较。检查时间、最新版本、版本链接、发布时间、通知状态和上次错误保存在 `/cf/conf/ipv6-prefix-updater/updates.json` 中。防火墙配置绝不会发送到 GitHub。
+
+在 **Services → IPv6 Prefix Updater → Settings → Package Updates**（服务 → IPv6 Prefix Updater → 设置 → 软件包更新）中选择频率：
+
+- **每天**：每天在安装时随机选定的时间运行一次。
+- **每周**：默认值，同样会选定一个固定的星期和时间。
+- **每月**：选定 1 到 28 之间一个固定的日期和一个固定的时间。
+- **从不**：删除计划的版本检查。
+
+随机计划保存在 pfSense 配置中，因此保存设置或重新安装软件包都不会改变它。“关于”选项卡上的 **立即检查** 始终会执行一次手动检查，即使频率为 **从不** 也是如此。
+
+## 网络目标 \{#network-destinations}
+
+更新检查或更新可能会联系以下由 GitHub 运营的主机：
+
+- `api.github.com`，用于获取最新版本的元数据和已发布的 SHA-256 摘要。
+- `github.com`，用于获取版本资源的 URL。
+- `release-assets.githubusercontent.com`，即 GitHub 的版本下载主机，在资源请求重定向后联系。
+
+请求会验证 TLS 证书，使用较短的超时、软件包自己的 User-Agent 以及 pfSense 中配置的代理。`403` 或 `429` 响应会被视为频率限制，不会清除上次有效的版本详情。
+
+## 通知 \{#notices}
+
+某个新版本首次出现时，软件包会为该版本添加一条 pfSense 铃铛通知。该通知链接到“关于”选项卡，默认只保留在本地。
+
+勾选 **远程通知** 即可选择同时通过 pfSense 中已配置的电子邮件、Telegram、Pushover 或其他远程渠道发送。软件包仍然只会为每个新版本创建一条通知。安装该版本后，或之后的检查发现已安装的软件包已是最新时，它会关闭该通知。
+
+## 安装更新 \{#install-an-update}
+
+打开 **Services → IPv6 Prefix Updater → About**（服务 → IPv6 Prefix Updater → 关于）。有新版本可用时，**更新到 _版本_** 会启动一个后台任务，页面会显示其进度。
+
+该任务会再次获取版本信息并下载带版本号的 `.pkg`。它会用 GitHub API 资源的 `sha256:<hex>` 摘要校验软件包；如果该摘要不存在，则改为下载同一版本中对应的 `.pkg.sha256` 资源。
+
+发布的软件包会在 `/usr/local/share/pfSense-pkg-Ipv6PrefixUpdater/release-signing.pub` 中携带发布工作流的签名公钥。该文件列出一个或多个密钥时，已安装副本只接受由其中某个密钥签名的更新；文件缺失或只含注释时，签名检查保持关闭，更新只依靠 SHA-256 检查。
+
+SHA-256 检查通过后，如果已安装的密钥文件列出了密钥，任务会从同一版本下载对应的 `.pkg.sig`，并在读取归档前使用 `ssh-keygen -Y verify` 进行验证。缺少该签名或由其他密钥签名的版本会被拒绝，已安装版本保持不变。
+
+然后，任务会在运行 `pkg add -f` 之前确认归档中的软件包名称和版本。如果两种校验和来源都不存在，它会拒绝更新并保留已安装版本；软件包锁可防止前缀运行与更新相互重叠。
+
+## 手动安装 \{#install-manually}
+
+管理员仍然可以在 pfSense shell 中安装该资源：
+
+```shell
+pkg add -f https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
+```
+
+此手动命令会绕过“关于”选项卡的 SHA-256 检查和版本签名检查。使用前请验证版本、校验和与签名。
+
+## 关闭检查 \{#turn-checks-off}
+
+将 **更新检查** 设为 **从不** 并保存“设置”选项卡。软件包会删除其更新检查 cron 条目，不再发出计划的出站更新请求。前缀监控保留其独立的计划，**立即检查** 仍可用于管理员主动发起的请求。

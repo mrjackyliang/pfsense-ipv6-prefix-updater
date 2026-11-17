@@ -1,10 +1,11 @@
 import {
-  // Node.js 22 LTS includes this API; it became stable before the first 22.x LTS release.
-  // eslint-disable-next-line n/no-unsupported-features/node-builtins
-  cp,
+  chmod,
+  copyFile,
   mkdir,
+  readdir,
   readFile,
   rm,
+  stat,
   writeFile,
 } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
@@ -51,6 +52,49 @@ const buildDirectory = join(workspaceDirectory, 'build');
 const stagedPortDirectory = join(buildDirectory, 'port');
 
 /**
+ * Stage Package - Copy Directory.
+ *
+ * Copies one port directory using APIs supported by every tracked Node release.
+ * Each directory and regular file retains its source permission bits.
+ *
+ * @param {string} portDirectoryToCopyFrom    - Port directory to copy from.
+ * @param {string} stagingDirectoryToCopyInto - Staging directory to copy into.
+ *
+ * @returns {Promise<void>}
+ *
+ * @since 0.0.0
+ */
+async function copyDirectory(portDirectoryToCopyFrom, stagingDirectoryToCopyInto) {
+  await mkdir(stagingDirectoryToCopyInto, { recursive: true });
+
+  for (const directoryEntry of await readdir(portDirectoryToCopyFrom, { withFileTypes: true })) {
+    if (directoryEntry.isDirectory() === true) {
+      await copyDirectory(
+        join(portDirectoryToCopyFrom, directoryEntry.name),
+        join(stagingDirectoryToCopyInto, directoryEntry.name),
+      );
+    } else {
+      if (directoryEntry.isFile() === false) {
+        throw new Error(`Cannot stage pfSense port entry "${join(portDirectoryToCopyFrom, directoryEntry.name)}": only regular files and directories are supported.`);
+      }
+
+      await copyFile(
+        join(portDirectoryToCopyFrom, directoryEntry.name),
+        join(stagingDirectoryToCopyInto, directoryEntry.name),
+      );
+      await chmod(
+        join(stagingDirectoryToCopyInto, directoryEntry.name),
+        (await stat(join(portDirectoryToCopyFrom, directoryEntry.name))).mode,
+      );
+    }
+  }
+
+  await chmod(stagingDirectoryToCopyInto, (await stat(portDirectoryToCopyFrom)).mode);
+
+  return;
+}
+
+/**
  * Stage Package - package.json Raw.
  *
  * Reads the workspace manifest before extracting its release version.
@@ -89,7 +133,7 @@ await rm(stagedPortDirectory, {
   recursive: true,
 });
 await mkdir(buildDirectory, { recursive: true });
-await cp(sourceDirectory, stagedPortDirectory, { recursive: true });
+await copyDirectory(sourceDirectory, stagedPortDirectory);
 
 /**
  * Stage Package - Makefile Template Path.

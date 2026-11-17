@@ -309,217 +309,22 @@
 
 /**
  * ============================
- * Workflow
+ * WebGUI Showcase
  * ============================
  */
 
-.workflow-section,
-.routes-section {
-  padding-block: 4rem;
-}
-
-.section-heading {
-  max-width: 48rem;
-  margin-bottom: 2rem;
-}
-
-.section-heading h2 {
-  margin: 0;
-}
-
-.section-eyebrow {
-  margin: 0 0 0.55rem;
-
-  font-family: var(--nova-font-code);
-  font-size: 0.75rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  color: var(--nova-color-primary-700);
-  text-transform: uppercase;
-}
-
-[data-theme="dark"] .section-eyebrow {
-  color: var(--nova-color-primary-300);
-}
-
-.workflow-list {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  margin: 0;
-  padding: 0;
-  gap: 0.75rem;
-
-  list-style: none;
-}
-
-.workflow-list li {
-  position: relative;
-
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  padding: 1rem;
-  gap: 0.45rem;
-
-  font-size: 0.8125rem;
-  font-weight: 700;
-  color: var(--nova-color-text);
-
-  background-color: var(--nova-color-surface);
-  border: 1px solid var(--nova-color-border);
-  border-radius: var(--nova-shape-radius);
-}
-
-.workflow-list li > span {
-  font-family: var(--nova-font-code);
-  font-size: 0.625rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  color: var(--nova-color-primary-700);
-}
-
-[data-theme="dark"] .workflow-list li > span {
-  color: var(--nova-color-primary-300);
-}
-
-@media (min-width: 768px) {
-  .workflow-section,
-  .routes-section {
-    padding-block: 5rem;
-  }
-
-  .workflow-list {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 1100px) {
-  .workflow-list {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-  }
-}
-
-/**
- * ============================
- * Documentation Routes
- * ============================
+/*
+ * The screenshot section uses the full page width instead of the preset's
+ * 768px text column, so the WebGUI shows near its real size.
  */
-
-.route-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 1rem;
+.shot-spotlight :global(.nova-spotlight-inner) {
+  max-width: var(--nova-grid-container-max);
 }
 
-.route-card {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  padding: 1.25rem;
-
-  color: var(--nova-color-text);
-
-  background-color: var(--nova-color-background);
-  border: 1px solid var(--nova-color-border);
-  border-radius: var(--nova-shape-radius);
-  box-shadow: 0 4px 14px rgb(15 23 42 / 0.05);
-
-  transition:
-    border-color 160ms ease,
-    box-shadow 160ms ease,
-    transform 160ms ease;
-}
-
-.route-card:hover {
-  color: var(--nova-color-text);
-  text-decoration: none;
-
-  border-color: color-mix(in srgb, var(--nova-color-primary-500), transparent 40%);
-  box-shadow: 0 10px 28px rgb(15 118 110 / 0.1);
-
-  transform: translateY(-2px);
-}
-
-.route-card:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--nova-color-primary-500), transparent 35%);
-  outline-offset: 3px;
-}
-
-.route-card h3 {
-  margin: 0.7rem 0 0.45rem;
-
-  font-size: 1rem;
-}
-
-.route-card p {
-  margin: 0 0 1rem;
-
-  font-size: 0.875rem;
-  line-height: 1.65;
-  color: var(--nova-color-text-muted);
-}
-
-.route-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
-
-  font-family: var(--nova-font-code);
-  font-size: 0.6875rem;
-  font-weight: 800;
-  color: var(--nova-color-primary-700);
-
-  background-color: color-mix(in srgb, var(--nova-color-primary-500), transparent 88%);
-  border-radius: 50%;
-}
-
-[data-theme="dark"] .route-icon {
-  color: var(--nova-color-primary-300);
-}
-
-.route-link {
-  margin-top: auto;
-
-  font-size: 0.75rem;
-  font-weight: 800;
-  color: var(--nova-color-primary-700);
-}
-
-[data-theme="dark"] .route-link {
-  color: var(--nova-color-primary-300);
-}
-
-@media (min-width: 680px) {
-  .route-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-/**
- * ============================
- * Spotlight
- * ============================
+/*
+ * The WebGUI captures use a 1024px viewport, so the frame's Chrome is sized
+ * for a 1024px viewport.
  */
-
-.spotlight-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.spotlight-content :global(.nova-section-description) {
-  max-width: 48rem;
-  margin-inline: auto;
-
-  text-align: center;
-}
-
-.spotlight-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.75rem;
-  margin-top: 1.5rem;
+.shot-frame {
+  --nova-browser-frame-viewport: 1024;
 }

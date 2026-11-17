@@ -1,0 +1,74 @@
+---
+id: updates
+title: Atualizações
+description: Configure verificações do GitHub e instale pela guia Sobre atualizações de pacote protegidas por SHA-256 e assinaturas de versão.
+keywords:
+  - pfsense ipv6 prefix updater
+  - verificações de atualizações
+  - soma de verificação sha-256
+  - assinaturas de versão
+  - notificações pfsense
+  - atualização automática
+tags:
+  - reference
+  - updates
+  - security
+sidebar_position: 5
+---
+
+O IPv6 Prefix Updater verifica suas versões no GitHub porque o Gerenciador de Pacotes do pfSense não mostra pacotes instalados diretamente do GitHub.
+
+## O que é verificado \{#what-is-checked}
+
+A verificação solicita ao GitHub os metadados da versão mais recente e compara a versão dela com a versão do pacote instalado. Ela salva o horário da verificação, a versão mais recente, o link da versão, o horário de publicação, o estado da notificação e o último erro em `/cf/conf/ipv6-prefix-updater/updates.json`. A configuração do firewall nunca é enviada ao GitHub.
+
+Escolha a frequência em **Services → IPv6 Prefix Updater → Configurações → Atualizações do pacote**:
+
+- **Diariamente** executa uma vez por dia, em um horário escolhido aleatoriamente durante a instalação.
+- **Semanalmente** é o padrão e também escolhe um dia da semana e um horário estáveis.
+- **Mensalmente** escolhe um dia estável entre 1 e 28 e um horário estável.
+- **Nunca** remove a verificação de versões agendada.
+
+O agendamento aleatório fica salvo na configuração do pfSense, então salvar as configurações ou reinstalar o pacote não o altera. **Verificar agora** na guia Sobre sempre faz uma verificação manual, inclusive quando a frequência é **Nunca**.
+
+## Destinos de rede \{#network-destinations}
+
+Uma verificação ou atualização pode acessar estes hosts operados pelo GitHub:
+
+- `api.github.com`, para os metadados da versão mais recente e o resumo SHA-256 publicado.
+- `github.com`, para a URL do arquivo da versão.
+- `release-assets.githubusercontent.com`, o host de download de versões do GitHub, depois que a solicitação do arquivo é redirecionada.
+
+As solicitações usam verificação de certificados TLS, tempos limite curtos, um User-Agent do pacote e o proxy configurado no pfSense. Uma resposta `403` ou `429` é tratada como limitação de taxa e não apaga os últimos detalhes válidos da versão.
+
+## Avisos \{#notices}
+
+Quando uma versão mais nova aparece pela primeira vez, o pacote adiciona um único aviso no sino do pfSense para essa versão. O aviso leva à guia Sobre e, por padrão, fica apenas local.
+
+Marque **Notificações remotas** para enviar também pelos canais remotos configurados no pfSense, como e-mail, Telegram, Pushover ou outros. O pacote continua criando só um aviso por nova versão. Ele fecha o aviso depois que essa versão é instalada ou quando uma verificação posterior encontra o pacote instalado atualizado.
+
+## Instalar uma atualização \{#install-an-update}
+
+Abra **Services → IPv6 Prefix Updater → Sobre**. Quando há uma versão mais nova disponível, **Atualizar para _versão_** inicia uma tarefa em segundo plano, e a página mostra o progresso dela.
+
+A tarefa busca a versão de novo e baixa o `.pkg` com versão. Ela confere o pacote com o resumo `sha256:<hex>` do arquivo na API do GitHub; quando esse resumo está ausente, baixa o arquivo `.pkg.sha256` correspondente da mesma versão.
+
+Os pacotes de versão trazem as chaves públicas de assinatura do workflow de release em `/usr/local/share/pfSense-pkg-Ipv6PrefixUpdater/release-signing.pub`. Quando esse arquivo lista uma ou mais chaves, uma cópia instalada aceita apenas atualizações assinadas por uma delas; um arquivo ausente ou só com comentários deixa as verificações de assinatura desligadas, e as atualizações dependem apenas da verificação SHA-256.
+
+Depois da verificação SHA-256, quando o arquivo de chaves instalado lista uma chave, a tarefa baixa o `.pkg.sig` correspondente da mesma versão e o verifica com `ssh-keygen -Y verify` antes de ler o arquivo. Uma versão sem essa assinatura, ou assinada por outra chave, é recusada, e a versão instalada é mantida.
+
+Em seguida, a tarefa confirma o nome e a versão do pacote no arquivo antes de executar `pkg add -f`. Se nenhuma das fontes de soma de verificação existir, ela recusa a atualização e mantém a versão instalada; o bloqueio do pacote impede que uma execução do prefixo e uma atualização se sobreponham.
+
+## Instalar manualmente \{#install-manually}
+
+Um administrador ainda pode instalar o arquivo em um shell do pfSense:
+
+```shell
+pkg add -f https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
+```
+
+Esse comando manual ignora tanto a verificação SHA-256 quanto a verificação da assinatura de versão da guia Sobre. Verifique a versão, a soma de verificação e a assinatura antes de usá-lo.
+
+## Desativar verificações \{#turn-checks-off}
+
+Defina **Verificações de atualizações** como **Nunca** e salve a guia Configurações. O pacote remove sua entrada cron de verificação de atualizações e não faz solicitações de atualização agendadas para fora. O monitoramento do prefixo mantém o próprio agendamento independente, e **Verificar agora** continua disponível para uma solicitação iniciada por um administrador.

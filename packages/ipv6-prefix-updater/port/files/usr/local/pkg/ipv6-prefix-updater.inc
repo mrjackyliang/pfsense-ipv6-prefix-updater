@@ -11,9 +11,11 @@ use PfSense\Ipv6PrefixUpdater\Runtime\PackagePaths;
 use PfSense\Ipv6PrefixUpdater\Runtime\PfSenseAdapter;
 use PfSense\Ipv6PrefixUpdater\Runtime\StateStore;
 use PfSense\Ipv6PrefixUpdater\Runtime\Translator;
+use PfSense\Ipv6PrefixUpdater\Runtime\UpdateManager;
 
 require_once('config.inc');
 require_once('interfaces.inc');
+require_once('notices.inc');
 require_once('pfsense-utils.inc');
 require_once('services.inc');
 require_once(__DIR__ . '/ipv6-prefix-updater/BackupStore.php');
@@ -25,6 +27,7 @@ require_once(__DIR__ . '/ipv6-prefix-updater/PackagePaths.php');
 require_once(__DIR__ . '/ipv6-prefix-updater/PfSenseAdapter.php');
 require_once(__DIR__ . '/ipv6-prefix-updater/StateStore.php');
 require_once(__DIR__ . '/ipv6-prefix-updater/Translator.php');
+require_once(__DIR__ . '/ipv6-prefix-updater/UpdateManager.php');
 
 /**
  * Translates one package-owned message for the active pfSense language.
@@ -68,6 +71,7 @@ function pfsensePackageIpv6PrefixUpdaterLocalizePackageGui(array &$package): voi
         'Fields' => 'fields',
         'Backups' => 'backups',
         'Cleanup' => 'cleanup',
+        'About' => 'about',
         'Monitored Interfaces' => 'monitored_interfaces',
         'Interface' => 'interface_column',
         'Delegated prefix length' => 'prefix_length_column',
@@ -88,6 +92,15 @@ function pfsensePackageIpv6PrefixUpdaterLocalizePackageGui(array &$package): voi
         'Notifications' => 'notifications',
         'Send Change Notifications' => 'send_change_notifications',
         'Use configured pfSense notification channels after a verified successful prefix update. No-op checks never notify.' => 'send_change_notifications_help',
+        'Package Updates' => 'package_updates',
+        'Update Checks' => 'update_checks',
+        'Daily' => 'update_checks_daily',
+        'Weekly' => 'update_checks_weekly',
+        'Monthly' => 'update_checks_monthly',
+        'Never' => 'update_checks_never',
+        'Choose how often pfSense checks GitHub for a new package release. The check runs at a stable randomized time.' => 'update_checks_help',
+        'Remote Notifications' => 'update_remote_notifications',
+        'Also send each new-version notice through configured pfSense email, Telegram, Pushover, or other remote notification channels.' => 'update_remote_notifications_help',
     ];
 
     if (isset($package['tabs']['tab']) && is_array($package['tabs']['tab'])) {
@@ -158,12 +171,12 @@ function pfsensePackageIpv6PrefixUpdaterLocalizePackageGui(array &$package): voi
 }
 
 /**
- * Returns the package tabs for the custom Status, Fields, Backups, and Cleanup pages.
+ * Returns the package tabs for the custom Status, Fields, Backups, Cleanup, and About pages.
  *
  * The generic settings editor builds its tabs from the package XML; the custom pages
- * share this list so all five pages show the same tabs in the same order.
+ * share this list so all six pages show the same tabs in the same order.
  *
- * @param string $active - Active tab: settings, status, fields, backups, or cleanup.
+ * @param string $active - Active tab: settings, status, fields, backups, cleanup, or about.
  *
  * @return list<array{0: string, 1: bool, 2: string}>
  *
@@ -177,6 +190,7 @@ function pfsensePackageIpv6PrefixUpdaterTabs(string $active): array
         'fields' => '/ipv6-prefix-updater-fields.php',
         'backups' => '/ipv6-prefix-updater-backups.php',
         'cleanup' => '/ipv6-prefix-updater-cleanup.php',
+        'about' => '/ipv6-prefix-updater-about.php',
     ];
     $tabArray = [];
 
@@ -306,7 +320,7 @@ function pfsensePackageIpv6PrefixUpdaterGetSchedule(string $schedule): array
 }
 
 /**
- * Removes the package cron job and lock.
+ * Removes the package cron jobs, available-update notice, and idle lock file.
  *
  * Baselines and backups in the package data directory are kept. pfSense removes and
  * reinstalls packages during upgrades, and deleting the baseline there would let the
@@ -319,9 +333,22 @@ function pfsensePackageIpv6PrefixUpdaterGetSchedule(string $schedule): array
 function pfsensePackageIpv6PrefixUpdaterRemove(): void
 {
     install_cron_job(PackagePaths::COMMAND, false);
+    install_cron_job(PackagePaths::UPDATE_CHECK_COMMAND, false);
 
-    if (file_exists(PackagePaths::LOCK_FILE)) {
-        @unlink(PackagePaths::LOCK_FILE);
+    if (function_exists('close_notice')) {
+        close_notice(UpdateManager::NOTICE_ID);
+    }
+
+    $fileLock = new FileLock(PackagePaths::LOCK_FILE);
+
+    try {
+        if ($fileLock->acquire()) {
+            @unlink(PackagePaths::LOCK_FILE);
+        }
+    } catch (Throwable) {
+        // Removal must not fail when an active run or filesystem owns the lock.
+    } finally {
+        $fileLock->release();
     }
 }
 
@@ -386,6 +413,86 @@ function pfsensePackageIpv6PrefixUpdaterMigrateLegacy(): bool
 function pfsensePackageIpv6PrefixUpdaterSync(): void
 {
     pfsensePackageIpv6PrefixUpdaterInstallCron(pfsensePackageIpv6PrefixUpdaterMigrateLegacy());
+    pfsensePackageIpv6PrefixUpdaterInstallUpdateCron();
+}
+
+/**
+ * Returns the stable randomized schedule for release checks.
+ *
+ * Invalid or missing values are generated once, saved beside the package settings,
+ * and reused across frequency changes, reinstalls, and resynchronization.
+ *
+ * @return array{minute: int, hour: int, weekday: int, monthday: int}
+ *
+ * @since 2.1.0
+ */
+function pfsensePackageIpv6PrefixUpdaterGetUpdateSchedule(): array
+{
+    $storedSchedule = config_get_path(PackagePaths::UPDATE_SCHEDULE_PATH, []);
+    $storedSchedule = is_array($storedSchedule) ? $storedSchedule : [];
+    $schedule = UpdateManager::stableCronSchedule($storedSchedule);
+    $normalizedStoredSchedule = [];
+
+    foreach (array_keys($schedule) as $key) {
+        $storedValue = $storedSchedule[$key] ?? null;
+
+        if (is_int($storedValue) || (is_string($storedValue) && ctype_digit($storedValue))) {
+            $normalizedStoredSchedule[$key] = (int) $storedValue;
+        }
+    }
+
+    if ($normalizedStoredSchedule !== $schedule) {
+        config_set_path(PackagePaths::UPDATE_SCHEDULE_PATH, $schedule);
+        write_config(pfsensePackageIpv6PrefixUpdaterTranslate('settings_saved'));
+    }
+
+    return $schedule;
+}
+
+/**
+ * Synchronizes the independent GitHub release-check cron job.
+ *
+ * Existing entries are removed first. Selecting Never leaves manual checks enabled
+ * while ensuring no scheduled outbound GitHub request remains.
+ *
+ * @return void
+ *
+ * @since 2.1.0
+ */
+function pfsensePackageIpv6PrefixUpdaterInstallUpdateCron(): void
+{
+    $command = PackagePaths::UPDATE_CHECK_COMMAND;
+
+    install_cron_job($command, false);
+
+    $settings = pfsensePackageIpv6PrefixUpdaterGetSettings();
+    $frequency = (string) ($settings['update_check_frequency'] ?? 'weekly');
+
+    if ($frequency === 'never') {
+        return;
+    }
+
+    $fields = UpdateManager::cronFields(
+        $frequency,
+        pfsensePackageIpv6PrefixUpdaterGetUpdateSchedule(),
+    );
+
+    if ($fields === null) {
+        return;
+    }
+
+    [$minute, $hour, $dayOfMonth, $month, $dayOfWeek] = $fields;
+
+    install_cron_job(
+        $command,
+        true,
+        $minute,
+        $hour,
+        $dayOfMonth,
+        $month,
+        $dayOfWeek,
+        'root',
+    );
 }
 
 /**
@@ -494,5 +601,17 @@ function pfsensePackageIpv6PrefixUpdaterValidate(array $post, array &$inputError
 
     if (in_array($schedule, $validSchedules, true) === false) {
         $inputErrors[] = pfsensePackageIpv6PrefixUpdaterTranslate('schedule_error');
+    }
+
+    $validUpdateCheckFrequencies = [
+        'daily',
+        'weekly',
+        'monthly',
+        'never',
+    ];
+    $updateCheckFrequency = (string) ($post['update_check_frequency'] ?? 'weekly');
+
+    if (in_array($updateCheckFrequency, $validUpdateCheckFrequencies, true) === false) {
+        $inputErrors[] = pfsensePackageIpv6PrefixUpdaterTranslate('update_schedule_error');
     }
 }

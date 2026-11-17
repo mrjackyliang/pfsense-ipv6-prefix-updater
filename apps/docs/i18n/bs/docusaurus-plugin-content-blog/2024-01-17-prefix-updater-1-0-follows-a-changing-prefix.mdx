@@ -1,0 +1,47 @@
+---
+title: "Prefix Updater 1.0 prati promjenjivi IPv6 prefiks na pfSenseu"
+description: Verzija 1.0 skripte pfSense Dynamic IPv6 Prefix Updater uočava novi dodijeljeni prefiks i, nakon sigurnosne kopije, prepisuje aliase, statičke IP adrese i VPN adrese.
+slug: prefix-updater-1-0-follows-a-changing-prefix
+authors:
+  - mrjackyliang
+keywords:
+  - pfsense ipv6 prefix updater
+  - dinamički ipv6 prefiks
+  - dodjela ipv6 prefiksa
+  - update.php
+  - stari program za ažuriranje
+tags:
+  - release
+  - ipv6
+  - pfsense
+---
+
+Verzija 1.0 skripte pfSense Dynamic IPv6 Prefix Updater objavljena je 17. januara 2024. To je PHP skripta koja primijeti kada ISP dodijeli pfSenseu novi IPv6 prefiks i prenosi taj prefiks u adrese sačuvane u konfiguraciji vatrozida.
+
+{/* truncate */}
+
+## Problem koji rješava \{#the-problem-it-solves}
+
+Mnogi ISP-ovi dodjeljuju IPv6 prefiks koji se može promijeniti bez najave. Svaki alias, statička adresa i VPN postavka zasnovana na starom prefiksu zastarijeva u istom trenutku, a mreža prestaje raditi na načine koje je teško povezati s jednim uzrokom.
+
+Prije verzije 1.0 rješenje je bilo ručno pretraživanje konfiguracije nakon svake promjene. S verzijom 1.0 pfSense sam pronalazi novi prefiks i ažurira sačuvane adrese koje su koristile stari.
+
+## Šta radi verzija 1.0 \{#what-version-10-does}
+
+Skripta `update.php` pokreće se iz unosa Cron paketa s dva argumenta: sučeljem koje se nadzire i dužinom prefiksa koju ISP dodjeljuje. Pri svakom pokretanju ona:
+
+- **Poredi prefikse** — čita trenutni IPv6 prefiks sučelja i poredi ga s prefiksom sačuvanim pri prethodnom pokretanju.
+- **Prvo pravi sigurnosnu kopiju** — prije svake promjene čuva kopiju datoteke `config.xml`.
+- **Prepisuje stari prefiks** — zamjenjuje stari prefiks u aliasima vatrozida, statičkim IP adresama te IPsec, OpenVPN i WireGuard adresama u konfiguraciji.
+- **Šalje obavještenje** — pfSense prikazuje obavještenje kada se prefiks promijeni.
+- **Pokreće samo jednu kopiju** — zaključavanje sprečava pokretanje druge kopije dok prva još radi.
+
+Instalacijska skripta preuzima program za ažuriranje u `/root/pfsense-ipv6-prefix-updater`, a unos Cron paketa određuje koliko često se provjera izvršava.
+
+## Kuda je to vodilo \{#where-it-led}
+
+Verzija 1.0 dokazala je da pfSense može otkriti novi prefiks, napraviti sigurnosnu kopiju konfiguracije i prepisati stare adrese bez osobe za tastaturom. Taj dokaz postao je osnova za izvorni pfSense paket koji je zamijenio skriptu u verziji 2.0.
+
+Još koristite skriptu? Paket umjesto vas premješta njene unose Cron paketa, sačuvane prefikse i sigurnosne kopije, kako objašnjava uputstvo [Prelazak sa skripte](/docs/migrate-from-legacy).
+
+IPv6 Prefix Updater for pfSense održava lokalne IPv6 adrese u pfSenseu ispravnim kada ISP promijeni dodijeljeni prefiks. Počnite s uputstvom [Instalacija paketa](/docs/installation).

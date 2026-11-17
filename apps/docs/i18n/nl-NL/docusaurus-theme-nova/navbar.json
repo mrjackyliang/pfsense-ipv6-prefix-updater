@@ -1,14 +1,38 @@
 {
-  "item.label.Home": {
-    "message": "Start"
-  },
-  "item.label.Guides": {
+  "item.label.Docs": {
     "message": "Documentatie"
   },
+  "item.label.Overview": {
+    "message": "Overzicht"
+  },
+  "item.label.Quick Start": {
+    "message": "Snelstart"
+  },
+  "item.label.Configure": {
+    "message": "Configuratie"
+  },
+  "item.label.Operate": {
+    "message": "Beheer"
+  },
   "item.label.Safety": {
-    "message": "Veiligheid en werking"
+    "message": "Veiligheid"
+  },
+  "item.label.Reference": {
+    "message": "Naslag"
+  },
+  "item.label.Contributing": {
+    "message": "Bijdragen"
+  },
+  "item.label.Resources": {
+    "message": "Bronnen"
   },
   "item.label.Troubleshooting": {
     "message": "Problemen oplossen"
+  },
+  "item.label.Changelog": {
+    "message": "Wijzigingslogboek"
+  },
+  "item.label.Report an Issue": {
+    "message": "Probleem melden"
   }
 }

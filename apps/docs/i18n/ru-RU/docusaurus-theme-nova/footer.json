@@ -1,36 +1,63 @@
 {
-  "layout.learn.title": {
-    "message": "Руководства"
+  "layout.docs.title": {
+    "message": "Документация"
   },
   "layout.resources.title": {
     "message": "Ресурсы"
   },
-  "sections.learn.0.label": {
-    "message": "Установка и настройка"
+  "layout.project.title": {
+    "message": "Проект"
   },
-  "sections.learn.1.label": {
-    "message": "Контролируемые интерфейсы / Длина делегированного префикса"
+  "layout.legal.title": {
+    "message": "Правовая информация"
   },
-  "sections.learn.2.label": {
-    "message": "Состояние / Действия"
+  "sections.docs.0.label": {
+    "message": "Обзор"
   },
-  "sections.learn.3.label": {
-    "message": "Устранение неполадок"
+  "sections.docs.1.label": {
+    "message": "Настройка"
+  },
+  "sections.docs.2.label": {
+    "message": "Эксплуатация"
+  },
+  "sections.docs.3.label": {
+    "message": "Безопасность"
+  },
+  "sections.docs.4.label": {
+    "message": "Справочник"
+  },
+  "sections.docs.5.label": {
+    "message": "Участие в разработке"
   },
   "sections.resources.0.label": {
-    "message": "Безопасность и работа"
+    "message": "Блог"
   },
   "sections.resources.1.label": {
-    "message": "Результаты и тесты"
+    "message": "Устранение неполадок"
   },
   "sections.resources.2.label": {
-    "message": "Документация pfSense"
+    "message": "История изменений"
   },
   "sections.resources.3.label": {
-    "message": "Исходный код"
+    "message": "Сообщить о проблеме"
   },
   "sections.resources.4.label": {
-    "message": "Блог"
+    "message": "Исходный код"
+  },
+  "sections.project.0.label": {
+    "message": "Поддержать"
+  },
+  "sections.project.1.label": {
+    "message": "Документация pfSense"
+  },
+  "sections.project.2.label": {
+    "message": "Другие проекты"
+  },
+  "sections.legal.0.label": {
+    "message": "Лицензия"
+  },
+  "cta.label": {
+    "message": "Готовы держать IPv6-префиксы в согласованном состоянии?"
   },
   "copyright": {
     "message": "Copyright © 2023-2026 Jacky Liang. Выпущено по лицензии MIT."

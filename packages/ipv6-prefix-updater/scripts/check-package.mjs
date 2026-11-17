@@ -8,7 +8,10 @@ import {
 } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { semanticVersionPattern } from './regex.mjs';
+import {
+  releaseSigningKeyPattern,
+  semanticVersionPattern,
+} from './regex.mjs';
 
 /**
  * Check Package - Workspace Directory.
@@ -47,6 +50,7 @@ const requiredFiles = [
   'port/files/pkg-install.in',
   'port/files/usr/local/pkg/ipv6-prefix-updater.inc',
   'port/files/usr/local/pkg/ipv6-prefix-updater.xml',
+  'port/files/usr/local/pkg/ipv6-prefix-updater/AboutTranslations.php',
   'port/files/usr/local/pkg/ipv6-prefix-updater/BackupStore.php',
   'port/files/usr/local/pkg/ipv6-prefix-updater/ConfigurationChangePlanner.php',
   'port/files/usr/local/pkg/ipv6-prefix-updater/ConfigurationFieldDetector.php',
@@ -65,22 +69,36 @@ const requiredFiles = [
   'port/files/usr/local/pkg/ipv6-prefix-updater/PrefixChangePlanner.php',
   'port/files/usr/local/pkg/ipv6-prefix-updater/PrefixUpdater.php',
   'port/files/usr/local/pkg/ipv6-prefix-updater/StateStore.php',
+  'port/files/usr/local/pkg/ipv6-prefix-updater/TestedReleases.php',
   'port/files/usr/local/pkg/ipv6-prefix-updater/Translations.php',
   'port/files/usr/local/pkg/ipv6-prefix-updater/Translator.php',
+  'port/files/usr/local/pkg/ipv6-prefix-updater/UpdateManager.php',
+  'port/files/usr/local/pkg/ipv6-prefix-updater/UpdateTranslations.php',
   'port/files/usr/local/sbin/ipv6-prefix-updater',
   'port/files/usr/local/share/pfSense-pkg-Ipv6PrefixUpdater/info.xml',
+  'port/files/usr/local/share/pfSense-pkg-Ipv6PrefixUpdater/logo.svg',
+  'port/files/usr/local/share/pfSense-pkg-Ipv6PrefixUpdater/release-signing.pub',
+  'port/files/usr/local/www/ipv6-prefix-updater-about.php',
   'port/files/usr/local/www/ipv6-prefix-updater-backups.php',
   'port/files/usr/local/www/ipv6-prefix-updater-cleanup.php',
   'port/files/usr/local/www/ipv6-prefix-updater-fields.php',
   'port/files/usr/local/www/ipv6-prefix-updater-status.php',
   'scripts/test-domain.sh',
   'tests/domain.php',
+  'tests/fixtures/release-signing/pfSense-pkg-Ipv6PrefixUpdater-9.9.9.pkg',
+  'tests/fixtures/release-signing/pfSense-pkg-Ipv6PrefixUpdater-9.9.9.pkg.key-b.sig',
+  'tests/fixtures/release-signing/pfSense-pkg-Ipv6PrefixUpdater-9.9.9.pkg.sig',
+  'tests/fixtures/release-signing/pfSense-pkg-Ipv6PrefixUpdater-9.9.9.pkg.wrong-namespace.sig',
+  'tests/fixtures/release-signing/release-signing-a.pub',
+  'tests/fixtures/release-signing/release-signing-b.pub',
   'tests/pfsense-adapter.php',
   'tests/runtime.php',
   'tests/translations.php',
+  'tests/updates.php',
   'tests/webgui-localization.php',
   'tests/stubs/config.inc',
   'tests/stubs/interfaces.inc',
+  'tests/stubs/notices.inc',
   'tests/stubs/pfsense-utils.inc',
   'tests/stubs/services.inc',
 ];
@@ -139,6 +157,10 @@ if (makefileTemplate.includes('%%NOVA_PORTVERSION%%') === false) {
   throw new Error('port/Makefile.template must retain the %%NOVA_PORTVERSION%% build placeholder.');
 }
 
+if (makefileTemplate.includes('WWW=\thttps://mrjackyliang.github.io/pfsense-ipv6-prefix-updater/') === false) {
+  throw new Error('port/Makefile.template must publish the package documentation homepage.');
+}
+
 /**
  * Check Package - Payload Directory Entries.
  *
@@ -193,6 +215,18 @@ const plistEntries = (await readFile(join(workspaceDirectory, 'port', 'pkg-plist
   .split('\n')
   .map((entry) => entry.trim())
   .filter((entry) => entry.length > 0);
+
+if (plistEntries.includes('www/ipv6-prefix-updater-about.php') === false) {
+  throw new Error('port/pkg-plist must install the IPv6 Prefix Updater About page.');
+}
+
+if (plistEntries.includes('%%DATADIR%%/logo.svg') === false) {
+  throw new Error('port/pkg-plist must install the IPv6 Prefix Updater logo.');
+}
+
+if (plistEntries.includes('%%DATADIR%%/release-signing.pub') === false) {
+  throw new Error('port/pkg-plist must install the IPv6 Prefix Updater release signing keys.');
+}
 
 /**
  * Check Package - Unique Plist Entries.
@@ -251,6 +285,66 @@ const makefileSources = [
 for (const makefileSource of makefileSources) {
   if (makefileTemplate.includes(makefileSource) === false) {
     throw new Error(`port/Makefile.template does not install payload source "${makefileSource}".`);
+  }
+}
+
+/**
+ * Check Package - Release Signing Keys Path.
+ *
+ * Identifies the trust-root file staged into every package before publication.
+ * Validation below keeps its grammar identical to the installed PHP reader.
+ *
+ * @since 2.1.0
+ */
+const releaseSigningKeysPath = join(
+  workspaceDirectory,
+  'port',
+  'files',
+  'usr',
+  'local',
+  'share',
+  'pfSense-pkg-Ipv6PrefixUpdater',
+  'release-signing.pub',
+);
+
+/**
+ * Check Package - Release Signing Key Lines.
+ *
+ * Splits the trust-root file with the same newline, carriage-return, whitespace,
+ * and comment handling used by installed update verification.
+ *
+ * @since 2.1.0
+ */
+const releaseSigningKeyLines = (await readFile(releaseSigningKeysPath, 'utf-8'))
+  .split('\n')
+  .map((releaseSigningKeyLine) => releaseSigningKeyLine.replaceAll('\r', '').trim());
+
+for (const releaseSigningKeyEntry of releaseSigningKeyLines.entries()) {
+  const releaseSigningKeyIndex = releaseSigningKeyEntry[0];
+  const releaseSigningKeyLine = releaseSigningKeyEntry[1];
+
+  if (releaseSigningKeyLine.length === 0 || releaseSigningKeyLine.startsWith('#') === true) {
+    continue;
+  }
+
+  const releaseSigningKeyMatch = releaseSigningKeyPattern.exec(releaseSigningKeyLine);
+  const releaseSigningKeyLineNumber = releaseSigningKeyIndex + 1;
+
+  if (releaseSigningKeyMatch === null) {
+    throw new Error(`port/files/usr/local/share/pfSense-pkg-Ipv6PrefixUpdater/release-signing.pub line ${releaseSigningKeyLineNumber} is not a valid ssh-ed25519 public key.`);
+  }
+
+  const releaseSigningKeyData = releaseSigningKeyMatch[1];
+
+  if (typeof releaseSigningKeyData !== 'string') {
+    throw new Error(`port/files/usr/local/share/pfSense-pkg-Ipv6PrefixUpdater/release-signing.pub line ${releaseSigningKeyLineNumber} does not contain key data.`);
+  }
+
+  const releaseSigningKeyDecoded = Buffer.from(releaseSigningKeyData, 'base64');
+
+  if (releaseSigningKeyDecoded.length !== 51
+    || releaseSigningKeyDecoded.toString('base64') !== releaseSigningKeyData) {
+    throw new Error(`port/files/usr/local/share/pfSense-pkg-Ipv6PrefixUpdater/release-signing.pub line ${releaseSigningKeyLineNumber} does not contain canonical 51-byte key data.`);
   }
 }
 
@@ -332,6 +426,21 @@ if (commandLineEntryPoint.includes('case \'--migrate-legacy\':') === false
   throw new Error('The command-line entry point must expose the locked version 1.x cleanup action.');
 }
 
+if (commandLineEntryPoint.includes('case \'--check-updates\':') === false
+  || commandLineEntryPoint.includes('case \'--self-update\':') === false
+  || commandLineEntryPoint.includes('new UpdateManager(') === false) {
+  throw new Error('The command-line entry point must expose locked release checks and verified self-updates.');
+}
+
+for (const environmentOverride of [
+  'IPV6_PREFIX_UPDATER_RELEASES_API',
+  'IPV6_PREFIX_UPDATER_DOWNLOAD_PREFIX',
+]) {
+  if (commandLineEntryPoint.includes(environmentOverride) === false) {
+    throw new Error(`The command-line entry point is missing test override ${environmentOverride}.`);
+  }
+}
+
 /**
  * Check Package - Package Info XML.
  *
@@ -386,11 +495,16 @@ const requiredWebGuiMarkers = [
   '<url>/pkg_edit.php?xml=ipv6-prefix-updater.xml&amp;id=0</url>',
   '<url>/ipv6-prefix-updater-status.php</url>',
   '<url>/ipv6-prefix-updater-fields.php</url>',
+  '<url>/ipv6-prefix-updater-about.php</url>',
   '<fieldname>enabled</fieldname>',
   '<fieldname>interface</fieldname>',
   '<fieldname>prefix_length</fieldname>',
   '<fieldname>update_frequency</fieldname>',
   '<fieldname>notifications</fieldname>',
+  '<fieldname>update_check_frequency</fieldname>',
+  '<default_value>weekly</default_value>',
+  '<option><name>Never</name><value>never</value></option>',
+  '<fieldname>update_remote_notifications</fieldname>',
   'pfsensePackageIpv6PrefixUpdaterSync();',
   '<custom_php_deinstall_command>',
   'pfsensePackageIpv6PrefixUpdaterRemove();',
@@ -465,6 +579,129 @@ const statusPage = await readFile(
 
 if (statusPage.includes('/pkg_edit.php?xml=ipv6-prefix-updater.xml&id=0') === false) {
   throw new Error('The status page Settings tab must link directly to the singleton package editor.');
+}
+
+/**
+ * Check Package - About Page.
+ *
+ * The package-information page must retain its privilege, version fallbacks,
+ * safe external links, and active tab while being staged by the port.
+ *
+ * @since 2.1.0
+ */
+const aboutPage = await readFile(
+  join(workspaceDirectory, 'port', 'files', 'usr', 'local', 'www', 'ipv6-prefix-updater-about.php'),
+  'utf-8',
+);
+
+for (const aboutPageMarker of [
+  '##|*MATCH=ipv6-prefix-updater-about.php*',
+  'UpdateManager::installedVersion()',
+  'Translator::translate(\'unknown\')',
+  'pfsensePackageIpv6PrefixUpdaterTabs(\'about\')',
+  'TestedReleases::RELEASES',
+  'g_get(\'product_label\')',
+  'g_get(\'product_version\')',
+  'php_uname(\'r\')',
+  'data:image/svg+xml;base64,',
+  'class="pkg-about-hero"',
+  'class="table table-striped table-hover pkg-about-table"',
+  'class="fab fa-github"',
+  'class="far fa-circle"',
+  'class="fab fa-paypal"',
+  '.pkg-about .btn i {',
+  '.pkg-about-table i {',
+  'Translator::translate(\'support_message\')',
+  '$supportMessageTemplateEscaped',
+  '$supportMessage',
+  'https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/issues/new/choose',
+  'https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases',
+  'target="_blank" rel="noopener noreferrer"',
+  'class="pkg-about-update',
+  'name="check_updates"',
+  'name="self_update"',
+  'mwexec_bg(PackagePaths::SELF_UPDATE_COMMAND)',
+  'UpdateManager::queueSelfUpdate(',
+  'window.fetch(\'ipv6-prefix-updater-about.php?update_status=1\'',
+  'class="fa fa-solid fa-download"',
+]) {
+  if (aboutPage.includes(aboutPageMarker) === false) {
+    throw new Error(`The About page is missing required content: ${aboutPageMarker}`);
+  }
+}
+
+/**
+ * Check Package - Update Manager Source.
+ *
+ * Keeps the signed update boundary available for structural checks without
+ * executing pfSense-specific HTTP, notice, process, or filesystem integrations.
+ *
+ * @since 2.1.0
+ */
+const updateManagerSource = await readFile(
+  join(
+    workspaceDirectory,
+    'port',
+    'files',
+    'usr',
+    'local',
+    'pkg',
+    'ipv6-prefix-updater',
+    'UpdateManager.php',
+  ),
+  'utf-8',
+);
+
+for (const updateSecurityMarker of [
+  'set_curlproxy($curlHandle)',
+  'CURLOPT_SSL_VERIFYHOST => 2',
+  'CURLOPT_SSL_VERIFYPEER => true',
+  'CURLOPT_CONNECTTIMEOUT => 5',
+  'CURLOPT_MAXFILESIZE_LARGE',
+  'CURLOPT_XFERINFOFUNCTION',
+  'hash_file(\'sha256\'',
+  '\'.sha256\'',
+  '\'.sig\'',
+  'checksumDigest(',
+  'readSigningKeys(',
+  'allowedSignersContent(',
+  'verifyReleaseSignature(',
+  '\'-Y\',',
+  '\'verify\',',
+  '\'query\',',
+  '\'add\',',
+  '\'-f\',',
+  'update_checksum_missing',
+]) {
+  if (updateManagerSource.includes(updateSecurityMarker) === false) {
+    throw new Error(`The signed update runtime is missing required content: ${updateSecurityMarker}`);
+  }
+}
+
+for (const environmentOverride of [
+  'IPV6_PREFIX_UPDATER_RELEASES_API',
+  'IPV6_PREFIX_UPDATER_DOWNLOAD_PREFIX',
+]) {
+  if (updateManagerSource.includes(environmentOverride) === true
+    || aboutPage.includes(environmentOverride) === true) {
+    throw new Error(`Test override ${environmentOverride} must be read only by the CLI.`);
+  }
+}
+
+for (const removedAboutPageMarker of [
+  'about_description',
+  'support_open_source_prefix',
+  'support_prompt',
+  'fa fa-github',
+  'fa fa-paypal',
+  'fa fa-circle-o',
+  'i.fa',
+  'important_information',
+  'project_links',
+]) {
+  if (aboutPage.includes(removedAboutPageMarker) === true) {
+    throw new Error(`The About page retains removed content: ${removedAboutPageMarker}`);
+  }
 }
 
 for (const iconClass of [

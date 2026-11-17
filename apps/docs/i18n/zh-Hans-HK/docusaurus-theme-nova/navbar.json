@@ -1,17 +1,41 @@
 {
-  "item.label.Home": {
-    "message": "首页"
-  },
-  "item.label.Guides": {
+  "item.label.Docs": {
     "message": "文档"
   },
+  "item.label.Overview": {
+    "message": "概述"
+  },
+  "item.label.Quick Start": {
+    "message": "快速入门"
+  },
+  "item.label.Configure": {
+    "message": "配置"
+  },
+  "item.label.Operate": {
+    "message": "日常运维"
+  },
   "item.label.Safety": {
-    "message": "安全与运行"
+    "message": "安全机制"
+  },
+  "item.label.Reference": {
+    "message": "参考"
+  },
+  "item.label.Contributing": {
+    "message": "参与贡献"
+  },
+  "item.label.Blog": {
+    "message": "博客"
+  },
+  "item.label.Resources": {
+    "message": "资源"
   },
   "item.label.Troubleshooting": {
     "message": "故障排除"
   },
-  "item.label.Blog": {
-    "message": "博客"
+  "item.label.Changelog": {
+    "message": "更新日志"
+  },
+  "item.label.Report an Issue": {
+    "message": "报告问题"
   }
 }

@@ -93,6 +93,7 @@ $package = [
             ['text' => 'Fields'],
             ['text' => 'Backups'],
             ['text' => 'Cleanup'],
+            ['text' => 'About'],
         ],
     ],
     'fields' => [
@@ -136,6 +137,26 @@ $package = [
                 'type' => 'info',
                 'description' => 'Choose which configuration fields change with the prefix on the Fields tab.',
             ],
+            [
+                'type' => 'listtopic',
+                'name' => 'Package Updates',
+            ],
+            [
+                'fielddescr' => 'Update Checks',
+                'description' => 'Choose how often pfSense checks GitHub for a new package release. The check runs at a stable randomized time.',
+                'options' => [
+                    'option' => [
+                        ['name' => 'Daily'],
+                        ['name' => 'Weekly'],
+                        ['name' => 'Monthly'],
+                        ['name' => 'Never'],
+                    ],
+                ],
+            ],
+            [
+                'fielddescr' => 'Remote Notifications',
+                'description' => 'Also send each new-version notice through configured pfSense email, Telegram, Pushover, or other remote notification channels.',
+            ],
         ],
     ],
 ];
@@ -168,17 +189,17 @@ assertWebGuiLocalizationSame(
     'The post-save redirect must carry a localized success notice.',
 );
 assertWebGuiLocalizationSame(
-    ['欄位', '備份', '清理'],
-    [$package['tabs']['tab'][2]['text'], $package['tabs']['tab'][3]['text'], $package['tabs']['tab'][4]['text']],
-    'The Fields, Backups, and Cleanup tabs must be localized.',
+    ['欄位', '備份', '清理', '關於'],
+    [$package['tabs']['tab'][2]['text'], $package['tabs']['tab'][3]['text'], $package['tabs']['tab'][4]['text'], $package['tabs']['tab'][5]['text']],
+    'The Fields, Backups, Cleanup, and About tabs must be localized.',
 );
 assertWebGuiLocalizationSame(
-    ['設定', '狀態', '欄位', '備份', '清理'],
+    ['設定', '狀態', '欄位', '備份', '清理', '關於'],
     array_column(pfsensePackageIpv6PrefixUpdaterTabs('fields'), 0),
-    'The custom pages must show the same five tabs in the same order.',
+    'The custom pages must show the same six tabs in the same order.',
 );
 assertWebGuiLocalizationSame(
-    [false, false, true, false, false],
+    [false, false, true, false, false, false],
     array_column(pfsensePackageIpv6PrefixUpdaterTabs('fields'), 1),
     'The Fields page must mark only its own tab active.',
 );
@@ -201,6 +222,31 @@ assertWebGuiLocalizationSame(
     $package['fields']['field'][4]['description'],
     'The Settings tab pointer to the Fields tab must be localized.',
 );
+assertWebGuiLocalizationSame(
+    [
+        '套件更新',
+        '更新檢查',
+        ['每天', '每週', '每月', '永不'],
+        '遠端通知',
+    ],
+    [
+        $package['fields']['field'][5]['name'],
+        $package['fields']['field'][6]['fielddescr'],
+        array_column($package['fields']['field'][6]['options']['option'], 'name'),
+        $package['fields']['field'][7]['fielddescr'],
+    ],
+    'Update settings and every frequency choice must use the active pfSense language.',
+);
+assertWebGuiLocalizationSame(
+    '已測試的 pfSense 版本',
+    \PfSense\Ipv6PrefixUpdater\Runtime\Translator::translate('tested_pfsense_releases'),
+    'The About tab release matrix heading must use the active pfSense language.',
+);
+assertWebGuiLocalizationSame(
+    '每個已測試版本均通過安裝、升級、前綴變更及移除測試。',
+    \PfSense\Ipv6PrefixUpdater\Runtime\Translator::translate('tested_releases_footnote'),
+    'The About tab release test scope must use the active pfSense language.',
+);
 
 $inputErrors = [];
 pfsensePackageIpv6PrefixUpdaterValidate(
@@ -208,6 +254,7 @@ pfsensePackageIpv6PrefixUpdaterValidate(
         'interface0' => 'missing',
         'prefix_length0' => '72',
         'update_frequency' => 'sometimes',
+        'update_check_frequency' => 'sometimes',
     ],
     $inputErrors,
 );
@@ -217,6 +264,7 @@ assertWebGuiLocalizationSame(
         '請選擇要監控的已設定 pfSense 介面。',
         '委派前綴長度必須介於 48 到 64。',
         '請選擇支援的套件排程。',
+        '請為更新檢查選擇每天、每週、每月或永不。',
     ],
     $inputErrors,
     'WebGUI validation errors must use the active package catalog.',

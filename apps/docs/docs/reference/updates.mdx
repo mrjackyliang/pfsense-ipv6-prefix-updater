@@ -1,0 +1,74 @@
+---
+id: updates
+title: Updates
+description: Configure GitHub release checks and install package updates protected by SHA-256 checksums and release signatures from the About tab.
+keywords:
+  - pfsense ipv6 prefix updater
+  - update checks
+  - sha-256 checksum
+  - release signatures
+  - pfsense notifications
+  - self update
+tags:
+  - reference
+  - updates
+  - security
+sidebar_position: 5
+---
+
+IPv6 Prefix Updater checks its GitHub releases because pfSense Package Manager does not list packages installed directly from GitHub.
+
+## What Is Checked
+
+The check requests the latest release metadata from GitHub and compares its version with the installed package version. It saves the check time, latest version, release link, publication time, notification state, and last error in `/cf/conf/ipv6-prefix-updater/updates.json`. It never sends firewall configuration to GitHub.
+
+Choose the frequency under **Services → IPv6 Prefix Updater → Settings → Package Updates**:
+
+- **Daily** runs once each day at a time chosen randomly during installation.
+- **Weekly** is the default and also chooses one stable weekday and time.
+- **Monthly** chooses one stable day from 1 through 28 and one stable time.
+- **Never** removes the scheduled release check.
+
+The random schedule is stored in the pfSense configuration, so saving settings or reinstalling the package does not move it. **Check Now** on the About tab always performs a manual check, including when the frequency is **Never**.
+
+## Network Destinations
+
+An update check or update can contact these GitHub-operated hosts:
+
+- `api.github.com` for latest-release metadata and the published SHA-256 digest.
+- `github.com` for the release asset URL.
+- `release-assets.githubusercontent.com`, GitHub's release download host, after the asset request redirects.
+
+Requests use TLS certificate verification, short timeouts, a package User-Agent, and the proxy configured in pfSense. A `403` or `429` response is treated as rate limiting and does not erase the last valid release details.
+
+## Notices
+
+When a newer version first appears, the package adds one pfSense bell notice for that version. The notice links to the About tab and remains local by default.
+
+Select **Remote Notifications** to opt in to pfSense's configured email, Telegram, Pushover, or other remote channels. The package still creates only one notice per new version. It closes the notice after that version is installed or a later check finds the installed package current.
+
+## Install an Update
+
+Open **Services → IPv6 Prefix Updater → About**. When a newer version is available, **Update to _version_** starts a background job and the page shows its progress.
+
+The job fetches the release again and downloads the versioned `.pkg`. It checks the package against the GitHub API asset's `sha256:<hex>` digest; when that digest is absent, it downloads the matching `.pkg.sha256` asset from the same release instead.
+
+Release packages carry the release workflow's public signing keys in `/usr/local/share/pfSense-pkg-Ipv6PrefixUpdater/release-signing.pub`. When that file lists one or more keys, an installed copy accepts only updates signed by one of them; a missing or comment-only file leaves signature checks off, and updates rely on the SHA-256 check alone.
+
+After the SHA-256 check, when the installed key file lists a key, the job downloads the matching `.pkg.sig` from the same release and checks it with `ssh-keygen -Y verify` before reading the archive. A release without that signature, or one signed by another key, is refused and the installed version stays.
+
+The job then confirms the archive's package name and version before running `pkg add -f`. If neither checksum source exists, it refuses the update and keeps the installed version; the package lock prevents a prefix run and an update from overlapping.
+
+## Install Manually
+
+An administrator can still install the asset from a pfSense shell:
+
+```shell
+pkg add -f https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
+```
+
+This manual command bypasses both the About tab's SHA-256 check and its release signature check. Verify the release, checksum, and signature before using it.
+
+## Turn Checks Off
+
+Set **Update Checks** to **Never** and save the Settings tab. The package removes its update-check cron entry and makes no scheduled outbound update requests. Prefix monitoring keeps its own independent schedule, and **Check Now** remains available for an administrator-initiated request.

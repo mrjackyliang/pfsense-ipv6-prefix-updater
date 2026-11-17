@@ -35,31 +35,35 @@ Preporučuje se da prvo preuzmete kopiju konfiguracije iz **Diagnostics → Back
 pkg add -f https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
 ```
 
-Korak instalacije ponovo sinhronizuje cron unos sa sačuvanim postavkama i zadržava svako <Terminology title="početni prefiks zabilježen bez promjene konfiguracije" to="/docs/reference/terminology#baseline">početno stanje</Terminology>. Koraci provjere kontrolnog zbira iz uputstva [Instalacija paketa](/docs/installation#verify-the-download-first) rade i za ažuriranja.
+Korak instalacije ponovo sinhronizuje oba cron unosa, provjeru prefiksa i provjeru izdanja, sa sačuvanim postavkama i zadržava svako <Terminology title="Zabilježeni početni prefiks od kojeg se mjere promjene" to="/docs/reference/terminology#baselines-and-transitions">početno stanje</Terminology>. Koraci provjere kontrolnog zbira iz uputstva [Instalacija paketa](/docs/installation#verify-the-download-first) rade i za ažuriranja.
 
 Nakon ažuriranja:
 
 1. Otvorite **Services → IPv6 Prefix Updater → Postavke** i potvrdite sačuvane vrijednosti.
-2. Na kartici Status provjerite **Trenutno stanje**. Svako sučelje zadržava svoje <Terminology title="početni prefiks zabilježen bez promjene konfiguracije" to="/docs/reference/terminology#baseline">početno stanje</Terminology>.
+2. Na kartici Status provjerite **Trenutno stanje**. Svako sučelje zadržava svoje <Terminology title="Zabilježeni početni prefiks od kojeg se mjere promjene" to="/docs/reference/terminology#baselines-and-transitions">početno stanje</Terminology>.
 
-Ako neki red prikazuje `Nije inicijalizirano`, **Pokreni sada** bilježi novo <Terminology title="početni prefiks zabilježen bez promjene konfiguracije" to="/docs/reference/terminology#baseline">početno stanje</Terminology> za njega. Adrese koje još koriste prefiks od prije tog početnog stanja tada ostaju nepromijenjene.
+Ako neki red prikazuje `Nije inicijalizirano`, **Pokreni sada** bilježi novo <Terminology title="Zabilježeni početni prefiks od kojeg se mjere promjene" to="/docs/reference/terminology#baselines-and-transitions">početno stanje</Terminology> za njega. Adrese koje još koriste prefiks od prije tog početnog stanja tada ostaju nepromijenjene.
 
 ## Uklanjanje paketa \{#remove-the-package}
 
-Ako prvo poništite oznaku **<Terminology title="automatske provjere iz cron unosa kojim upravlja pfSense" to="/docs/reference/terminology#scheduled-updates">Omogući zakazana ažuriranja</Terminology>**, kasnija ponovna instalacija neće odmah pokrenuti raspored ako pfSense zadrži sačuvane postavke. Zatim pokrenite:
+Ako prvo poništite oznaku **<Terminology title="Automatske provjere po rasporedu, isključene dok ih ne uključite" to="/docs/reference/terminology#running-checks">Omogući zakazana ažuriranja</Terminology>**, kasnija ponovna instalacija neće odmah pokrenuti raspored ako pfSense zadrži sačuvane postavke. Zatim pokrenite:
 
 ```shell
-pkg delete pfSense-pkg-Ipv6PrefixUpdater
+pkg delete -f pfSense-pkg-Ipv6PrefixUpdater
 ```
 
-Uklanjanje briše cron unos paketa i datoteku <Terminology title="zaštita koja sprječava dvije istovremene provjere" to="/docs/reference/terminology#run-lock">zaključavanja pokretanja</Terminology>. Zadržava <Terminology title="datoteka paketa s početnim stanjem i posljednjim pokretanjem" to="/docs/reference/terminology#package-state">stanje paketa</Terminology> i kopije s kartice **Sigurnosne kopije** u `/cf/conf/ipv6-prefix-updater`, tako da uklanjanje i ponovna instalacija koje sam pfSense izvodi tokom ažuriranja nikada ne izgube <Terminology title="početni prefiks zabilježen bez promjene konfiguracije" to="/docs/reference/terminology#baseline">početno stanje</Terminology>.
+Paket je označen kao `vital`, pa ga vlastite nadogradnje pfSense-a zadržavaju instaliranim, a obični `pkg delete` odbija vitalne pakete.
 
-Uklanjanje ne poništava adrese koje su već sačuvane u konfiguraciji, a revizije paketa ostaju u <Terminology title="pfSense lista sačuvanih revizija konfiguracije" to="/docs/reference/terminology#config-history">Config History</Terminology>. Da biste uklonili i zadržane datoteke, nakon uklanjanja paketa pokrenite `rm -rf /cf/conf/ipv6-prefix-updater`.
+Uklanjanje briše oba cron unosa (provjeru prefiksa i provjeru izdanja), zatvara obavijest o dostupnom ažuriranju i uklanja datoteku <Terminology title="Sprečava da se dvije provjere pokrenu istovremeno" to="/docs/reference/terminology#running-checks">zaključavanja pokretanja</Terminology> kada ga nijedno pokretanje ne drži. Zadržava <Terminology title="Datoteka sa svakim početnim stanjem, sačuvana i nakon reinstalacije" to="/docs/reference/terminology#running-checks">stanje paketa</Terminology>, `updates.json`, `update-status.json` i kopije s kartice **Sigurnosne kopije** u `/cf/conf/ipv6-prefix-updater`.
+
+Vlastite nadogradnje pfSense-a zadržavaju paket instaliranim (on je `vital`), a zadržano stanje znači da uklanjanje i ponovna instalacija nikada ne gube <Terminology title="Zabilježeni početni prefiks od kojeg se mjere promjene" to="/docs/reference/terminology#baselines-and-transitions">početno stanje</Terminology>.
+
+Uklanjanje ne poništava adrese koje su već sačuvane u konfiguraciji, a revizije paketa ostaju u <Terminology title="Sačuvane revizije konfiguracije u pfSense-u koje možete vratiti" to="/docs/reference/terminology#backups-and-service-reloads">Config History</Terminology>. Da biste uklonili i zadržane datoteke, nakon uklanjanja paketa pokrenite `rm -rf /cf/conf/ipv6-prefix-updater`.
 
 ## Kasnija ponovna instalacija \{#reinstall-later}
 
-Ponovna instalacija pronalazi zadržano <Terminology title="datoteka paketa s početnim stanjem i posljednjim pokretanjem" to="/docs/reference/terminology#package-state">stanje paketa</Terminology>, pa prvo pokretanje poredi sa svakim sačuvanim <Terminology title="početni prefiks zabilježen bez promjene konfiguracije" to="/docs/reference/terminology#baseline">početnim stanjem</Terminology> i ažurira polja koja su ostala na starijem prefiksu. Ako su ranije postavke još prisutne s označenom opcijom **<Terminology title="automatske provjere iz cron unosa kojim upravlja pfSense" to="/docs/reference/terminology#scheduled-updates">Omogući zakazana ažuriranja</Terminology>**, korak instalacije odmah uključuje raspored.
+Ponovna instalacija pronalazi zadržano <Terminology title="Datoteka sa svakim početnim stanjem, sačuvana i nakon reinstalacije" to="/docs/reference/terminology#running-checks">stanje paketa</Terminology>, pa prvo pokretanje poredi sa svakim sačuvanim <Terminology title="Zabilježeni početni prefiks od kojeg se mjere promjene" to="/docs/reference/terminology#baselines-and-transitions">početnim stanjem</Terminology> i ažurira polja koja su ostala na starijem prefiksu. Ako su ranije postavke još prisutne s označenom opcijom **<Terminology title="Automatske provjere po rasporedu, isključene dok ih ne uključite" to="/docs/reference/terminology#running-checks">Omogući zakazana ažuriranja</Terminology>**, korak instalacije odmah uključuje raspored.
 
-Za potpuno novi početak izbrišite `/cf/conf/ipv6-prefix-updater` prije ponovne instalacije. Prvo pokretanje tada bilježi novo <Terminology title="početni prefiks zabilježen bez promjene konfiguracije" to="/docs/reference/terminology#baseline">početno stanje</Terminology> i prijavljuje ishod <Terminology title="ishod: početno stanje zabilježeno, konfiguracija nepromijenjena" to="/docs/reference/terminology#initialized">Inicijalizirano</Terminology> bez promjene konfiguracije.
+Za potpuno novi početak izbrišite `/cf/conf/ipv6-prefix-updater` prije ponovne instalacije. Prvo pokretanje tada bilježi novo <Terminology title="Zabilježeni početni prefiks od kojeg se mjere promjene" to="/docs/reference/terminology#baselines-and-transitions">početno stanje</Terminology> i prijavljuje ishod <Terminology title="Prvi pogled: početno stanje zabilježeno, ništa se ne mijenja" to="/docs/reference/terminology#run-outcomes">Inicijalizirano</Terminology> bez promjene konfiguracije.
 
 Pregledajte uputstvo [Sigurnosne kopije i oporavak](/docs/operate/backups-and-recovery) prije održavanja i uputstvo [Uspostavljanje početnog stanja](/docs/first-run) nakon ponovne instalacije.

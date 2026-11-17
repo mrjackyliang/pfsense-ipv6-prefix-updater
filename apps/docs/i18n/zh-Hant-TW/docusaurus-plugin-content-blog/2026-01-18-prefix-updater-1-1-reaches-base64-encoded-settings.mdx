@@ -1,0 +1,41 @@
+---
+title: "Prefix Updater 1.1 可更新 base64 編碼的設定"
+description: 1.1 版可以在自訂選項等 base64 編碼的 pfSense 值中找到舊的 IPv6 前綴，且比對前綴時不區分字母大小寫。
+slug: prefix-updater-1-1-reaches-base64-encoded-settings
+authors:
+  - mrjackyliang
+keywords:
+  - pfsense ipv6 prefix updater
+  - base64 自訂選項
+  - 動態 IPv6 前綴
+  - update.php
+  - 舊版更新器
+tags:
+  - release
+  - ipv6
+  - pfsense
+---
+
+前綴更新器指令碼 1.1 版於 2026 年 1 月 18 日發行。它會將新的 IPv6 前綴帶入 pfSense 以 base64 編碼儲存的設定（例如自訂選項），而早期版本無法讀取這些設定。
+
+{/* truncate */}
+
+## 為什麼重要 \{#why-it-matters}
+
+pfSense 會將某些自由格式的設定（例如自訂選項區塊）以 base64 文字形式儲存在 `config.xml` 中。寫在這類區塊中的位址從不以純文字形式出現，因此搜尋舊前綴時會直接漏掉它。
+
+前綴變更後，這些位址仍停留在舊前綴上，而設定的其餘部分已經更新。有了 1.1，更新器會解碼每個 base64 值，在其中尋找舊前綴，並將更新後的值重新以 base64 寫回。
+
+## 1.1 版的內容 \{#whats-in-version-11}
+
+- **base64 編碼的值** — 搜尋每個能解碼為有效 base64 的值，包括跨多行換行的區塊；取代後的內容在儲存前會重新編碼。
+- **任何字母大小寫** — IPv6 位址可以用大寫或小寫書寫。掃描、已儲存的前綴、搜尋與取代現在都不區分大小寫，前綴以小寫形式儲存。
+- **穩定的來源位址** — 介面掃描會略過暫時與已淘汰的全域位址，使用每個介面上第一個穩定的全域位址，因此短暫存在的位址不會決定前綴。
+
+記錄會在每項 base64 更新所變更的設定旁標註 `(base64-decoded)`，因此每次執行都能準確顯示哪些編碼值已改為新前綴。
+
+## 後續發展 \{#where-it-led}
+
+1.1 版擴大了指令碼能夠觸及的範圍。隨後在 2.0 版推出的原生套件採取相反的做法：它只變更您在「欄位」分頁中核准的欄位；[從指令碼遷移](/docs/migrate-from-legacy)指南說明了如何從指令碼遷移到套件。
+
+IPv6 Prefix Updater for pfSense 讓 pfSense 中的本機 IPv6 位址在 ISP 變更委派前綴時繼續正常運作。請從[安裝套件](/docs/installation)開始。

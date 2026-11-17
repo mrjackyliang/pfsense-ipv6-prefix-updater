@@ -15,10 +15,10 @@
     "message": "Обнаруживайте изменения делегированного префикса, обновляйте только разрешённые поля pfSense, сохраняйте биты узла и проверяйте каждую транзакцию."
   },
   "home.hero.primaryAction": {
-    "message": "Установка и настройка"
+    "message": "Начать"
   },
   "home.hero.secondaryAction": {
-    "message": "Проверить безопасность"
+    "message": "Подробнее"
   },
   "home.preview.ariaLabel": {
     "message": "Длина делегированного префикса: /56"
@@ -43,30 +43,6 @@
   },
   "home.preview.result": {
     "message": "Пробный запуск обнаружил 2 разрешённых изменений полей для 2001:db8:abcd:8800::/56; конфигурация не изменена."
-  },
-  "home.workflow.eyebrow": {
-    "message": "Безопасность и работа"
-  },
-  "home.workflow.heading": {
-    "message": "Безопасная транзакция"
-  },
-  "home.workflow.detect": {
-    "message": "Обнаруженный исходный адрес"
-  },
-  "home.workflow.plan": {
-    "message": "Изменённые поля"
-  },
-  "home.workflow.backup": {
-    "message": "Создана резервная копия конфигурации"
-  },
-  "home.workflow.write": {
-    "message": "Текущий префикс"
-  },
-  "home.workflow.verify": {
-    "message": "Успешно"
-  },
-  "home.workflow.notify": {
-    "message": "Уведомления"
   },
   "home.features.interface.title": {
     "message": "Контролируемые интерфейсы"
@@ -104,70 +80,70 @@
   "home.features.notify.description": {
     "message": "Использует настроенные каналы уведомлений pfSense после проверенного успешного обновления префикса. Проверки без изменений никогда не отправляют уведомления."
   },
-  "home.stats.heading": {
-    "message": "Безопасность и работа"
-  },
-  "home.stats.boundaries": {
-    "message": "Длина делегированного префикса"
-  },
-  "home.stats.backups": {
-    "message": "Создана резервная копия конфигурации"
-  },
-  "home.stats.writes": {
-    "message": "Изменённые поля"
-  },
-  "home.stats.noChange": {
-    "message": "Активный префикс IPv6 не изменился; разрешённые цели конфигурации не читались и не записывались."
-  },
-  "home.routes.eyebrow": {
-    "message": "Руководства"
-  },
-  "home.routes.heading": {
-    "message": "Установка и настройка"
-  },
-  "home.routes.install.title": {
-    "message": "Установка пакета"
-  },
-  "home.routes.install.description": {
-    "message": "Выполните эту команду в shell pfSense, чтобы установить последнюю версию напрямую с GitHub."
-  },
-  "home.routes.open": {
-    "message": "Начать чтение"
-  },
-  "home.routes.configure.title": {
-    "message": "Контролируемые интерфейсы / Длина делегированного префикса"
-  },
-  "home.routes.configure.description": {
-    "message": "Добавьте по одной строке для каждого интерфейса, основной активный глобальный IPv6-адрес которого содержит делегированный префикс. Для DHCPv6 только с префиксом на WAN выберите отслеживаемый интерфейс ниже по цепочке. Биты узла после длины префикса сохраняются без изменений, а адрес, который pfSense выбирает для каждого интерфейса, показан на вкладке «Состояние»."
-  },
-  "home.routes.status.title": {
-    "message": "Состояние / Вывод команды"
-  },
-  "home.routes.status.description": {
-    "message": "«Запустить сейчас» может обновить разрешённые поля после обнаруженного изменения. Пробный запуск только сохраняет предварительный результат и никогда не записывает конфигурацию межсетевого экрана."
-  },
-  "home.routes.troubleshoot.title": {
-    "message": "Устранение неполадок"
-  },
-  "home.routes.troubleshoot.description": {
-    "message": "Если исходный адрес неверен, выберите нижестоящий отслеживаемый интерфейс с реальным глобальным адресом; не компенсируйте это угаданной длиной."
-  },
-  "home.spotlight.heading": {
-    "message": "Вывод команды"
-  },
-  "home.spotlight.description": {
-    "message": "Проверяйте каждый запуск на странице «Состояние»: исходный адрес, вычисленный префикс, резервную копию и результат."
-  },
-  "home.spotlight.statusAction": {
-    "message": "Состояние / Вывод команды"
-  },
-  "home.spotlight.testsAction": {
-    "message": "Результаты и тесты"
-  },
   "home.blogPreview.heading": {
     "message": "Из блога"
   },
   "home.blogPreview.description": {
-    "message": "Примечания к выпускам, руководства по настройке и статьи о динамических префиксах IPv6."
+    "message": "Выпуски, важные этапы и новое в IPv6 Prefix Updater for pfSense."
+  },
+  "home.showcase.heading": {
+    "message": "Внутри WebGUI pfSense"
+  },
+  "home.showcase.tabsLabel": {
+    "message": "Страницы IPv6 Prefix Updater"
+  },
+  "home.showcase.settings.label": {
+    "message": "Настройки"
+  },
+  "home.showcase.settings.heading": {
+    "message": "Контролируйте интерфейсы, на которые приходит ваш префикс"
+  },
+  "home.showcase.settings.description": {
+    "message": "Добавьте строку для каждого интерфейса, чей IPv6-адрес выдаёт ваш провайдер, укажите длину делегируемого префикса и выберите, когда pfSense проверяет изменения."
+  },
+  "home.showcase.settings.link": {
+    "message": "Выбрать интерфейс и префикс"
+  },
+  "home.showcase.settings.alt": {
+    "message": "Страница «Настройки» IPv6 Prefix Updater с двумя контролируемыми интерфейсами и длинами их префиксов"
+  },
+  "home.showcase.status.label": {
+    "message": "Состояние"
+  },
+  "home.showcase.status.heading": {
+    "message": "Запуск никогда не должен быть чёрным ящиком"
+  },
+  "home.showcase.status.description": {
+    "message": "Вкладка «Состояние» показывает последний префикс и адрес каждого интерфейса, что изменил последний запуск, была ли создана резервная копия и какие службы были перезагружены."
+  },
+  "home.showcase.status.link": {
+    "message": "Руководство по вкладке «Состояние»"
+  },
+  "home.showcase.status.alt": {
+    "message": "Страница «Состояние» IPv6 Prefix Updater с текущим состоянием каждого интерфейса и последним запуском"
+  },
+  "home.showcase.fields.label": {
+    "message": "Поля"
+  },
+  "home.showcase.fields.heading": {
+    "message": "Вы решаете, что меняется"
+  },
+  "home.showcase.fields.description": {
+    "message": "Выберите, какие поля конфигурации следуют за префиксом, задайте исключения и просмотрите настройки других пакетов до того, как что-либо будет записано."
+  },
+  "home.showcase.fields.link": {
+    "message": "Выбрать поля"
+  },
+  "home.showcase.fields.alt": {
+    "message": "Страница «Поля» IPv6 Prefix Updater с выбранными статическими интерфейсами и псевдонимами"
+  },
+  "home.showcase.settings.title": {
+    "message": "pfSense.home.arpa - Пакет: Службы: Обновление префикса IPv6: Настройки"
+  },
+  "home.showcase.status.title": {
+    "message": "pfSense.home.arpa - Сервисы: Обновление префикса IPv6: Состояние"
+  },
+  "home.showcase.fields.title": {
+    "message": "pfSense.home.arpa - Сервисы: Обновление префикса IPv6: Поля"
   }
 }

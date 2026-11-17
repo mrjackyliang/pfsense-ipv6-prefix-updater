@@ -17,17 +17,17 @@ sidebar_position: 1
 
 import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
 
-Halten Sie die in pfSense gespeicherten IPv6-Adressen auf Ihrem aktuellen Präfix, wenn Ihr Internetanbieter ein neues <Terminology title="IPv6-Netz, das Ihr Internetanbieter zur Firewall routet" to="/docs/reference/terminology#delegated-prefix">delegiertes Präfix</Terminology> zuweist.
+Halten Sie die in pfSense gespeicherten IPv6-Adressen auf Ihrem aktuellen Präfix, wenn Ihr Internetanbieter ein neues <Terminology title="Das IPv6-Netz, das Ihr Anbieter vergibt und das sich ändern kann" to="/docs/reference/terminology#addresses-and-prefixes">delegiertes Präfix</Terminology> zuweist.
 
 ## Was das Paket tut \{#what-it-does}
 
-pfSense IPv6 Prefix Updater ist ein pfSense-Paket, das die von Ihnen gewählten Schnittstellen auf ein neues Präfix hin überwacht. Ändert sich das Präfix, schreibt es die passenden Adressen in den von Ihnen ausgewählten Feldern um und behält dabei den <Terminology title="Adressbits nach dem delegierten Präfix" to="/docs/reference/terminology#host-portion">Hostanteil</Terminology> jeder Adresse bei.
+IPv6 Prefix Updater for pfSense ist ein pfSense-Paket, das die von Ihnen gewählten Schnittstellen auf ein neues Präfix hin überwacht. Ändert sich das Präfix, schreibt es die passenden Adressen in den von Ihnen ausgewählten Feldern um und behält dabei den <Terminology title="Die Bits nach dem Präfix, immer unverändert übernommen" to="/docs/reference/terminology#addresses-and-prefixes">Hostanteil</Terminology> jeder Adresse bei.
 
 ## Warum dieses Paket? \{#why-use-this-package}
 
-1. Behält den <Terminology title="Adressbits nach dem delegierten Präfix" to="/docs/reference/terminology#host-portion">Hostanteil</Terminology> jeder Adresse bei, sodass jedes Gerät nach einer Präfixänderung dasselbe Suffix behält.
-2. Ändert nur die <Terminology title="exaktes Konfigurationsfeld, das das Paket umschreiben darf" to="/docs/reference/terminology#approved-field">genehmigten Felder</Terminology>, die Sie auf der Registerkarte Felder auswählen, sodass entfernte VPN-Netze, Peers, Gateways und Routen so bleiben, wie Sie sie eingerichtet haben.
-3. Speichert vor jedem Schreibvorgang eine <Terminology title="Kopie der Konfiguration vor einem Schreibvorgang" to="/docs/reference/terminology#configuration-backup">Konfigurationssicherung</Terminology>, sodass die vorherige Konfiguration in der <Terminology title="pfSense-Liste gespeicherter Konfigurationsrevisionen" to="/docs/reference/terminology#config-history">Config History</Terminology> bereitliegt.
+1. Behält den <Terminology title="Die Bits nach dem Präfix, immer unverändert übernommen" to="/docs/reference/terminology#addresses-and-prefixes">Hostanteil</Terminology> jeder Adresse bei, sodass jedes Gerät nach einer Präfixänderung dasselbe Suffix behält.
+2. Ändert nur die <Terminology title="Eine Einstellung, die das Paket umschreiben darf" to="/docs/reference/terminology#fields-and-change-plans">genehmigten Felder</Terminology>, die Sie auf der Registerkarte Felder auswählen, sodass entfernte VPN-Netze, Peers, Gateways und Routen so bleiben, wie Sie sie eingerichtet haben.
+3. Speichert vor jedem Schreibvorgang eine <Terminology title="Eine Kopie der Konfiguration direkt vor jedem Schreiben" to="/docs/reference/terminology#backups-and-service-reloads">Konfigurationssicherung</Terminology>, sodass die vorherige Konfiguration in der <Terminology title="Die gespeicherten Konfigurationsstände von pfSense zum Wiederherstellen" to="/docs/reference/terminology#backups-and-service-reloads">Config History</Terminology> bereitliegt.
 4. Läuft nach einem Zeitplan, den pfSense verwaltet, sodass Sie weder das Cron-Paket noch ein Skript in einem Home-Verzeichnis brauchen.
 5. Zeigt jedes Ergebnis auf der Registerkarte Status, sodass Sie sehen, was sich geändert hat, welche Dienste neu geladen wurden und ob eine Sicherung erstellt wurde.
 
@@ -35,10 +35,10 @@ pfSense IPv6 Prefix Updater ist ein pfSense-Paket, das die von Ihnen gewählten 
 
 - **Aliase**: Adressen und Netze in Host- und Network-Aliasen.
 - **Statische Schnittstellen**: Adressen von Schnittstellen, die auf Static IPv6 eingestellt sind.
-- **<Terminology title="zusätzliche Schnittstellenadresse wie CARP oder IP Alias" to="/docs/reference/terminology#virtual-ip">Virtuelle IP-Adressen</Terminology>**: <Terminology title="zusätzliche Schnittstellenadresse wie CARP oder IP Alias" to="/docs/reference/terminology#virtual-ip">virtuelle IPs</Terminology> vom Typ CARP und IP Alias.
-- **IPsec**: die lokale Seite von <Terminology title="IPsec-Eintrag für lokale und entfernte Netze" to="/docs/reference/terminology#ipsec-phase-2">Phase-2</Terminology>-Einträgen der Modi Tunnel IPv6 und Routed (VTI).
-- **OpenVPN**: IPv6-Tunnel- und lokale Netze auf Servern und in <Terminology title="OpenVPN-Einstellungen für einen Client auf einem Server" to="/docs/reference/terminology#client-specific-override">clientspezifischen Überschreibungen</Terminology> sowie IPv6-Tunnelnetze auf Clients.
-- **WireGuard**: <Terminology title="Adresse eines WireGuard-Tunnels in pfSense" to="/docs/reference/terminology#wireguard-tunnel-address">Tunneladressen</Terminology>, wenn das WireGuard-Paket installiert ist.
+- **<Terminology title="Eine zusätzliche Adresse auf einer Schnittstelle, etwa eine CARP-VIP" to="/docs/reference/terminology#pfsense-features">Virtuelle IP-Adressen</Terminology>**: <Terminology title="Eine zusätzliche Adresse auf einer Schnittstelle, etwa eine CARP-VIP" to="/docs/reference/terminology#pfsense-features">virtuelle IPs</Terminology> vom Typ CARP und IP Alias.
+- **IPsec**: die lokale Seite von <Terminology title="Der IPsec-Eintrag mit lokalem und entferntem Netz eines Tunnels" to="/docs/reference/terminology#pfsense-features">Phase-2</Terminology>-Einträgen der Modi Tunnel IPv6 und Routed (VTI).
+- **OpenVPN**: IPv6-Tunnel- und lokale Netze auf Servern und in <Terminology title="OpenVPN-Einstellungen, die für einen einzelnen Client gelten" to="/docs/reference/terminology#pfsense-features">clientspezifischen Überschreibungen</Terminology> sowie IPv6-Tunnelnetze auf Clients.
+- **WireGuard**: <Terminology title="Die Adresse auf einer WireGuard-Tunnelschnittstelle" to="/docs/reference/terminology#pfsense-features">Tunneladressen</Terminology>, wenn das WireGuard-Paket installiert ist.
 - **DHCPv6-Server**: Adress-, Präfixdelegierungs- und Poolbereiche, statische Zuordnungen sowie die an Clients verteilten DNS- und NTP-Server.
 - **Router Advertisements**: angekündigte DNS-Server und RA-Subnetze.
 - **DNS-Hostüberschreibungen**: Hostüberschreibungen im DNS-Resolver und DNS-Forwarder.
@@ -46,7 +46,7 @@ pfSense IPv6 Prefix Updater ist ein pfSense-Paket, das die von Ihnen gewählten 
 - **NAT und NPt**: eingetippte Adressen in Portweiterleitungen, ausgehendem NAT und 1:1-NAT sowie NPt-Präfixe.
 - **Einstellungen anderer Pakete**: nur die Felder, die Sie ankreuzen; danach wendet das Paket die Einstellungen dieses Pakets erneut an.
 
-Die Registerkarte **Felder** listet jede Adresse innerhalb Ihres Präfixes mit einem Schalter für jede <Terminology title="Gruppe von Feldern mit einem Schalter auf der Registerkarte Felder" to="/docs/reference/terminology#field-group">Feldgruppe</Terminology> und einem Kontrollkästchen für jedes Feld auf.
+Die Registerkarte **Felder** listet jede Adresse innerhalb Ihres Präfixes mit einem Schalter für jede <Terminology title="Ein Schalter für eine ganze Art von Einstellung" to="/docs/reference/terminology#fields-and-change-plans">Feldgruppe</Terminology> und einem Kontrollkästchen für jedes Feld auf.
 
 ## Was auf Sie wartet \{#what-waits-for-you}
 
@@ -56,15 +56,15 @@ Die Gruppe **Weitere Einstellungen** ist anfangs ausgeschaltet, daher ändern si
 - Gateways, statische Routen, DNS-Domainüberschreibungen, Zertifikate, Geheimnisse, Base64-codierte Werte und Beschreibungen.
 - Port-, URL- und andere Aliastypen.
 
-Schnittstellen, die ihre Adresse über DHCPv6, SLAAC oder <Terminology title="Schnittstelle mit Adresse aus dem delegierten Präfix einer anderen" to="/docs/reference/terminology#tracked-interface">Track Interface</Terminology> erhalten, werden nie geändert, weil pfSense diese Adressen erzeugt. Dasselbe gilt für IPv4-Adressen, Hostnamen und IPv6-Adressen außerhalb des alten Präfixes. [Weitere Einstellungen](/docs/configure/configuration-scopes#other-settings) enthält die vollständige Liste.
+Schnittstellen, die ihre Adresse über DHCPv6, SLAAC oder <Terminology title="Eine Schnittstelle, die ihr IPv6 aus einem fremden Präfix bildet" to="/docs/reference/terminology#interfaces-and-detection">Track Interface</Terminology> erhalten, werden nie geändert, weil pfSense diese Adressen erzeugt. Dasselbe gilt für IPv4-Adressen, Hostnamen und IPv6-Adressen außerhalb des alten Präfixes. [Weitere Einstellungen](/docs/configure/configuration-scopes#other-settings) enthält die vollständige Liste.
 
 ## So funktioniert eine Prüfung \{#how-a-check-works}
 
-1. Liest die <Terminology title="öffentliche IPv6-Adresse innerhalb von 2000::/3" to="/docs/reference/terminology#global-unicast-address">globale Adresse</Terminology> jeder <Terminology title="Schnittstelle, deren Adresse das aktuelle Präfix verrät" to="/docs/reference/terminology#monitored-interface">überwachten Schnittstelle</Terminology> und berechnet ihr Präfix.
-2. Vergleicht es mit dem <Terminology title="Präfix, mit dem die nächste Prüfung vergleicht" to="/docs/reference/terminology#last-successful-prefix">letzten erfolgreichen Präfix</Terminology> und stoppt mit <Terminology title="Ergebnis: Präfix unverändert, nichts durchsucht oder geschrieben" to="/docs/reference/terminology#no-change">Keine Änderung</Terminology>, wenn beide übereinstimmen.
-3. Erstellt bei einem <Terminology title="Abweichung vom letzten erfolgreichen Präfix oder dessen Länge" to="/docs/reference/terminology#prefix-transition">Präfixwechsel</Terminology> einen <Terminology title="vollständige Liste der Feldänderungen, vor dem Schreiben erstellt" to="/docs/reference/terminology#change-plan">Änderungsplan</Terminology> für die <Terminology title="exaktes Konfigurationsfeld, das das Paket umschreiben darf" to="/docs/reference/terminology#approved-field">genehmigten Felder</Terminology>, die noch das alte Präfix verwenden.
-4. Speichert eine <Terminology title="Kopie der Konfiguration vor einem Schreibvorgang" to="/docs/reference/terminology#configuration-backup">Konfigurationssicherung</Terminology>, schreibt alle Änderungen in einem einzigen Speichervorgang, lädt nur die betroffenen Dienste neu und prüft die Werte erneut.
-5. Zeichnet das Ergebnis auf der Registerkarte Status auf und sendet eine <Terminology title="Meldung nach einer verifizierten erfolgreichen Aktualisierung" to="/docs/reference/terminology#change-notification">Änderungsbenachrichtigung</Terminology>, sofern diese eingeschaltet ist.
+1. Liest die <Terminology title="Eine öffentliche IPv6-Adresse in 2000::/3, die einzige genutzte Art" to="/docs/reference/terminology#addresses-and-prefixes">globale Adresse</Terminology> jeder <Terminology title="Die Schnittstelle, deren Adresse Ihr aktuelles Präfix verrät" to="/docs/reference/terminology#interfaces-and-detection">überwachten Schnittstelle</Terminology> und berechnet ihr Präfix.
+2. Vergleicht es mit dem <Terminology title="Das gespeicherte Präfix, mit dem jede Prüfung vergleicht" to="/docs/reference/terminology#baselines-and-transitions">letzten erfolgreichen Präfix</Terminology> und stoppt mit <Terminology title="Gleiches Präfix wie zuletzt, also nichts zu tun" to="/docs/reference/terminology#run-outcomes">Keine Änderung</Terminology>, wenn beide übereinstimmen.
+3. Erstellt bei einem <Terminology title="Ihr Präfix hat sich geändert, also legt das Paket los" to="/docs/reference/terminology#baselines-and-transitions">Präfixwechsel</Terminology> einen <Terminology title="Jede geplante Umschreibung, erstellt bevor sich etwas ändert" to="/docs/reference/terminology#fields-and-change-plans">Änderungsplan</Terminology> für die <Terminology title="Eine Einstellung, die das Paket umschreiben darf" to="/docs/reference/terminology#fields-and-change-plans">genehmigten Felder</Terminology>, die noch das alte Präfix verwenden.
+4. Speichert eine <Terminology title="Eine Kopie der Konfiguration direkt vor jedem Schreiben" to="/docs/reference/terminology#backups-and-service-reloads">Konfigurationssicherung</Terminology>, schreibt alle Änderungen in einem einzigen Speichervorgang, lädt nur die betroffenen Dienste neu und prüft die Werte erneut.
+5. Zeichnet das Ergebnis auf der Registerkarte Status auf und sendet eine <Terminology title="Die Meldung, nachdem Ihre Adressen aktualisiert wurden" to="/docs/reference/terminology#notifications-and-logs">Änderungsbenachrichtigung</Terminology>, sofern diese eingeschaltet ist.
 
 [Sicherheitsmodell](/docs/operations) beschreibt die Schutzmaßnahmen bei jedem Schritt.
 
@@ -72,15 +72,15 @@ Schnittstellen, die ihre Adresse über DHCPv6, SLAAC oder <Terminology title="Sc
 
 :::warning
 
-pfSense IPv6 Prefix Updater ist ein <Terminology title="Paket von GitHub, nicht aus dem Netgate-Repository" to="/docs/reference/terminology#unofficial-package">inoffizielles Paket</Terminology>. Sie installieren es mit `pkg` von GitHub, und Netgate prüft oder unterstützt es nicht.
+IPv6 Prefix Updater for pfSense ist ein <Terminology title="Von GitHub installiert, nicht aus dem Netgate-Paketrepository" to="/docs/reference/terminology#package-origins">inoffizielles Paket</Terminology>. Sie installieren es mit `pkg` von GitHub, und Netgate prüft oder unterstützt es nicht.
 
 :::
 
-Paket-Releases werden auf der Seite GitHub Releases des Projekts veröffentlicht. Releases der Version 1.x enthalten nur den <Terminology title="ursprüngliches update.php-Skript, ausgeführt vom Cron-Paket" to="/docs/reference/terminology#legacy-updater">Legacy-Updater</Terminology>, nicht dieses Paket.
+Paket-Releases werden auf der Seite GitHub Releases des Projekts veröffentlicht. Releases der Version 1.x enthalten nur den <Terminology title="Version 1.x: das Skript update.php, gestartet vom Cron-Paket" to="/docs/reference/terminology#package-origins">Legacy-Updater</Terminology>, nicht dieses Paket.
 
 ## Sprachen \{#languages}
 
-Alle Registerkarten des Pakets, die <Terminology title="schreibgeschützte Ergebnisse nach Jetzt ausführen oder Testlauf" to="/docs/reference/terminology#command-output">Befehlsausgabe</Terminology> und die Meldungen des Pakets folgen der in pfSense gewählten Sprache. Das Paket enthält Übersetzungen für 18 Sprachoptionen von pfSense und greift bei jeder anderen Sprache auf Englisch zurück.
+Alle Registerkarten des Pakets, die <Terminology title="Die Zeilen des letzten Laufs, direkt nach dem Start angezeigt" to="/docs/reference/terminology#running-checks">Befehlsausgabe</Terminology> und die Meldungen des Pakets folgen der in pfSense gewählten Sprache. Das Paket enthält Übersetzungen für 18 Sprachoptionen von pfSense und greift bei jeder anderen Sprache auf Englisch zurück.
 
 ## Nächste Schritte \{#next-steps}
 

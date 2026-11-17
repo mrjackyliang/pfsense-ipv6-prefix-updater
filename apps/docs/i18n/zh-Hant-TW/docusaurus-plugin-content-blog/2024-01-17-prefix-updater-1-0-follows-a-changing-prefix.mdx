@@ -1,0 +1,47 @@
+---
+title: "Prefix Updater 1.0 在 pfSense 上跟隨變動的 IPv6 前綴"
+description: pfSense Dynamic IPv6 Prefix Updater 1.0 版會發現新的委派前綴，並在備份後改寫別名、靜態 IP 與 VPN 位址。
+slug: prefix-updater-1-0-follows-a-changing-prefix
+authors:
+  - mrjackyliang
+keywords:
+  - pfsense ipv6 prefix updater
+  - 動態 IPv6 前綴
+  - IPv6 前綴委派
+  - update.php
+  - 舊版更新器
+tags:
+  - release
+  - ipv6
+  - pfsense
+---
+
+pfSense Dynamic IPv6 Prefix Updater 1.0 版於 2024 年 1 月 17 日發行。它是一個 PHP 指令碼，會在 ISP 為 pfSense 分配新的 IPv6 前綴時察覺變更，並將新前綴帶入防火牆設定中儲存的位址。
+
+{/* truncate */}
+
+## 它解決的問題 \{#the-problem-it-solves}
+
+許多 ISP 委派的 IPv6 前綴可能會在未事先通知的情況下變更。以舊前綴為基礎的每個別名、靜態位址與 VPN 設定都會同時過時，網路出現的故障也很難追溯到同一個原因。
+
+在 1.0 之前，每次變更後都只能在設定中手動逐項尋找。有了 1.0，pfSense 會自行發現新前綴，並更新使用舊前綴的已儲存位址。
+
+## 1.0 版的功能 \{#what-version-10-does}
+
+指令碼 `update.php` 由 Cron 套件項目執行，帶有兩個參數：要監看的介面，以及 ISP 委派的前綴長度。每次執行時，它會：
+
+- **比較前綴** — 讀取介面目前的 IPv6 前綴，並與上次執行時儲存的前綴比較。
+- **先備份** — 在做任何變更之前，先儲存一份 `config.xml` 副本。
+- **改寫舊前綴** — 在防火牆別名、靜態 IP 以及設定中的 IPsec、OpenVPN 與 WireGuard 位址裡取代舊前綴。
+- **傳送通知** — 前綴變更時，pfSense 會發出通知。
+- **一次只執行一個副本** — 鎖定機制會阻止在一次執行尚未完成時啟動第二次執行。
+
+安裝指令碼會將更新器下載到 `/root/pfsense-ipv6-prefix-updater`，Cron 項目則決定檢查的頻率。
+
+## 後續發展 \{#where-it-led}
+
+1.0 版證明了 pfSense 可以在無人操作的情況下偵測新前綴、備份設定並改寫舊位址。這項驗證成為原生 pfSense 套件的基礎，該套件在 2.0 版中取代了指令碼。
+
+現在仍在執行這個指令碼嗎？套件會為您遷移它的 Cron 項目、已儲存的前綴與備份，詳見[從指令碼遷移](/docs/migrate-from-legacy)。
+
+IPv6 Prefix Updater for pfSense 讓 pfSense 中的本機 IPv6 位址在 ISP 變更委派前綴時繼續正常運作。請從[安裝套件](/docs/installation)開始。

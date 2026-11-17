@@ -1,0 +1,74 @@
+---
+id: updates
+title: Aktualizacje
+description: Skonfiguruj sprawdzanie wydań GitHub i instaluj z karty Informacje aktualizacje chronione sumami SHA-256 i podpisami wydań.
+keywords:
+  - pfsense ipv6 prefix updater
+  - sprawdzanie aktualizacji
+  - suma kontrolna sha-256
+  - podpisy wydań
+  - powiadomienia pfsense
+  - samodzielna aktualizacja
+tags:
+  - reference
+  - updates
+  - security
+sidebar_position: 5
+---
+
+IPv6 Prefix Updater sprawdza wydania GitHub, ponieważ Menedżer pakietów pfSense nie wyświetla pakietów zainstalowanych bezpośrednio z GitHuba.
+
+## Co jest sprawdzane \{#what-is-checked}
+
+Sprawdzenie pobiera z serwisu GitHub metadane najnowszego wydania i porównuje jego wersję z wersją zainstalowanego pakietu. Czas sprawdzenia, najnowszą wersję, link do wydania, czas publikacji, stan powiadomienia i ostatni błąd zapisuje w `/cf/conf/ipv6-prefix-updater/updates.json`. Nigdy nie wysyła konfiguracji zapory do serwisu GitHub.
+
+Częstotliwość wybierz w **Services → IPv6 Prefix Updater → Ustawienia → Aktualizacje pakietu**:
+
+- **Codziennie** — sprawdzenie odbywa się raz dziennie o porze wylosowanej podczas instalacji.
+- **Co tydzień** — ustawienie domyślne; również wybiera jeden stały dzień tygodnia i porę.
+- **Co miesiąc** — wybiera jeden stały dzień od 1 do 28 i jedną stałą porę.
+- **Nigdy** — usuwa zaplanowane sprawdzanie wydań.
+
+Losowy harmonogram jest zapisywany w konfiguracji pfSense, więc zapisanie ustawień ani ponowna instalacja pakietu go nie przesuwają. **Sprawdź teraz** na karcie Informacje zawsze wykonuje ręczne sprawdzenie, także gdy wybrano **Nigdy**.
+
+## Cele sieciowe \{#network-destinations}
+
+Sprawdzenie lub aktualizacja może łączyć się z tymi hostami obsługiwanymi przez GitHub:
+
+- `api.github.com` — metadane najnowszego wydania i opublikowany skrót SHA-256.
+- `github.com` — adres URL zasobu wydania.
+- `release-assets.githubusercontent.com`, host pobierania wydań GitHub, po przekierowaniu żądania zasobu.
+
+Żądania weryfikują certyfikaty TLS, używają krótkich limitów czasu, nagłówka User-Agent pakietu i serwera proxy skonfigurowanego w pfSense. Odpowiedź `403` lub `429` jest traktowana jako ograniczenie liczby żądań i nie usuwa ostatnich poprawnych danych o wydaniu.
+
+## Komunikaty \{#notices}
+
+Gdy po raz pierwszy pojawi się nowsza wersja, pakiet dodaje dla niej jeden komunikat pod ikoną dzwonka pfSense. Komunikat prowadzi do karty Informacje i domyślnie pozostaje lokalny.
+
+Zaznacz **Zdalne powiadomienia**, aby korzystać ze skonfigurowanych w pfSense zdalnych kanałów: e-mail, Telegram, Pushover lub innych. Pakiet nadal tworzy tylko jeden komunikat na każdą nową wersję. Zamyka go po zainstalowaniu tej wersji albo gdy kolejne sprawdzenie stwierdzi, że zainstalowany pakiet jest aktualny.
+
+## Instalowanie aktualizacji \{#install-an-update}
+
+Otwórz **Services → IPv6 Prefix Updater → Informacje**. Gdy dostępna jest nowsza wersja, przycisk **Zaktualizuj do _wersja_** uruchamia zadanie w tle, a strona pokazuje jego postęp.
+
+Zadanie ponownie pobiera dane wydania i pobiera plik `.pkg` z numerem wersji. Sprawdza pakiet względem skrótu `sha256:<hex>` zasobu w API GitHub; gdy tego skrótu brakuje, pobiera zamiast niego pasujący zasób `.pkg.sha256` z tego samego wydania.
+
+Pakiety wydań zawierają publiczne klucze podpisujące przepływu wydania w `/usr/local/share/pfSense-pkg-Ipv6PrefixUpdater/release-signing.pub`. Gdy ten plik zawiera co najmniej jeden klucz, zainstalowana kopia akceptuje tylko aktualizacje podpisane jednym z nich; brak pliku lub plik zawierający tylko komentarze pozostawia weryfikację podpisów wyłączoną, a aktualizacje opierają się wyłącznie na sprawdzeniu SHA-256.
+
+Po sprawdzeniu SHA-256, gdy zainstalowany plik kluczy zawiera klucz, zadanie pobiera pasujący plik `.pkg.sig` z tego samego wydania i sprawdza go poleceniem `ssh-keygen -Y verify` przed odczytaniem archiwum. Wydanie bez tego podpisu albo podpisane innym kluczem jest odrzucane, a zainstalowana wersja pozostaje.
+
+Następnie zadanie potwierdza nazwę i wersję pakietu w archiwum przed uruchomieniem `pkg add -f`. Jeśli nie ma żadnego źródła sumy kontrolnej, odrzuca aktualizację i zachowuje zainstalowaną wersję; blokada pakietu nie pozwala, by uruchomienie dla prefiksu i aktualizacja nakładały się na siebie.
+
+## Instalowanie ręczne \{#install-manually}
+
+Administrator nadal może zainstalować zasób z powłoki pfSense:
+
+```shell
+pkg add -f https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
+```
+
+To polecenie ręczne omija zarówno sprawdzanie SHA-256, jak i sprawdzanie podpisu wydania na karcie Informacje. Przed użyciem sprawdź wydanie, sumę kontrolną i podpis.
+
+## Wyłączanie kontroli \{#turn-checks-off}
+
+Ustaw **Sprawdzanie aktualizacji** na **Nigdy** i zapisz kartę Ustawienia. Pakiet usuwa swój wpis cron sprawdzania aktualizacji i nie wysyła zaplanowanych żądań aktualizacji na zewnątrz. Monitorowanie prefiksu zachowuje własny, niezależny harmonogram, a **Sprawdź teraz** pozostaje dostępne dla żądań inicjowanych przez administratora.

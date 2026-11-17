@@ -1,6 +1,6 @@
 {
-    "name": "pfSense IPv6 Prefix Updater",
-    "short_name": "pfSense IPv6 Prefix Updater",
+    "name": "IPv6 Prefix Updater for pfSense",
+    "short_name": "IPv6 Updater",
     "icons": [
         {
             "src": "/pfsense-ipv6-prefix-updater/web-app-manifest-192x192.png",

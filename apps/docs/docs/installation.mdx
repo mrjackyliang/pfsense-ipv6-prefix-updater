@@ -1,7 +1,7 @@
 ---
 id: installation
 title: Install the Package
-description: Install pfSense IPv6 Prefix Updater from a GitHub release with pkg, check the download against its SHA-256 file, and confirm the new pages in the WebGUI.
+description: Install IPv6 Prefix Updater for pfSense from a GitHub release with pkg, check the download against its SHA-256 file, and confirm the new pages in the WebGUI.
 keywords:
   - pfsense ipv6 prefix updater
   - installation
@@ -23,13 +23,13 @@ Install the package from a GitHub release with pfSense's `pkg` tool, then confir
 
 - **Administrator shell** — SSH or console access to the pfSense shell. **Diagnostics → Command Prompt** in the WebGUI can also run single commands.
 - **HTTPS access to GitHub** — The firewall downloads the package from GitHub Releases.
-- **A matching package build** — The package has to be built for the FreeBSD version that your pfSense release runs on.
+- **Supported pfSense release** — Use pfSense CE 2.9.0 or 2.8.1, or pfSense Plus 26.07 or 26.03.1. The About tab lists the pfSense releases each package version was tested on.
 - **A current backup** — Download a copy of the configuration from **Diagnostics → Backup & Restore** before you install.
-- **The <Terminology title="original update.php script run by the Cron package" to="/docs/reference/terminology#legacy-updater">legacy updater</Terminology> can stay** — If the version 1.x script still runs from the Cron package, leave it in place. The install step moves it into the package, as [Migrate From the Script](/docs/migrate-from-legacy) explains.
+- **The <Terminology title="Version 1.x: the update.php script run by Cron" to="/docs/reference/terminology#package-origins">legacy updater</Terminology> can stay** — If the version 1.x script still runs from the Cron package, leave it in place. The install step moves it into the package, as [Migrate From the Script](/docs/migrate-from-legacy) explains.
 
 :::warning
 
-pfSense IPv6 Prefix Updater is an <Terminology title="package installed from GitHub, not Netgate's repository" to="/docs/reference/terminology#unofficial-package">unofficial package</Terminology>. Installing a `.pkg` file from GitHub bypasses Netgate's package review and support, so it is recommended to try it on a backed-up or disposable firewall first.
+IPv6 Prefix Updater for pfSense is an <Terminology title="Installed from GitHub, not Netgate's package repository" to="/docs/reference/terminology#package-origins">unofficial package</Terminology>. Installing a `.pkg` file from GitHub bypasses Netgate's package review and support, so it is recommended to try it on a backed-up or disposable firewall first.
 
 :::
 
@@ -45,19 +45,19 @@ Package releases are listed on the [GitHub Releases page](https://github.com/mrj
 
 :::info
 
-Version 1.x releases contain only the <Terminology title="original update.php script run by the Cron package" to="/docs/reference/terminology#legacy-updater">legacy updater</Terminology>. If the latest release has no `.pkg` file, the commands on this page fail with a not-found (404) error.
+Version 1.x releases contain only the <Terminology title="Version 1.x: the update.php script run by Cron" to="/docs/reference/terminology#package-origins">legacy updater</Terminology>. If the latest release has no `.pkg` file, the commands on this page fail with a not-found (404) error.
 
 :::
 
 ## Install the Package
 
-Run this same command from the pfSense shell for a first installation or an update:
+Run this same command from the pfSense shell for a first installation, an update, or a reinstall:
 
 ```shell
 pkg add -f https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
 ```
 
-`pkg` downloads the package from the latest release and runs its install step, which registers **Services → IPv6 Prefix Updater** with pfSense. The `-f` flag lets the same command replace an installed release and still installs normally when the package is not present.
+`pkg` downloads the package from the latest release and runs its install step, which registers **Services → IPv6 Prefix Updater** with pfSense. The `-f` flag lets the same command install the package, update an older version, or reinstall the current version. Without it, pfSense CE 2.8 reports an update as already installed and leaves the installed version unchanged.
 
 ## Verify the Download First
 
@@ -76,14 +76,14 @@ The last two commands print the same value when the download is intact. You can 
 ## Confirm in the WebGUI
 
 1. Sign in to the pfSense WebGUI.
-2. Open **Services → IPv6 Prefix Updater** and confirm that the **Settings**, **Status**, **Fields**, **Backups**, and **Cleanup** tabs appear.
+2. Open **Services → IPv6 Prefix Updater** and confirm that the **Settings**, **Status**, **Fields**, **Backups**, **Cleanup**, and **About** tabs appear.
 3. On the Status tab, confirm that **Current State** shows `No monitored interfaces are saved yet. Add them on the Settings tab.` After a move from the legacy updater, it lists the moved interfaces instead.
-4. Leave **<Terminology title="automatic checks run from a pfSense-managed cron entry" to="/docs/reference/terminology#scheduled-updates">Enable Scheduled Updates</Terminology>** cleared, as it is by default, until you [establish the baseline](/docs/first-run). After a move from the legacy updater, it is already on, matching the old Cron schedule.
+4. Leave **<Terminology title="Automatic checks on a schedule, off until you enable them" to="/docs/reference/terminology#running-checks">Enable Scheduled Updates</Terminology>** cleared, as it is by default, until you [establish the baseline](/docs/first-run). After a move from the legacy updater, it is already on, matching the old Cron schedule.
 
 ## If Installation Fails
 
 - **Not found (404)**: the latest release has no package file. [Check the Release](/docs/installation#check-the-release) explains which releases carry one.
-- **ABI or OS version mismatch**: the package was built for a different FreeBSD version than your pfSense release. It is recommended to use a matching build instead of forcing the installation.
+- **Wrong architecture on pfSense CE 2.9.0**: releases through 2.0.1 were built only for FreeBSD 15, so pfSense CE 2.9.0 prints a wrong architecture message for them. Install the latest release.
 - **DNS, TLS, or certificate errors**: pfSense needs to resolve `github.com`, reach it over HTTPS, and keep the correct time for certificate checks.
 
 Continue with [Establish the Baseline](/docs/first-run) once the package appears in the WebGUI.

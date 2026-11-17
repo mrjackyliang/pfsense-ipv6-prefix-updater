@@ -1,6 +1,6 @@
 ---
-title: "介绍 pfSense IPv6 Prefix Updater：更安全的继任者"
-description: pfSense IPv6 Prefix Updater 作为 update.php 脚本的继任者，会跟随新的 IPv6 前缀，保留每个地址的主机部分，并在每次更改前先创建备份。
+title: "介绍 IPv6 Prefix Updater for pfSense：更安全的继任者"
+description: IPv6 Prefix Updater for pfSense 作为 update.php 脚本的继任者，会跟随新的 IPv6 前缀，保留每个地址的主机部分，并在每次更改前先创建备份。
 slug: introducing-pfsense-ipv6-prefix-updater
 authors:
   - mrjackyliang
@@ -18,7 +18,7 @@ tags:
 
 许多 ISP 委派的 IPv6 前缀可能会在不事先通知的情况下发生变化。一旦前缀改变，pfSense 别名、接口和 VPN 设置中属于旧前缀的地址就会一起过时，服务也可能出现难以排查的故障。
 
-pfSense IPv6 Prefix Updater 就是我给出的答案：一个原生 pfSense 软件包，它会跟随新前缀，并更新你所批准的设置区域中的地址。
+IPv6 Prefix Updater for pfSense 就是我给出的答案：一个原生 pfSense 软件包，它会跟随新前缀，并更新你所批准的设置区域中的地址。
 
 {/* truncate */}
 

@@ -15,10 +15,10 @@
     "message": "Otkrijte promjene dodijeljenog prefiksa, ažurirajte samo odobrena pfSense polja, sačuvajte bitove hosta i provjerite svaku transakciju."
   },
   "home.hero.primaryAction": {
-    "message": "Instalacija i podešavanje"
+    "message": "Započnite"
   },
   "home.hero.secondaryAction": {
-    "message": "Pregled sigurnog rada"
+    "message": "Saznajte više"
   },
   "home.preview.ariaLabel": {
     "message": "Dužina dodijeljenog prefiksa: /56"
@@ -43,30 +43,6 @@
   },
   "home.preview.result": {
     "message": "Probno pokretanje pronašlo je 2 odobrenih promjena polja za 2001:db8:abcd:8800::/56; konfiguracija nije izmijenjena."
-  },
-  "home.workflow.eyebrow": {
-    "message": "Sigurnost i rad"
-  },
-  "home.workflow.heading": {
-    "message": "Sigurna transakcija"
-  },
-  "home.workflow.detect": {
-    "message": "Uočena izvorna adresa"
-  },
-  "home.workflow.plan": {
-    "message": "Promijenjena polja"
-  },
-  "home.workflow.backup": {
-    "message": "Napravljena sigurnosna kopija konfiguracije"
-  },
-  "home.workflow.write": {
-    "message": "Trenutni prefiks"
-  },
-  "home.workflow.verify": {
-    "message": "Uspjeh"
-  },
-  "home.workflow.notify": {
-    "message": "Obavještenja"
   },
   "home.features.interface.title": {
     "message": "Nadzirana sučelja"
@@ -104,70 +80,67 @@
   "home.features.notify.description": {
     "message": "Koristi podešene pfSense kanale obavještenja nakon provjerenog uspješnog ažuriranja prefiksa. Provjere bez promjene nikada ne šalju obavještenje."
   },
-  "home.stats.heading": {
-    "message": "Sigurnost i rad"
-  },
-  "home.stats.boundaries": {
-    "message": "Dužina dodijeljenog prefiksa"
-  },
-  "home.stats.backups": {
-    "message": "Napravljena sigurnosna kopija konfiguracije"
-  },
-  "home.stats.writes": {
-    "message": "Promijenjena polja"
-  },
-  "home.stats.noChange": {
-    "message": "Aktivni IPv6 prefiks nije promijenjen; nijedan odobreni cilj konfiguracije nije pročitan niti upisan."
-  },
-  "home.routes.eyebrow": {
-    "message": "Vodiči"
-  },
-  "home.routes.heading": {
-    "message": "Instalacija i podešavanje"
-  },
-  "home.routes.install.title": {
-    "message": "Instalacija paketa"
-  },
-  "home.routes.install.description": {
-    "message": "Pokrenite ovu naredbu u pfSense ljusci da biste instalirali najnovije izdanje direktno sa GitHuba."
-  },
-  "home.routes.open": {
-    "message": "Počnite čitati"
-  },
-  "home.routes.configure.title": {
-    "message": "Nadzirana sučelja / Dužina dodijeljenog prefiksa"
-  },
-  "home.routes.configure.description": {
-    "message": "Dodajte po jedan red za svako sučelje čija primarna aktivna globalna IPv6 adresa nosi dodijeljeni prefiks. Za DHCPv6 samo s prefiksom na WAN-u odaberite praćeno sučelje iza njega. Bitovi hosta nakon dužine prefiksa čuvaju se tačno, a adresa koju pfSense odabere za svako sučelje prikazuje se na kartici Status."
-  },
-  "home.routes.status.title": {
-    "message": "Status / Izlaz naredbe"
-  },
-  "home.routes.status.description": {
-    "message": "Pokreni sada može ažurirati odobrena polja nakon otkrivene promjene. Probno pokretanje samo bilježi pregled i nikada ne upisuje konfiguraciju vatrozida."
-  },
-  "home.routes.troubleshoot.title": {
-    "message": "Rješavanje problema"
-  },
-  "home.routes.troubleshoot.description": {
-    "message": "Ako je izvorna adresa pogrešna, odaberite nizvodno praćeno sučelje koje stvarno ima globalnu adresu; nemojte pogađati dužinu prefiksa."
-  },
-  "home.spotlight.heading": {
-    "message": "Izlaz naredbe"
-  },
-  "home.spotlight.description": {
-    "message": "Provjerite svako pokretanje na stranici Status: izvornu adresu, izvedeni prefiks, sigurnosnu kopiju i ishod."
-  },
-  "home.spotlight.statusAction": {
-    "message": "Status / Izlaz naredbe"
-  },
-  "home.spotlight.testsAction": {
-    "message": "Ishodi i testovi"
-  },
   "home.blogPreview.heading": {
     "message": "Iz bloga"
   },
   "home.blogPreview.description": {
-    "message": "Napomene o izdanjima, vodiči za podešavanje i članci o dinamičkim IPv6 prefiksima."
+    "message": "Predstavljanja, prekretnice i novosti u paketu IPv6 Prefix Updater for pfSense."
+  },
+  "home.showcase.heading": {
+    "message": "Unutar pfSense WebGUI-ja"
+  },
+  "home.showcase.tabsLabel": {
+    "message": "Stranice paketa IPv6 Prefix Updater"
+  },
+  "home.showcase.settings.label": {
+    "message": "Postavke"
+  },
+  "home.showcase.settings.heading": {
+    "message": "Nadzirite sučelja koja nose vaš prefiks"
+  },
+  "home.showcase.settings.description": {
+    "message": "Dodajte red za svako sučelje čija IPv6 adresa dolazi od vašeg ISP-a, unesite dužinu prefiksa koju on dodjeljuje i odaberite kada pfSense provjerava ima li promjene."
+  },
+  "home.showcase.settings.link": {
+    "message": "Odaberite sučelje i prefiks"
+  },
+  "home.showcase.settings.alt": {
+    "message": "Stranica Postavke paketa IPv6 Prefix Updater s dva nadzirana sučelja i njihovim dužinama prefiksa"
+  },
+  "home.showcase.status.heading": {
+    "message": "Pokretanje nikada ne bi smjelo biti crna kutija"
+  },
+  "home.showcase.status.description": {
+    "message": "Kartica Status prikazuje posljednji prefiks i adresu svakog sučelja, šta je posljednje pokretanje promijenilo, da li je napravljena sigurnosna kopija i koje su usluge ponovo učitane."
+  },
+  "home.showcase.status.link": {
+    "message": "Pročitajte vodič za Status"
+  },
+  "home.showcase.status.alt": {
+    "message": "Stranica Status paketa IPv6 Prefix Updater s trenutnim stanjem svakog sučelja i posljednjim pokretanjem"
+  },
+  "home.showcase.fields.label": {
+    "message": "Polja"
+  },
+  "home.showcase.fields.heading": {
+    "message": "Vi odlučujete šta se mijenja"
+  },
+  "home.showcase.fields.description": {
+    "message": "Odaberite koja polja konfiguracije prate prefiks, postavite izuzetke i pregledajte postavke drugih paketa prije nego što se išta zapiše."
+  },
+  "home.showcase.fields.link": {
+    "message": "Odaberite polja"
+  },
+  "home.showcase.fields.alt": {
+    "message": "Stranica Polja paketa IPv6 Prefix Updater s odabranim statičkim sučeljima i aliasima"
+  },
+  "home.showcase.settings.title": {
+    "message": "pfSense.home.arpa - Paket: Usluge: Ažuriranje IPv6 prefiksa: Postavke"
+  },
+  "home.showcase.status.title": {
+    "message": "pfSense.home.arpa - Servisi: Ažuriranje IPv6 prefiksa: Status"
+  },
+  "home.showcase.fields.title": {
+    "message": "pfSense.home.arpa - Servisi: Ažuriranje IPv6 prefiksa: Polja"
   }
 }

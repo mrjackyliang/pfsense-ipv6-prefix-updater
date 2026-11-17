@@ -1,0 +1,41 @@
+---
+title: "Prefix Updater 1.1 dopire do postavki kodiranih u base64"
+description: Verzija 1.1 pronalazi stari IPv6 prefiks unutar pfSense vrijednosti kodiranih u base64, poput prilagođenih opcija, i prepoznaje prefikse pisane bilo kojom veličinom slova.
+slug: prefix-updater-1-1-reaches-base64-encoded-settings
+authors:
+  - mrjackyliang
+keywords:
+  - pfsense ipv6 prefix updater
+  - base64 prilagođene opcije
+  - dinamički ipv6 prefiks
+  - update.php
+  - stari program za ažuriranje
+tags:
+  - release
+  - ipv6
+  - pfsense
+---
+
+Verzija 1.1 skripte za ažuriranje prefiksa, objavljena 18. januara 2026, prenosi novi IPv6 prefiks i u postavke koje pfSense čuva kodirane u base64, poput prilagođenih opcija, koje ranije verzije nisu mogle pročitati.
+
+{/* truncate */}
+
+## Zašto je to važno \{#why-it-matters}
+
+pfSense neke postavke slobodnog oblika, poput blokova prilagođenih opcija, čuva kao base64 tekst u datoteci `config.xml`. Adresa upisana u jedan od tih blokova nikada se ne pojavljuje kao običan tekst, pa ju je pretraga starog prefiksa potpuno zaobilazila.
+
+Nakon promjene prefiksa te adrese ostajale su na starom prefiksu, dok je ostatak konfiguracije prelazio na novi. S verzijom 1.1 program za ažuriranje dekodira svaku base64 vrijednost, pronalazi stari prefiks u njoj i ažuriranu vrijednost ponovo upisuje u base64.
+
+## Šta donosi verzija 1.1 \{#whats-in-version-11}
+
+- **Vrijednosti kodirane u base64** — pretražuje se svaka vrijednost koja se dekodira kao ispravan base64, uključujući blokove prelomljene u više redova, a zamjena se ponovo kodira prije čuvanja.
+- **Bilo koja veličina slova** — IPv6 adrese mogu biti napisane velikim ili malim slovima. Skeniranje, sačuvani prefiks, pretraga i zamjena sada se podudaraju bez obzira na veličinu slova, a prefiksi se čuvaju malim slovima.
+- **Stabilne izvorne adrese** — skeniranje sučelja preskače privremene i zastarjele globalne adrese i koristi prvu stabilnu globalnu adresu na svakom sučelju, pa kratkotrajna adresa nikada ne određuje prefiks.
+
+Zapisnik svako base64 ažuriranje označava oznakom `(base64-decoded)` pored postavke koju je promijenio, pa pokretanje tačno pokazuje koje su kodirane vrijednosti prešle na novi prefiks.
+
+## Kuda je to vodilo \{#where-it-led}
+
+Verzija 1.1 proširila je ono do čega skripta može doći. Izvorni paket koji je uslijedio u verziji 2.0 ima suprotan pristup: mijenja samo polja koja odobrite na kartici Polja, a uputstvo [Prelazak sa skripte](/docs/migrate-from-legacy) opisuje prelazak sa skripte na paket.
+
+IPv6 Prefix Updater for pfSense održava lokalne IPv6 adrese u pfSenseu ispravnim kada ISP promijeni dodijeljeni prefiks. Počnite s uputstvom [Instalacija paketa](/docs/installation).

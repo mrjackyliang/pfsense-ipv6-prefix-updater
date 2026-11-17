@@ -1,0 +1,74 @@
+---
+id: updates
+title: 更新
+description: 設定 GitHub 版本檢查，並從「關於」分頁安裝受 SHA-256 總和檢查碼及版本簽章保護的套件更新。
+keywords:
+  - pfsense ipv6 prefix updater
+  - 更新檢查
+  - sha-256 總和檢查碼
+  - 版本簽章
+  - pfsense 通知
+  - 自我更新
+tags:
+  - reference
+  - updates
+  - security
+sidebar_position: 5
+---
+
+pfSense 套件管理員不會列出直接從 GitHub 安裝的套件，因此 IPv6 Prefix Updater 會自行檢查其 GitHub 版本。
+
+## 檢查內容 \{#what-is-checked}
+
+檢查會向 GitHub 要求最新版本的中繼資料，並將其版本與已安裝的套件版本比較。檢查時間、最新版本、版本連結、發布時間、通知狀態及上次錯誤會儲存在 `/cf/conf/ipv6-prefix-updater/updates.json`。防火牆設定絕不會傳送至 GitHub。
+
+在 **Services → IPv6 Prefix Updater → Settings → Package Updates**（服務 → IPv6 Prefix Updater → 設定 → 套件更新）中選擇頻率：
+
+- **每天**：每天在安裝時隨機選定的時間執行一次。
+- **每週**：預設值，同樣會選定一個固定的星期與時間。
+- **每月**：選定 1 到 28 之間一個固定的日期與一個固定的時間。
+- **永不**：移除排程的版本檢查。
+
+隨機排程儲存在 pfSense 設定中，因此儲存設定或重新安裝套件都不會改變它。「關於」分頁上的 **立即檢查** 一律會執行一次手動檢查，即使頻率為 **永不** 也一樣。
+
+## 網路目的地 \{#network-destinations}
+
+更新檢查或更新可能會連線至下列由 GitHub 營運的主機：
+
+- `api.github.com`，用於取得最新版本的中繼資料及已發布的 SHA-256 摘要。
+- `github.com`，用於取得版本資源的 URL。
+- `release-assets.githubusercontent.com`，即 GitHub 的版本下載主機，在資源要求重新導向後連線。
+
+要求會驗證 TLS 憑證，並使用短逾時、套件專屬的 User-Agent 以及 pfSense 中設定的 Proxy。`403` 或 `429` 回應會視為頻率限制，不會清除上次有效的版本詳細資料。
+
+## 通知 \{#notices}
+
+某個新版本首次出現時，套件會為該版本新增一則 pfSense 鈴鐺通知。該通知連結至「關於」分頁，預設只保留在本機。
+
+勾選 **遠端通知** 即可選擇同時透過 pfSense 中已設定的電子郵件、Telegram、Pushover 或其他遠端管道傳送。套件仍然只會為每個新版本建立一則通知。安裝該版本後，或之後的檢查發現已安裝的套件已是最新時，它會關閉該通知。
+
+## 安裝更新 \{#install-an-update}
+
+開啟 **Services → IPv6 Prefix Updater → About**（服務 → IPv6 Prefix Updater → 關於）。有新版本可用時，**更新至 _版本_** 會啟動背景工作，頁面會顯示其進度。
+
+該工作會再次取得版本資訊並下載含版本號的 `.pkg`。它會以 GitHub API 資源的 `sha256:<hex>` 摘要驗證套件；若該摘要不存在，則改為下載同一版本中對應的 `.pkg.sha256` 資源。
+
+發行的套件會在 `/usr/local/share/pfSense-pkg-Ipv6PrefixUpdater/release-signing.pub` 中攜帶發布工作流程的簽章公開金鑰。該檔案列出一個或多個金鑰時，已安裝副本只接受由其中某個金鑰簽章的更新；檔案不存在或只含註解時，簽章檢查維持關閉，更新只依靠 SHA-256 檢查。
+
+SHA-256 檢查通過後，若已安裝的金鑰檔案列出金鑰，工作會從同一版本下載對應的 `.pkg.sig`，並在讀取封存檔前使用 `ssh-keygen -Y verify` 驗證。缺少該簽章或由其他金鑰簽章的版本會遭拒絕，已安裝版本保持不變。
+
+接著，工作會在執行 `pkg add -f` 前確認封存檔中的套件名稱及版本。若兩種總和檢查碼來源都不存在，則拒絕更新並保留已安裝版本；套件鎖定可避免前綴執行與更新互相重疊。
+
+## 手動安裝 \{#install-manually}
+
+管理員仍可以在 pfSense shell 中安裝該資源：
+
+```shell
+pkg add -f https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
+```
+
+此手動命令會略過「關於」分頁的 SHA-256 檢查及版本簽章檢查。使用前請驗證版本、總和檢查碼及簽章。
+
+## 關閉檢查 \{#turn-checks-off}
+
+將 **更新檢查** 設為 **永不** 並儲存「設定」分頁。套件會移除其更新檢查 cron 項目，不再發出排程的對外更新要求。前綴監控保留其獨立的排程，**立即檢查** 仍可供管理員主動發出要求。

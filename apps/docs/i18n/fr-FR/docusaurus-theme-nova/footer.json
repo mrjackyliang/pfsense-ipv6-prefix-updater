@@ -1,30 +1,60 @@
 {
+  "layout.docs.title": {
+    "message": "Documentation"
+  },
   "layout.resources.title": {
     "message": "Ressources"
   },
-  "sections.learn.0.label": {
-    "message": "Installer et configurer"
+  "layout.project.title": {
+    "message": "Projet"
   },
-  "sections.learn.1.label": {
-    "message": "Interfaces surveillées / Longueur du préfixe délégué"
+  "layout.legal.title": {
+    "message": "Mentions légales"
   },
-  "sections.learn.2.label": {
-    "message": "État / Actions"
+  "sections.docs.0.label": {
+    "message": "Vue d’ensemble"
   },
-  "sections.learn.3.label": {
-    "message": "Dépannage"
+  "sections.docs.1.label": {
+    "message": "Configuration"
   },
-  "sections.resources.0.label": {
-    "message": "Sécurité et fonctionnement"
+  "sections.docs.2.label": {
+    "message": "Exploitation"
+  },
+  "sections.docs.3.label": {
+    "message": "Sécurité"
+  },
+  "sections.docs.4.label": {
+    "message": "Référence"
+  },
+  "sections.docs.5.label": {
+    "message": "Contribuer"
   },
   "sections.resources.1.label": {
-    "message": "Résultats et tests"
+    "message": "Dépannage"
   },
   "sections.resources.2.label": {
-    "message": "Documentation pfSense"
+    "message": "Journal des modifications"
   },
   "sections.resources.3.label": {
+    "message": "Signaler un problème"
+  },
+  "sections.resources.4.label": {
     "message": "Code source"
+  },
+  "sections.project.0.label": {
+    "message": "Sponsoriser"
+  },
+  "sections.project.1.label": {
+    "message": "Documentation pfSense"
+  },
+  "sections.project.2.label": {
+    "message": "Autres projets"
+  },
+  "sections.legal.0.label": {
+    "message": "Licence"
+  },
+  "cta.label": {
+    "message": "Prêt à garder les préfixes IPv6 alignés ?"
   },
   "copyright": {
     "message": "Copyright © 2023-2026 Jacky Liang. Publié sous licence MIT."

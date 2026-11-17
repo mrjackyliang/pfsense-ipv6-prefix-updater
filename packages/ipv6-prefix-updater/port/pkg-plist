@@ -1,5 +1,6 @@
 pkg/ipv6-prefix-updater.inc
 pkg/ipv6-prefix-updater.xml
+pkg/ipv6-prefix-updater/AboutTranslations.php
 pkg/ipv6-prefix-updater/BackupStore.php
 pkg/ipv6-prefix-updater/ConfigurationChangePlanner.php
 pkg/ipv6-prefix-updater/ConfigurationFieldDetector.php
@@ -18,11 +19,17 @@ pkg/ipv6-prefix-updater/PlatformAdapter.php
 pkg/ipv6-prefix-updater/PrefixChangePlanner.php
 pkg/ipv6-prefix-updater/PrefixUpdater.php
 pkg/ipv6-prefix-updater/StateStore.php
+pkg/ipv6-prefix-updater/TestedReleases.php
 pkg/ipv6-prefix-updater/Translations.php
 pkg/ipv6-prefix-updater/Translator.php
+pkg/ipv6-prefix-updater/UpdateManager.php
+pkg/ipv6-prefix-updater/UpdateTranslations.php
 sbin/ipv6-prefix-updater
+www/ipv6-prefix-updater-about.php
 www/ipv6-prefix-updater-backups.php
 www/ipv6-prefix-updater-cleanup.php
 www/ipv6-prefix-updater-fields.php
 www/ipv6-prefix-updater-status.php
 %%DATADIR%%/info.xml
+%%DATADIR%%/logo.svg
+%%DATADIR%%/release-signing.pub

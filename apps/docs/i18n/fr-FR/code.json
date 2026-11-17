@@ -15,10 +15,10 @@
     "message": "Détectez les changements de préfixe délégué, mettez à jour uniquement les champs pfSense approuvés, conservez les bits d’hôte et vérifiez chaque transaction."
   },
   "home.hero.primaryAction": {
-    "message": "Installer et configurer"
+    "message": "Commencer"
   },
   "home.hero.secondaryAction": {
-    "message": "Examiner la sécurité"
+    "message": "En savoir plus"
   },
   "home.preview.ariaLabel": {
     "message": "Longueur du préfixe délégué: /56"
@@ -43,30 +43,6 @@
   },
   "home.preview.result": {
     "message": "La simulation a trouvé 2 modification(s) de champ approuvée(s) pour 2001:db8:abcd:8800::/56 ; la configuration n’a pas été modifiée."
-  },
-  "home.workflow.eyebrow": {
-    "message": "Sécurité et fonctionnement"
-  },
-  "home.workflow.heading": {
-    "message": "Transaction sûre"
-  },
-  "home.workflow.detect": {
-    "message": "Adresse source observée"
-  },
-  "home.workflow.plan": {
-    "message": "Champs modifiés"
-  },
-  "home.workflow.backup": {
-    "message": "Sauvegarde de configuration créée"
-  },
-  "home.workflow.write": {
-    "message": "Préfixe actuel"
-  },
-  "home.workflow.verify": {
-    "message": "Réussite"
-  },
-  "home.workflow.notify": {
-    "message": "Notifications"
   },
   "home.features.interface.title": {
     "message": "Interfaces surveillées"
@@ -104,70 +80,70 @@
   "home.features.notify.description": {
     "message": "Utilise les canaux de notification pfSense configurés après une mise à jour de préfixe réussie et vérifiée. Les vérifications sans changement ne notifient jamais."
   },
-  "home.stats.heading": {
-    "message": "Sécurité et fonctionnement"
-  },
-  "home.stats.boundaries": {
-    "message": "Longueur du préfixe délégué"
-  },
-  "home.stats.backups": {
-    "message": "Sauvegarde de configuration créée"
-  },
-  "home.stats.writes": {
-    "message": "Champs modifiés"
-  },
-  "home.stats.noChange": {
-    "message": "Le préfixe IPv6 actif est inchangé ; aucune cible de configuration approuvée n’a été lue ou écrite."
-  },
-  "home.routes.eyebrow": {
-    "message": "Guides"
-  },
-  "home.routes.heading": {
-    "message": "Installer et configurer"
-  },
-  "home.routes.install.title": {
-    "message": "Installer le paquet"
-  },
-  "home.routes.install.description": {
-    "message": "Exécutez cette commande dans un shell pfSense pour installer la dernière version directement depuis GitHub."
-  },
-  "home.routes.open": {
-    "message": "Commencer la lecture"
-  },
-  "home.routes.configure.title": {
-    "message": "Interfaces surveillées / Longueur du préfixe délégué"
-  },
-  "home.routes.configure.description": {
-    "message": "Ajoutez une ligne par interface dont l’adresse IPv6 globale active principale porte un préfixe délégué. Pour un DHCPv6 limité au préfixe sur le WAN, sélectionnez une interface suivie en aval. Les bits d’hôte après la longueur du préfixe sont conservés à l’identique, et l’adresse choisie par pfSense pour chaque interface apparaît dans l’onglet État."
-  },
-  "home.routes.status.title": {
-    "message": "État / Sortie de commande"
-  },
-  "home.routes.status.description": {
-    "message": "Exécuter maintenant peut mettre à jour les champs approuvés après un changement détecté. La simulation enregistre seulement un aperçu et n’écrit jamais la configuration du pare-feu."
-  },
-  "home.routes.troubleshoot.title": {
-    "message": "Dépannage"
-  },
-  "home.routes.troubleshoot.description": {
-    "message": "Si l’adresse source est incorrecte, choisissez l’interface suivie en aval qui possède réellement l’adresse globale ; ne compensez pas avec une longueur supposée."
-  },
-  "home.spotlight.heading": {
-    "message": "Sortie de commande"
-  },
-  "home.spotlight.description": {
-    "message": "Vérifiez chaque exécution sur la page État : adresse source, préfixe calculé, sauvegarde et résultat."
-  },
-  "home.spotlight.statusAction": {
-    "message": "État / Sortie de commande"
-  },
-  "home.spotlight.testsAction": {
-    "message": "Résultats et tests"
-  },
   "home.blogPreview.heading": {
     "message": "Sur le blog"
   },
   "home.blogPreview.description": {
-    "message": "Notes de version, guides de configuration et articles sur les préfixes IPv6 dynamiques."
+    "message": "Lancements, étapes clés et nouveautés d’IPv6 Prefix Updater for pfSense."
+  },
+  "home.showcase.heading": {
+    "message": "Au cœur de la WebGUI de pfSense"
+  },
+  "home.showcase.tabsLabel": {
+    "message": "Pages d’IPv6 Prefix Updater"
+  },
+  "home.showcase.settings.label": {
+    "message": "Paramètres"
+  },
+  "home.showcase.settings.heading": {
+    "message": "Surveillez les interfaces qui portent votre préfixe"
+  },
+  "home.showcase.settings.description": {
+    "message": "Ajoutez une ligne pour chaque interface dont l’adresse IPv6 provient de votre FAI, saisissez la longueur de préfixe qu’il délègue et choisissez quand pfSense vérifie s’il y a un changement."
+  },
+  "home.showcase.settings.link": {
+    "message": "Choisir l’interface et le préfixe"
+  },
+  "home.showcase.settings.alt": {
+    "message": "Page Paramètres d’IPv6 Prefix Updater avec deux interfaces surveillées et leurs longueurs de préfixe"
+  },
+  "home.showcase.status.label": {
+    "message": "État"
+  },
+  "home.showcase.status.heading": {
+    "message": "Une exécution ne devrait jamais être une boîte noire"
+  },
+  "home.showcase.status.description": {
+    "message": "L’onglet État affiche le dernier préfixe et la dernière adresse de chaque interface, ce que la dernière exécution a modifié, si une sauvegarde a été créée et quels services ont été rechargés."
+  },
+  "home.showcase.status.link": {
+    "message": "Lire le guide État"
+  },
+  "home.showcase.status.alt": {
+    "message": "Page État d’IPv6 Prefix Updater avec l’état actuel de chaque interface et la dernière exécution"
+  },
+  "home.showcase.fields.label": {
+    "message": "Champs"
+  },
+  "home.showcase.fields.heading": {
+    "message": "Vous décidez de ce qui change"
+  },
+  "home.showcase.fields.description": {
+    "message": "Choisissez les champs de configuration qui suivent le préfixe, définissez des exceptions et examinez les paramètres des autres paquets avant toute écriture."
+  },
+  "home.showcase.fields.link": {
+    "message": "Choisir les champs"
+  },
+  "home.showcase.fields.alt": {
+    "message": "Page Champs d’IPv6 Prefix Updater avec les interfaces statiques et les alias sélectionnés"
+  },
+  "home.showcase.settings.title": {
+    "message": "pfSense.home.arpa - Paquet: Services : Outil de mise à jour du préfixe IPv6: Paramètres"
+  },
+  "home.showcase.status.title": {
+    "message": "pfSense.home.arpa - Services: Outil de mise à jour du préfixe IPv6: État"
+  },
+  "home.showcase.fields.title": {
+    "message": "pfSense.home.arpa - Services: Outil de mise à jour du préfixe IPv6: Champs"
   }
 }

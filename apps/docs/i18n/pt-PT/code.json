@@ -15,10 +15,10 @@
     "message": "Detete alterações do prefixo delegado, atualize apenas campos pfSense aprovados, preserve os bits de anfitrião e verifique cada transação."
   },
   "home.hero.primaryAction": {
-    "message": "Instalar e configurar"
+    "message": "Começar"
   },
   "home.hero.secondaryAction": {
-    "message": "Rever o funcionamento seguro"
+    "message": "Saber mais"
   },
   "home.preview.ariaLabel": {
     "message": "Comprimento do prefixo delegado: /56"
@@ -43,30 +43,6 @@
   },
   "home.preview.result": {
     "message": "A simulação encontrou 2 alteração(ões) de campo aprovada(s) para 2001:db8:abcd:8800::/56; a configuração não foi modificada."
-  },
-  "home.workflow.eyebrow": {
-    "message": "Segurança e funcionamento"
-  },
-  "home.workflow.heading": {
-    "message": "Transação segura"
-  },
-  "home.workflow.detect": {
-    "message": "Endereço de origem observado"
-  },
-  "home.workflow.plan": {
-    "message": "Campos alterados"
-  },
-  "home.workflow.backup": {
-    "message": "Cópia de segurança da configuração criada"
-  },
-  "home.workflow.write": {
-    "message": "Prefixo atual"
-  },
-  "home.workflow.verify": {
-    "message": "Sucesso"
-  },
-  "home.workflow.notify": {
-    "message": "Notificações"
   },
   "home.features.interface.title": {
     "message": "Interfaces monitorizadas"
@@ -104,70 +80,70 @@
   "home.features.notify.description": {
     "message": "Utiliza os canais de notificação do pfSense configurados após uma atualização de prefixo verificada e bem-sucedida. Verificações sem alteração nunca notificam."
   },
-  "home.stats.heading": {
-    "message": "Segurança e funcionamento"
-  },
-  "home.stats.boundaries": {
-    "message": "Comprimento do prefixo delegado"
-  },
-  "home.stats.backups": {
-    "message": "Cópia de segurança da configuração criada"
-  },
-  "home.stats.writes": {
-    "message": "Campos alterados"
-  },
-  "home.stats.noChange": {
-    "message": "O prefixo IPv6 ativo não foi alterado; nenhum destino de configuração aprovado foi lido ou escrito."
-  },
-  "home.routes.eyebrow": {
-    "message": "Guias"
-  },
-  "home.routes.heading": {
-    "message": "Instalar e configurar"
-  },
-  "home.routes.install.title": {
-    "message": "Instalar o pacote"
-  },
-  "home.routes.install.description": {
-    "message": "Execute este comando numa shell pfSense para instalar a versão mais recente diretamente do GitHub."
-  },
-  "home.routes.open": {
-    "message": "Começar a ler"
-  },
-  "home.routes.configure.title": {
-    "message": "Interfaces monitorizadas / Comprimento do prefixo delegado"
-  },
-  "home.routes.configure.description": {
-    "message": "Adicione uma linha por cada interface cujo endereço IPv6 global ativo principal contém um prefixo delegado. Para DHCPv6 só com prefixo na WAN, selecione uma interface acompanhada a jusante. Os bits de anfitrião após o comprimento do prefixo são preservados exatamente, e o endereço que o pfSense escolhe para cada interface aparece no separador Estado."
-  },
-  "home.routes.status.title": {
-    "message": "Estado / Saída do comando"
-  },
-  "home.routes.status.description": {
-    "message": "Executar agora pode atualizar campos aprovados após uma alteração detetada. A simulação regista apenas uma pré-visualização e nunca escreve a configuração da firewall."
-  },
-  "home.routes.troubleshoot.title": {
-    "message": "Resolução de problemas"
-  },
-  "home.routes.troubleshoot.description": {
-    "message": "Se o endereço de origem estiver errado, escolha a interface rastreada a jusante que realmente possui o endereço global; não compense com um comprimento adivinhado."
-  },
-  "home.spotlight.heading": {
-    "message": "Saída do comando"
-  },
-  "home.spotlight.description": {
-    "message": "Verifique cada execução na página Estado: endereço de origem, prefixo calculado, cópia de segurança e resultado."
-  },
-  "home.spotlight.statusAction": {
-    "message": "Estado / Saída do comando"
-  },
-  "home.spotlight.testsAction": {
-    "message": "Resultados e testes"
-  },
   "home.blogPreview.heading": {
     "message": "Do blogue"
   },
   "home.blogPreview.description": {
-    "message": "Notas de versão, guias de configuração e artigos sobre prefixos IPv6 dinâmicos."
+    "message": "Lançamentos, marcos e novidades do IPv6 Prefix Updater for pfSense."
+  },
+  "home.showcase.heading": {
+    "message": "Por dentro da WebGUI do pfSense"
+  },
+  "home.showcase.tabsLabel": {
+    "message": "Páginas do IPv6 Prefix Updater"
+  },
+  "home.showcase.settings.label": {
+    "message": "Definições"
+  },
+  "home.showcase.settings.heading": {
+    "message": "Monitorize as interfaces que recebem o seu prefixo"
+  },
+  "home.showcase.settings.description": {
+    "message": "Adicione uma linha para cada interface cujo endereço IPv6 vem do seu ISP, introduza o comprimento do prefixo que este delega e escolha quando o pfSense verifica se houve alteração."
+  },
+  "home.showcase.settings.link": {
+    "message": "Escolher a interface e o prefixo"
+  },
+  "home.showcase.settings.alt": {
+    "message": "Página Definições do IPv6 Prefix Updater com duas interfaces monitorizadas e os respetivos comprimentos de prefixo"
+  },
+  "home.showcase.status.label": {
+    "message": "Estado"
+  },
+  "home.showcase.status.heading": {
+    "message": "Uma execução nunca deve ser uma caixa negra"
+  },
+  "home.showcase.status.description": {
+    "message": "O separador Estado mostra o último prefixo e endereço de cada interface, o que a última execução alterou, se foi criada uma cópia de segurança e que serviços foram recarregados."
+  },
+  "home.showcase.status.link": {
+    "message": "Ler o guia de Estado"
+  },
+  "home.showcase.status.alt": {
+    "message": "Página Estado do IPv6 Prefix Updater com o estado atual de cada interface e a última execução"
+  },
+  "home.showcase.fields.label": {
+    "message": "Campos"
+  },
+  "home.showcase.fields.heading": {
+    "message": "Decida o que muda"
+  },
+  "home.showcase.fields.description": {
+    "message": "Escolha que campos da configuração acompanham o prefixo, defina exceções e reveja as definições de outros pacotes antes de qualquer escrita."
+  },
+  "home.showcase.fields.link": {
+    "message": "Escolher os campos"
+  },
+  "home.showcase.fields.alt": {
+    "message": "Página Campos do IPv6 Prefix Updater com interfaces estáticas e aliases selecionados"
+  },
+  "home.showcase.settings.title": {
+    "message": "pfSense.home.arpa - Pacote: Serviços: Atualizador de prefixo IPv6: Definições"
+  },
+  "home.showcase.status.title": {
+    "message": "pfSense.home.arpa - Serviços: Atualizador de prefixo IPv6: Estado"
+  },
+  "home.showcase.fields.title": {
+    "message": "pfSense.home.arpa - Serviços: Atualizador de prefixo IPv6: Campos"
   }
 }

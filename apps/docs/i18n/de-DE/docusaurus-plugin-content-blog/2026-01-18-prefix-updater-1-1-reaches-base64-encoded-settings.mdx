@@ -1,0 +1,41 @@
+---
+title: "Prefix Updater 1.1 erreicht base64-codierte Einstellungen"
+description: Version 1.1 findet das alte IPv6-Präfix in base64-codierten pfSense-Werten wie benutzerdefinierten Optionen und erkennt Präfixe unabhängig von der Groß- und Kleinschreibung.
+slug: prefix-updater-1-1-reaches-base64-encoded-settings
+authors:
+  - mrjackyliang
+keywords:
+  - pfsense ipv6 prefix updater
+  - base64 benutzerdefinierte optionen
+  - dynamisches ipv6-präfix
+  - update.php
+  - legacy-updater
+tags:
+  - release
+  - ipv6
+  - pfsense
+---
+
+Version 1.1 des Präfix-Updater-Skripts, veröffentlicht am 18. Januar 2026, überträgt ein neues IPv6-Präfix in Einstellungen, die pfSense base64-codiert speichert, etwa benutzerdefinierte Optionen, die frühere Versionen nicht lesen konnten.
+
+{/* truncate */}
+
+## Warum das wichtig ist \{#why-it-matters}
+
+pfSense speichert manche Freitext-Einstellungen, etwa Blöcke mit benutzerdefinierten Optionen, als base64-Text in `config.xml`. Eine Adresse in einem dieser Blöcke erscheint nie als Klartext, daher lief eine Suche nach dem alten Präfix direkt an ihr vorbei.
+
+Nach einer Präfixänderung blieben diese Adressen auf dem alten Präfix, während der Rest der Konfiguration weiterzog. Mit 1.1 decodiert der Updater jeden base64-Wert, findet darin das alte Präfix und schreibt den aktualisierten Wert wieder in base64 zurück.
+
+## Was Version 1.1 enthält \{#whats-in-version-11}
+
+- **Base64-codierte Werte** — Jeder Wert, der sich als gültiges base64 decodieren lässt, wird durchsucht, auch über mehrere Zeilen umbrochene Blöcke, und die Ersetzung wird vor dem Speichern erneut codiert.
+- **Beliebige Groß- und Kleinschreibung** — IPv6-Adressen können in Groß- oder Kleinbuchstaben geschrieben sein. Scan, gespeichertes Präfix, Suche und Ersetzung berücksichtigen die Schreibweise jetzt nicht mehr, und Präfixe werden in Kleinbuchstaben gespeichert.
+- **Stabile Quelladressen** — Der Schnittstellenscan überspringt temporäre und veraltete globale Adressen und verwendet die erste stabile globale Adresse jeder Schnittstelle, sodass eine kurzlebige Adresse nie das Präfix bestimmt.
+
+Das Protokoll kennzeichnet jede base64-Aktualisierung mit `(base64-decoded)` neben der geänderten Einstellung, sodass ein Lauf genau zeigt, welche codierten Werte auf das neue Präfix umgestellt wurden.
+
+## Wohin es führte \{#where-it-led}
+
+Version 1.1 erweiterte, was das Skript erreichen konnte. Das native Paket, das in Version 2.0 folgte, geht den umgekehrten Weg: Es ändert nur die Felder, die Sie auf seiner Registerkarte Felder genehmigen, und die Anleitung [Vom Skript migrieren](/docs/migrate-from-legacy) beschreibt den Umstieg vom Skript auf das Paket.
+
+IPv6 Prefix Updater for pfSense hält lokale IPv6-Adressen in pfSense funktionsfähig, wenn ein Internetanbieter das delegierte Präfix ändert. Beginnen Sie mit [Paket installieren](/docs/installation).

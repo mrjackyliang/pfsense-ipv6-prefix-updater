@@ -1,0 +1,74 @@
+---
+id: updates
+title: Aggiornamenti
+description: Configura i controlli GitHub e installa dalla scheda Informazioni aggiornamenti protetti da checksum SHA-256 e firme delle release.
+keywords:
+  - pfsense ipv6 prefix updater
+  - controlli aggiornamenti
+  - checksum sha-256
+  - firme delle release
+  - notifiche pfsense
+  - aggiornamento automatico
+tags:
+  - reference
+  - updates
+  - security
+sidebar_position: 5
+---
+
+IPv6 Prefix Updater controlla le proprie versioni GitHub perché Gestione pacchetti di pfSense non elenca i pacchetti installati direttamente da GitHub.
+
+## Cosa viene controllato \{#what-is-checked}
+
+Il controllo richiede a GitHub i metadati dell’ultima release e ne confronta la versione con quella del pacchetto installato. Salva l’ora del controllo, l’ultima versione, il link alla release, la data di pubblicazione, lo stato della notifica e l’ultimo errore in `/cf/conf/ipv6-prefix-updater/updates.json`. Non invia mai la configurazione del firewall a GitHub.
+
+Scegli la frequenza in **Services → IPv6 Prefix Updater → Impostazioni → Aggiornamenti del pacchetto**:
+
+- **Ogni giorno** viene eseguito una volta al giorno, a un orario scelto casualmente durante l’installazione.
+- **Ogni settimana** è il valore predefinito e sceglie anche un giorno della settimana e un orario stabili.
+- **Ogni mese** sceglie un giorno stabile tra 1 e 28 e un orario stabile.
+- **Mai** rimuove il controllo pianificato delle release.
+
+La pianificazione casuale viene salvata nella configurazione di pfSense, quindi salvare le impostazioni o reinstallare il pacchetto non la sposta. **Controlla ora** nella scheda **Informazioni** esegue sempre un controllo manuale, anche quando la frequenza è **Mai**.
+
+## Destinazioni di rete \{#network-destinations}
+
+Un controllo degli aggiornamenti o un aggiornamento può contattare questi host gestiti da GitHub:
+
+- `api.github.com` per i metadati dell’ultima release e il digest SHA-256 pubblicato.
+- `github.com` per l’URL del file della release.
+- `release-assets.githubusercontent.com`, l’host di download delle release di GitHub, dopo il reindirizzamento della richiesta del file.
+
+Le richieste usano la verifica dei certificati TLS, timeout brevi, uno User-Agent del pacchetto e il proxy configurato in pfSense. Una risposta `403` o `429` viene trattata come limitazione della frequenza e non cancella gli ultimi dettagli validi della release.
+
+## Segnalazioni \{#notices}
+
+Quando compare per la prima volta una versione più recente, il pacchetto aggiunge una sola segnalazione nella campana di pfSense per quella versione. La segnalazione rimanda alla scheda **Informazioni** e per impostazione predefinita resta locale.
+
+Seleziona **Notifiche remote** per inviarla anche tramite email, Telegram, Pushover o gli altri canali remoti configurati in pfSense. Il pacchetto crea comunque una sola segnalazione per ogni nuova versione. Chiude la segnalazione dopo l’installazione di quella versione o quando un controllo successivo trova il pacchetto installato aggiornato.
+
+## Installare un aggiornamento \{#install-an-update}
+
+Apri **Services → IPv6 Prefix Updater → Informazioni**. Quando è disponibile una versione più recente, **Aggiorna alla versione _versione_** avvia un’attività in background e la pagina ne mostra l’avanzamento.
+
+L’attività recupera di nuovo la release e scarica il `.pkg` con la versione nel nome. Controlla il pacchetto con il digest `sha256:<hex>` del file nell’API GitHub; quando il digest manca, scarica invece il file `.pkg.sha256` corrispondente dalla stessa release.
+
+I pacchetti delle release includono le chiavi pubbliche di firma del workflow di pubblicazione in `/usr/local/share/pfSense-pkg-Ipv6PrefixUpdater/release-signing.pub`. Quando il file elenca una o più chiavi, una copia installata accetta solo aggiornamenti firmati da una di esse; un file mancante o con soli commenti lascia disattivati i controlli delle firme, e gli aggiornamenti si basano solo sul controllo SHA-256.
+
+Dopo il controllo SHA-256, quando il file installato elenca una chiave, l’attività scarica il `.pkg.sig` corrispondente dalla stessa release e lo verifica con `ssh-keygen -Y verify` prima di leggere l’archivio. Una release senza quella firma o firmata con un’altra chiave viene rifiutata e la versione installata resta invariata.
+
+L’attività conferma quindi il nome e la versione del pacchetto nell’archivio prima di eseguire `pkg add -f`. Se nessuna delle due fonti del checksum esiste, rifiuta l’aggiornamento e mantiene la versione installata; il blocco del pacchetto impedisce che un’esecuzione del prefisso e un aggiornamento si sovrappongano.
+
+## Installare manualmente \{#install-manually}
+
+Un amministratore può comunque installare il file da una shell pfSense:
+
+```shell
+pkg add -f https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
+```
+
+Questo comando manuale ignora sia il controllo SHA-256 sia il controllo della firma della scheda Informazioni. Verifica la release, il checksum e la firma prima di usarlo.
+
+## Disattivare i controlli \{#turn-checks-off}
+
+Imposta **Controlli degli aggiornamenti** su **Mai** e salva la scheda Impostazioni. Il pacchetto rimuove la voce cron del controllo degli aggiornamenti e non effettua più richieste di aggiornamento in uscita pianificate. Il monitoraggio del prefisso mantiene la propria pianificazione indipendente, e **Controlla ora** resta disponibile per una richiesta avviata da un amministratore.

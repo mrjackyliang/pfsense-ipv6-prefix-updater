@@ -1,11 +1,12 @@
 ---
 id: build-and-release
 title: Bouwen en publiceren
-description: Controleer, stage en bouw het pfSense-pakket op FreeBSD, en koppel daarna de .pkg- en controlesombestanden met de publish-workflow aan een GitHub-release.
+description: Controleer, stage, bouw en onderteken het pfSense-pakket op FreeBSD en koppel pakketten, controlesommen en handtekeningen aan een GitHub-release.
 keywords:
   - pfsense ipv6 prefix updater
   - build
   - release-workflow
+  - release-ondertekening
   - freebsd-ports
   - php-tests
 tags:
@@ -17,11 +18,11 @@ sidebar_position: 1
 
 import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
 
-Controleer, stage en verpak pfSense IPv6 Prefix Updater, en publiceer het pakket daarna in een GitHub-release.
+Controleer, stage en verpak IPv6 Prefix Updater for pfSense, en publiceer het pakket daarna in een GitHub-release.
 
 ## Vereisten \{#requirements}
 
-- **Node.js 22 of 24** — De manifests in de root en de workspaces accepteren `^22 || ^24`.
+- **Node.js 22, 24 of 26** — De manifests in de root en de workspaces accepteren `^22 || ^24 || ^26`.
 - **PHP of Docker** — De PHP-suites gebruiken een lokale `php` als die er is, en anders de image `php:8.3-cli-alpine` via Docker. `PHP_TEST_IMAGE` overschrijft de image.
 - **FreeBSD voor het verpakken** — `npm run deploy` draait alleen op FreeBSD, met `PFSENSE_PORTS_DIR` naar een checkout van de FreeBSD-ports van pfSense.
 
@@ -46,20 +47,66 @@ PFSENSE_PORTS_DIR=/path/to/FreeBSD-ports npm run deploy --workspace pfsense-pkg-
 
 ## Release-workflow \{#release-workflow}
 
-`.github/workflows/pfsense-ipv6-prefix-updater.yml` draait wanneer een GitHub-release wordt gepubliceerd, of handmatig met de tag van een bestaande release:
+De door Nova gegenereerde job `publish-pfsense-packages-ipv6-prefix-updater` in `.github/workflows/nova-publish-project.yml` draait in de publish-workflow:
 
 1. Valideert en staget de port op een Ubuntu-runner.
-2. Start een FreeBSD-VM waarvan de release uit de repositoryvariabele `PFSENSE_FREEBSD_VERSION` komt, of `15` als die niet is ingesteld.
-3. Checkt de branch `devel` van de FreeBSD-ports-repository van pfSense uit en voert de pakketbuild uit.
-4. Uploadt `build/release` als workflow-artefact dat 7 dagen wordt bewaard en koppelt dezelfde bestanden aan de release, waarbij bestaande assets worden vervangen.
+2. Leidt, als het secret `PFSENSE_RELEASE_SIGNING_KEY` is ingesteld, de openbare sleutel af uit `PFSENSE_RELEASE_SIGNING_KEY` en voegt die toe aan `usr/local/share/pfSense-pkg-Ipv6PrefixUpdater/release-signing.pub` in de gestagede port.
+3. Bouwt het pakket op FreeBSD met de geconfigureerde checkout van de FreeBSD-ports van pfSense.
+4. Ondertekent, als het secret is ingesteld, elke `.pkg` als `<file>.pkg.sig` met `ssh-keygen -Y sign -n pfSense-pkg-Ipv6PrefixUpdater`.
+5. Uploadt pakketten, controlesommen en handtekeningen als workflowartefact dat 7 dagen wordt bewaard en koppelt dezelfde bestanden aan de release.
 
-Het is aan te raden om `PFSENSE_FREEBSD_VERSION` in te stellen op de hoofdversie van FreeBSD van de pfSense-release waarop je je richt, en geen pakket te publiceren dat tegen een andere hoofdversie is gebouwd. De opdracht `pkg add` uit de installatiehandleiding haalt `pfSense-pkg-Ipv6PrefixUpdater.pkg` op uit de release die GitHub als nieuwste markeert.
+De build markeert het pakket voor elke FreeBSD-versie omdat het geen gecompileerde code bevat, zodat één pakket op elke ondersteunde pfSense-release kan worden geïnstalleerd. `PFSENSE_FREEBSD_VERSION` selecteert alleen de FreeBSD-release die de build-VM gebruikt. De opdracht `pkg add` uit de installatiehandleiding haalt `pfSense-pkg-Ipv6PrefixUpdater.pkg` op uit de release die GitHub als nieuwste markeert.
+
+## Release-ondertekening \{#release-signing}
+
+De enige configuratie voor ondertekening is het repositorysecret `PFSENSE_RELEASE_SIGNING_KEY` met een onversleutelde persoonlijke OpenSSH Ed25519-sleutel.
+
+1. Kies in 1Password **New Item → SSH Key → Generate a New Key → Ed25519**.
+2. Kies bij het veld voor de persoonlijke sleutel **Export**, selecteer de OpenSSH-indeling en laat het wachtwoord leeg.
+3. Controleer het klembord voordat je het secret opslaat:
+
+   ```bash
+   pbpaste | head -1
+   ```
+
+   De opdracht moet `-----BEGIN OPENSSH PRIVATE KEY-----` uitvoeren.
+
+4. Stuur het klembord rechtstreeks naar GitHub of lees een geëxporteerd bestand in:
+
+   ```bash
+   pbpaste | gh secret set PFSENSE_RELEASE_SIGNING_KEY
+   gh secret set PFSENSE_RELEASE_SIGNING_KEY < <file>
+   ```
+
+5. Verwijder het geëxporteerde bestand met de persoonlijke sleutel nadat het secret is opgeslagen.
+
+Zonder het secret bevatten pakketten geen openbare sleutel en zijn releases niet ondertekend. Voeg voor een sleutelwijziging de nieuwe openbare sleutel `ssh-ed25519 ...` toe aan `release-signing.pub`, publiceer één release terwijl de oude sleutel nog het secret is en vervang daarna het secret door de nieuwe sleutel.
+
+Als de ondertekeningssleutel verloren gaat, kunnen geïnstalleerde exemplaren een met de vervangende sleutel ondertekende release niet verifiëren. Elke getroffen installatie moet eenmaal de handmatige opdracht `pkg add -f` gebruiken om een pakket met de nieuwe openbare sleutel te installeren.
+
+## Update-eindpunten in een VM testen \{#test-update-endpoints-in-a-vm}
+
+De CLI accepteert twee omgevingsvariabelen, uitsluitend voor beheerste VM-tests:
+
+- `IPV6_PREFIX_UPDATER_RELEASES_API` vervangt de API-URL voor de nieuwste release.
+- `IPV6_PREFIX_UPDATER_DOWNLOAD_PREFIX` vervangt het toegestane URL-voorvoegsel voor releasebestanden.
+
+Alleen `/usr/local/sbin/ipv6-prefix-updater` leest ze; ze worden nooit in de pakketconfiguratie opgeslagen of rechtstreeks door de WebGUI gelezen. Stel alle benodigde overschrijvingen in bij dezelfde CLI-aanroep:
+
+```shell
+IPV6_PREFIX_UPDATER_RELEASES_API=http://192.0.2.10/latest.json \
+IPV6_PREFIX_UPDATER_DOWNLOAD_PREFIX=http://192.0.2.10/releases/ \
+/usr/local/sbin/ipv6-prefix-updater --check-updates
+```
+
+Gebruik `--self-update` in plaats van `--check-updates` om het hele pad met download, SHA-256-controlesom, releasehandtekening, pakketmetadata en `pkg add -f` tegen de testrelease te testen.
 
 ## PHP-testsuites \{#php-test-suites}
 
-- **`tests/domain.php`**: <Terminology title="kortste standaardnotatie van een adres, in kleine letters" to="/docs/reference/terminology#canonical-form">canonieke vorm</Terminology>, de grenzen `/48` en `/64`, maskering, <Terminology title="adresbits na de gedelegeerde prefix" to="/docs/reference/terminology#host-portion">hostbits</Terminology> bij `/53`, geweigerde adressen, no-op-planning, filtering op de vorige prefix en een lengtewijziging die als <Terminology title="afwijking van de laatste geslaagde prefix of lengte" to="/docs/reference/terminology#prefix-transition">prefixwissel</Terminology> wordt behandeld.
-- **`tests/runtime.php`**: het scannen van elke <Terminology title="groep velden met één schakelaar op het tabblad Velden" to="/docs/reference/terminology#field-group">veldgroep</Terminology>, uitzonderingen per veld, het opnieuw toepassen van de instellingen van andere pakketten, een atomaire <Terminology title="pakketbestand met de baseline en de laatste uitvoering" to="/docs/reference/terminology#package-state">pakketstatus</Terminology>, de <Terminology title="vergrendeling die twee gelijktijdige controles voorkomt" to="/docs/reference/terminology#run-lock">uitvoeringsvergrendeling</Terminology>, niet-ondersteunde platforms en uitgeschakelde geplande controles. Het dekt ook de transactievolgorde en fouten bij het schrijven, de back-up, de voorcontrole voor het herladen, het herladen en de melding, plus de <Terminology title="resultaat: prefix gewijzigd, maar geen goedgekeurd veld kwam overeen" to="/docs/reference/terminology#warning">Waarschuwing</Terminology> zonder overeenkomsten.
-- **`tests/pfsense-adapter.php`**: een geforceerde adresvernieuwing zonder terugval op <Terminology title="fe80::-adres dat alleen op één link werkt" to="/docs/reference/terminology#link-local-address">link-local</Terminology>, de back-up vóór het opslaan dat alleen schrijft, en een mislukte back-up die vóór het schrijven stopt.
+- **`tests/domain.php`**: <Terminology title="De korte schrijfwijze in kleine letters, zoals 2001:db8::1" to="/docs/reference/terminology#addresses-and-prefixes">canonieke vorm</Terminology>, de grenzen `/48` en `/64`, maskering, <Terminology title="De bits na de prefix, altijd ongewijzigd overgenomen" to="/docs/reference/terminology#addresses-and-prefixes">hostbits</Terminology> bij `/53`, geweigerde adressen, no-op-planning, filtering op de vorige prefix en een lengtewijziging die als <Terminology title="Uw prefix is gewijzigd, dus het pakket gaat aan de slag" to="/docs/reference/terminology#baselines-and-transitions">prefixwissel</Terminology> wordt behandeld.
+- **`tests/runtime.php`**: het scannen van elke <Terminology title="Eén schakelaar voor een hele soort instelling" to="/docs/reference/terminology#fields-and-change-plans">veldgroep</Terminology>, uitzonderingen per veld, het opnieuw toepassen van de instellingen van andere pakketten, een atomaire <Terminology title="Het bestand met elke baseline, bewaard bij herinstallatie" to="/docs/reference/terminology#running-checks">pakketstatus</Terminology>, de <Terminology title="Voorkomt dat twee controles tegelijk lopen" to="/docs/reference/terminology#running-checks">uitvoeringsvergrendeling</Terminology>, niet-ondersteunde platforms en uitgeschakelde geplande controles. Het dekt ook de transactievolgorde en fouten bij het schrijven, de back-up, de voorcontrole voor het herladen, het herladen en de melding, plus de <Terminology title="Prefix gewijzigd, maar geen goedgekeurd veld gebruikte de oude" to="/docs/reference/terminology#run-outcomes">Waarschuwing</Terminology> zonder overeenkomsten.
+- **`tests/pfsense-adapter.php`**: een geforceerde adresvernieuwing zonder terugval op <Terminology title="Een fe80-adres dat nooit als bron wordt gebruikt" to="/docs/reference/terminology#addresses-and-prefixes">link-local</Terminology>, de back-up vóór het opslaan dat alleen schrijft, en een mislukte back-up die vóór het schrijven stopt.
+- **`tests/updates.php`**: versievergelijking, releaseverwerking en URL-validatie, stabiele gerandomiseerde schema’s, deduplicatie van meldingen, GitHub API-digests, `.sha256`-fallbacks, verwerking van ondertekeningssleutels, allowed-signers-uitvoer, exacte `ssh-keygen`-argumenten en standaardinvoer, geldige handtekeningen, verkeerde sleutels en naamruimten en gemanipuleerde pakketten.
 - **`tests/translations.php`** en **`tests/webgui-localization.php`**: volledige catalogi voor elke taal-ID van pfSense en het gelokaliseerde formulier Instellingen met de validatiemeldingen.
 
 ## Documentatiesite \{#documentation-site}

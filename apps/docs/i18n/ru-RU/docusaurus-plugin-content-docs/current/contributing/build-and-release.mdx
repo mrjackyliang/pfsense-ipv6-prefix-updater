@@ -1,11 +1,12 @@
 ---
 id: build-and-release
 title: Сборка и выпуск
-description: Описывает проверку, подготовку и сборку пакета pfSense во FreeBSD и прикрепление файлов .pkg и контрольных сумм к выпуску на GitHub с помощью рабочего процесса публикации.
+description: Проверка, подготовка, сборка и подписание пакета pfSense во FreeBSD с прикреплением пакетов, сумм и подписей к выпуску GitHub.
 keywords:
   - pfsense ipv6 prefix updater
   - сборка
   - рабочий процесс выпуска
+  - подписание выпусов
   - freebsd ports
   - тесты php
 tags:
@@ -17,11 +18,11 @@ sidebar_position: 1
 
 import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
 
-Проверьте, подготовьте и упакуйте pfSense IPv6 Prefix Updater, а затем опубликуйте пакет в выпуске на GitHub.
+Проверьте, подготовьте и упакуйте IPv6 Prefix Updater for pfSense, а затем опубликуйте пакет в выпуске на GitHub.
 
 ## Требования \{#requirements}
 
-- **Node.js 22 или 24** — корневой манифест и манифесты рабочих пространств допускают `^22 || ^24`.
+- **Node.js 22, 24 или 26** — корневой манифест и манифесты рабочих пространств допускают `^22 || ^24 || ^26`.
 - **PHP или Docker** — наборы тестов PHP используют локальный `php`, если он есть, или образ `php:8.3-cli-alpine` через Docker. Образ переопределяется переменной `PHP_TEST_IMAGE`.
 - **FreeBSD для упаковки** — `npm run deploy` работает только во FreeBSD, причём переменная `PFSENSE_PORTS_DIR` должна указывать на рабочую копию pfSense FreeBSD-ports.
 
@@ -46,20 +47,66 @@ PFSENSE_PORTS_DIR=/path/to/FreeBSD-ports npm run deploy --workspace pfsense-pkg-
 
 ## Рабочий процесс выпуска \{#release-workflow}
 
-`.github/workflows/pfsense-ipv6-prefix-updater.yml` запускается при публикации выпуска на GitHub или вручную с тегом существующего выпуска:
+Задание `publish-pfsense-packages-ipv6-prefix-updater` в созданном Nova файле `.github/workflows/nova-publish-project.yml` выполняется в рабочем процессе публикации:
 
 1. Проверяет и подготавливает порт на средстве выполнения Ubuntu.
-2. Запускает виртуальную машину FreeBSD, выпуск которой берётся из переменной репозитория `PFSENSE_FREEBSD_VERSION`, или `15`, если она не задана.
-3. Извлекает ветку `devel` репозитория FreeBSD-ports от pfSense и запускает сборку пакета.
-4. Загружает `build/release` как артефакт рабочего процесса, который хранится 7 дней, и прикрепляет те же файлы к выпуску, заменяя существующие ресурсы.
+2. Если задан секрет `PFSENSE_RELEASE_SIGNING_KEY`, получает открытый ключ из `PFSENSE_RELEASE_SIGNING_KEY` и добавляет его в `usr/local/share/pfSense-pkg-Ipv6PrefixUpdater/release-signing.pub` подготовленного порта.
+3. Собирает пакет во FreeBSD с настроенной копией FreeBSD-ports от pfSense.
+4. Если секрет задан, подписывает каждый `.pkg` как `<file>.pkg.sig` командой `ssh-keygen -Y sign -n pfSense-pkg-Ipv6PrefixUpdater`.
+5. Загружает пакеты, контрольные суммы и подписи как артефакт рабочего процесса со сроком хранения 7 дней и прикрепляет те же файлы к выпуску.
 
-Рекомендуется задать в `PFSENSE_FREEBSD_VERSION` основную версию FreeBSD для целевого выпуска pfSense и не публиковать пакет, собранный для другой основной версии. Команда `pkg add` из руководства по установке загружает `pfSense-pkg-Ipv6PrefixUpdater.pkg` из выпуска, который GitHub отмечает как последний.
+Сборка помечает пакет как предназначенный для любой версии FreeBSD, поскольку он не содержит скомпилированного кода. Поэтому один пакет устанавливается на каждый поддерживаемый выпуск pfSense. `PFSENSE_FREEBSD_VERSION` выбирает только выпуск FreeBSD для виртуальной машины сборки. Команда `pkg add` из руководства по установке загружает `pfSense-pkg-Ipv6PrefixUpdater.pkg` из выпуска, который GitHub отмечает как последний.
+
+## Подписание выпусков \{#release-signing}
+
+Для подписания нужен только секрет репозитория `PFSENSE_RELEASE_SIGNING_KEY`, содержащий незашифрованный закрытый ключ OpenSSH Ed25519.
+
+1. В 1Password выберите **New Item → SSH Key → Generate a New Key → Ed25519**.
+2. В поле закрытого ключа выберите **Export**, формат OpenSSH и не задавайте пароль.
+3. Перед сохранением секрета проверьте буфер обмена:
+
+   ```bash
+   pbpaste | head -1
+   ```
+
+   Команда должна вывести `-----BEGIN OPENSSH PRIVATE KEY-----`.
+
+4. Передайте буфер обмена прямо в GitHub или прочитайте экспортированный файл:
+
+   ```bash
+   pbpaste | gh secret set PFSENSE_RELEASE_SIGNING_KEY
+   gh secret set PFSENSE_RELEASE_SIGNING_KEY < <file>
+   ```
+
+5. После сохранения секрета удалите экспортированный файл закрытого ключа.
+
+Без секрета пакеты не содержат открытого ключа, а выпуски не подписываются. Для смены ключа добавьте новый открытый ключ `ssh-ed25519 ...` в `release-signing.pub`, опубликуйте один выпуск, пока старый ключ ещё является секретом, а затем замените секрет новым ключом.
+
+Если ключ подписания утрачен, установленные копии не смогут проверить выпуск, подписанный его заменой. На каждой затронутой установке потребуется один раз выполнить ручную команду `pkg add -f`, чтобы установить пакет с новым открытым ключом.
+
+## Тестирование адресов обновления в ВМ \{#test-update-endpoints-in-a-vm}
+
+CLI принимает две переменные окружения исключительно для контролируемых тестов в ВМ:
+
+- `IPV6_PREFIX_UPDATER_RELEASES_API` заменяет URL API последнего выпуска.
+- `IPV6_PREFIX_UPDATER_DOWNLOAD_PREFIX` заменяет допустимый префикс URL файлов выпуска.
+
+Их читает только `/usr/local/sbin/ipv6-prefix-updater`; они никогда не сохраняются в конфигурации пакета и не читаются напрямую WebGUI. Задайте все нужные переопределения в одном вызове CLI:
+
+```shell
+IPV6_PREFIX_UPDATER_RELEASES_API=http://192.0.2.10/latest.json \
+IPV6_PREFIX_UPDATER_DOWNLOAD_PREFIX=http://192.0.2.10/releases/ \
+/usr/local/sbin/ipv6-prefix-updater --check-updates
+```
+
+Используйте `--self-update` вместо `--check-updates`, чтобы проверить весь путь: загрузку, контрольную сумму SHA-256, подпись выпуска, метаданные пакета и `pkg add -f`.
 
 ## Наборы тестов PHP \{#php-test-suites}
 
-- **`tests/domain.php`**: <Terminology title="стандартная краткая запись адреса строчными буквами" to="/docs/reference/terminology#canonical-form">каноническая форма</Terminology>, границы `/48` и `/64`, маскирование, <Terminology title="биты адреса после делегированного префикса" to="/docs/reference/terminology#host-portion">биты узла</Terminology> при `/53`, отклоняемые адреса, холостое планирование, фильтрация по прежнему префиксу и изменение длины, которое считается <Terminology title="отличие от последнего успешного префикса или длины" to="/docs/reference/terminology#prefix-transition">сменой префикса</Terminology>.
-- **`tests/runtime.php`**: просмотр каждой <Terminology title="группа полей с одним переключателем на вкладке «Поля»" to="/docs/reference/terminology#field-group">группы полей</Terminology>, исключения для отдельных полей, повторное применение настроек других пакетов, атомарное <Terminology title="файл пакета с базовым значением и последним запуском" to="/docs/reference/terminology#package-state">состояние пакета</Terminology>, <Terminology title="защита от одновременного выполнения двух проверок" to="/docs/reference/terminology#run-lock">блокировка запуска</Terminology>, неподдерживаемые платформы и отключённые проверки по расписанию. Также охватывает порядок транзакции и ошибки записи, резервного копирования, предварительной проверки перезагрузки, перезагрузок и уведомления, а также «<Terminology title="результат: префикс сменился, но подходящих разрешённых полей нет" to="/docs/reference/terminology#warning">Предупреждение</Terminology>» без совпадений.
-- **`tests/pfsense-adapter.php`**: принудительное обновление адреса без перехода на <Terminology title="адрес fe80::, действующий только в одном канале" to="/docs/reference/terminology#link-local-address">link-local</Terminology>, резервная копия перед сохранением только с записью и неудачное резервное копирование, которое останавливает запуск до записи.
+- **`tests/domain.php`**: <Terminology title="Короткая запись строчными буквами, например 2001:db8::1" to="/docs/reference/terminology#addresses-and-prefixes">каноническая форма</Terminology>, границы `/48` и `/64`, маскирование, <Terminology title="Биты после префикса, всегда копируются без изменений" to="/docs/reference/terminology#addresses-and-prefixes">биты узла</Terminology> при `/53`, отклоняемые адреса, холостое планирование, фильтрация по прежнему префиксу и изменение длины, которое считается <Terminology title="Префикс сменился, и пакет берётся за работу" to="/docs/reference/terminology#baselines-and-transitions">сменой префикса</Terminology>.
+- **`tests/runtime.php`**: просмотр каждой <Terminology title="Один переключатель на целый вид настроек" to="/docs/reference/terminology#fields-and-change-plans">группы полей</Terminology>, исключения для отдельных полей, повторное применение настроек других пакетов, атомарное <Terminology title="Файл с каждым базовым значением, переживает переустановку" to="/docs/reference/terminology#running-checks">состояние пакета</Terminology>, <Terminology title="Не даёт двум проверкам идти одновременно" to="/docs/reference/terminology#running-checks">блокировка запуска</Terminology>, неподдерживаемые платформы и отключённые проверки по расписанию. Также охватывает порядок транзакции и ошибки записи, резервного копирования, предварительной проверки перезагрузки, перезагрузок и уведомления, а также «<Terminology title="Префикс сменился, но ни одно разрешённое поле не использовало старый" to="/docs/reference/terminology#run-outcomes">Предупреждение</Terminology>» без совпадений.
+- **`tests/pfsense-adapter.php`**: принудительное обновление адреса без перехода на <Terminology title="Адрес fe80, который никогда не служит источником" to="/docs/reference/terminology#addresses-and-prefixes">link-local</Terminology>, резервная копия перед сохранением только с записью и неудачное резервное копирование, которое останавливает запуск до записи.
+- **`tests/updates.php`**: сравнение версий, обработка выпусков и проверка URL, стабильные случайные расписания, удаление дубликатов уведомлений, хеши из GitHub API, резервные `.sha256`, обработка ключей подписания, содержимое allowed-signers, точные аргументы и стандартный ввод `ssh-keygen`, допустимые подписи, неверные ключи и пространства имен, а также изменённые пакеты.
 - **`tests/translations.php`** и **`tests/webgui-localization.php`**: полные каталоги для каждого идентификатора языка pfSense, а также локализованная форма настроек и сообщения проверки.
 
 ## Сайт документации \{#documentation-site}

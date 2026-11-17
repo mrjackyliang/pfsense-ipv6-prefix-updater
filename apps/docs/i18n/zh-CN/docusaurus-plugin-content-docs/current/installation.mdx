@@ -1,7 +1,7 @@
 ---
 id: installation
 title: 安装软件包
-description: 使用 pkg 从 GitHub 发布版本安装 pfSense IPv6 Prefix Updater，用 SHA-256 文件校验下载内容，并在 WebGUI 中确认新页面。
+description: 使用 pkg 从 GitHub 发布版本安装 IPv6 Prefix Updater for pfSense，用 SHA-256 文件校验下载内容，并在 WebGUI 中确认新页面。
 keywords:
   - pfsense ipv6 prefix updater
   - 安装
@@ -23,13 +23,13 @@ import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
 
 - **管理员 shell** — 通过 SSH 或控制台访问 pfSense shell。也可以在 WebGUI 的 **Diagnostics → Command Prompt**（诊断 → 命令提示符）中运行单条命令。
 - **可通过 HTTPS 访问 GitHub** — 防火墙会从 GitHub Releases 下载软件包。
-- **匹配的软件包构建** — 软件包必须针对你的 pfSense 版本所基于的 FreeBSD 版本构建。
+- **受支持的 pfSense 版本** — 使用 pfSense CE 2.9.0 或 2.8.1，或 pfSense Plus 26.07 或 26.03.1。**关于** 选项卡会列出每个软件包版本经过测试的 pfSense 版本。
 - **最新备份** — 安装前，在 **Diagnostics → Backup & Restore**（诊断 → 备份与恢复）中下载一份配置副本。
-- **<Terminology title="由 Cron 软件包运行的原 update.php 脚本" to="/docs/reference/terminology#legacy-updater">旧版更新器</Terminology>可以保留** — 如果 1.x 版脚本仍在通过 Cron 软件包运行，请保持原样。安装步骤会将其迁移到软件包中，如[从脚本迁移](/docs/migrate-from-legacy)所述。
+- **<Terminology title="1.x 版本：由 Cron 软件包运行的 update.php 脚本" to="/docs/reference/terminology#package-origins">旧版更新器</Terminology>可以保留** — 如果 1.x 版脚本仍在通过 Cron 软件包运行，请保持原样。安装步骤会将其迁移到软件包中，如[从脚本迁移](/docs/migrate-from-legacy)所述。
 
 :::warning
 
-pfSense IPv6 Prefix Updater 是<Terminology title="从 GitHub 而非 Netgate 软件包仓库安装的软件包" to="/docs/reference/terminology#unofficial-package">非官方软件包</Terminology>。从 GitHub 安装 `.pkg` 文件会绕过 Netgate 的软件包审核和支持，因此建议先在已备份或可随时重建的防火墙上试用。
+IPv6 Prefix Updater for pfSense 是<Terminology title="从 GitHub 安装，而非来自 Netgate 软件包仓库" to="/docs/reference/terminology#package-origins">非官方软件包</Terminology>。从 GitHub 安装 `.pkg` 文件会绕过 Netgate 的软件包审核和支持，因此建议先在已备份或可随时重建的防火墙上试用。
 
 :::
 
@@ -45,19 +45,19 @@ pfSense IPv6 Prefix Updater 是<Terminology title="从 GitHub 而非 Netgate 软
 
 :::info
 
-1.x 版本只包含<Terminology title="由 Cron 软件包运行的原 update.php 脚本" to="/docs/reference/terminology#legacy-updater">旧版更新器</Terminology>。如果最新发布版本中没有 `.pkg` 文件，本页的命令会因找不到文件（404）而失败。
+1.x 版本只包含<Terminology title="1.x 版本：由 Cron 软件包运行的 update.php 脚本" to="/docs/reference/terminology#package-origins">旧版更新器</Terminology>。如果最新发布版本中没有 `.pkg` 文件，本页的命令会因找不到文件（404）而失败。
 
 :::
 
 ## 安装软件包 \{#install-the-package}
 
-在 pfSense shell 中运行以下命令：
+首次安装、更新或重新安装时，都可在 pfSense shell 中运行以下同一条命令：
 
 ```shell
 pkg add -f https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
 ```
 
-`pkg` 会从最新发布版本下载软件包并运行其安装步骤，在 pfSense 中注册 **Services → IPv6 Prefix Updater**（服务 → IPv6 Prefix Updater）。
+`pkg` 会从最新发布版本下载软件包并运行其安装步骤，在 pfSense 中注册 **Services → IPv6 Prefix Updater**（服务 → IPv6 Prefix Updater）。`-f` 选项使同一条命令可以安装软件包、更新旧版本或重新安装当前版本。如果不加该选项，pfSense CE 2.8 会将更新报告为已安装，并保持当前安装版本不变。
 
 ## 先校验下载文件 \{#verify-the-download-first}
 
@@ -76,14 +76,14 @@ cat pfSense-pkg-Ipv6PrefixUpdater.pkg.sha256
 ## 在 WebGUI 中确认 \{#confirm-in-the-webgui}
 
 1. 登录 pfSense WebGUI。
-2. 打开 **Services → IPv6 Prefix Updater**，确认出现 **设置**、**状态**、**字段**、**备份** 和 **清理** 选项卡。
+2. 打开 **Services → IPv6 Prefix Updater**，确认出现 **设置**、**状态**、**字段**、**备份**、**清理** 和 **关于** 选项卡。
 3. 在“状态”选项卡中，确认 **当前状态** 显示 `尚未保存任何监控接口。请在“设置”选项卡上添加。` 从旧版更新器迁移后，这里会改为列出迁移过来的接口。
-4. 在[建立基线](/docs/first-run)之前，让 **<Terminology title="由 pfSense 管理的 cron 条目运行的自动检查" to="/docs/reference/terminology#scheduled-updates">启用计划更新</Terminology>** 保持默认的未勾选状态。从旧版更新器迁移后，该选项已按旧的 Cron 计划开启。
+4. 在[建立基线](/docs/first-run)之前，让 **<Terminology title="按计划自动检查，启用前一直关闭" to="/docs/reference/terminology#running-checks">启用计划更新</Terminology>** 保持默认的未勾选状态。从旧版更新器迁移后，该选项已按旧的 Cron 计划开启。
 
 ## 安装失败时 \{#if-installation-fails}
 
 - **找不到文件（404）**：最新发布版本中没有软件包文件。[检查发布版本](/docs/installation#check-the-release)说明了哪些版本包含软件包文件。
-- **ABI 或操作系统版本不匹配**：软件包是针对与你的 pfSense 版本不同的 FreeBSD 版本构建的。建议改用匹配的构建，而不要强制安装。
+- **pfSense CE 2.9.0 上的架构错误**：截至 2.0.1 的发布版本仅针对 FreeBSD 15 构建，因此 pfSense CE 2.9.0 会为这些版本显示错误架构消息。请安装最新发布版本。
 - **DNS、TLS 或证书错误**：pfSense 需要能够解析 `github.com`、通过 HTTPS 访问它，并保持正确的时间以便检查证书。
 
 软件包出现在 WebGUI 中后，请继续阅读[建立基线](/docs/first-run)。

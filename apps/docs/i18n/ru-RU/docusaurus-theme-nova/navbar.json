@@ -1,17 +1,41 @@
 {
-  "item.label.Home": {
-    "message": "Главная"
-  },
-  "item.label.Guides": {
+  "item.label.Docs": {
     "message": "Документация"
   },
+  "item.label.Overview": {
+    "message": "Обзор"
+  },
+  "item.label.Quick Start": {
+    "message": "Быстрый старт"
+  },
+  "item.label.Configure": {
+    "message": "Настройка"
+  },
+  "item.label.Operate": {
+    "message": "Эксплуатация"
+  },
   "item.label.Safety": {
-    "message": "Безопасность и работа"
+    "message": "Безопасность"
+  },
+  "item.label.Reference": {
+    "message": "Справочник"
+  },
+  "item.label.Contributing": {
+    "message": "Участие в разработке"
+  },
+  "item.label.Blog": {
+    "message": "Блог"
+  },
+  "item.label.Resources": {
+    "message": "Ресурсы"
   },
   "item.label.Troubleshooting": {
     "message": "Устранение неполадок"
   },
-  "item.label.Blog": {
-    "message": "Блог"
+  "item.label.Changelog": {
+    "message": "История изменений"
+  },
+  "item.label.Report an Issue": {
+    "message": "Сообщить о проблеме"
   }
 }

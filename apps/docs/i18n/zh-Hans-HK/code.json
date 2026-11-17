@@ -15,10 +15,10 @@
     "message": "检测委派前缀变化，只更新已批准的 pfSense 字段，保留主机位，并验证每次事务。"
   },
   "home.hero.primaryAction": {
-    "message": "安装和配置"
+    "message": "开始使用"
   },
   "home.hero.secondaryAction": {
-    "message": "查看安全机制"
+    "message": "了解更多"
   },
   "home.preview.ariaLabel": {
     "message": "委派前缀长度: /56"
@@ -43,30 +43,6 @@
   },
   "home.preview.result": {
     "message": "试运行发现 2 个针对 2001:db8:abcd:8800::/56 的已批准字段变化；配置未被修改。"
-  },
-  "home.workflow.eyebrow": {
-    "message": "安全与运行"
-  },
-  "home.workflow.heading": {
-    "message": "安全事务"
-  },
-  "home.workflow.detect": {
-    "message": "观察到的源地址"
-  },
-  "home.workflow.plan": {
-    "message": "已更改字段"
-  },
-  "home.workflow.backup": {
-    "message": "已创建配置备份"
-  },
-  "home.workflow.write": {
-    "message": "当前前缀"
-  },
-  "home.workflow.verify": {
-    "message": "成功"
-  },
-  "home.workflow.notify": {
-    "message": "通知"
   },
   "home.features.interface.title": {
     "message": "监控接口"
@@ -104,70 +80,70 @@
   "home.features.notify.description": {
     "message": "在前缀更新验证成功后使用已配置的 pfSense 通知渠道。无变化的检查绝不会发送通知。"
   },
-  "home.stats.heading": {
-    "message": "安全与运行"
-  },
-  "home.stats.boundaries": {
-    "message": "委派前缀长度"
-  },
-  "home.stats.backups": {
-    "message": "已创建配置备份"
-  },
-  "home.stats.writes": {
-    "message": "已更改字段"
-  },
-  "home.stats.noChange": {
-    "message": "活动 IPv6 前缀未变化；未读取或写入任何已批准的配置目标。"
-  },
-  "home.routes.eyebrow": {
-    "message": "指南"
-  },
-  "home.routes.heading": {
-    "message": "安装和配置"
-  },
-  "home.routes.install.title": {
-    "message": "安装软件包"
-  },
-  "home.routes.install.description": {
-    "message": "在 pfSense shell 中运行以下命令，直接从 GitHub 安装最新版本。"
-  },
-  "home.routes.open": {
-    "message": "开始阅读"
-  },
-  "home.routes.configure.title": {
-    "message": "监控接口 / 委派前缀长度"
-  },
-  "home.routes.configure.description": {
-    "message": "为每个主活动全局 IPv6 地址带有委派前缀的接口添加一行。如果 WAN 上的 DHCPv6 只获取前缀，请选择下游的跟踪接口。前缀长度之后的主机位会完整保留，pfSense 为每个接口选择的地址显示在“状态”选项卡上。"
-  },
-  "home.routes.status.title": {
-    "message": "状态 / 命令输出"
-  },
-  "home.routes.status.description": {
-    "message": "“立即运行”可能在检测到变化后更新已批准字段。“试运行”仅记录预览，绝不会写入防火墙配置。"
-  },
-  "home.routes.troubleshoot.title": {
-    "message": "故障排除"
-  },
-  "home.routes.troubleshoot.description": {
-    "message": "如果源地址不正确，请选择真正拥有全局地址的下游跟踪接口，不要通过猜测前缀长度来补偿。若前缀变化后出现零匹配警告，请检查状态页的旧前缀和已启用范围。发生错误时，请查看 状态 → 命令输出和系统日志；必要时从原生 pfSense 配置历史恢复。"
-  },
-  "home.spotlight.heading": {
-    "message": "命令输出"
-  },
-  "home.spotlight.description": {
-    "message": "请在状态页检查每次运行的源地址、派生前缀、备份结果和最终状态。"
-  },
-  "home.spotlight.statusAction": {
-    "message": "状态 / 命令输出"
-  },
-  "home.spotlight.testsAction": {
-    "message": "结果与测试"
-  },
   "home.blogPreview.heading": {
     "message": "博客文章"
   },
   "home.blogPreview.description": {
-    "message": "版本说明、配置指南，以及有关动态 IPv6 前缀的文章。"
+    "message": "IPv6 Prefix Updater for pfSense 的发布消息、里程碑和新功能。"
+  },
+  "home.showcase.heading": {
+    "message": "pfSense WebGUI 一览"
+  },
+  "home.showcase.tabsLabel": {
+    "message": "IPv6 Prefix Updater 页面"
+  },
+  "home.showcase.settings.label": {
+    "message": "设置"
+  },
+  "home.showcase.settings.heading": {
+    "message": "监控承载前缀的接口"
+  },
+  "home.showcase.settings.description": {
+    "message": "为每个从 ISP 获取 IPv6 地址的接口添加一行，输入其委派前缀长度，并选择 pfSense 何时检查变化。"
+  },
+  "home.showcase.settings.link": {
+    "message": "选择接口和前缀"
+  },
+  "home.showcase.settings.alt": {
+    "message": "IPv6 Prefix Updater 设置页面，包含两个监控接口及其前缀长度"
+  },
+  "home.showcase.status.label": {
+    "message": "状态"
+  },
+  "home.showcase.status.heading": {
+    "message": "每次运行都不应是黑盒"
+  },
+  "home.showcase.status.description": {
+    "message": "“状态”选项卡显示每个接口的上次前缀和地址、上次运行更改了什么、是否创建了备份，以及重新加载了哪些服务。"
+  },
+  "home.showcase.status.link": {
+    "message": "阅读状态指南"
+  },
+  "home.showcase.status.alt": {
+    "message": "IPv6 Prefix Updater 状态页面，显示每个接口的当前状态和上次运行"
+  },
+  "home.showcase.fields.label": {
+    "message": "字段"
+  },
+  "home.showcase.fields.heading": {
+    "message": "由你决定更改什么"
+  },
+  "home.showcase.fields.description": {
+    "message": "选择哪些配置字段随前缀变化、设置例外，并在写入任何内容之前检查其他软件包的设置。"
+  },
+  "home.showcase.fields.link": {
+    "message": "选择字段"
+  },
+  "home.showcase.fields.alt": {
+    "message": "IPv6 Prefix Updater 字段页面，已选中静态接口和别名"
+  },
+  "home.showcase.settings.title": {
+    "message": "pfSense.home.arpa - 插件: 服务：IPv6 前缀更新器: 设置"
+  },
+  "home.showcase.status.title": {
+    "message": "pfSense.home.arpa - 系統服務: IPv6 前綴更新器: 状态"
+  },
+  "home.showcase.fields.title": {
+    "message": "pfSense.home.arpa - 系統服務: IPv6 前綴更新器: 字段"
   }
 }

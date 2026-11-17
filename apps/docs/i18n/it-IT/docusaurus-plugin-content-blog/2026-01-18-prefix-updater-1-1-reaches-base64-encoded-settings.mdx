@@ -1,0 +1,41 @@
+---
+title: "Prefix Updater 1.1 raggiunge le impostazioni codificate in base64"
+description: La versione 1.1 trova il vecchio prefisso IPv6 nei valori pfSense codificati in base64, come le opzioni personalizzate, e riconosce i prefissi in maiuscolo o minuscolo.
+slug: prefix-updater-1-1-reaches-base64-encoded-settings
+authors:
+  - mrjackyliang
+keywords:
+  - pfsense ipv6 prefix updater
+  - opzioni personalizzate base64
+  - prefisso ipv6 dinamico
+  - update.php
+  - vecchio script di aggiornamento
+tags:
+  - release
+  - ipv6
+  - pfsense
+---
+
+La versione 1.1 dello script di aggiornamento del prefisso, rilasciata il 18 gennaio 2026, riporta un nuovo prefisso IPv6 nelle impostazioni che pfSense memorizza codificate in base64, come le opzioni personalizzate, che le versioni precedenti non riuscivano a leggere.
+
+{/* truncate */}
+
+## Perché è importante \{#why-it-matters}
+
+pfSense salva alcune impostazioni a testo libero, come i blocchi di opzioni personalizzate, come testo base64 in `config.xml`. Un indirizzo scritto in uno di questi blocchi non compare mai in chiaro, quindi una ricerca del vecchio prefisso gli passava accanto senza trovarlo.
+
+Dopo un cambio di prefisso, quegli indirizzi restavano sul vecchio prefisso mentre il resto della configurazione andava avanti. Con la 1.1, lo strumento decodifica ogni valore base64, vi trova il vecchio prefisso e riscrive il valore aggiornato in base64.
+
+## Cosa c’è nella versione 1.1 \{#whats-in-version-11}
+
+- **Valori codificati in base64** — Ogni valore che si decodifica come base64 valido viene esaminato, compresi i blocchi suddivisi su più righe, e la sostituzione viene codificata di nuovo prima del salvataggio.
+- **Maiuscole o minuscole** — Gli indirizzi IPv6 possono essere scritti in maiuscolo o in minuscolo. La scansione, il prefisso salvato, la ricerca e la sostituzione ora ignorano tutti la differenza tra maiuscole e minuscole, e i prefissi vengono memorizzati in minuscolo.
+- **Indirizzi sorgente stabili** — La scansione delle interfacce salta gli indirizzi globali temporanei e deprecati e usa il primo indirizzo globale stabile di ogni interfaccia, così un indirizzo di breve durata non determina mai il prefisso.
+
+Il log contrassegna ogni aggiornamento base64 con `(base64-decoded)` accanto all’impostazione modificata, così un’esecuzione mostra esattamente quali valori codificati sono passati al nuovo prefisso.
+
+## Dove ha portato \{#where-it-led}
+
+La versione 1.1 ha ampliato ciò che lo script poteva raggiungere. Il pacchetto nativo arrivato con la versione 2.0 segue l’approccio opposto: modifica solo i campi che approvi nella sua scheda Campi, e la guida [Migra dallo script](/docs/migrate-from-legacy) spiega come passare dallo script al pacchetto.
+
+IPv6 Prefix Updater for pfSense mantiene funzionanti gli indirizzi IPv6 locali in pfSense quando un ISP cambia il prefisso delegato. Inizia con [Installa il pacchetto](/docs/installation).

@@ -1,33 +1,60 @@
 {
-  "layout.learn.title": {
-    "message": "Guide"
+  "layout.docs.title": {
+    "message": "Documentazione"
   },
   "layout.resources.title": {
     "message": "Risorse"
   },
-  "sections.learn.0.label": {
-    "message": "Installa e configura"
+  "layout.project.title": {
+    "message": "Progetto"
   },
-  "sections.learn.1.label": {
-    "message": "Interfacce monitorate / Lunghezza prefisso delegato"
+  "layout.legal.title": {
+    "message": "Note legali"
   },
-  "sections.learn.2.label": {
-    "message": "Stato / Azioni"
+  "sections.docs.0.label": {
+    "message": "Panoramica"
   },
-  "sections.learn.3.label": {
-    "message": "Risoluzione dei problemi"
+  "sections.docs.1.label": {
+    "message": "Configurazione"
   },
-  "sections.resources.0.label": {
-    "message": "Sicurezza e funzionamento"
+  "sections.docs.2.label": {
+    "message": "Gestione"
+  },
+  "sections.docs.3.label": {
+    "message": "Sicurezza"
+  },
+  "sections.docs.4.label": {
+    "message": "Riferimento"
+  },
+  "sections.docs.5.label": {
+    "message": "Contribuire"
   },
   "sections.resources.1.label": {
-    "message": "Risultati e test"
+    "message": "Risoluzione dei problemi"
   },
   "sections.resources.2.label": {
-    "message": "Documentazione pfSense"
+    "message": "Registro delle modifiche"
   },
   "sections.resources.3.label": {
+    "message": "Segnala un problema"
+  },
+  "sections.resources.4.label": {
     "message": "Codice sorgente"
+  },
+  "sections.project.0.label": {
+    "message": "Sponsorizza"
+  },
+  "sections.project.1.label": {
+    "message": "Documentazione pfSense"
+  },
+  "sections.project.2.label": {
+    "message": "Altri progetti"
+  },
+  "sections.legal.0.label": {
+    "message": "Licenza"
+  },
+  "cta.label": {
+    "message": "Pronto a mantenere allineati i prefissi IPv6?"
   },
   "copyright": {
     "message": "Copyright © 2023-2026 Jacky Liang. Rilasciato con licenza MIT."

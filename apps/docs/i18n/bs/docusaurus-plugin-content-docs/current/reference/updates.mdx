@@ -1,0 +1,74 @@
+---
+id: updates
+title: Ažuriranja
+description: Podesite provjere izdanja i instalirajte ažuriranja paketa zaštićena SHA-256 kontrolnim zbirom i potpisima izdanja s kartice O paketu.
+keywords:
+  - pfsense ipv6 prefix updater
+  - provjere ažuriranja
+  - sha-256 kontrolni zbroj
+  - potpisi izdanja
+  - pfsense obavijesti
+  - samostalno ažuriranje
+tags:
+  - reference
+  - updates
+  - security
+sidebar_position: 5
+---
+
+IPv6 Prefix Updater provjerava svoja GitHub izdanja jer pfSense Package Manager ne prikazuje pakete instalirane direktno s GitHuba.
+
+## Šta se provjerava \{#what-is-checked}
+
+Provjera traži metapodatke najnovijeg izdanja s GitHuba i poredi njegovu verziju s instaliranom verzijom paketa. Vrijeme provjere, najnoviju verziju, vezu izdanja, vrijeme objave, stanje obavijesti i posljednju grešku čuva u `/cf/conf/ipv6-prefix-updater/updates.json`. Konfiguracija vatrozida nikada se ne šalje GitHubu.
+
+Učestalost odaberite u **Services → IPv6 Prefix Updater → Postavke → Ažuriranja paketa**:
+
+- **Dnevno** se pokreće jednom dnevno u vrijeme nasumično odabrano tokom instalacije.
+- **Sedmično** je zadana vrijednost i također bira jedan stabilan dan u sedmici i vrijeme.
+- **Mjesečno** bira jedan stabilan dan od 1 do 28 i jedno stabilno vrijeme.
+- **Nikada** uklanja zakazanu provjeru izdanja.
+
+Nasumični raspored čuva se u pfSense konfiguraciji, pa ga ni čuvanje postavki ni ponovna instalacija paketa ne pomjeraju. **Provjeri sada** na kartici O paketu uvijek izvodi ručnu provjeru, čak i kada je učestalost **Nikada**.
+
+## Mrežna odredišta \{#network-destinations}
+
+Provjera ažuriranja ili ažuriranje može kontaktirati ove hostove kojima upravlja GitHub:
+
+- `api.github.com` radi metapodataka najnovijeg izdanja i objavljenog SHA-256 sažetka.
+- `github.com` radi URL-a datoteke izdanja.
+- `release-assets.githubusercontent.com`, GitHubov host za preuzimanje izdanja, nakon što se zahtjev za datotekom preusmjeri.
+
+Zahtjevi koriste provjeru TLS certifikata, kratka vremenska ograničenja, vlastiti User-Agent paketa i proxy podešen u pfSense-u. Odgovor `403` ili `429` tretira se kao ograničenje učestalosti i ne briše posljednje ispravne podatke o izdanju.
+
+## Obavijesti \{#notices}
+
+Kada se novija verzija prvi put pojavi, paket za tu verziju dodaje jednu pfSense obavijest na zvonu. Obavijest vodi na karticu O paketu i po zadanim postavkama ostaje lokalna.
+
+Označite **Udaljene obavijesti** kako biste uključili i e-poštu, Telegram, Pushover ili druge udaljene kanale podešene u pfSense-u. Paket i dalje pravi samo jednu obavijest po novoj verziji. Zatvara je nakon što se ta verzija instalira ili kada kasnija provjera utvrdi da je instalirani paket ažuran.
+
+## Instaliranje ažuriranja \{#install-an-update}
+
+Otvorite **Services → IPv6 Prefix Updater → O paketu**. Kada je dostupna novija verzija, **Ažuriraj na _verziju_** pokreće pozadinski posao, a stranica prikazuje njegov napredak.
+
+Posao ponovo dohvata izdanje i preuzima `.pkg` s verzijom. Provjerava paket prema sažetku `sha256:<hex>` resursa iz GitHub API-ja; kada tog sažetka nema, umjesto toga preuzima odgovarajuću `.pkg.sha256` datoteku iz istog izdanja.
+
+Paketi izdanja nose javne ključeve za potpisivanje radnog toka izdanja u `/usr/local/share/pfSense-pkg-Ipv6PrefixUpdater/release-signing.pub`. Kada ta datoteka navodi jedan ili više ključeva, instalirana kopija prihvata samo ažuriranja potpisana jednim od njih; ako datoteka nedostaje ili sadrži samo komentare, provjere potpisa ostaju isključene, a ažuriranja se oslanjaju samo na SHA-256 provjeru.
+
+Nakon SHA-256 provjere, kada instalirana datoteka ključeva navodi ključ, posao preuzima odgovarajući `.pkg.sig` iz istog izdanja i provjerava ga pomoću `ssh-keygen -Y verify` prije čitanja arhive. Izdanje bez tog potpisa ili potpisano drugim ključem se odbija, a instalirana verzija ostaje.
+
+Posao zatim potvrđuje naziv i verziju paketa u arhivi prije pokretanja `pkg add -f`. Ako ne postoji nijedan izvor kontrolnog zbira, odbija ažuriranje i zadržava instaliranu verziju; zaključavanje paketa sprječava da se pokretanje provjere prefiksa i ažuriranje preklope.
+
+## Ručno instaliranje \{#install-manually}
+
+Administrator i dalje može instalirati datoteku izdanja iz pfSense ljuske:
+
+```shell
+pkg add -f https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
+```
+
+Ova ručna naredba zaobilazi i SHA-256 provjeru i provjeru potpisa izdanja na kartici O paketu. Prije upotrebe provjerite izdanje, kontrolni zbroj i potpis.
+
+## Isključivanje provjera \{#turn-checks-off}
+
+Postavite **Provjere ažuriranja** na **Nikada** i sačuvajte karticu Postavke. Paket uklanja svoj cron unos za provjeru ažuriranja i ne šalje zakazane izlazne zahtjeve za ažuriranje. Praćenje prefiksa zadržava vlastiti nezavisni raspored, a **Provjeri sada** ostaje dostupno za zahtjev koji pokrene administrator.

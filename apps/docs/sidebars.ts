@@ -62,6 +62,7 @@ const sidebars: SidebarsConfig = {
         'reference/settings',
         'reference/approved-fields',
         'reference/command-line-and-files',
+        'reference/updates',
         'reference/package-lifecycle',
       ],
     },

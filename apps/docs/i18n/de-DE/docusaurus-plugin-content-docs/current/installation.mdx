@@ -1,7 +1,7 @@
 ---
 id: installation
 title: Paket installieren
-description: Installieren Sie pfSense IPv6 Prefix Updater mit pkg aus einem GitHub-Release, prüfen Sie den Download anhand seiner SHA-256-Datei und bestätigen Sie die neuen Seiten in der WebGUI.
+description: Installieren Sie IPv6 Prefix Updater for pfSense mit pkg aus einem GitHub-Release, prüfen Sie den Download anhand seiner SHA-256-Datei und bestätigen Sie die neuen Seiten in der WebGUI.
 keywords:
   - pfsense ipv6 prefix updater
   - installation
@@ -23,13 +23,13 @@ Installieren Sie das Paket mit dem pfSense-Werkzeug `pkg` aus einem GitHub-Relea
 
 - **Administrator-Shell** — SSH- oder Konsolenzugriff auf die pfSense-Shell. **Diagnostics → Command Prompt** in der WebGUI kann ebenfalls einzelne Befehle ausführen.
 - **HTTPS-Zugriff auf GitHub** — Die Firewall lädt das Paket von GitHub Releases herunter.
-- **Ein passender Paket-Build** — Das Paket muss für die FreeBSD-Version gebaut sein, auf der Ihre pfSense-Version läuft.
+- **Unterstützte pfSense-Version** — Verwenden Sie pfSense CE 2.9.0 oder 2.8.1 oder pfSense Plus 26.07 oder 26.03.1. Die Registerkarte **Über** führt die pfSense-Versionen auf, auf denen jede Paketversion getestet wurde.
 - **Eine aktuelle Sicherung** — Laden Sie vor der Installation unter **Diagnostics → Backup & Restore** eine Kopie der Konfiguration herunter.
-- **Der <Terminology title="ursprüngliches update.php-Skript, ausgeführt vom Cron-Paket" to="/docs/reference/terminology#legacy-updater">Legacy-Updater</Terminology> kann bleiben** — Wenn das Skript der Version 1.x noch über das Cron-Paket läuft, lassen Sie es bestehen. Der Installationsschritt übernimmt es in das Paket, wie [Vom Skript migrieren](/docs/migrate-from-legacy) erklärt.
+- **Der <Terminology title="Version 1.x: das Skript update.php, gestartet vom Cron-Paket" to="/docs/reference/terminology#package-origins">Legacy-Updater</Terminology> kann bleiben** — Wenn das Skript der Version 1.x noch über das Cron-Paket läuft, lassen Sie es bestehen. Der Installationsschritt übernimmt es in das Paket, wie [Vom Skript migrieren](/docs/migrate-from-legacy) erklärt.
 
 :::warning
 
-pfSense IPv6 Prefix Updater ist ein <Terminology title="Paket von GitHub, nicht aus dem Netgate-Repository" to="/docs/reference/terminology#unofficial-package">inoffizielles Paket</Terminology>. Die Installation einer `.pkg`-Datei von GitHub umgeht die Paketprüfung und den Support von Netgate, daher empfiehlt es sich, das Paket zuerst auf einer gesicherten oder entbehrlichen Firewall auszuprobieren.
+IPv6 Prefix Updater for pfSense ist ein <Terminology title="Von GitHub installiert, nicht aus dem Netgate-Paketrepository" to="/docs/reference/terminology#package-origins">inoffizielles Paket</Terminology>. Die Installation einer `.pkg`-Datei von GitHub umgeht die Paketprüfung und den Support von Netgate, daher empfiehlt es sich, das Paket zuerst auf einer gesicherten oder entbehrlichen Firewall auszuprobieren.
 
 :::
 
@@ -45,19 +45,19 @@ Paket-Releases sind auf der [Seite GitHub Releases](https://github.com/mrjackyli
 
 :::info
 
-Releases der Version 1.x enthalten nur den <Terminology title="ursprüngliches update.php-Skript, ausgeführt vom Cron-Paket" to="/docs/reference/terminology#legacy-updater">Legacy-Updater</Terminology>. Wenn das neueste Release keine `.pkg`-Datei hat, schlagen die Befehle auf dieser Seite mit einem Fehler Not Found (404) fehl.
+Releases der Version 1.x enthalten nur den <Terminology title="Version 1.x: das Skript update.php, gestartet vom Cron-Paket" to="/docs/reference/terminology#package-origins">Legacy-Updater</Terminology>. Wenn das neueste Release keine `.pkg`-Datei hat, schlagen die Befehle auf dieser Seite mit einem Fehler Not Found (404) fehl.
 
 :::
 
 ## Paket installieren \{#install-the-package}
 
-Führen Sie diesen Befehl in der pfSense-Shell aus:
+Führen Sie denselben Befehl in der pfSense-Shell für eine Erstinstallation, ein Update oder eine Neuinstallation aus:
 
 ```shell
 pkg add -f https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
 ```
 
-`pkg` lädt das Paket aus dem neuesten Release herunter und führt seinen Installationsschritt aus, der **Services → IPv6 Prefix Updater** bei pfSense registriert.
+`pkg` lädt das Paket aus dem neuesten Release herunter und führt seinen Installationsschritt aus, der **Services → IPv6 Prefix Updater** bei pfSense registriert. Mit der Option `-f` kann derselbe Befehl das Paket installieren, eine ältere Version aktualisieren oder die aktuelle Version neu installieren. Ohne sie meldet pfSense CE 2.8 ein Update als bereits installiert und lässt die installierte Version unverändert.
 
 ## Download zuerst prüfen \{#verify-the-download-first}
 
@@ -76,14 +76,14 @@ Die letzten beiden Befehle geben denselben Wert aus, wenn der Download intakt is
 ## In der WebGUI bestätigen \{#confirm-in-the-webgui}
 
 1. Melden Sie sich an der pfSense-WebGUI an.
-2. Öffnen Sie **Services → IPv6 Prefix Updater** und prüfen Sie, ob die Registerkarten **Einstellungen**, **Status**, **Felder**, **Sicherungen** und **Bereinigung** erscheinen.
+2. Öffnen Sie **Services → IPv6 Prefix Updater** und prüfen Sie, ob die Registerkarten **Einstellungen**, **Status**, **Felder**, **Sicherungen**, **Bereinigung** und **Über** erscheinen.
 3. Prüfen Sie auf der Registerkarte Status, ob **Aktueller Zustand** `Es sind noch keine überwachten Schnittstellen gespeichert. Fügen Sie sie auf der Registerkarte Einstellungen hinzu.` anzeigt. Nach der Umstellung vom Legacy-Updater listet der Abschnitt stattdessen die übernommenen Schnittstellen auf.
-4. Lassen Sie **<Terminology title="automatische Prüfungen über einen von pfSense verwalteten Cron-Eintrag" to="/docs/reference/terminology#scheduled-updates">Geplante Aktualisierungen aktivieren</Terminology>** deaktiviert, wie standardmäßig voreingestellt, bis Sie [die Basislinie festlegen](/docs/first-run). Nach der Umstellung vom Legacy-Updater ist die Option bereits aktiviert, passend zum alten Cron-Zeitplan.
+4. Lassen Sie **<Terminology title="Automatische Prüfungen nach Zeitplan, aus bis Sie sie aktivieren" to="/docs/reference/terminology#running-checks">Geplante Aktualisierungen aktivieren</Terminology>** deaktiviert, wie standardmäßig voreingestellt, bis Sie [die Basislinie festlegen](/docs/first-run). Nach der Umstellung vom Legacy-Updater ist die Option bereits aktiviert, passend zum alten Cron-Zeitplan.
 
 ## Wenn die Installation fehlschlägt \{#if-installation-fails}
 
 - **Not Found (404)**: Das neueste Release hat keine Paketdatei. [Release prüfen](/docs/installation#check-the-release) erklärt, welche Releases eine enthalten.
-- **ABI- oder OS-Versionskonflikt**: Das Paket wurde für eine andere FreeBSD-Version gebaut als die, auf der Ihre pfSense-Version läuft. Es empfiehlt sich, einen passenden Build zu verwenden, statt die Installation zu erzwingen.
+- **Falsche Architektur unter pfSense CE 2.9.0**: Releases bis einschließlich 2.0.1 wurden nur für FreeBSD 15 gebaut. Daher zeigt pfSense CE 2.9.0 für sie eine Meldung zur falschen Architektur an. Installieren Sie das neueste Release.
 - **DNS-, TLS- oder Zertifikatsfehler**: pfSense muss `github.com` auflösen, es über HTTPS erreichen und für Zertifikatsprüfungen die richtige Uhrzeit haben.
 
 Fahren Sie mit [Basislinie festlegen](/docs/first-run) fort, sobald das Paket in der WebGUI erscheint.

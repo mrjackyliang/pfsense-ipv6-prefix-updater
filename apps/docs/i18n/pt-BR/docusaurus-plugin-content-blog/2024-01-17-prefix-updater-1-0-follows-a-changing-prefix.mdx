@@ -1,0 +1,47 @@
+---
+title: "O Prefix Updater 1.0 acompanha um prefixo IPv6 que muda no pfSense"
+description: A versão 1.0 do pfSense Dynamic IPv6 Prefix Updater detecta um novo prefixo delegado e reescreve aliases, IPs estáticos e endereços de VPN depois de fazer backup.
+slug: prefix-updater-1-0-follows-a-changing-prefix
+authors:
+  - mrjackyliang
+keywords:
+  - pfsense ipv6 prefix updater
+  - prefixo ipv6 dinâmico
+  - delegação de prefixo ipv6
+  - update.php
+  - atualizador legado
+tags:
+  - release
+  - ipv6
+  - pfsense
+---
+
+A versão 1.0 do pfSense Dynamic IPv6 Prefix Updater foi lançada em 17 de janeiro de 2024. É um script PHP que percebe quando um provedor entrega ao pfSense um novo prefixo IPv6 e leva esse prefixo para os endereços salvos na configuração do firewall.
+
+{/* truncate */}
+
+## O problema que ele resolve \{#the-problem-it-solves}
+
+Muitos provedores delegam um prefixo IPv6 que pode mudar sem aviso prévio. Todos os aliases, endereços estáticos e configurações de VPN baseados no prefixo antigo ficam desatualizados no mesmo instante, e a rede falha de maneiras difíceis de ligar a uma única causa.
+
+Antes da 1.0, a solução era vasculhar a configuração manualmente depois de cada mudança. Com a 1.0, o pfSense encontra o novo prefixo sozinho e atualiza os endereços salvos que usavam o antigo.
+
+## O que a versão 1.0 faz \{#what-version-10-does}
+
+O script, `update.php`, roda a partir de uma entrada do pacote Cron com dois argumentos: a interface a monitorar e o comprimento do prefixo que o provedor delega. A cada execução, ele:
+
+- **Compara prefixos** — Lê o prefixo IPv6 atual da interface e o compara com o que foi salvo na execução anterior.
+- **Faz backup primeiro** — Antes de qualquer alteração, salva uma cópia do `config.xml`.
+- **Reescreve o prefixo antigo** — Substitui o prefixo antigo nos aliases do firewall, nos IPs estáticos e nos endereços IPsec, OpenVPN e WireGuard da configuração.
+- **Envia uma notificação** — O pfSense gera uma notificação quando o prefixo muda.
+- **Roda uma cópia por vez** — Um bloqueio impede que uma segunda execução comece enquanto outra ainda está em andamento.
+
+Um script de instalação baixa o atualizador em `/root/pfsense-ipv6-prefix-updater`, e uma entrada do Cron define a frequência das verificações.
+
+## O que veio depois \{#where-it-led}
+
+A versão 1.0 provou que o pfSense consegue detectar um novo prefixo, fazer backup da configuração e reescrever os endereços antigos sem ninguém no teclado. Essa prova virou a base do pacote pfSense nativo que substituiu o script na versão 2.0.
+
+Ainda usa o script? O pacote move as entradas do Cron, os prefixos salvos e os backups para você, como explica [Migrar do script](/docs/migrate-from-legacy).
+
+O IPv6 Prefix Updater for pfSense mantém os endereços IPv6 locais do pfSense funcionando quando um provedor muda o prefixo delegado. Comece por [Instalar o pacote](/docs/installation).

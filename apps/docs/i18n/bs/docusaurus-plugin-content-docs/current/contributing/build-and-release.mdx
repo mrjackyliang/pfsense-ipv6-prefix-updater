@@ -1,11 +1,12 @@
 ---
 id: build-and-release
 title: Izgradnja i objavljivanje
-description: Provjerite, pripremite i izgradite pfSense paket na FreeBSD-u, a zatim pomoću radnog toka za objavljivanje priložite .pkg datoteke i kontrolne zbirove izdanju na GitHubu.
+description: Provjerite, pripremite, izgradite i potpišite pfSense paket na FreeBSD-u, pa pakete, kontrolne zbirove i potpise priložite izdanju na GitHubu.
 keywords:
   - pfsense ipv6 prefix updater
   - izgradnja
   - radni tok izdanja
+  - potpisivanje izdanja
   - freebsd portovi
   - php testovi
 tags:
@@ -17,11 +18,11 @@ sidebar_position: 1
 
 import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
 
-Provjerite, pripremite i zapakujte pfSense IPv6 Prefix Updater, a zatim objavite paket u izdanju na GitHubu.
+Provjerite, pripremite i zapakujte IPv6 Prefix Updater for pfSense, a zatim objavite paket u izdanju na GitHubu.
 
 ## Zahtjevi \{#requirements}
 
-- **Node.js 22 ili 24** — glavni manifest i manifesti radnog prostora prihvataju `^22 || ^24`.
+- **Node.js 22, 24 ili 26** — glavni manifest i manifesti radnog prostora prihvataju `^22 || ^24 || ^26`.
 - **PHP ili Docker** — PHP skupovi testova koriste lokalni `php` kada postoji, ili sliku `php:8.3-cli-alpine` putem Dockera. `PHP_TEST_IMAGE` zamjenjuje tu sliku.
 - **FreeBSD za pakovanje** — `npm run deploy` radi samo na FreeBSD-u, uz `PFSENSE_PORTS_DIR` koji pokazuje na radnu kopiju pfSense FreeBSD-ports repozitorija.
 
@@ -46,20 +47,66 @@ PFSENSE_PORTS_DIR=/path/to/FreeBSD-ports npm run deploy --workspace pfsense-pkg-
 
 ## Radni tok izdanja \{#release-workflow}
 
-`.github/workflows/pfsense-ipv6-prefix-updater.yml` pokreće se kada se objavi izdanje na GitHubu ili ručno, s oznakom postojećeg izdanja:
+Posao `publish-pfsense-packages-ipv6-prefix-updater` u datoteci `.github/workflows/nova-publish-project.yml`, koju generiše Nova, pokreće se u radnom toku za objavljivanje:
 
 1. Provjerava i priprema port na Ubuntu runneru.
-2. Pokreće FreeBSD VM čije izdanje dolazi iz varijable repozitorija `PFSENSE_FREEBSD_VERSION`, odnosno `15` ako nije postavljena.
-3. Preuzima granu `devel` pfSense repozitorija FreeBSD-ports i pokreće izgradnju paketa.
-4. Otprema `build/release` kao artefakt radnog toka koji se čuva 7 dana i prilaže iste datoteke izdanju, zamjenjujući postojeće resurse.
+2. Kada je postavljena tajna `PFSENSE_RELEASE_SIGNING_KEY`, izvodi javni ključ iz `PFSENSE_RELEASE_SIGNING_KEY` i dodaje ga u `usr/local/share/pfSense-pkg-Ipv6PrefixUpdater/release-signing.pub` pripremljenog porta.
+3. Gradi paket na FreeBSD-u pomoću konfigurisanog checkouta pfSense FreeBSD-ports.
+4. Kada je tajna postavljena, potpisuje svaki `.pkg` kao `<file>.pkg.sig` naredbom `ssh-keygen -Y sign -n pfSense-pkg-Ipv6PrefixUpdater`.
+5. Otprema pakete, kontrolne zbirove i potpise kao artefakt radnog toka koji se čuva 7 dana te iste datoteke prilaže izdanju.
 
-Preporučuje se da `PFSENSE_FREEBSD_VERSION` postavite na glavnu verziju FreeBSD-a ciljanog pfSense izdanja i da ne objavljujete paket izgrađen za drugu glavnu verziju. Naredba `pkg add` iz uputstva za instalaciju preuzima `pfSense-pkg-Ipv6PrefixUpdater.pkg` iz izdanja koje GitHub označi kao najnovije.
+Izgradnja označava paket za bilo koju verziju FreeBSD-a jer ne sadrži kompajlirani kôd, pa se jedan paket instalira na svako podržano izdanje pfSense-a. `PFSENSE_FREEBSD_VERSION` bira samo izdanje FreeBSD-a koje koristi VM za izgradnju. Naredba `pkg add` iz uputstva za instalaciju preuzima `pfSense-pkg-Ipv6PrefixUpdater.pkg` iz izdanja koje GitHub označi kao najnovije.
+
+## Potpisivanje izdanja \{#release-signing}
+
+Jedino podešavanje za potpisivanje je tajna repozitorija `PFSENSE_RELEASE_SIGNING_KEY`, koja sadrži nešifrirani privatni OpenSSH Ed25519 ključ.
+
+1. U aplikaciji 1Password odaberite **New Item → SSH Key → Generate a New Key → Ed25519**.
+2. U polju privatnog ključa odaberite **Export**, zatim OpenSSH format i ne postavljajte lozinku.
+3. Prije spremanja tajne provjerite međuspremnik:
+
+   ```bash
+   pbpaste | head -1
+   ```
+
+   Naredba treba ispisati `-----BEGIN OPENSSH PRIVATE KEY-----`.
+
+4. Pošaljite sadržaj međuspremnika direktno na GitHub ili učitajte izvezenu datoteku:
+
+   ```bash
+   pbpaste | gh secret set PFSENSE_RELEASE_SIGNING_KEY
+   gh secret set PFSENSE_RELEASE_SIGNING_KEY < <file>
+   ```
+
+5. Izbrišite izvezenu datoteku privatnog ključa nakon spremanja tajne.
+
+Bez te tajne paketi ne sadrže javni ključ, a izdanja nisu potpisana. Za promjenu ključa dodajte novi javni ključ `ssh-ed25519 ...` u `release-signing.pub`, objavite jedno izdanje dok je stari ključ još uvijek tajna, pa zamijenite tajnu novim ključem.
+
+Ako se ključ za potpisivanje izgubi, instalirane kopije ne mogu provjeriti izdanje potpisano zamjenskim ključem. Svaka takva instalacija mora jednom upotrijebiti ručnu naredbu `pkg add -f` kako bi instalirala paket sa zamjenskim javnim ključem.
+
+## Testiranje odredišta ažuriranja u VM-u \{#test-update-endpoints-in-a-vm}
+
+CLI prihvata dvije varijable okruženja isključivo za kontrolisane VM testove:
+
+- `IPV6_PREFIX_UPDATER_RELEASES_API` zamjenjuje URL API-ja za najnovije izdanje.
+- `IPV6_PREFIX_UPDATER_DOWNLOAD_PREFIX` zamjenjuje dozvoljeni prefiks URL-a za datoteke izdanja.
+
+Čita ih samo `/usr/local/sbin/ipv6-prefix-updater`; nikada se ne čuvaju u konfiguraciji paketa niti ih WebGUI čita direktno. Postavite sve potrebne zamjene u istom pozivu CLI-ja:
+
+```shell
+IPV6_PREFIX_UPDATER_RELEASES_API=http://192.0.2.10/latest.json \
+IPV6_PREFIX_UPDATER_DOWNLOAD_PREFIX=http://192.0.2.10/releases/ \
+/usr/local/sbin/ipv6-prefix-updater --check-updates
+```
+
+Koristite `--self-update` umjesto `--check-updates` za testiranje potpunog puta preuzimanja, SHA-256 kontrolnog zbira, potpisa izdanja, metapodataka paketa i naredbe `pkg add -f`.
 
 ## PHP skupovi testova \{#php-test-suites}
 
-- **`tests/domain.php`**: <Terminology title="najkraći standardni zapis adrese malim slovima" to="/docs/reference/terminology#canonical-form">kanonski oblik</Terminology>, granice `/48` i `/64`, maskiranje, <Terminology title="bitovi adrese nakon dodijeljenog prefiksa" to="/docs/reference/terminology#host-portion">bitovi hosta</Terminology> na `/53`, odbačene adrese, planiranje bez promjena, filtriranje prema prethodnom prefiksu i promjena dužine koja se tretira kao <Terminology title="razlika u odnosu na posljednji uspješni prefiks ili dužinu" to="/docs/reference/terminology#prefix-transition">promjena prefiksa</Terminology>.
-- **`tests/runtime.php`**: skeniranje svake <Terminology title="grupa polja s jednim prekidačem na kartici Polja" to="/docs/reference/terminology#field-group">grupe polja</Terminology>, izuzeci za pojedinačna polja, ponovna primjena postavki drugih paketa, atomsko <Terminology title="datoteka paketa s početnim stanjem i posljednjim pokretanjem" to="/docs/reference/terminology#package-state">stanje paketa</Terminology>, <Terminology title="zaštita koja sprječava dvije istovremene provjere" to="/docs/reference/terminology#run-lock">zaključavanje pokretanja</Terminology>, nepodržane platforme i onemogućene zakazane provjere. Pokriva i redoslijed transakcije te greške pri upisu, sigurnosnoj kopiji, prethodnoj provjeri ponovnog učitavanja, ponovnom učitavanju i obavještenju, kao i <Terminology title="ishod: prefiks promijenjen, ali nijedno odobreno polje nije odgovaralo" to="/docs/reference/terminology#warning">Upozorenje</Terminology> bez podudaranja.
-- **`tests/pfsense-adapter.php`**: prisilno osvježavanje adrese bez zamjene <Terminology title="fe80:: adresa koja radi samo na jednoj vezi" to="/docs/reference/terminology#link-local-address">link-local</Terminology> adresom, sigurnosna kopija prije čuvanja koje samo upisuje i neuspjela sigurnosna kopija koja zaustavlja pokretanje prije upisa.
+- **`tests/domain.php`**: <Terminology title="Kratki zapis malim slovima, npr. 2001:db8::1" to="/docs/reference/terminology#addresses-and-prefixes">kanonski oblik</Terminology>, granice `/48` i `/64`, maskiranje, <Terminology title="Bitovi nakon prefiksa, uvijek kopirani bez promjene" to="/docs/reference/terminology#addresses-and-prefixes">bitovi hosta</Terminology> na `/53`, odbačene adrese, planiranje bez promjena, filtriranje prema prethodnom prefiksu i promjena dužine koja se tretira kao <Terminology title="Vaš prefiks se promijenio, pa paket kreće na posao" to="/docs/reference/terminology#baselines-and-transitions">promjena prefiksa</Terminology>.
+- **`tests/runtime.php`**: skeniranje svake <Terminology title="Jedan prekidač za cijelu vrstu postavki" to="/docs/reference/terminology#fields-and-change-plans">grupe polja</Terminology>, izuzeci za pojedinačna polja, ponovna primjena postavki drugih paketa, atomsko <Terminology title="Datoteka sa svakim početnim stanjem, sačuvana i nakon reinstalacije" to="/docs/reference/terminology#running-checks">stanje paketa</Terminology>, <Terminology title="Sprečava da se dvije provjere pokrenu istovremeno" to="/docs/reference/terminology#running-checks">zaključavanje pokretanja</Terminology>, nepodržane platforme i onemogućene zakazane provjere. Pokriva i redoslijed transakcije te greške pri upisu, sigurnosnoj kopiji, prethodnoj provjeri ponovnog učitavanja, ponovnom učitavanju i obavještenju, kao i <Terminology title="Prefiks se promijenio, ali nijedno odobreno polje nije koristilo stari" to="/docs/reference/terminology#run-outcomes">Upozorenje</Terminology> bez podudaranja.
+- **`tests/pfsense-adapter.php`**: prisilno osvježavanje adrese bez zamjene <Terminology title="fe80 adresa koja se nikad ne koristi kao izvor" to="/docs/reference/terminology#addresses-and-prefixes">link-local</Terminology> adresom, sigurnosna kopija prije čuvanja koje samo upisuje i neuspjela sigurnosna kopija koja zaustavlja pokretanje prije upisa.
+- **`tests/updates.php`**: poređenje verzija, obrada izdanja i provjera URL-ova, stabilni nasumični rasporedi, uklanjanje duplih obavještenja, GitHub API sažeci, rezervne `.sha256` datoteke, obrada ključeva za potpisivanje, sadržaj allowed-signers, tačni argumenti i standardni ulaz za `ssh-keygen`, valjani potpisi, pogrešni ključevi i namespaceovi te izmijenjeni paketi.
 - **`tests/translations.php`** i **`tests/webgui-localization.php`**: potpuni katalozi za svaki identifikator jezika pfSense-a te lokalizirani obrazac Postavke i poruke validacije.
 
 ## Stranica dokumentacije \{#documentation-site}

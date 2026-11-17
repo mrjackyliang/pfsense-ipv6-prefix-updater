@@ -1,0 +1,47 @@
+---
+title: "Prefix Updater 1.0 følger et IPv6-prefiks som endres på pfSense"
+description: Versjon 1.0 av pfSense Dynamic IPv6 Prefix Updater oppdager et nytt delegert prefiks og skriver om aliaser, statiske IP-er og VPN-adresser etter en sikkerhetskopi.
+slug: prefix-updater-1-0-follows-a-changing-prefix
+authors:
+  - mrjackyliang
+keywords:
+  - pfsense ipv6 prefix updater
+  - dynamisk ipv6-prefiks
+  - ipv6-prefiksdelegering
+  - update.php
+  - eldre oppdateringsskript
+tags:
+  - release
+  - ipv6
+  - pfsense
+---
+
+Versjon 1.0 av pfSense Dynamic IPv6 Prefix Updater kom ut 17. januar 2024. Det er et PHP-skript som merker når en internettleverandør gir pfSense et nytt IPv6-prefiks, og fører prefikset videre inn i adressene som er lagret i brannmurkonfigurasjonen.
+
+{/* truncate */}
+
+## Problemet det løser \{#the-problem-it-solves}
+
+Mange internettleverandører delegerer et IPv6-prefiks som kan endres uten forvarsel. Hvert alias, hver statiske adresse og hver VPN-innstilling som bygger på det gamle prefikset, blir utdatert i samme øyeblikk, og nettverket svikter på måter som er vanskelige å spore tilbake til én årsak.
+
+Før 1.0 var løsningen å lete manuelt gjennom konfigurasjonen etter hver endring. Med 1.0 finner pfSense det nye prefikset selv og oppdaterer de lagrede adressene som brukte det gamle.
+
+## Hva versjon 1.0 gjør \{#what-version-10-does}
+
+Skriptet, `update.php`, kjøres fra en oppføring i Cron-pakken med to argumenter: grensesnittet som skal overvåkes, og prefikslengden internettleverandøren delegerer. Ved hver kjøring gjør det følgende:
+
+- **Sammenligner prefikser** — Det leser grensesnittets gjeldende IPv6-prefiks og sammenligner det med prefikset som ble lagret ved forrige kjøring.
+- **Tar sikkerhetskopi først** — Før en endring lagrer det en kopi av `config.xml`.
+- **Skriver om det gamle prefikset** — Det erstatter det gamle prefikset i brannmuraliaser, statiske IP-er og IPsec-, OpenVPN- og WireGuard-adressene i konfigurasjonen.
+- **Sender et varsel** — pfSense viser et varsel når prefikset endres.
+- **Kjører én kopi om gangen** — En lås hindrer at en ny kjøring starter mens en annen fortsatt pågår.
+
+Et installasjonsskript laster ned oppdateringsskriptet til `/root/pfsense-ipv6-prefix-updater`, og en Cron-oppføring bestemmer hvor ofte det kontrollerer.
+
+## Hvor det førte \{#where-it-led}
+
+Versjon 1.0 beviste at pfSense kan oppdage et nytt prefiks, sikkerhetskopiere konfigurasjonen og skrive om de gamle adressene uten at noen sitter ved tastaturet. Det beviset ble grunnlaget for den ekte pfSense-pakken som erstattet skriptet i versjon 2.0.
+
+Bruker du skriptet i dag? Pakken flytter Cron-oppføringene, de lagrede prefiksene og sikkerhetskopiene for deg, slik [Migrer fra skriptet](/docs/migrate-from-legacy) forklarer.
+
+IPv6 Prefix Updater for pfSense holder lokale IPv6-adresser i pfSense i drift når en internettleverandør endrer det delegerte prefikset. Begynn med [Installer pakken](/docs/installation).

@@ -15,10 +15,10 @@
     "message": "偵測委派前綴變更，只更新已核准的 pfSense 欄位，保留主機位元，並驗證每次交易。"
   },
   "home.hero.primaryAction": {
-    "message": "安裝與設定"
+    "message": "開始使用"
   },
   "home.hero.secondaryAction": {
-    "message": "檢視安全機制"
+    "message": "瞭解更多"
   },
   "home.preview.ariaLabel": {
     "message": "委派前綴長度: /56"
@@ -43,30 +43,6 @@
   },
   "home.preview.result": {
     "message": "試執行找到 2 個針對 2001:db8:abcd:8800::/56 的已核准欄位變更；設定未修改。"
-  },
-  "home.workflow.eyebrow": {
-    "message": "安全與操作"
-  },
-  "home.workflow.heading": {
-    "message": "安全交易"
-  },
-  "home.workflow.detect": {
-    "message": "觀察到的來源位址"
-  },
-  "home.workflow.plan": {
-    "message": "已變更欄位"
-  },
-  "home.workflow.backup": {
-    "message": "已建立設定備份"
-  },
-  "home.workflow.write": {
-    "message": "目前前綴"
-  },
-  "home.workflow.verify": {
-    "message": "成功"
-  },
-  "home.workflow.notify": {
-    "message": "通知"
   },
   "home.features.interface.title": {
     "message": "監控介面"
@@ -104,70 +80,70 @@
   "home.features.notify.description": {
     "message": "在前綴更新驗證成功後使用已設定的 pfSense 通知管道。無變更的檢查絕不通知。"
   },
-  "home.stats.heading": {
-    "message": "安全與操作"
-  },
-  "home.stats.boundaries": {
-    "message": "委派前綴長度"
-  },
-  "home.stats.backups": {
-    "message": "已建立設定備份"
-  },
-  "home.stats.writes": {
-    "message": "已變更欄位"
-  },
-  "home.stats.noChange": {
-    "message": "作用中 IPv6 前綴未變更；未讀取或寫入任何已核准的設定目標。"
-  },
-  "home.routes.eyebrow": {
-    "message": "指南"
-  },
-  "home.routes.heading": {
-    "message": "安裝與設定"
-  },
-  "home.routes.install.title": {
-    "message": "安裝套件"
-  },
-  "home.routes.install.description": {
-    "message": "在 pfSense shell 中執行以下命令，直接從 GitHub 安裝最新版本。"
-  },
-  "home.routes.open": {
-    "message": "開始閱讀"
-  },
-  "home.routes.configure.title": {
-    "message": "監控介面 / 委派前綴長度"
-  },
-  "home.routes.configure.description": {
-    "message": "為每個主要作用中全域 IPv6 位址帶有委派前綴的介面新增一列。如果 WAN 上的 DHCPv6 只取得前綴，請選擇下游的追蹤介面。前綴長度之後的主機位元會完整保留，pfSense 為每個介面選擇的位址會顯示在「狀態」分頁上。"
-  },
-  "home.routes.status.title": {
-    "message": "狀態 / 命令輸出"
-  },
-  "home.routes.status.description": {
-    "message": "「立即執行」可能在偵測到變更後更新已核准欄位。「試執行」只記錄預覽，絕不寫入防火牆設定。"
-  },
-  "home.routes.troubleshoot.title": {
-    "message": "疑難排解"
-  },
-  "home.routes.troubleshoot.description": {
-    "message": "若來源位址錯誤，請選擇真正擁有全域位址的下游追蹤介面，不要以猜測前綴長度補償。若前綴變更後出現零符合警告，請檢查狀態頁的舊前綴與已啟用範圍。發生錯誤時，請檢視 狀態 → 命令輸出與系統記錄；必要時從原生 pfSense 設定歷程還原。"
-  },
-  "home.spotlight.heading": {
-    "message": "命令輸出"
-  },
-  "home.spotlight.description": {
-    "message": "請在狀態頁檢查每次執行的來源位址、推導前綴、備份結果與最終狀態。"
-  },
-  "home.spotlight.statusAction": {
-    "message": "狀態 / 命令輸出"
-  },
-  "home.spotlight.testsAction": {
-    "message": "結果與測試"
-  },
   "home.blogPreview.heading": {
     "message": "網誌文章"
   },
   "home.blogPreview.description": {
-    "message": "版本說明、設定指南，以及動態 IPv6 前綴的相關文章。"
+    "message": "IPv6 Prefix Updater for pfSense 的發行消息、里程碑與新功能。"
+  },
+  "home.showcase.heading": {
+    "message": "pfSense WebGUI 一覽"
+  },
+  "home.showcase.tabsLabel": {
+    "message": "IPv6 Prefix Updater 頁面"
+  },
+  "home.showcase.settings.label": {
+    "message": "設定"
+  },
+  "home.showcase.settings.heading": {
+    "message": "監控承載前綴的介面"
+  },
+  "home.showcase.settings.description": {
+    "message": "為每個從 ISP 取得 IPv6 位址的介面新增一列，輸入其委派前綴長度，並選擇 pfSense 何時檢查變更。"
+  },
+  "home.showcase.settings.link": {
+    "message": "選擇介面和前綴"
+  },
+  "home.showcase.settings.alt": {
+    "message": "IPv6 Prefix Updater 設定頁面，包含兩個監控介面及其前綴長度"
+  },
+  "home.showcase.status.label": {
+    "message": "狀態"
+  },
+  "home.showcase.status.heading": {
+    "message": "每次執行都不該是黑盒子"
+  },
+  "home.showcase.status.description": {
+    "message": "「狀態」分頁顯示每個介面的上次前綴和位址、上次執行變更了什麼、是否建立了備份，以及重新載入了哪些服務。"
+  },
+  "home.showcase.status.link": {
+    "message": "閱讀狀態指南"
+  },
+  "home.showcase.status.alt": {
+    "message": "IPv6 Prefix Updater 狀態頁面，顯示每個介面的目前狀態和上次執行"
+  },
+  "home.showcase.fields.label": {
+    "message": "欄位"
+  },
+  "home.showcase.fields.heading": {
+    "message": "由你決定變更什麼"
+  },
+  "home.showcase.fields.description": {
+    "message": "選擇哪些設定欄位隨前綴變更、設定例外，並在寫入任何內容之前檢閱其他套件的設定。"
+  },
+  "home.showcase.fields.link": {
+    "message": "選擇欄位"
+  },
+  "home.showcase.fields.alt": {
+    "message": "IPv6 Prefix Updater 欄位頁面，已選取靜態介面和別名"
+  },
+  "home.showcase.settings.title": {
+    "message": "pfSense.home.arpa - 套件: 服務：IPv6 前綴更新器: 設定"
+  },
+  "home.showcase.status.title": {
+    "message": "pfSense.home.arpa - 系統服務: IPv6 前綴更新器: 狀態"
+  },
+  "home.showcase.fields.title": {
+    "message": "pfSense.home.arpa - 系統服務: IPv6 前綴更新器: 欄位"
   }
 }

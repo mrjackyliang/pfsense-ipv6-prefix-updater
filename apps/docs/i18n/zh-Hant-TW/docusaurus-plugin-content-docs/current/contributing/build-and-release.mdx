@@ -1,11 +1,12 @@
 ---
 id: build-and-release
 title: 建置與發行
-description: 檢查、暫存並在 FreeBSD 上建置 pfSense 套件，然後透過發布工作流程將 .pkg 與總和檢查碼檔案附加到 GitHub 發行版本。
+description: 在 FreeBSD 上檢查、暫存、建置並簽署 pfSense 套件，然後將套件、總和檢查碼與簽署附加到 GitHub 發行版本。
 keywords:
   - pfsense ipv6 prefix updater
   - 建置
   - 發行工作流程
+  - 發行簽署
   - FreeBSD ports
   - PHP 測試
 tags:
@@ -17,11 +18,11 @@ sidebar_position: 1
 
 import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
 
-檢查、暫存並封裝 pfSense IPv6 Prefix Updater，然後將套件發布到 GitHub 發行版本。
+檢查、暫存並封裝 IPv6 Prefix Updater for pfSense，然後將套件發布到 GitHub 發行版本。
 
 ## 需求 \{#requirements}
 
-- **Node.js 22 或 24** — 根目錄與工作區的資訊清單檔都接受 `^22 || ^24`。
+- **Node.js 22、24 或 26** — 根目錄與工作區的資訊清單檔都接受 `^22 || ^24 || ^26`。
 - **PHP 或 Docker** — PHP 測試套件在本機有 `php` 時會直接使用，否則透過 Docker 使用 `php:8.3-cli-alpine` 映像檔。`PHP_TEST_IMAGE` 可覆寫所用的映像檔。
 - **用於封裝的 FreeBSD** — `npm run deploy` 只能在 FreeBSD 上執行，且需要將 `PFSENSE_PORTS_DIR` 指向 pfSense FreeBSD-ports 儲存庫的本機簽出副本。
 
@@ -46,20 +47,66 @@ PFSENSE_PORTS_DIR=/path/to/FreeBSD-ports npm run deploy --workspace pfsense-pkg-
 
 ## 發行工作流程 \{#release-workflow}
 
-`.github/workflows/pfsense-ipv6-prefix-updater.yml` 會在 GitHub 發行版本發布時執行，也可以使用現有發行版本的標籤手動執行：
+Nova 產生的 `.github/workflows/nova-publish-project.yml` 中的 `publish-pfsense-packages-ipv6-prefix-updater` 作業會在發布工作流程中執行：
 
 1. 在 Ubuntu 執行器上驗證並暫存 port。
-2. 啟動一台 FreeBSD 虛擬機器，其版本取自儲存庫變數 `PFSENSE_FREEBSD_VERSION`，未設定時為 `15`。
-3. 簽出 pfSense FreeBSD-ports 儲存庫的 `devel` 分支，並執行套件建置。
-4. 將 `build/release` 上傳為保留 7 天的工作流程成品，並將相同的檔案附加到該發行版本，取代既有的資產。
+2. 設定了 `PFSENSE_RELEASE_SIGNING_KEY` 機密時，從 `PFSENSE_RELEASE_SIGNING_KEY` 衍生公開金鑰，並將其附加到已暫存 port 的 `usr/local/share/pfSense-pkg-Ipv6PrefixUpdater/release-signing.pub`。
+3. 使用已設定的 pfSense FreeBSD-ports 簽出副本在 FreeBSD 上建置套件。
+4. 設定了該機密時，使用 `ssh-keygen -Y sign -n pfSense-pkg-Ipv6PrefixUpdater` 將每個 `.pkg` 簽署為 `<file>.pkg.sig`。
+5. 將套件、總和檢查碼與簽署上傳為保留 7 天的工作流程成品，並將相同檔案附加至發行版本。
 
-建議將 `PFSENSE_FREEBSD_VERSION` 設為目標 pfSense 版本所對應的 FreeBSD 主要版本，且不要發布針對其他主要版本建置的套件。安裝指南中的 `pkg add` 命令會從 GitHub 標示為最新（latest）的發行版本取得 `pfSense-pkg-Ipv6PrefixUpdater.pkg`。
+由於套件不含編譯程式碼，建置會將它標示為適用於任何 FreeBSD 版本，因此一個套件即可安裝在所有受支援的 pfSense 版本上。`PFSENSE_FREEBSD_VERSION` 僅選擇建置虛擬機器使用的 FreeBSD 版本。安裝指南中的 `pkg add` 命令會從 GitHub 標示為最新（latest）的發行版本取得 `pfSense-pkg-Ipv6PrefixUpdater.pkg`。
+
+## 發行簽署 \{#release-signing}
+
+簽署唯一需要的設定是儲存庫機密 `PFSENSE_RELEASE_SIGNING_KEY`，其中包含未加密的 OpenSSH Ed25519 私密金鑰。
+
+1. 在 1Password 中選擇 **New Item → SSH Key → Generate a New Key → Ed25519**。
+2. 在私密金鑰欄位選擇 **Export**，選取 OpenSSH 格式，並且不要設定密碼。
+3. 儲存機密前檢查剪貼簿：
+
+   ```bash
+   pbpaste | head -1
+   ```
+
+   命令應顯示 `-----BEGIN OPENSSH PRIVATE KEY-----`。
+
+4. 將剪貼簿直接傳送到 GitHub，或讀取已匯出的檔案：
+
+   ```bash
+   pbpaste | gh secret set PFSENSE_RELEASE_SIGNING_KEY
+   gh secret set PFSENSE_RELEASE_SIGNING_KEY < <file>
+   ```
+
+5. 儲存機密後，刪除已匯出的私密金鑰檔案。
+
+如果沒有該機密，套件不會帶有公開金鑰，發行版本也不會簽署。更換金鑰時，將新的 `ssh-ed25519 ...` 公開金鑰加入 `release-signing.pub`，在舊金鑰仍是機密時發布一個發行版本，然後用新金鑰取代該機密。
+
+如果簽署金鑰遺失，已安裝的副本無法驗證使用替代金鑰簽署的發行版本。每個受影響的安裝都必須手動執行一次 `pkg add -f`，以安裝帶有新公開金鑰的套件。
+
+## 在虛擬機器中測試更新端點 \{#test-update-endpoints-in-a-vm}
+
+CLI 接受兩個環境變數，僅用於受控的虛擬機器測試：
+
+- `IPV6_PREFIX_UPDATER_RELEASES_API` 取代最新發行版本的 API URL。
+- `IPV6_PREFIX_UPDATER_DOWNLOAD_PREFIX` 取代允許的資源 URL 前綴。
+
+它們只由 `/usr/local/sbin/ipv6-prefix-updater` 讀取，絕不會儲存在套件設定中，也不會由 WebGUI 直接讀取。請在同一次 CLI 呼叫中設定所有需要的覆寫值：
+
+```shell
+IPV6_PREFIX_UPDATER_RELEASES_API=http://192.0.2.10/latest.json \
+IPV6_PREFIX_UPDATER_DOWNLOAD_PREFIX=http://192.0.2.10/releases/ \
+/usr/local/sbin/ipv6-prefix-updater --check-updates
+```
+
+使用 `--self-update` 取代 `--check-updates`，即可針對測試發行版本走完完整的下載、SHA-256 總和檢查碼、發行簽署、套件中繼資料與 `pkg add -f` 流程。
 
 ## PHP 測試套件 \{#php-test-suites}
 
-- **`tests/domain.php`**：<Terminology title="位址的小寫、最短標準寫法" to="/docs/reference/terminology#canonical-form">標準形式</Terminology>、`/48` 與 `/64` 邊界、遮罩、`/53` 處的<Terminology title="委派前綴之後的位址位元" to="/docs/reference/terminology#host-portion">主機位元</Terminology>、遭拒絕的位址、無作業規劃、先前前綴篩選，以及長度變更被視為<Terminology title="與上次成功前綴或長度不同" to="/docs/reference/terminology#prefix-transition">前綴變更</Terminology>的情況。
-- **`tests/runtime.php`**：掃描每個<Terminology title="「欄位」分頁上共用一個開關的一組欄位" to="/docs/reference/terminology#field-group">欄位群組</Terminology>、單一欄位例外、重新套用其他套件的設定、原子化的<Terminology title="保存基準與上次執行的套件檔案" to="/docs/reference/terminology#package-state">套件狀態</Terminology>、<Terminology title="防止兩個檢查同時執行的保護機制" to="/docs/reference/terminology#run-lock">執行鎖定</Terminology>、不支援的平台，以及已停用的排程檢查。它也涵蓋交易順序，寫入、備份、重新載入預檢、重新載入與通知各環節的失敗，以及零符合時的<Terminology title="結果：前綴已變更，但沒有符合的已核准欄位" to="/docs/reference/terminology#warning">警告</Terminology>。
-- **`tests/pfsense-adapter.php`**：不退回<Terminology title="僅在單一鏈路上有效的 fe80:: 位址" to="/docs/reference/terminology#link-local-address">鏈路本機</Terminology>位址的強制位址重新整理、僅寫入式儲存之前的備份，以及在寫入前就停止的備份失敗。
+- **`tests/domain.php`**：<Terminology title="簡短的小寫寫法，例如 2001:db8::1" to="/docs/reference/terminology#addresses-and-prefixes">標準形式</Terminology>、`/48` 與 `/64` 邊界、遮罩、`/53` 處的<Terminology title="前綴之後的位元，一律原樣複製" to="/docs/reference/terminology#addresses-and-prefixes">主機位元</Terminology>、遭拒絕的位址、無作業規劃、先前前綴篩選，以及長度變更被視為<Terminology title="前綴變了，套件開始工作" to="/docs/reference/terminology#baselines-and-transitions">前綴變更</Terminology>的情況。
+- **`tests/runtime.php`**：掃描每個<Terminology title="一個開關管住一整類設定" to="/docs/reference/terminology#fields-and-change-plans">欄位群組</Terminology>、單一欄位例外、重新套用其他套件的設定、原子化的<Terminology title="保存每個基準的檔案，重新安裝後依然保留" to="/docs/reference/terminology#running-checks">套件狀態</Terminology>、<Terminology title="確保兩次檢查不會同時執行" to="/docs/reference/terminology#running-checks">執行鎖定</Terminology>、不支援的平台，以及已停用的排程檢查。它也涵蓋交易順序，寫入、備份、重新載入預檢、重新載入與通知各環節的失敗，以及零符合時的<Terminology title="前綴變了，但沒有已核准欄位使用舊前綴" to="/docs/reference/terminology#run-outcomes">警告</Terminology>。
+- **`tests/pfsense-adapter.php`**：不退回<Terminology title="以 fe80 開頭的位址，永遠不會作為來源位址" to="/docs/reference/terminology#addresses-and-prefixes">鏈路本機</Terminology>位址的強制位址重新整理、僅寫入式儲存之前的備份，以及在寫入前就停止的備份失敗。
+- **`tests/updates.php`**：版本比較、發行版本剖析與 URL 驗證、穩定的隨機排程、通知去除重複、GitHub API 摘要、`.sha256` 備援、簽署金鑰剖析、allowed-signers 輸出、精確的 `ssh-keygen` 引數與標準輸入、有效簽署、錯誤的金鑰與命名空間，以及遭竄改的套件。
 - **`tests/translations.php`** 與 **`tests/webgui-localization.php`**：每個 pfSense 語言識別碼的完整目錄，以及當地語系化的「設定」表單與驗證訊息。
 
 ## 文件網站 \{#documentation-site}

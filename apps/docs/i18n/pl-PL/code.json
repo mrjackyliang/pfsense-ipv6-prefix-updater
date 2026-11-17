@@ -15,10 +15,10 @@
     "message": "Wykrywaj zmiany delegowanego prefiksu, aktualizuj tylko zatwierdzone pola pfSense, zachowuj bity hosta i weryfikuj każdą transakcję."
   },
   "home.hero.primaryAction": {
-    "message": "Instalacja i konfiguracja"
+    "message": "Rozpocznij"
   },
   "home.hero.secondaryAction": {
-    "message": "Przejrzyj zasady bezpieczeństwa"
+    "message": "Dowiedz się więcej"
   },
   "home.preview.ariaLabel": {
     "message": "Długość delegowanego prefiksu: /56"
@@ -43,30 +43,6 @@
   },
   "home.preview.result": {
     "message": "Próba wykryła 2 zatwierdzonych zmian pól dla 2001:db8:abcd:8800::/56; konfiguracja nie została zmodyfikowana."
-  },
-  "home.workflow.eyebrow": {
-    "message": "Bezpieczeństwo i działanie"
-  },
-  "home.workflow.heading": {
-    "message": "Bezpieczna transakcja"
-  },
-  "home.workflow.detect": {
-    "message": "Zaobserwowany adres źródłowy"
-  },
-  "home.workflow.plan": {
-    "message": "Zmienione pola"
-  },
-  "home.workflow.backup": {
-    "message": "Utworzono kopię zapasową konfiguracji"
-  },
-  "home.workflow.write": {
-    "message": "Bieżący prefiks"
-  },
-  "home.workflow.verify": {
-    "message": "Sukces"
-  },
-  "home.workflow.notify": {
-    "message": "Powiadomienia"
   },
   "home.features.interface.title": {
     "message": "Monitorowane interfejsy"
@@ -104,70 +80,70 @@
   "home.features.notify.description": {
     "message": "Używaj skonfigurowanych kanałów powiadomień pfSense po zweryfikowanej udanej aktualizacji prefiksu. Sprawdzenia bez zmian nigdy nie wysyłają powiadomień."
   },
-  "home.stats.heading": {
-    "message": "Bezpieczeństwo i działanie"
-  },
-  "home.stats.boundaries": {
-    "message": "Długość delegowanego prefiksu"
-  },
-  "home.stats.backups": {
-    "message": "Utworzono kopię zapasową konfiguracji"
-  },
-  "home.stats.writes": {
-    "message": "Zmienione pola"
-  },
-  "home.stats.noChange": {
-    "message": "Aktywny prefiks IPv6 nie uległ zmianie; żaden zatwierdzony cel konfiguracji nie został odczytany ani zapisany."
-  },
-  "home.routes.eyebrow": {
-    "message": "Przewodniki"
-  },
-  "home.routes.heading": {
-    "message": "Instalacja i konfiguracja"
-  },
-  "home.routes.install.title": {
-    "message": "Instalacja pakietu"
-  },
-  "home.routes.install.description": {
-    "message": "Uruchom to polecenie w powłoce pfSense, aby zainstalować najnowsze wydanie bezpośrednio z GitHub."
-  },
-  "home.routes.open": {
-    "message": "Zacznij czytać"
-  },
-  "home.routes.configure.title": {
-    "message": "Monitorowane interfejsy / Długość delegowanego prefiksu"
-  },
-  "home.routes.configure.description": {
-    "message": "Dodaj jeden wiersz dla każdego interfejsu, którego podstawowy aktywny globalny adres IPv6 zawiera delegowany prefiks. W przypadku DHCPv6 tylko z prefiksem na WAN wybierz śledzony interfejs za nim. Bity hosta po długości prefiksu są zachowywane dokładnie, a adres wybrany przez pfSense dla każdego interfejsu jest widoczny na karcie Stan."
-  },
-  "home.routes.status.title": {
-    "message": "Stan / Wynik polecenia"
-  },
-  "home.routes.status.description": {
-    "message": "Uruchom teraz może zaktualizować zatwierdzone pola po wykryciu zmiany. Próba zapisuje tylko podgląd i nigdy nie zapisuje konfiguracji zapory."
-  },
-  "home.routes.troubleshoot.title": {
-    "message": "Rozwiązywanie problemów"
-  },
-  "home.routes.troubleshoot.description": {
-    "message": "Jeśli adres źródłowy jest błędny, wybierz podrzędny śledzony interfejs, który naprawdę ma adres globalny; nie kompensuj zgadywaną długością."
-  },
-  "home.spotlight.heading": {
-    "message": "Wynik polecenia"
-  },
-  "home.spotlight.description": {
-    "message": "Sprawdzaj każde uruchomienie na stronie Stan: adres źródłowy, obliczony prefiks, kopię zapasową i wynik."
-  },
-  "home.spotlight.statusAction": {
-    "message": "Stan / Wynik polecenia"
-  },
-  "home.spotlight.testsAction": {
-    "message": "Wyniki i testy"
-  },
   "home.blogPreview.heading": {
     "message": "Z bloga"
   },
   "home.blogPreview.description": {
-    "message": "Informacje o wydaniach, przewodniki konfiguracji i artykuły o dynamicznych prefiksach IPv6."
+    "message": "Premiery, kamienie milowe i nowości w IPv6 Prefix Updater for pfSense."
+  },
+  "home.showcase.heading": {
+    "message": "Wewnątrz WebGUI pfSense"
+  },
+  "home.showcase.tabsLabel": {
+    "message": "Strony IPv6 Prefix Updater"
+  },
+  "home.showcase.settings.label": {
+    "message": "Ustawienia"
+  },
+  "home.showcase.settings.heading": {
+    "message": "Monitoruj interfejsy, które przenoszą Twój prefiks"
+  },
+  "home.showcase.settings.description": {
+    "message": "Dodaj wiersz dla każdego interfejsu, którego adres IPv6 pochodzi od Twojego dostawcy, wpisz delegowaną długość prefiksu i wybierz, kiedy pfSense sprawdza, czy nastąpiła zmiana."
+  },
+  "home.showcase.settings.link": {
+    "message": "Wybierz interfejs i prefiks"
+  },
+  "home.showcase.settings.alt": {
+    "message": "Strona Ustawienia w IPv6 Prefix Updater z dwoma monitorowanymi interfejsami i ich długościami prefiksu"
+  },
+  "home.showcase.status.label": {
+    "message": "Stan"
+  },
+  "home.showcase.status.heading": {
+    "message": "Uruchomienie nigdy nie powinno być czarną skrzynką"
+  },
+  "home.showcase.status.description": {
+    "message": "Karta Stan pokazuje ostatni prefiks i adres każdego interfejsu, co zmieniło ostatnie uruchomienie, czy utworzono kopię zapasową i które usługi zostały przeładowane."
+  },
+  "home.showcase.status.link": {
+    "message": "Przeczytaj przewodnik po karcie Stan"
+  },
+  "home.showcase.status.alt": {
+    "message": "Strona Stan w IPv6 Prefix Updater z bieżącym stanem każdego interfejsu i ostatnim uruchomieniem"
+  },
+  "home.showcase.fields.label": {
+    "message": "Pola"
+  },
+  "home.showcase.fields.heading": {
+    "message": "Ty decydujesz, co się zmienia"
+  },
+  "home.showcase.fields.description": {
+    "message": "Wybierz, które pola konfiguracji podążają za prefiksem, ustaw wyjątki i przejrzyj ustawienia innych pakietów, zanim cokolwiek zostanie zapisane."
+  },
+  "home.showcase.fields.link": {
+    "message": "Wybierz pola"
+  },
+  "home.showcase.fields.alt": {
+    "message": "Strona Pola w IPv6 Prefix Updater z zaznaczonymi interfejsami statycznymi i aliasami"
+  },
+  "home.showcase.settings.title": {
+    "message": "pfSense.home.arpa - Pakiet: Usługi: Aktualizator prefiksu IPv6: Ustawienia"
+  },
+  "home.showcase.status.title": {
+    "message": "pfSense.home.arpa - Usługi: Aktualizator prefiksu IPv6: Stan"
+  },
+  "home.showcase.fields.title": {
+    "message": "pfSense.home.arpa - Usługi: Aktualizator prefiksu IPv6: Pola"
   }
 }

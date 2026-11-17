@@ -1,0 +1,41 @@
+---
+title: "Prefix Updater 1.1 komt ook bij base64-gecodeerde instellingen"
+description: Versie 1.1 vindt de oude IPv6-prefix in base64-gecodeerde pfSense-waarden zoals aangepaste opties, en herkent prefixen ongeacht hoofdletters of kleine letters.
+slug: prefix-updater-1-1-reaches-base64-encoded-settings
+authors:
+  - mrjackyliang
+keywords:
+  - pfsense ipv6 prefix updater
+  - base64 aangepaste opties
+  - dynamische ipv6-prefix
+  - update.php
+  - legacy-updater
+tags:
+  - release
+  - ipv6
+  - pfsense
+---
+
+Versie 1.1 van het prefix-updaterscript, uitgebracht op 18 januari 2026, voert een nieuwe IPv6-prefix ook door in instellingen die pfSense base64-gecodeerd opslaat, zoals aangepaste opties, die eerdere versies niet konden lezen.
+
+{/* truncate */}
+
+## Waarom het ertoe doet \{#why-it-matters}
+
+pfSense slaat sommige vrije instellingen, zoals blokken met aangepaste opties, op als base64-tekst in `config.xml`. Een adres in zo'n blok verschijnt nooit als platte tekst, dus een zoektocht naar de oude prefix liep er recht aan voorbij.
+
+Na een prefixwijziging bleven die adressen op de oude prefix staan terwijl de rest van de configuratie meeging. Met 1.1 decodeert de updater elke base64-waarde, vindt hij de oude prefix erin en schrijft hij de bijgewerkte waarde weer in base64 terug.
+
+## Wat er in versie 1.1 zit \{#whats-in-version-11}
+
+- **Base64-gecodeerde waarden** — Elke waarde die als geldige base64 te decoderen is, wordt doorzocht, ook blokken die over meerdere regels zijn verdeeld, en de vervanging wordt opnieuw gecodeerd voordat die wordt opgeslagen.
+- **Hoofdletters en kleine letters** — IPv6-adressen kunnen in hoofdletters of kleine letters zijn geschreven. De scan, de opgeslagen prefix, de zoekactie en de vervanging werken nu allemaal ongeacht hoofdlettergebruik, en prefixen worden in kleine letters opgeslagen.
+- **Stabiele bronadressen** — De interfacescan slaat tijdelijke en verouderde globale adressen over en gebruikt het eerste stabiele globale adres op elke interface, zodat een kortlevend adres nooit de prefix bepaalt.
+
+Het logboek markeert elke base64-update met `(base64-decoded)` naast de gewijzigde instelling, zodat een uitvoering precies laat zien welke gecodeerde waarden naar de nieuwe prefix zijn overgezet.
+
+## Waar het toe leidde \{#where-it-led}
+
+Versie 1.1 breidde uit wat het script kon bereiken. Het native pakket dat in versie 2.0 volgde, kiest de tegenovergestelde aanpak: het wijzigt alleen de velden die je op het tabblad Velden goedkeurt, en de handleiding [Migreren vanaf het script](/docs/migrate-from-legacy) behandelt de overstap van het script naar het pakket.
+
+IPv6 Prefix Updater for pfSense houdt lokale IPv6-adressen in pfSense werkend wanneer een ISP de gedelegeerde prefix wijzigt. Begin met [Het pakket installeren](/docs/installation).

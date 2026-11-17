@@ -1,36 +1,63 @@
 {
-  "layout.learn.title": {
-    "message": "指南"
+  "layout.docs.title": {
+    "message": "文件"
   },
   "layout.resources.title": {
     "message": "資源"
   },
-  "sections.learn.0.label": {
-    "message": "安裝與設定"
+  "layout.project.title": {
+    "message": "專案"
   },
-  "sections.learn.1.label": {
-    "message": "監控介面 / 委派前綴長度"
+  "layout.legal.title": {
+    "message": "法律資訊"
   },
-  "sections.learn.2.label": {
-    "message": "狀態 / 動作"
+  "sections.docs.0.label": {
+    "message": "概觀"
   },
-  "sections.learn.3.label": {
-    "message": "疑難排解"
+  "sections.docs.1.label": {
+    "message": "設定"
+  },
+  "sections.docs.2.label": {
+    "message": "日常維運"
+  },
+  "sections.docs.3.label": {
+    "message": "安全機制"
+  },
+  "sections.docs.4.label": {
+    "message": "參考"
+  },
+  "sections.docs.5.label": {
+    "message": "參與貢獻"
   },
   "sections.resources.0.label": {
-    "message": "安全與操作"
+    "message": "網誌"
   },
   "sections.resources.1.label": {
-    "message": "結果與測試"
+    "message": "疑難排解"
   },
   "sections.resources.2.label": {
-    "message": "pfSense 文件"
+    "message": "更新日誌"
   },
   "sections.resources.3.label": {
-    "message": "原始碼"
+    "message": "回報問題"
   },
   "sections.resources.4.label": {
-    "message": "網誌"
+    "message": "原始碼"
+  },
+  "sections.project.0.label": {
+    "message": "贊助"
+  },
+  "sections.project.1.label": {
+    "message": "pfSense 文件"
+  },
+  "sections.project.2.label": {
+    "message": "其他專案"
+  },
+  "sections.legal.0.label": {
+    "message": "授權條款"
+  },
+  "cta.label": {
+    "message": "準備好讓 IPv6 前綴始終保持一致了嗎？"
   },
   "copyright": {
     "message": "版權所有 © 2023-2026 Jacky Liang。依 MIT 授權條款發布。"

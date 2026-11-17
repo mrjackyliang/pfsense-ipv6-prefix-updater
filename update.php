@@ -12,7 +12,7 @@ declare(strict_types=1);
  * @since 2.0.0
  */
 $noticeId = 'ipv6-prefix-updater-legacy-retired';
-$message = 'pfSense IPv6 Prefix Updater is now a pfSense package and the /root script no longer updates your configuration. Install the package with: pkg add https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg';
+$message = 'IPv6 Prefix Updater for pfSense is now a pfSense package and the /root script no longer updates your configuration. Install the package with: pkg add -f https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg';
 
 fwrite(STDERR, 'ERROR: ' . $message . PHP_EOL);
 

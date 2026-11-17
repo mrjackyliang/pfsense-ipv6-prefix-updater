@@ -1,17 +1,41 @@
 {
-  "item.label.Home": {
-    "message": "Hjem"
-  },
-  "item.label.Guides": {
+  "item.label.Docs": {
     "message": "Dokumentasjon"
   },
+  "item.label.Overview": {
+    "message": "Oversikt"
+  },
+  "item.label.Quick Start": {
+    "message": "Hurtigstart"
+  },
+  "item.label.Configure": {
+    "message": "Konfigurasjon"
+  },
+  "item.label.Operate": {
+    "message": "Drift"
+  },
   "item.label.Safety": {
-    "message": "Sikkerhet og drift"
+    "message": "Sikkerhet"
+  },
+  "item.label.Reference": {
+    "message": "Referanse"
+  },
+  "item.label.Contributing": {
+    "message": "Bidra"
+  },
+  "item.label.Blog": {
+    "message": "Blogg"
+  },
+  "item.label.Resources": {
+    "message": "Ressurser"
   },
   "item.label.Troubleshooting": {
     "message": "Feilsøking"
   },
-  "item.label.Blog": {
-    "message": "Blogg"
+  "item.label.Changelog": {
+    "message": "Endringslogg"
+  },
+  "item.label.Report an Issue": {
+    "message": "Rapporter et problem"
   }
 }

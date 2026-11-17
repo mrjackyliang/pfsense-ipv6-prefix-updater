@@ -1,33 +1,60 @@
 {
-  "layout.learn.title": {
-    "message": "Vodiči"
+  "layout.docs.title": {
+    "message": "Dokumentacija"
   },
   "layout.resources.title": {
     "message": "Resursi"
   },
-  "sections.learn.0.label": {
-    "message": "Instalacija i podešavanje"
+  "layout.project.title": {
+    "message": "Projekat"
   },
-  "sections.learn.1.label": {
-    "message": "Nadzirana sučelja / Dužina dodijeljenog prefiksa"
+  "layout.legal.title": {
+    "message": "Pravno"
   },
-  "sections.learn.2.label": {
-    "message": "Status / Radnje"
+  "sections.docs.0.label": {
+    "message": "Pregled"
   },
-  "sections.learn.3.label": {
-    "message": "Rješavanje problema"
+  "sections.docs.1.label": {
+    "message": "Podešavanje"
   },
-  "sections.resources.0.label": {
-    "message": "Sigurnost i rad"
+  "sections.docs.2.label": {
+    "message": "Upotreba"
+  },
+  "sections.docs.3.label": {
+    "message": "Sigurnost"
+  },
+  "sections.docs.4.label": {
+    "message": "Tehničke informacije"
+  },
+  "sections.docs.5.label": {
+    "message": "Doprinos"
   },
   "sections.resources.1.label": {
-    "message": "Ishodi i testovi"
+    "message": "Rješavanje problema"
   },
   "sections.resources.2.label": {
-    "message": "pfSense dokumentacija"
+    "message": "Dnevnik promjena"
   },
   "sections.resources.3.label": {
+    "message": "Prijavi problem"
+  },
+  "sections.resources.4.label": {
     "message": "Izvorni kod"
+  },
+  "sections.project.0.label": {
+    "message": "Sponzoriraj"
+  },
+  "sections.project.1.label": {
+    "message": "pfSense dokumentacija"
+  },
+  "sections.project.2.label": {
+    "message": "Ostali projekti"
+  },
+  "sections.legal.0.label": {
+    "message": "Licenca"
+  },
+  "cta.label": {
+    "message": "Spremni da IPv6 prefiksi ostanu usklađeni?"
   },
   "copyright": {
     "message": "Autorska prava © 2023-2026 Jacky Liang. Objavljeno pod MIT licencom."

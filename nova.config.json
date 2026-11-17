@@ -1,12 +1,12 @@
 {
   "project": {
     "name": {
-      "title": "pfSense IPv6 Prefix Updater",
+      "title": "IPv6 Prefix Updater for pfSense",
       "slug": "pfsense-ipv6-prefix-updater"
     },
     "description": {
       "short": "A pfSense package that safely follows dynamic ISP IPv6 prefix changes across firewall configuration",
-      "long": "pfSense IPv6 Prefix Updater is a native package for networks with dynamic IPv6 Prefix Delegation. It detects prefix changes, safely updates approved pfSense configuration references while preserving host portions, and provides package-managed installation, scheduling, backups, status, and notifications."
+      "long": "IPv6 Prefix Updater for pfSense is a native package for networks with dynamic IPv6 Prefix Delegation. It detects prefix changes, safely updates approved pfSense configuration references while preserving host portions, and provides package-managed installation, scheduling, backups, status, and notifications."
     },
     "keywords": [
       "pfsense",
@@ -178,7 +178,7 @@
         "issue-comment",
         "issues"
       ],
-      "runsOn": "ubuntu-latest",
+      "runsOn": "ubuntu-24.04",
       "timeoutMinutes": 5
     },
     {
@@ -187,7 +187,7 @@
       "triggers": [
         "schedule-weekly"
       ],
-      "runsOn": "ubuntu-latest",
+      "runsOn": "ubuntu-24.04",
       "timeoutMinutes": 5
     },
     {
@@ -196,9 +196,10 @@
       "triggers": [
         "release"
       ],
-      "runsOn": "ubuntu-latest",
+      "runsOn": "ubuntu-24.04",
       "timeoutMinutes": 15,
       "build": [
+        "./packages/ipv6-prefix-updater",
         "./apps/docs"
       ],
       "deploy": [
@@ -206,6 +207,10 @@
           "to": "github-pages",
           "path": "./apps/docs",
           "artifact": "documentation"
+        },
+        {
+          "to": "pfsense",
+          "path": "./packages/ipv6-prefix-updater"
         }
       ]
     }
@@ -232,9 +237,9 @@
   },
   "workspaces": {
     "./": {
+      "name": "pfsense-ipv6-prefix-updater-project",
       "role": "project",
-      "policy": "freezable",
-      "name": "pfsense-ipv6-prefix-updater-project"
+      "policy": "freezable"
     },
     "./packages/ipv6-prefix-updater": {
       "name": "pfsense-pkg-ipv6-prefix-updater",
@@ -267,7 +272,6 @@
       ],
       "patterns": [
         "/assets/",
-        "!package-lock.json",
         "backups/",
         "cache/",
         "update.lock",

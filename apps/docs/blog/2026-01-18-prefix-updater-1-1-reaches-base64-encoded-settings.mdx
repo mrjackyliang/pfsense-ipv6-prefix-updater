@@ -1,0 +1,41 @@
+---
+title: "Prefix Updater 1.1 Reaches Into Base64-Encoded Settings"
+description: Version 1.1 finds the old IPv6 prefix inside base64-encoded pfSense values such as custom options, and matches prefixes in any letter case.
+slug: prefix-updater-1-1-reaches-base64-encoded-settings
+authors:
+  - mrjackyliang
+keywords:
+  - pfsense ipv6 prefix updater
+  - base64 custom options
+  - dynamic ipv6 prefix
+  - update.php
+  - legacy updater
+tags:
+  - release
+  - ipv6
+  - pfsense
+---
+
+Version 1.1 of the prefix updater script, released on January 18, 2026, carries a new IPv6 prefix into settings that pfSense stores base64-encoded, such as custom options, which earlier versions could not read.
+
+{/* truncate */}
+
+## Why It Matters
+
+pfSense saves some free-form settings, such as custom options blocks, as base64 text in `config.xml`. An address written inside one of those blocks never appears as plain text, so a search for the old prefix walked straight past it.
+
+After a prefix change, those addresses stayed on the old prefix while the rest of the configuration moved on. With 1.1, the updater decodes each base64 value, finds the old prefix inside it, and writes the updated value back in base64.
+
+## What's in Version 1.1
+
+- **Base64-encoded values** — Every value that decodes as valid base64 is searched, including blocks wrapped across several lines, and the replacement is encoded again before it is saved.
+- **Any letter case** — IPv6 addresses can be written in upper or lower case. The scan, the saved prefix, the search, and the replacement now all match without regard to case, and prefixes are stored in lowercase.
+- **Stable source addresses** — The interface scan skips temporary and deprecated global addresses and uses the first stable global address on each interface, so a short-lived address never sets the prefix.
+
+The log marks each base64 update with `(base64-decoded)` next to the setting it changed, so a run shows exactly which encoded values moved to the new prefix.
+
+## Where It Led
+
+Version 1.1 widened what the script could reach. The native package that followed in version 2.0 takes the opposite approach: it changes only the fields you approve on its Fields tab, and the [Migrate From the Script](/docs/migrate-from-legacy) guide covers moving from the script to the package.
+
+IPv6 Prefix Updater for pfSense keeps local IPv6 addresses in pfSense working when an ISP changes the delegated prefix. Start with [Install the Package](/docs/installation).

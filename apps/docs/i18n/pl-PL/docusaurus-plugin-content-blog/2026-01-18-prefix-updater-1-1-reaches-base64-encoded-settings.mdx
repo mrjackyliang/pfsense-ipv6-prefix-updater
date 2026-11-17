@@ -1,0 +1,41 @@
+---
+title: "Prefix Updater 1.1 sięga do ustawień zakodowanych w base64"
+description: Wersja 1.1 znajduje stary prefiks IPv6 w wartościach pfSense zakodowanych w base64, takich jak opcje niestandardowe, i dopasowuje prefiksy niezależnie od wielkości liter.
+slug: prefix-updater-1-1-reaches-base64-encoded-settings
+authors:
+  - mrjackyliang
+keywords:
+  - pfsense ipv6 prefix updater
+  - opcje niestandardowe base64
+  - dynamiczny prefiks ipv6
+  - update.php
+  - starszy aktualizator
+tags:
+  - release
+  - ipv6
+  - pfsense
+---
+
+Wersja 1.1 skryptu aktualizującego prefiks, wydana 18 stycznia 2026 roku, przenosi nowy prefiks IPv6 do ustawień, które pfSense przechowuje w postaci zakodowanej w base64, takich jak opcje niestandardowe, których wcześniejsze wersje nie potrafiły odczytać.
+
+{/* truncate */}
+
+## Dlaczego to ważne \{#why-it-matters}
+
+pfSense zapisuje niektóre ustawienia tekstowe w dowolnej formie, takie jak bloki opcji niestandardowych, jako tekst base64 w pliku `config.xml`. Adres wpisany w jednym z tych bloków nigdy nie pojawia się jako zwykły tekst, więc wyszukiwanie starego prefiksu całkowicie go pomijało.
+
+Po zmianie prefiksu te adresy pozostawały przy starym prefiksie, podczas gdy reszta konfiguracji przechodziła na nowy. W wersji 1.1 aktualizator dekoduje każdą wartość base64, znajduje w niej stary prefiks i zapisuje zaktualizowaną wartość z powrotem w base64.
+
+## Co zawiera wersja 1.1 \{#whats-in-version-11}
+
+- **Wartości zakodowane w base64** — przeszukiwana jest każda wartość, która dekoduje się jako prawidłowy base64, w tym bloki zawinięte w kilku wierszach, a zamieniona wartość jest ponownie kodowana przed zapisaniem.
+- **Dowolna wielkość liter** — adresy IPv6 można zapisywać wielkimi lub małymi literami. Skanowanie, zapisany prefiks, wyszukiwanie i zamiana działają teraz bez względu na wielkość liter, a prefiksy są przechowywane małymi literami.
+- **Stabilne adresy źródłowe** — skanowanie interfejsów pomija tymczasowe i przestarzałe adresy globalne i używa pierwszego stabilnego adresu globalnego na każdym interfejsie, więc krótkotrwały adres nigdy nie ustala prefiksu.
+
+Dziennik oznacza każdą aktualizację base64 dopiskiem `(base64-decoded)` obok zmienionego ustawienia, więc z każdego uruchomienia widać dokładnie, które zakodowane wartości przeszły na nowy prefiks.
+
+## Co było dalej \{#where-it-led}
+
+Wersja 1.1 poszerzyła zasięg skryptu. Natywny pakiet wydany w wersji 2.0 przyjmuje odwrotne podejście: zmienia tylko pola zatwierdzone na karcie Pola, a przewodnik [Migracja ze skryptu](/docs/migrate-from-legacy) opisuje przejście ze skryptu na pakiet.
+
+IPv6 Prefix Updater for pfSense utrzymuje działanie lokalnych adresów IPv6 w pfSense, gdy dostawca internetu zmienia delegowany prefiks. Zacznij od strony [Instalacja pakietu](/docs/installation).

@@ -1,50 +1,86 @@
 {
-  "layout.learn.title": {
-    "message": "Guides",
-    "description": "Title of footer column \"learn\""
+  "layout.docs.title": {
+    "message": "Docs",
+    "description": "Title of footer column \"docs\""
   },
   "layout.resources.title": {
     "message": "Resources",
     "description": "Title of footer column \"resources\""
   },
-  "sections.learn.0.label": {
-    "message": "Install and configure",
-    "description": "Label of link 1 in footer section \"learn\""
+  "layout.project.title": {
+    "message": "Project",
+    "description": "Title of footer column \"project\""
   },
-  "sections.learn.1.label": {
-    "message": "Interface and prefix",
-    "description": "Label of link 2 in footer section \"learn\""
+  "layout.legal.title": {
+    "message": "Legal",
+    "description": "Title of footer column \"legal\""
   },
-  "sections.learn.2.label": {
-    "message": "Status and actions",
-    "description": "Label of link 3 in footer section \"learn\""
+  "sections.docs.0.label": {
+    "message": "Overview",
+    "description": "Label of link 1 in footer section \"docs\""
   },
-  "sections.learn.3.label": {
-    "message": "Troubleshooting",
-    "description": "Label of link 4 in footer section \"learn\""
+  "sections.docs.1.label": {
+    "message": "Configure",
+    "description": "Label of link 2 in footer section \"docs\""
+  },
+  "sections.docs.2.label": {
+    "message": "Operate",
+    "description": "Label of link 3 in footer section \"docs\""
+  },
+  "sections.docs.3.label": {
+    "message": "Safety",
+    "description": "Label of link 4 in footer section \"docs\""
+  },
+  "sections.docs.4.label": {
+    "message": "Reference",
+    "description": "Label of link 5 in footer section \"docs\""
+  },
+  "sections.docs.5.label": {
+    "message": "Contributing",
+    "description": "Label of link 6 in footer section \"docs\""
   },
   "sections.resources.0.label": {
-    "message": "Safety model",
+    "message": "Blog",
     "description": "Label of link 1 in footer section \"resources\""
   },
   "sections.resources.1.label": {
-    "message": "Check before automation",
+    "message": "Troubleshooting",
     "description": "Label of link 2 in footer section \"resources\""
   },
   "sections.resources.2.label": {
-    "message": "pfSense documentation",
+    "message": "Changelog",
     "description": "Label of link 3 in footer section \"resources\""
   },
   "sections.resources.3.label": {
-    "message": "Source code",
+    "message": "Report an Issue",
     "description": "Label of link 4 in footer section \"resources\""
+  },
+  "sections.resources.4.label": {
+    "message": "Source Code",
+    "description": "Label of link 5 in footer section \"resources\""
+  },
+  "sections.project.0.label": {
+    "message": "Sponsor",
+    "description": "Label of link 1 in footer section \"project\""
+  },
+  "sections.project.1.label": {
+    "message": "pfSense Documentation",
+    "description": "Label of link 2 in footer section \"project\""
+  },
+  "sections.project.2.label": {
+    "message": "Other Projects",
+    "description": "Label of link 3 in footer section \"project\""
+  },
+  "sections.legal.0.label": {
+    "message": "License",
+    "description": "Label of link 1 in footer section \"legal\""
+  },
+  "cta.label": {
+    "message": "Ready to keep IPv6 prefixes aligned?",
+    "description": "The footer call-to-action link label"
   },
   "copyright": {
     "message": "Copyright © 2023-2026 Jacky Liang. Released under MIT.",
     "description": "The footer copyright text"
-  },
-  "sections.resources.4.label": {
-    "message": "Blog",
-    "description": "Label of link 5 in footer section \"resources\""
   }
 }

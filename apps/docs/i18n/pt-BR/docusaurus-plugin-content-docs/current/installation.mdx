@@ -1,7 +1,7 @@
 ---
 id: installation
 title: Instalar o pacote
-description: Instale o pfSense IPv6 Prefix Updater a partir de uma versão do GitHub com o pkg, confira o download com o arquivo SHA-256 e confirme as novas páginas na WebGUI.
+description: Instale o IPv6 Prefix Updater for pfSense a partir de uma versão do GitHub com o pkg, confira o download com o arquivo SHA-256 e confirme as novas páginas na WebGUI.
 keywords:
   - pfsense ipv6 prefix updater
   - instalação
@@ -23,13 +23,13 @@ Instale o pacote a partir de uma versão publicada no GitHub com a ferramenta `p
 
 - **Shell de administrador** — Acesso SSH ou pelo console ao shell do pfSense. Também é possível executar comandos avulsos em **Diagnostics → Command Prompt**, na WebGUI.
 - **Acesso HTTPS ao GitHub** — O firewall baixa o pacote das GitHub Releases.
-- **Um build compatível do pacote** — O pacote precisa ser compilado para a versão do FreeBSD usada pela sua versão do pfSense.
+- **Versão compatível do pfSense** — Use o pfSense CE 2.9.0 ou 2.8.1, ou o pfSense Plus 26.07 ou 26.03.1. A guia **Sobre** lista as versões do pfSense nas quais cada versão do pacote foi testada.
 - **Um backup recente** — Baixe uma cópia da configuração em **Diagnostics → Backup & Restore** antes de instalar.
-- **O <Terminology title="script update.php original executado pelo pacote Cron" to="/docs/reference/terminology#legacy-updater">atualizador legado</Terminology> pode ficar** — Se o script da versão 1.x ainda roda pelo pacote Cron, deixe-o onde está. A etapa de instalação o move para o pacote, como explica [Migrar do script](/docs/migrate-from-legacy).
+- **O <Terminology title="Versão 1.x: o script update.php executado pelo pacote Cron" to="/docs/reference/terminology#package-origins">atualizador legado</Terminology> pode ficar** — Se o script da versão 1.x ainda roda pelo pacote Cron, deixe-o onde está. A etapa de instalação o move para o pacote, como explica [Migrar do script](/docs/migrate-from-legacy).
 
 :::warning
 
-O pfSense IPv6 Prefix Updater é um <Terminology title="pacote instalado do GitHub, não do repositório da Netgate" to="/docs/reference/terminology#unofficial-package">pacote não oficial</Terminology>. Instalar um arquivo `.pkg` do GitHub contorna a revisão e o suporte de pacotes da Netgate, por isso é recomendável testá-lo primeiro em um firewall com backup ou descartável.
+O IPv6 Prefix Updater for pfSense é um <Terminology title="Instalado pelo GitHub, não pelo repositório de pacotes da Netgate" to="/docs/reference/terminology#package-origins">pacote não oficial</Terminology>. Instalar um arquivo `.pkg` do GitHub contorna a revisão e o suporte de pacotes da Netgate, por isso é recomendável testá-lo primeiro em um firewall com backup ou descartável.
 
 :::
 
@@ -45,19 +45,19 @@ As versões do pacote ficam listadas na [página GitHub Releases](https://github
 
 :::info
 
-As versões 1.x contêm apenas o <Terminology title="script update.php original executado pelo pacote Cron" to="/docs/reference/terminology#legacy-updater">atualizador legado</Terminology>. Se a versão mais recente não tiver um arquivo `.pkg`, os comandos desta página falham com um erro 404 (não encontrado).
+As versões 1.x contêm apenas o <Terminology title="Versão 1.x: o script update.php executado pelo pacote Cron" to="/docs/reference/terminology#package-origins">atualizador legado</Terminology>. Se a versão mais recente não tiver um arquivo `.pkg`, os comandos desta página falham com um erro 404 (não encontrado).
 
 :::
 
 ## Instalar o pacote \{#install-the-package}
 
-Execute este comando no shell do pfSense:
+Execute este mesmo comando no shell do pfSense em uma primeira instalação, atualização ou reinstalação:
 
 ```shell
 pkg add -f https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
 ```
 
-O `pkg` baixa o pacote da versão mais recente e executa a etapa de instalação, que registra **Services → IPv6 Prefix Updater** no pfSense.
+O `pkg` baixa o pacote da versão mais recente e executa a etapa de instalação, que registra **Services → IPv6 Prefix Updater** no pfSense. A opção `-f` permite que o mesmo comando instale o pacote, atualize uma versão mais antiga ou reinstale a versão atual. Sem ela, o pfSense CE 2.8 informa que uma atualização já está instalada e não altera a versão instalada.
 
 ## Conferir o download antes \{#verify-the-download-first}
 
@@ -76,14 +76,14 @@ Os dois últimos comandos exibem o mesmo valor quando o download está íntegro.
 ## Confirmar na WebGUI \{#confirm-in-the-webgui}
 
 1. Faça login na WebGUI do pfSense.
-2. Abra **Services → IPv6 Prefix Updater** e confirme que as guias **Configurações**, **Status**, **Campos**, **Backups** e **Limpeza** aparecem.
+2. Abra **Services → IPv6 Prefix Updater** e confirme que as guias **Configurações**, **Status**, **Campos**, **Backups**, **Limpeza** e **Sobre** aparecem.
 3. Na guia Status, confirme que **Estado atual** mostra `Ainda não há interfaces monitoradas salvas. Adicione-as na guia Configurações.` Após a migração do atualizador legado, ele mostra as interfaces migradas em vez dessa mensagem.
-4. Deixe a opção **<Terminology title="verificações automáticas por entrada cron gerenciada pelo pfSense" to="/docs/reference/terminology#scheduled-updates">Ativar atualizações agendadas</Terminology>** desmarcada, como vem por padrão, até [estabelecer a referência](/docs/first-run). Após a migração do atualizador legado, ela já vem marcada, de acordo com o antigo agendamento do Cron.
+4. Deixe a opção **<Terminology title="Verificações automáticas agendadas, desligadas até você ativar" to="/docs/reference/terminology#running-checks">Ativar atualizações agendadas</Terminology>** desmarcada, como vem por padrão, até [estabelecer a referência](/docs/first-run). Após a migração do atualizador legado, ela já vem marcada, de acordo com o antigo agendamento do Cron.
 
 ## Se a instalação falhar \{#if-installation-fails}
 
 - **Não encontrado (404)**: a versão mais recente não tem arquivo de pacote. [Conferir a versão](/docs/installation#check-the-release) explica quais versões trazem um.
-- **Incompatibilidade de ABI ou de versão do sistema operacional**: o pacote foi compilado para uma versão do FreeBSD diferente da usada pela sua versão do pfSense. É recomendável usar um build compatível em vez de forçar a instalação.
+- **Arquitetura incorreta no pfSense CE 2.9.0**: as versões até a 2.0.1, inclusive, foram compiladas apenas para o FreeBSD 15, portanto o pfSense CE 2.9.0 exibe uma mensagem de arquitetura incorreta para elas. Instale a versão mais recente.
 - **Erros de DNS, TLS ou certificado**: o pfSense precisa resolver `github.com`, acessá-lo por HTTPS e manter o horário correto para validar certificados.
 
 Siga para [Estabelecer a referência](/docs/first-run) assim que o pacote aparecer na WebGUI.

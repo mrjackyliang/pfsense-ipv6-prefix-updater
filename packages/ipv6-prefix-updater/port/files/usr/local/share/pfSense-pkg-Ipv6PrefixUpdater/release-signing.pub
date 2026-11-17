@@ -1,0 +1,9 @@
+# Release signing keys for pfSense-pkg-Ipv6PrefixUpdater.
+#
+# The publish workflow adds the public key of its release signing secret to the
+# package it builds, so this file normally lists no key. Installed copies only
+# install updates signed by a key listed in their copy of this file.
+#
+# To change keys, add the new "ssh-ed25519 ..." public key on its own line,
+# publish one release while the old key is still the secret, then replace the
+# secret with the new key.

@@ -1,33 +1,60 @@
 {
-  "layout.learn.title": {
-    "message": "Przewodniki"
+  "layout.docs.title": {
+    "message": "Dokumentacja"
   },
   "layout.resources.title": {
     "message": "Zasoby"
   },
-  "sections.learn.0.label": {
-    "message": "Instalacja i konfiguracja"
+  "layout.project.title": {
+    "message": "Projekt"
   },
-  "sections.learn.1.label": {
-    "message": "Monitorowane interfejsy / Długość delegowanego prefiksu"
+  "layout.legal.title": {
+    "message": "Informacje prawne"
   },
-  "sections.learn.2.label": {
-    "message": "Stan / Działania"
+  "sections.docs.0.label": {
+    "message": "Przegląd"
   },
-  "sections.learn.3.label": {
-    "message": "Rozwiązywanie problemów"
+  "sections.docs.1.label": {
+    "message": "Konfiguracja"
   },
-  "sections.resources.0.label": {
-    "message": "Bezpieczeństwo i działanie"
+  "sections.docs.2.label": {
+    "message": "Obsługa"
+  },
+  "sections.docs.3.label": {
+    "message": "Bezpieczeństwo"
+  },
+  "sections.docs.4.label": {
+    "message": "Informacje techniczne"
+  },
+  "sections.docs.5.label": {
+    "message": "Współtworzenie"
   },
   "sections.resources.1.label": {
-    "message": "Wyniki i testy"
+    "message": "Rozwiązywanie problemów"
   },
   "sections.resources.2.label": {
-    "message": "Dokumentacja pfSense"
+    "message": "Dziennik zmian"
   },
   "sections.resources.3.label": {
+    "message": "Zgłoś problem"
+  },
+  "sections.resources.4.label": {
     "message": "Kod źródłowy"
+  },
+  "sections.project.0.label": {
+    "message": "Wesprzyj"
+  },
+  "sections.project.1.label": {
+    "message": "Dokumentacja pfSense"
+  },
+  "sections.project.2.label": {
+    "message": "Inne projekty"
+  },
+  "sections.legal.0.label": {
+    "message": "Licencja"
+  },
+  "cta.label": {
+    "message": "Chcesz utrzymać zgodność prefiksów IPv6?"
   },
   "copyright": {
     "message": "Copyright © 2023-2026 Jacky Liang. Wydano na licencji MIT."

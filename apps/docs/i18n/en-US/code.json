@@ -4,7 +4,7 @@
     "description": "Homepage metadata description."
   },
   "home.meta.title": {
-    "message": "pfSense IPv6 Prefix Updater - Safe Dynamic Prefix Updates",
+    "message": "IPv6 Prefix Updater for pfSense - Safe Dynamic Prefix Updates",
     "description": "Homepage browser title."
   },
   "home.hero.eyebrow": {
@@ -20,11 +20,11 @@
     "description": "Homepage summary of package behavior."
   },
   "home.hero.primaryAction": {
-    "message": "Install on pfSense",
+    "message": "Get Started",
     "description": "Primary homepage call to action."
   },
   "home.hero.secondaryAction": {
-    "message": "Review safety behavior",
+    "message": "Learn More",
     "description": "Secondary homepage call to action."
   },
   "home.preview.ariaLabel": {
@@ -58,38 +58,6 @@
   "home.preview.result": {
     "message": "2 approved fields planned · configuration unchanged",
     "description": "Result shown below the prefix transition preview."
-  },
-  "home.workflow.eyebrow": {
-    "message": "What pfSense does",
-    "description": "Short label above the update workflow."
-  },
-  "home.workflow.heading": {
-    "message": "Follow every prefix change from detection to completion.",
-    "description": "Heading for the update workflow."
-  },
-  "home.workflow.detect": {
-    "message": "Detect new prefix",
-    "description": "Detect stage of the update workflow."
-  },
-  "home.workflow.plan": {
-    "message": "Find local addresses",
-    "description": "Plan stage of the update workflow."
-  },
-  "home.workflow.backup": {
-    "message": "Save a backup",
-    "description": "Backup stage of the update workflow."
-  },
-  "home.workflow.write": {
-    "message": "Update addresses",
-    "description": "Write stage of the update workflow."
-  },
-  "home.workflow.verify": {
-    "message": "Refresh services",
-    "description": "Verify stage of the update workflow."
-  },
-  "home.workflow.notify": {
-    "message": "Report the result",
-    "description": "Notification stage of the update workflow."
   },
   "home.features.interface.title": {
     "message": "Choose the Monitored Interfaces",
@@ -139,92 +107,92 @@
     "message": "Notifications are sent only after an update is checked. Routine checks stay quiet when the prefix has not changed.",
     "description": "Feature summary for verified notifications."
   },
-  "home.stats.heading": {
-    "message": "Safety You Can Verify",
-    "description": "Heading above homepage safety metrics."
-  },
-  "home.stats.boundaries": {
-    "message": "Supported prefix boundaries",
-    "description": "Label for supported prefix-boundary metric."
-  },
-  "home.stats.backups": {
-    "message": "Backup before each change",
-    "description": "Label for backup-count metric."
-  },
-  "home.stats.writes": {
-    "message": "Configuration write per change",
-    "description": "Label for configuration-write metric."
-  },
-  "home.stats.noChange": {
-    "message": "Writes when the prefix is unchanged",
-    "description": "Label for no-change write metric."
-  },
-  "home.routes.eyebrow": {
-    "message": "Pick up where you are",
-    "description": "Short label above documentation routes."
-  },
-  "home.routes.heading": {
-    "message": "Follow the route for your next task.",
-    "description": "Heading above task-oriented documentation routes."
-  },
-  "home.routes.install.title": {
-    "message": "Install the Package",
-    "description": "Installation route title."
-  },
-  "home.routes.install.description": {
-    "message": "Install the latest GitHub release with one pfSense shell command, then confirm the package in the WebGUI.",
-    "description": "Installation route summary."
-  },
-  "home.routes.open": {
-    "message": "Open guide",
-    "description": "Label used to open a documentation route."
-  },
-  "home.routes.configure.title": {
-    "message": "Select the Interface and Prefix",
-    "description": "Configuration route title."
-  },
-  "home.routes.configure.description": {
-    "message": "Confirm which interface owns the global address and enter the delegated boundary supplied by the ISP.",
-    "description": "Configuration route summary."
-  },
-  "home.routes.status.title": {
-    "message": "Read Status and Command Output",
-    "description": "Status route title."
-  },
-  "home.routes.status.description": {
-    "message": "Verify the chosen address, masked prefix, result, backup state, changed fields, and reloaded services after every run.",
-    "description": "Status route summary."
-  },
-  "home.routes.troubleshoot.title": {
-    "message": "Troubleshoot a Run",
-    "description": "Troubleshooting route title."
-  },
-  "home.routes.troubleshoot.description": {
-    "message": "Resolve wrong source addresses, zero-match warnings, failed safety stages, and recovery from pfSense configuration history.",
-    "description": "Troubleshooting route summary."
-  },
-  "home.spotlight.heading": {
-    "message": "A run should never be a black box.",
-    "description": "Heading above the final homepage call to action."
-  },
-  "home.spotlight.description": {
-    "message": "The Status tab and read-only command output show the exact source address, old and new prefixes, field count, backup result, service reloads, and final outcome.",
-    "description": "Summary of observable run evidence."
-  },
-  "home.spotlight.statusAction": {
-    "message": "Read the Status Guide",
-    "description": "Call to action for the status guide."
-  },
-  "home.spotlight.testsAction": {
-    "message": "Check Before Automation",
-    "description": "Call to action for the pre-automation checklist."
-  },
   "home.blogPreview.heading": {
     "message": "From the Blog",
     "description": "Heading above the homepage blog preview."
   },
   "home.blogPreview.description": {
-    "message": "Release notes, setup guides, and notes on dynamic IPv6 prefixes.",
+    "message": "Launches, milestones, and what's new in IPv6 Prefix Updater for pfSense.",
     "description": "Summary below the homepage blog preview heading."
+  },
+  "home.showcase.heading": {
+    "message": "Inside the pfSense WebGUI",
+    "description": "Heading above the WebGUI screenshots on the front page."
+  },
+  "home.showcase.tabsLabel": {
+    "message": "IPv6 Prefix Updater pages",
+    "description": "Accessible label for the screenshot tabs on the front page."
+  },
+  "home.showcase.settings.label": {
+    "message": "Settings",
+    "description": "Front page screenshot tab for the Settings page."
+  },
+  "home.showcase.settings.heading": {
+    "message": "Watch the interfaces that carry your prefix",
+    "description": "Front page heading for the Settings page screenshot."
+  },
+  "home.showcase.settings.description": {
+    "message": "Add a row for each interface whose IPv6 address comes from your ISP, enter the prefix length it delegates, and choose when pfSense checks for a change.",
+    "description": "Front page description for the Settings page screenshot."
+  },
+  "home.showcase.settings.link": {
+    "message": "Choose the Interface and Prefix",
+    "description": "Front page link from the Settings screenshot to its guide."
+  },
+  "home.showcase.settings.alt": {
+    "message": "IPv6 Prefix Updater Settings page with two monitored interfaces and their prefix lengths",
+    "description": "Alt text for the Settings page screenshot on the front page."
+  },
+  "home.showcase.status.label": {
+    "message": "Status",
+    "description": "Front page screenshot tab for the Status page."
+  },
+  "home.showcase.status.heading": {
+    "message": "A run should never be a black box",
+    "description": "Front page heading for the Status page screenshot."
+  },
+  "home.showcase.status.description": {
+    "message": "The Status tab shows each interface's last prefix and address, what the last run changed, whether a backup was made, and which services reloaded.",
+    "description": "Front page description for the Status page screenshot."
+  },
+  "home.showcase.status.link": {
+    "message": "Read the Status Guide",
+    "description": "Front page link from the Status screenshot to its guide."
+  },
+  "home.showcase.status.alt": {
+    "message": "IPv6 Prefix Updater Status page with the current state of each interface and the last run",
+    "description": "Alt text for the Status page screenshot on the front page."
+  },
+  "home.showcase.fields.label": {
+    "message": "Fields",
+    "description": "Front page screenshot tab for the Fields page."
+  },
+  "home.showcase.fields.heading": {
+    "message": "You decide what changes",
+    "description": "Front page heading for the Fields page screenshot."
+  },
+  "home.showcase.fields.description": {
+    "message": "Pick which configuration fields follow the prefix, set exceptions, and review other packages' settings before anything is written.",
+    "description": "Front page description for the Fields page screenshot."
+  },
+  "home.showcase.fields.link": {
+    "message": "Choose the Fields",
+    "description": "Front page link from the Fields screenshot to its guide."
+  },
+  "home.showcase.fields.alt": {
+    "message": "IPv6 Prefix Updater Fields page with static interfaces and aliases selected",
+    "description": "Alt text for the Fields page screenshot on the front page."
+  },
+  "home.showcase.settings.title": {
+    "message": "pfSense.home.arpa - Package: Services: IPv6 Prefix Updater: Settings",
+    "description": "Browser tab title of the Settings screenshot on the front page, as the pfSense WebGUI shows it."
+  },
+  "home.showcase.status.title": {
+    "message": "pfSense.home.arpa - Services: IPv6 Prefix Updater: Status",
+    "description": "Browser tab title of the Status screenshot on the front page, as the pfSense WebGUI shows it."
+  },
+  "home.showcase.fields.title": {
+    "message": "pfSense.home.arpa - Services: IPv6 Prefix Updater: Fields",
+    "description": "Browser tab title of the Fields screenshot on the front page, as the pfSense WebGUI shows it."
   }
 }

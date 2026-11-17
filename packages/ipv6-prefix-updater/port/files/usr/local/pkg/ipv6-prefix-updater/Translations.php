@@ -2518,15 +2518,27 @@ $updatedMessagePluralsByLocale['ru_RU'] = [
     'updated_message_many' => 'Обновлено %1$d разрешённых полей с %2$s/%3$d на %4$s/%5$d на интерфейсе %6$s.',
 ];
 
+$aboutMessagesByLocale = require(__DIR__ . '/AboutTranslations.php');
+$updateMessagesByLocale = require(__DIR__ . '/UpdateTranslations.php');
 $migrationByLocale = require(__DIR__ . '/MigrationTranslations.php');
 $fieldMessagesByLocale = require(__DIR__ . '/FieldTranslations.php');
 
 foreach ($baseCatalogs as $locale => $messages) {
+    $aboutMessages = $aboutMessagesByLocale[$locale] ?? [];
+    $updateMessages = $updateMessagesByLocale[$locale] ?? [];
     $baselineRecovery = $baselineRecoveryByLocale[$locale];
     $runtimeErrors = $runtimeErrorsByLocale[$locale];
     $updatedMessagePlurals = $updatedMessagePluralsByLocale[$locale];
     $migration = $migrationByLocale[$locale] ?? [];
     $fieldMessages = $fieldMessagesByLocale[$locale] ?? [];
+
+    if (array_keys($aboutMessages) !== array_keys($aboutMessagesByLocale['en_US'])) {
+        throw new RuntimeException(sprintf('About translations for locale "%s" are incomplete.', $locale));
+    }
+
+    if (array_keys($updateMessages) !== array_keys($updateMessagesByLocale['en_US'])) {
+        throw new RuntimeException(sprintf('Update translations for locale "%s" are incomplete.', $locale));
+    }
 
     if (array_keys($migration) !== array_keys($migrationByLocale['en_US'])) {
         throw new RuntimeException(sprintf('Migration translations for locale "%s" are incomplete.', $locale));
@@ -2550,6 +2562,8 @@ foreach ($baseCatalogs as $locale => $messages) {
 
     $mergedMessages = array_merge(
         $messages,
+        $aboutMessages,
+        $updateMessages,
         $baselineRecovery,
         $updatedMessagePlurals,
         $runtimeErrors,

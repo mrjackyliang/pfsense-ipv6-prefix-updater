@@ -10,10 +10,10 @@
 <!-- nova-region: header -->
   <a href="https://mrjackyliang.github.io/pfsense-ipv6-prefix-updater/">
     <picture>
-      <img alt="pfSense IPv6 Prefix Updater" src="https://mrjackyliang.github.io/pfsense-ipv6-prefix-updater/images/logo.svg" height="128">
+      <img alt="IPv6 Prefix Updater for pfSense" src="https://mrjackyliang.github.io/pfsense-ipv6-prefix-updater/images/logo.svg" height="128">
     </picture>
   </a>
-  <h1>pfSense IPv6 Prefix Updater</h1>
+  <h1>IPv6 Prefix Updater for pfSense</h1>
 <!-- nova-region-end: header -->
 <!-- nova-region: badges -->
   <a href="https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases">
@@ -37,7 +37,7 @@
 <!-- nova-region: introduction -->
 ## Introduction
 
-pfSense IPv6 Prefix Updater is a native package for networks with dynamic IPv6 Prefix Delegation. It detects prefix changes, safely updates approved pfSense configuration references while preserving host portions, and provides package-managed installation, scheduling, backups, status, and notifications.
+IPv6 Prefix Updater for pfSense is a native package for networks with dynamic IPv6 Prefix Delegation. It detects prefix changes, safely updates approved pfSense configuration references while preserving host portions, and provides package-managed installation, scheduling, backups, status, and notifications.
 <!-- nova-region-end: introduction -->
 
 <!-- nova-region: documentation -->

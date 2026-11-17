@@ -19,30 +19,30 @@ sidebar_position: 3
 import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
 import backupList from './_assets_/backups-and-recovery-1.png';
 
-Znajdź konfigurację sprzed aktualizacji na karcie **Kopie zapasowe** lub w <Terminology title="lista zapisanych rewizji konfiguracji w pfSense" to="/docs/reference/terminology#config-history">Config History</Terminology> w pfSense i przywróć ją własnymi narzędziami pfSense.
+Znajdź konfigurację sprzed aktualizacji na karcie **Kopie zapasowe** lub w <Terminology title="Zapisane wersje konfiguracji pfSense do przywrócenia" to="/docs/reference/terminology#backups-and-service-reloads">Config History</Terminology> w pfSense i przywróć ją własnymi narzędziami pfSense.
 
 ## Kiedy powstaje kopia zapasowa \{#when-a-backup-is-created}
 
-Pakiet tworzy <Terminology title="kopia konfiguracji wykonana przed zapisem" to="/docs/reference/terminology#configuration-backup">kopię zapasową konfiguracji</Terminology> tylko przy uruchomieniu, które zapisuje, tuż przed zmianą jakiegokolwiek pola. Pole **<Terminology title="kopia konfiguracji wykonana przed zapisem" to="/docs/reference/terminology#configuration-backup">Utworzono kopię zapasową konfiguracji</Terminology>** na karcie Stan pokazuje, czy ostatnie uruchomienie ją utworzyło.
+Pakiet tworzy <Terminology title="Kopia konfiguracji wykonana tuż przed każdym zapisem" to="/docs/reference/terminology#backups-and-service-reloads">kopię zapasową konfiguracji</Terminology> tylko przy uruchomieniu, które zapisuje, tuż przed zmianą jakiegokolwiek pola. Pole **<Terminology title="Kopia konfiguracji wykonana tuż przed każdym zapisem" to="/docs/reference/terminology#backups-and-service-reloads">Utworzono kopię zapasową konfiguracji</Terminology>** na karcie Stan pokazuje, czy ostatnie uruchomienie ją utworzyło.
 
 Kopia zapasowa nie powstaje, gdy uruchomienie kończy się wynikiem:
 
-- <Terminology title="wynik: zapisano wartość bazową, konfiguracja bez zmian" to="/docs/reference/terminology#initialized">Zainicjowano</Terminology> lub <Terminology title="wynik: próba przed ustaleniem wartości bazowej" to="/docs/reference/terminology#initialization-preview">Podgląd inicjalizacji</Terminology>.
-- <Terminology title="wynik: prefiks bez zmian, nic nie skanowano ani nie zapisano" to="/docs/reference/terminology#no-change">Brak zmian</Terminology>.
-- <Terminology title="podgląd bez kopii zapasowej i bez zapisu" to="/docs/reference/terminology#dry-run">Próba</Terminology>.
-- **Zaakceptowano**, ponieważ akceptacja bieżącego prefiksu zmienia tylko <Terminology title="plik pakietu z wartością bazową i ostatnim uruchomieniem" to="/docs/reference/terminology#package-state">stan pakietu</Terminology>.
-- <Terminology title="wynik: prefiks się zmienił, ale żadne zatwierdzone pole nie pasowało" to="/docs/reference/terminology#warning">Ostrzeżenie</Terminology>.
-- <Terminology title="wynik: kontrola lub etap bezpieczeństwa zatrzymał uruchomienie" to="/docs/reference/terminology#failure">Błąd</Terminology> przed etapem kopii zapasowej, na przykład z powodu problemu z ustawieniami, adresem lub możliwością ponownego załadowania.
+- <Terminology title="Pierwsze spojrzenie: wartość bazowa zapisana, nic się nie zmienia" to="/docs/reference/terminology#run-outcomes">Zainicjowano</Terminology> lub <Terminology title="Próba pokazująca wartość bazową, którą by zapisała" to="/docs/reference/terminology#run-outcomes">Podgląd inicjalizacji</Terminology>.
+- <Terminology title="Ten sam prefiks co ostatnio, więc nie ma nic do zrobienia" to="/docs/reference/terminology#run-outcomes">Brak zmian</Terminology>.
+- <Terminology title="Podgląd zmian, który niczego nie zapisuje" to="/docs/reference/terminology#running-checks">Próba</Terminology>.
+- **Zaakceptowano**, ponieważ akceptacja bieżącego prefiksu zmienia tylko <Terminology title="Plik z każdą wartością bazową, zachowany po ponownej instalacji" to="/docs/reference/terminology#running-checks">stan pakietu</Terminology>.
+- <Terminology title="Prefiks się zmienił, ale żadne zatwierdzone pole nie używało starego" to="/docs/reference/terminology#run-outcomes">Ostrzeżenie</Terminology>.
+- <Terminology title="Uruchomienie zatrzymało się na sprawdzeniu lub etapie bezpieczeństwa" to="/docs/reference/terminology#run-outcomes">Błąd</Terminology> przed etapem kopii zapasowej, na przykład z powodu problemu z ustawieniami, adresem lub możliwością ponownego załadowania.
 
 ## Karta Kopie zapasowe \{#backups-tab}
 
-Karta **Services → IPv6 Prefix Updater → Kopie zapasowe** wyświetla własne kopie pliku `config.xml` zapisane przez pakiet, od najnowszej. Pozostają one dostępne także wtedy, gdy pfSense w ramach rotacji usunie starsze rewizje z <Terminology title="lista zapisanych rewizji konfiguracji w pfSense" to="/docs/reference/terminology#config-history">Config History</Terminology>.
+Karta **Services → IPv6 Prefix Updater → Kopie zapasowe** wyświetla własne kopie pliku `config.xml` zapisane przez pakiet, od najnowszej. Pozostają one dostępne także wtedy, gdy pfSense w ramach rotacji usunie starsze rewizje z <Terminology title="Zapisane wersje konfiguracji pfSense do przywrócenia" to="/docs/reference/terminology#backups-and-service-reloads">Config History</Terminology>.
 
 <img src={backupList} alt="Karta Kopie zapasowe pakietu IPv6 Prefix Updater z kopiami zapasowymi pakietu wykonanymi przed aktualizacjami prefiksu i przed migracją ze starszego aktualizatora oraz z kopiami zaimportowanymi ze starszego aktualizatora, każda z akcjami Pobierz i Usuń" width={1024} height={768} style={{maxWidth: '100%', height: 'auto'}} />
 
 - **Przed aktualizacją prefiksu**: kopia wykonana tuż przed tym, jak uruchomienie zapisze konfigurację. **Szczegóły** podają stary i nowy prefiks każdego interfejsu.
 - **Przed przejściem z 1.x**: kopia wykonana, zanim pakiet [przeniósł starszy aktualizator](/docs/migrate-from-legacy) do swoich ustawień.
-- **Skrypt 1.x**: kopia zapasowa utworzona przez <Terminology title="pierwotny skrypt update.php uruchamiany przez pakiet Cron" to="/docs/reference/terminology#legacy-updater">starszy aktualizator</Terminology>, zaimportowana z pierwotną nazwą i czasem.
+- **Skrypt 1.x**: kopia zapasowa utworzona przez <Terminology title="Wersja 1.x: skrypt update.php uruchamiany przez pakiet Cron" to="/docs/reference/terminology#package-origins">starszy aktualizator</Terminology>, zaimportowana z pierwotną nazwą i czasem.
 
 Przechowywanych jest tylko 10 najnowszych kopii zapasowych pakietu, a zaimportowane kopie starszego aktualizatora pozostają, dopóki ich nie usuniesz. Każda kopia zapasowa jest przechowywana w `/cf/conf/ipv6-prefix-updater/backups`, może ją odczytać tylko root i przetrwa ponowne uruchomienia oraz usunięcie pakietu.
 
@@ -50,9 +50,9 @@ Aby przywrócić kopię, wybierz **Pobierz**, a następnie prześlij plik w **Di
 
 ## Jak oznaczane są rewizje \{#how-the-revisions-are-labelled}
 
-Każda aktualizacja pozostawia w <Terminology title="lista zapisanych rewizji konfiguracji w pfSense" to="/docs/reference/terminology#config-history">Config History</Terminology> dwie rewizje i tylko starsza z nich cofa aktualizację:
+Każda aktualizacja pozostawia w <Terminology title="Zapisane wersje konfiguracji pfSense do przywrócenia" to="/docs/reference/terminology#backups-and-service-reloads">Config History</Terminology> dwie rewizje i tylko starsza z nich cofa aktualizację:
 
-- **Konfiguracja sprzed aktualizacji**: <Terminology title="kopia konfiguracji wykonana przed zapisem" to="/docs/reference/terminology#configuration-backup">kopia zapasowa konfiguracji</Terminology> jest kopią tej rewizji. Zachowuje opis zmiany, która została zapisana przed aktualizacją.
+- **Konfiguracja sprzed aktualizacji**: <Terminology title="Kopia konfiguracji wykonana tuż przed każdym zapisem" to="/docs/reference/terminology#backups-and-service-reloads">kopia zapasowa konfiguracji</Terminology> jest kopią tej rewizji. Zachowuje opis zmiany, która została zapisana przed aktualizacją.
 - **Zaktualizowana konfiguracja**: pakiet zapisuje swoją zmianę jako nową rewizję z opisem `Aktualizator prefiksu IPv6 zmienił <count> zatwierdzonych pól dla interfejsu <interface>`.
 
 :::warning
@@ -72,13 +72,13 @@ Rewizja z opisem pakietu zawiera zaktualizowaną konfigurację. Jej przywróceni
 ## Przywrócenie rewizji \{#restore-the-revision}
 
 1. Użyj akcji przywracania pfSense dla rewizji sprzed aktualizacji i postępuj zgodnie z jej monitami.
-2. Otwórz **Services → IPv6 Prefix Updater → Ustawienia** i sprawdź opcję **<Terminology title="automatyczne sprawdzenia z wpisu cron zarządzanego przez pfSense" to="/docs/reference/terminology#scheduled-updates">Włącz zaplanowane aktualizacje</Terminology>**, ponieważ przywrócona rewizja przywraca ustawienia pakietu z tamtego czasu.
-3. Na karcie Stan wybierz **<Terminology title="podgląd bez kopii zapasowej i bez zapisu" to="/docs/reference/terminology#dry-run">Próba</Terminology>**, aby zobaczyć, co zrobiłoby następne uruchomienie.
+2. Otwórz **Services → IPv6 Prefix Updater → Ustawienia** i sprawdź opcję **<Terminology title="Automatyczne sprawdzenia według harmonogramu, domyślnie wyłączone" to="/docs/reference/terminology#running-checks">Włącz zaplanowane aktualizacje</Terminology>**, ponieważ przywrócona rewizja przywraca ustawienia pakietu z tamtego czasu.
+3. Na karcie Stan wybierz **<Terminology title="Podgląd zmian, który niczego nie zapisuje" to="/docs/reference/terminology#running-checks">Próba</Terminology>**, aby zobaczyć, co zrobiłoby następne uruchomienie.
 
 To, co zrobi następne uruchomienie, zależy od wyniku, który cofasz:
 
-- **Po wyniku <Terminology title="wynik: kontrola lub etap bezpieczeństwa zatrzymał uruchomienie" to="/docs/reference/terminology#failure">Błąd</Terminology>**: <Terminology title="prefiks startowy zapisany bez zmiany konfiguracji" to="/docs/reference/terminology#baseline">wartość bazowa</Terminology> nadal zawiera stary prefiks, więc następne uruchomienie ponownie planuje tę samą aktualizację.
-- **Po wyniku <Terminology title="wynik: pola zaktualizowane, zapisane, ponownie załadowane i zweryfikowane" to="/docs/reference/terminology#success">Sukces</Terminology>**: <Terminology title="prefiks startowy zapisany bez zmiany konfiguracji" to="/docs/reference/terminology#baseline">wartość bazowa</Terminology> zawiera już nowy prefiks, więc kolejne uruchomienia zgłaszają wynik <Terminology title="wynik: prefiks bez zmian, nic nie skanowano ani nie zapisano" to="/docs/reference/terminology#no-change">Brak zmian</Terminology> i nie stosują aktualizacji ponownie. Przywrócone adresy zachowują stary prefiks, dopóki ich nie zmienisz.
+- **Po wyniku <Terminology title="Uruchomienie zatrzymało się na sprawdzeniu lub etapie bezpieczeństwa" to="/docs/reference/terminology#run-outcomes">Błąd</Terminology>**: <Terminology title="Zapisana wartość bazowa, od której mierzy się zmiany" to="/docs/reference/terminology#baselines-and-transitions">wartość bazowa</Terminology> nadal zawiera stary prefiks, więc następne uruchomienie ponownie planuje tę samą aktualizację.
+- **Po wyniku <Terminology title="Prefiks się zmienił i każde zatwierdzone pole zostało zaktualizowane" to="/docs/reference/terminology#run-outcomes">Sukces</Terminology>**: <Terminology title="Zapisana wartość bazowa, od której mierzy się zmiany" to="/docs/reference/terminology#baselines-and-transitions">wartość bazowa</Terminology> zawiera już nowy prefiks, więc kolejne uruchomienia zgłaszają wynik <Terminology title="Ten sam prefiks co ostatnio, więc nie ma nic do zrobienia" to="/docs/reference/terminology#run-outcomes">Brak zmian</Terminology> i nie stosują aktualizacji ponownie. Przywrócone adresy zachowują stary prefiks, dopóki ich nie zmienisz.
 
 :::warning
 
@@ -88,18 +88,18 @@ Przywrócenie rewizji zastępuje całą konfigurację, łącznie z każdą zmian
 
 ## Po nieudanym uruchomieniu \{#after-a-failed-run}
 
-Zacznij od pól **<Terminology title="kopia konfiguracji wykonana przed zapisem" to="/docs/reference/terminology#configuration-backup">Utworzono kopię zapasową konfiguracji</Terminology>** i **Podsumowanie** w panelu **Ostatnie uruchomienie**. Wynik <Terminology title="wynik: kontrola lub etap bezpieczeństwa zatrzymał uruchomienie" to="/docs/reference/terminology#failure">Błąd</Terminology> zawsze pokazuje `0` w polu **Zmienione pola**, nawet jeśli pola zostały już zapisane.
+Zacznij od pól **<Terminology title="Kopia konfiguracji wykonana tuż przed każdym zapisem" to="/docs/reference/terminology#backups-and-service-reloads">Utworzono kopię zapasową konfiguracji</Terminology>** i **Podsumowanie** w panelu **Ostatnie uruchomienie**. Wynik <Terminology title="Uruchomienie zatrzymało się na sprawdzeniu lub etapie bezpieczeństwa" to="/docs/reference/terminology#run-outcomes">Błąd</Terminology> zawsze pokazuje `0` w polu **Zmienione pola**, nawet jeśli pola zostały już zapisane.
 
-- **<Terminology title="kopia konfiguracji wykonana przed zapisem" to="/docs/reference/terminology#configuration-backup">Utworzono kopię zapasową konfiguracji</Terminology> pokazuje Nie**: uruchomienie zatrzymało się przed zapisem, więc konfiguracja jest bez zmian. Przyczyny wymienia przewodnik [Rozwiązywanie problemów](/docs/operate/troubleshooting#run-failed).
+- **<Terminology title="Kopia konfiguracji wykonana tuż przed każdym zapisem" to="/docs/reference/terminology#backups-and-service-reloads">Utworzono kopię zapasową konfiguracji</Terminology> pokazuje Nie**: uruchomienie zatrzymało się przed zapisem, więc konfiguracja jest bez zmian. Przyczyny wymienia przewodnik [Rozwiązywanie problemów](/docs/operate/troubleshooting#run-failed).
 - **Podsumowanie brzmi `Uruchomienie nie powiodło się: pfSense nie mógł zapisać planowanej konfiguracji.`**: pfSense zgłosił nieudany zapis. Pakiet przed zatrzymaniem przywrócił w pamięci pierwotne wartości.
-- **Każdy inny błąd z kopią zapasową**: nowe wartości są już zapisane i nic nie zostało wycofane. <Terminology title="prefiks startowy zapisany bez zmiany konfiguracji" to="/docs/reference/terminology#baseline">Wartość bazowa</Terminology> nadal zawiera stary prefiks, więc kolejne uruchomienia zgłaszają wynik <Terminology title="wynik: prefiks się zmienił, ale żadne zatwierdzone pole nie pasowało" to="/docs/reference/terminology#warning">Ostrzeżenie</Terminology>, ponieważ zapisane wartości już do niego nie należą.
+- **Każdy inny błąd z kopią zapasową**: nowe wartości są już zapisane i nic nie zostało wycofane. <Terminology title="Zapisana wartość bazowa, od której mierzy się zmiany" to="/docs/reference/terminology#baselines-and-transitions">Wartość bazowa</Terminology> nadal zawiera stary prefiks, więc kolejne uruchomienia zgłaszają wynik <Terminology title="Prefiks się zmienił, ale żadne zatwierdzone pole nie używało starego" to="/docs/reference/terminology#run-outcomes">Ostrzeżenie</Terminology>, ponieważ zapisane wartości już do niego nie należą.
 
 W ostatnim przypadku wybierz sposób odzyskiwania odpowiadający zapisanej konfiguracji:
 
-- **Ponowne zastosowanie aktualizacji**: usuń przyczynę nieudanej kontroli lub ponownego załadowania, przywróć rewizję sprzed aktualizacji, użyj przycisku <Terminology title="podgląd bez kopii zapasowej i bez zapisu" to="/docs/reference/terminology#dry-run">Próba</Terminology>, a następnie wybierz **Uruchom teraz**.
+- **Ponowne zastosowanie aktualizacji**: usuń przyczynę nieudanej kontroli lub ponownego załadowania, przywróć rewizję sprzed aktualizacji, użyj przycisku <Terminology title="Podgląd zmian, który niczego nie zapisuje" to="/docs/reference/terminology#running-checks">Próba</Terminology>, a następnie wybierz **Uruchom teraz**.
 - **Zachowanie zapisanych wartości z nowym prefiksem**: najpierw samodzielnie zweryfikuj zatwierdzone adresy i usługi, których dotyczą zmiany. Następnie otwórz **Stan → Działania → Odzyskiwanie wartości bazowej**, wybierz **Zaakceptuj bieżący prefiks** i potwierdź działanie.
 
-**Zaakceptuj bieżący prefiks** zapisuje aktywny adres źródłowy, prefiks i długość prefiksu jako nową <Terminology title="prefiks startowy zapisany bez zmiany konfiguracji" to="/docs/reference/terminology#baseline">wartość bazową</Terminology>. Nie skanuje konfiguracji zapory, nie tworzy kopii zapasowej, nie zapisuje konfiguracji i nie ładuje ponownie żadnej usługi; wynikiem jest **Zaakceptowano**, a następne zwykłe sprawdzenie powinno zgłosić wynik <Terminology title="wynik: prefiks bez zmian, nic nie skanowano ani nie zapisano" to="/docs/reference/terminology#no-change">Brak zmian</Terminology>.
+**Zaakceptuj bieżący prefiks** zapisuje aktywny adres źródłowy, prefiks i długość prefiksu jako nową <Terminology title="Zapisana wartość bazowa, od której mierzy się zmiany" to="/docs/reference/terminology#baselines-and-transitions">wartość bazową</Terminology>. Nie skanuje konfiguracji zapory, nie tworzy kopii zapasowej, nie zapisuje konfiguracji i nie ładuje ponownie żadnej usługi; wynikiem jest **Zaakceptowano**, a następne zwykłe sprawdzenie powinno zgłosić wynik <Terminology title="Ten sam prefiks co ostatnio, więc nie ma nic do zrobienia" to="/docs/reference/terminology#run-outcomes">Brak zmian</Terminology>.
 
 :::warning
 
@@ -107,14 +107,14 @@ Nie akceptuj bieżącego prefiksu tylko po to, aby usunąć ostrzeżenie. Zaakce
 
 :::
 
-Jeśli sekcja **Ostatnie uruchomienie** w ogóle się nie zmieniła, uruchomienie zatrzymało się przed odczytem <Terminology title="plik pakietu z wartością bazową i ostatnim uruchomieniem" to="/docs/reference/terminology#package-state">stanu pakietu</Terminology>. Przyczynę można znaleźć w sekcji <Terminology title="wyniki tylko do odczytu po Uruchom teraz lub Próbie" to="/docs/reference/terminology#command-output">Wynik polecenia</Terminology> i w <Terminology title="ogólny dziennik pfSense, do którego zapisuje pakiet" to="/docs/reference/terminology#system-log">dzienniku systemowym</Terminology>.
+Jeśli sekcja **Ostatnie uruchomienie** w ogóle się nie zmieniła, uruchomienie zatrzymało się przed odczytem <Terminology title="Plik z każdą wartością bazową, zachowany po ponownej instalacji" to="/docs/reference/terminology#running-checks">stanu pakietu</Terminology>. Przyczynę można znaleźć w sekcji <Terminology title="Wiersze ostatniego uruchomienia, widoczne zaraz po starcie" to="/docs/reference/terminology#running-checks">Wynik polecenia</Terminology> i w <Terminology title="Ogólny dziennik pfSense, w którym każde uruchomienie zostawia wiersze" to="/docs/reference/terminology#notifications-and-logs">dzienniku systemowym</Terminology>.
 
 ## Kopie zapasowe poza urządzeniem \{#keep-off-device-backups}
 
-<Terminology title="lista zapisanych rewizji konfiguracji w pfSense" to="/docs/reference/terminology#config-history">Config History</Terminology> jest przechowywana na samej zaporze. Zaleca się również pobranie kopii zapasowej z **Diagnostics → Backup & Restore** przed instalacją lub aktualizacją pakietu albo włączeniem <Terminology title="automatyczne sprawdzenia z wpisu cron zarządzanego przez pfSense" to="/docs/reference/terminology#scheduled-updates">zaplanowanych aktualizacji</Terminology>.
+<Terminology title="Zapisane wersje konfiguracji pfSense do przywrócenia" to="/docs/reference/terminology#backups-and-service-reloads">Config History</Terminology> jest przechowywana na samej zaporze. Zaleca się również pobranie kopii zapasowej z **Diagnostics → Backup & Restore** przed instalacją lub aktualizacją pakietu albo włączeniem <Terminology title="Automatyczne sprawdzenia według harmonogramu, domyślnie wyłączone" to="/docs/reference/terminology#running-checks">zaplanowanych aktualizacji</Terminology>.
 
 ## Zabezpieczenie dowodów \{#preserve-evidence}
 
-Przed przywróceniem zaleca się skopiować panel **Ostatnie uruchomienie**, <Terminology title="wyniki tylko do odczytu po Uruchom teraz lub Próbie" to="/docs/reference/terminology#command-output">Wynik polecenia</Terminology> i wiersze <Terminology title="ogólny dziennik pfSense, do którego zapisuje pakiet" to="/docs/reference/terminology#system-log">dziennika systemowego</Terminology> zaczynające się od `IPv6 Prefix Updater:`. Razem pokazują, który etap się zatrzymał i czy konfiguracja została zapisana.
+Przed przywróceniem zaleca się skopiować panel **Ostatnie uruchomienie**, <Terminology title="Wiersze ostatniego uruchomienia, widoczne zaraz po starcie" to="/docs/reference/terminology#running-checks">Wynik polecenia</Terminology> i wiersze <Terminology title="Ogólny dziennik pfSense, w którym każde uruchomienie zostawia wiersze" to="/docs/reference/terminology#notifications-and-logs">dziennika systemowego</Terminology> zaczynające się od `IPv6 Prefix Updater:`. Razem pokazują, który etap się zatrzymał i czy konfiguracja została zapisana.
 
 Komunikaty o błędach opisuje przewodnik [Rozwiązywanie problemów](/docs/operate/troubleshooting), a przed ponownym włączeniem harmonogramu zapoznaj się z przewodnikiem [Kontrola przed automatyzacją](/docs/safety/testing-and-verification).

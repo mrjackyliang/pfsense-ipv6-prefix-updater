@@ -1,13 +1,17 @@
 import {
   BlogPreview,
+  BrowserFrame,
   Canvas,
   Features,
+  Showcase,
   Spotlight,
-  Stats,
 } from '@cbnventures/docusaurus-preset-nova/blocks';
 import Head from '@docusaurus/Head';
 import Link from '@docusaurus/Link';
 import Translate, { translate } from '@docusaurus/Translate';
+import configurationScopesOne from '@locale-docs/configure/_assets_/configuration-scopes-1.png';
+import interfaceAndPrefixOne from '@locale-docs/configure/_assets_/interface-and-prefix-1.png';
+import statusAndActionsTwo from '@locale-docs/operate/_assets_/status-and-actions-2.png';
 import Layout from '@theme/Layout';
 
 import styles from './index.module.css';
@@ -37,7 +41,7 @@ function Home(): Pages_Index_Home_Returns {
         <title>
           {translate({
             id: 'home.meta.title',
-            message: 'pfSense IPv6 Prefix Updater - Safe Dynamic Prefix Updates',
+            message: 'IPv6 Prefix Updater for pfSense - Safe Dynamic Prefix Updates',
             description: 'Homepage browser title.',
           })}
         </title>
@@ -65,14 +69,14 @@ function Home(): Pages_Index_Home_Returns {
                     </Translate>
                   </p>
                   <div className="nova-hero-actions">
-                    <Link className="nova-cta-primary" to="/docs/installation">
+                    <Link className="nova-cta-primary" to="/docs/installation/">
                       <Translate id="home.hero.primaryAction" description="Primary homepage call to action.">
-                        Install on pfSense
+                        Get Started
                       </Translate>
                     </Link>
-                    <Link className="nova-cta-secondary" to="/docs/operations">
+                    <Link className="nova-cta-secondary" to="/docs/intro/">
                       <Translate id="home.hero.secondaryAction" description="Secondary homepage call to action.">
-                        Review safety behavior
+                        Learn More
                       </Translate>
                     </Link>
                   </div>
@@ -155,59 +159,6 @@ function Home(): Pages_Index_Home_Returns {
               </div>
             </div>
           </div>
-        </Canvas>
-
-        <Canvas container="contained" surface="default" className={styles['workflow-section']}>
-          <div className={styles['section-heading']}>
-            <p className={styles['section-eyebrow']}>
-              <Translate id="home.workflow.eyebrow" description="Short label above the update workflow.">
-                What pfSense does
-              </Translate>
-            </p>
-            <h2>
-              <Translate id="home.workflow.heading" description="Heading for the update workflow.">
-                Follow every prefix change from detection to completion.
-              </Translate>
-            </h2>
-          </div>
-          <ol className={styles['workflow-list']}>
-            <li>
-              <span>01</span>
-              <Translate id="home.workflow.detect" description="Detect stage of the update workflow.">
-                Detect new prefix
-              </Translate>
-            </li>
-            <li>
-              <span>02</span>
-              <Translate id="home.workflow.plan" description="Plan stage of the update workflow.">
-                Find local addresses
-              </Translate>
-            </li>
-            <li>
-              <span>03</span>
-              <Translate id="home.workflow.backup" description="Backup stage of the update workflow.">
-                Save a backup
-              </Translate>
-            </li>
-            <li>
-              <span>04</span>
-              <Translate id="home.workflow.write" description="Write stage of the update workflow.">
-                Update addresses
-              </Translate>
-            </li>
-            <li>
-              <span>05</span>
-              <Translate id="home.workflow.verify" description="Verify stage of the update workflow.">
-                Refresh services
-              </Translate>
-            </li>
-            <li>
-              <span>06</span>
-              <Translate id="home.workflow.notify" description="Notification stage of the update workflow.">
-                Report the result
-              </Translate>
-            </li>
-          </ol>
         </Canvas>
 
         <Features
@@ -293,171 +244,168 @@ function Home(): Pages_Index_Home_Returns {
           ]}
         />
 
-        <Stats
-          heading={translate({
-            id: 'home.stats.heading',
-            message: 'Safety You Can Verify',
-            description: 'Heading above homepage safety metrics.',
-          })}
-          items={[
-            {
-              value: '/48–/64',
-              label: translate({
-                id: 'home.stats.boundaries',
-                message: 'Supported prefix boundaries',
-                description: 'Label for supported prefix-boundary metric.',
-              }),
-              color: 'primary',
-            },
-            {
-              value: '1',
-              label: translate({
-                id: 'home.stats.backups',
-                message: 'Backup before each change',
-                description: 'Label for backup-count metric.',
-              }),
-              color: 'accent',
-            },
-            {
-              value: '1',
-              label: translate({
-                id: 'home.stats.writes',
-                message: 'Configuration write per change',
-                description: 'Label for configuration-write metric.',
-              }),
-              color: 'primary',
-            },
-            {
-              value: '0',
-              label: translate({
-                id: 'home.stats.noChange',
-                message: 'Writes when the prefix is unchanged',
-                description: 'Label for no-change write metric.',
-              }),
-              color: 'accent',
-            },
-          ]}
-        />
-
-        <Canvas container="contained" surface="alt" className={styles['routes-section']}>
-          <div className={styles['section-heading']}>
-            <p className={styles['section-eyebrow']}>
-              <Translate id="home.routes.eyebrow" description="Short label above documentation routes.">
-                Pick up where you are
-              </Translate>
-            </p>
-            <h2>
-              <Translate id="home.routes.heading" description="Heading above task-oriented documentation routes.">
-                Follow the route for your next task.
-              </Translate>
-            </h2>
-          </div>
-          <div className={styles['route-grid']}>
-            <Link className={styles['route-card'] ?? ''} to="/docs/installation">
-              <span className={styles['route-icon']} aria-hidden="true">01</span>
-              <h3>
-                <Translate id="home.routes.install.title" description="Installation route title.">
-                  Install the Package
-                </Translate>
-              </h3>
-              <p>
-                <Translate id="home.routes.install.description" description="Installation route summary.">
-                  Install the latest GitHub release with one pfSense shell command, then confirm the package in the WebGUI.
-                </Translate>
-              </p>
-              <span className={styles['route-link']}>
-                <Translate id="home.routes.open" description="Label used to open a documentation route.">
-                  Open guide
-                </Translate>
-                {' →'}
-              </span>
-            </Link>
-            <Link className={styles['route-card'] ?? ''} to="/docs/configure/interface-and-prefix">
-              <span className={styles['route-icon']} aria-hidden="true">02</span>
-              <h3>
-                <Translate id="home.routes.configure.title" description="Configuration route title.">
-                  Select the Interface and Prefix
-                </Translate>
-              </h3>
-              <p>
-                <Translate id="home.routes.configure.description" description="Configuration route summary.">
-                  Confirm which interface owns the global address and enter the delegated boundary supplied by the ISP.
-                </Translate>
-              </p>
-              <span className={styles['route-link']}>
-                <Translate id="home.routes.open" description="Label used to open a documentation route.">
-                  Open guide
-                </Translate>
-                {' →'}
-              </span>
-            </Link>
-            <Link className={styles['route-card'] ?? ''} to="/docs/operate/status-and-actions">
-              <span className={styles['route-icon']} aria-hidden="true">03</span>
-              <h3>
-                <Translate id="home.routes.status.title" description="Status route title.">
-                  Read Status and Command Output
-                </Translate>
-              </h3>
-              <p>
-                <Translate id="home.routes.status.description" description="Status route summary.">
-                  Verify the chosen address, masked prefix, result, backup state, changed fields, and reloaded services after every run.
-                </Translate>
-              </p>
-              <span className={styles['route-link']}>
-                <Translate id="home.routes.open" description="Label used to open a documentation route.">
-                  Open guide
-                </Translate>
-                {' →'}
-              </span>
-            </Link>
-            <Link className={styles['route-card'] ?? ''} to="/docs/operate/troubleshooting">
-              <span className={styles['route-icon']} aria-hidden="true">04</span>
-              <h3>
-                <Translate id="home.routes.troubleshoot.title" description="Troubleshooting route title.">
-                  Troubleshoot a Run
-                </Translate>
-              </h3>
-              <p>
-                <Translate id="home.routes.troubleshoot.description" description="Troubleshooting route summary.">
-                  Resolve wrong source addresses, zero-match warnings, failed safety stages, and recovery from pfSense configuration history.
-                </Translate>
-              </p>
-              <span className={styles['route-link']}>
-                <Translate id="home.routes.open" description="Label used to open a documentation route.">
-                  Open guide
-                </Translate>
-                {' →'}
-              </span>
-            </Link>
-          </div>
-        </Canvas>
-
         <Spotlight
+          surface="alt"
+          className={styles['shot-spotlight']}
           heading={translate({
-            id: 'home.spotlight.heading',
-            message: 'A run should never be a black box.',
-            description: 'Heading above the final homepage call to action.',
+            id: 'home.showcase.heading',
+            message: 'Inside the pfSense WebGUI',
+            description: 'Heading above the WebGUI screenshots on the front page.',
           })}
         >
-          <div className={styles['spotlight-content']}>
-            <p className="nova-section-description">
-              <Translate id="home.spotlight.description" description="Summary of observable run evidence.">
-                The Status tab and read-only command output show the exact source address, old and new prefixes, field count, backup result, service reloads, and final outcome.
-              </Translate>
-            </p>
-            <div className={styles['spotlight-actions']}>
-              <Link className="nova-cta-primary" to="/docs/operate/status-and-actions">
-                <Translate id="home.spotlight.statusAction" description="Call to action for the status guide.">
-                  Read the Status Guide
-                </Translate>
-              </Link>
-              <Link className="nova-cta-secondary" to="/docs/safety/testing-and-verification">
-                <Translate id="home.spotlight.testsAction" description="Call to action for the pre-automation checklist.">
-                  Check Before Automation
-                </Translate>
-              </Link>
-            </div>
-          </div>
+          <Showcase
+            tabsLabel={translate({
+              id: 'home.showcase.tabsLabel',
+              message: 'IPv6 Prefix Updater pages',
+              description: 'Accessible label for the screenshot tabs on the front page.',
+            })}
+            items={[
+              {
+                label: translate({
+                  id: 'home.showcase.settings.label',
+                  message: 'Settings',
+                  description: 'Front page screenshot tab for the Settings page.',
+                }),
+                heading: translate({
+                  id: 'home.showcase.settings.heading',
+                  message: 'Watch the interfaces that carry your prefix',
+                  description: 'Front page heading for the Settings page screenshot.',
+                }),
+                description: translate({
+                  id: 'home.showcase.settings.description',
+                  message: 'Add a row for each interface whose IPv6 address comes from your ISP, enter the prefix length it delegates, and choose when pfSense checks for a change.',
+                  description: 'Front page description for the Settings page screenshot.',
+                }),
+                link: {
+                  label: translate({
+                    id: 'home.showcase.settings.link',
+                    message: 'Choose the Interface and Prefix',
+                    description: 'Front page link from the Settings screenshot to its guide.',
+                  }),
+                  to: '/docs/configure/interface-and-prefix/',
+                },
+                content: (
+                  <BrowserFrame
+                    className={styles['shot-frame']}
+                    title={translate({
+                      id: 'home.showcase.settings.title',
+                      message: 'pfSense.home.arpa - Package: Services: IPv6 Prefix Updater: Settings',
+                      description: 'Browser tab title of the Settings screenshot on the front page, as the pfSense WebGUI shows it.',
+                    })}
+                    url="192.168.1.1/pkg_edit.php?xml=ipv6-prefix-updater.xml"
+                    favicon="/images/pfsense-favicon.ico"
+                  >
+                    <img
+                      src={interfaceAndPrefixOne}
+                      alt={translate({
+                        id: 'home.showcase.settings.alt',
+                        message: 'IPv6 Prefix Updater Settings page with two monitored interfaces and their prefix lengths',
+                        description: 'Alt text for the Settings page screenshot on the front page.',
+                      })}
+                      width={1024}
+                      height={768}
+                    />
+                  </BrowserFrame>
+                ),
+              },
+              {
+                label: translate({
+                  id: 'home.showcase.status.label',
+                  message: 'Status',
+                  description: 'Front page screenshot tab for the Status page.',
+                }),
+                heading: translate({
+                  id: 'home.showcase.status.heading',
+                  message: 'A run should never be a black box',
+                  description: 'Front page heading for the Status page screenshot.',
+                }),
+                description: translate({
+                  id: 'home.showcase.status.description',
+                  message: 'The Status tab shows each interface\'s last prefix and address, what the last run changed, whether a backup was made, and which services reloaded.',
+                  description: 'Front page description for the Status page screenshot.',
+                }),
+                link: {
+                  label: translate({
+                    id: 'home.showcase.status.link',
+                    message: 'Read the Status Guide',
+                    description: 'Front page link from the Status screenshot to its guide.',
+                  }),
+                  to: '/docs/operate/status-and-actions/',
+                },
+                content: (
+                  <BrowserFrame
+                    className={styles['shot-frame']}
+                    title={translate({
+                      id: 'home.showcase.status.title',
+                      message: 'pfSense.home.arpa - Services: IPv6 Prefix Updater: Status',
+                      description: 'Browser tab title of the Status screenshot on the front page, as the pfSense WebGUI shows it.',
+                    })}
+                    url="192.168.1.1/ipv6-prefix-updater-status.php"
+                    favicon="/images/pfsense-favicon.ico"
+                  >
+                    <img
+                      src={statusAndActionsTwo}
+                      alt={translate({
+                        id: 'home.showcase.status.alt',
+                        message: 'IPv6 Prefix Updater Status page with the current state of each interface and the last run',
+                        description: 'Alt text for the Status page screenshot on the front page.',
+                      })}
+                      width={1024}
+                      height={768}
+                    />
+                  </BrowserFrame>
+                ),
+              },
+              {
+                label: translate({
+                  id: 'home.showcase.fields.label',
+                  message: 'Fields',
+                  description: 'Front page screenshot tab for the Fields page.',
+                }),
+                heading: translate({
+                  id: 'home.showcase.fields.heading',
+                  message: 'You decide what changes',
+                  description: 'Front page heading for the Fields page screenshot.',
+                }),
+                description: translate({
+                  id: 'home.showcase.fields.description',
+                  message: 'Pick which configuration fields follow the prefix, set exceptions, and review other packages\' settings before anything is written.',
+                  description: 'Front page description for the Fields page screenshot.',
+                }),
+                link: {
+                  label: translate({
+                    id: 'home.showcase.fields.link',
+                    message: 'Choose the Fields',
+                    description: 'Front page link from the Fields screenshot to its guide.',
+                  }),
+                  to: '/docs/configure/configuration-scopes/',
+                },
+                content: (
+                  <BrowserFrame
+                    className={styles['shot-frame']}
+                    title={translate({
+                      id: 'home.showcase.fields.title',
+                      message: 'pfSense.home.arpa - Services: IPv6 Prefix Updater: Fields',
+                      description: 'Browser tab title of the Fields screenshot on the front page, as the pfSense WebGUI shows it.',
+                    })}
+                    url="192.168.1.1/ipv6-prefix-updater-fields.php"
+                    favicon="/images/pfsense-favicon.ico"
+                  >
+                    <img
+                      src={configurationScopesOne}
+                      alt={translate({
+                        id: 'home.showcase.fields.alt',
+                        message: 'IPv6 Prefix Updater Fields page with static interfaces and aliases selected',
+                        description: 'Alt text for the Fields page screenshot on the front page.',
+                      })}
+                      width={1024}
+                      height={768}
+                    />
+                  </BrowserFrame>
+                ),
+              },
+            ]}
+          />
         </Spotlight>
 
         <BlogPreview
@@ -468,11 +416,12 @@ function Home(): Pages_Index_Home_Returns {
           })}
           description={translate({
             id: 'home.blogPreview.description',
-            message: 'Release notes, setup guides, and notes on dynamic IPv6 prefixes.',
+            message: 'Launches, milestones, and what\'s new in IPv6 Prefix Updater for pfSense.',
             description: 'Summary below the homepage blog preview heading.',
           })}
           auto={true}
           limit={3}
+          sort="newest"
         />
       </main>
     </Layout>

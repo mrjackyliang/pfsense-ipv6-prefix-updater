@@ -1,36 +1,63 @@
 {
-  "layout.learn.title": {
-    "message": "Guias"
+  "layout.docs.title": {
+    "message": "Documentação"
   },
   "layout.resources.title": {
     "message": "Recursos"
   },
-  "sections.learn.0.label": {
-    "message": "Instalar e configurar"
+  "layout.project.title": {
+    "message": "Projeto"
   },
-  "sections.learn.1.label": {
-    "message": "Interfaces monitorizadas / Comprimento do prefixo delegado"
+  "layout.legal.title": {
+    "message": "Informação legal"
   },
-  "sections.learn.2.label": {
-    "message": "Estado / Ações"
+  "sections.docs.0.label": {
+    "message": "Visão geral"
   },
-  "sections.learn.3.label": {
-    "message": "Resolução de problemas"
+  "sections.docs.1.label": {
+    "message": "Configuração"
+  },
+  "sections.docs.2.label": {
+    "message": "Operação"
+  },
+  "sections.docs.3.label": {
+    "message": "Segurança"
+  },
+  "sections.docs.4.label": {
+    "message": "Referência"
+  },
+  "sections.docs.5.label": {
+    "message": "Contribuir"
   },
   "sections.resources.0.label": {
-    "message": "Segurança e funcionamento"
+    "message": "Blogue"
   },
   "sections.resources.1.label": {
-    "message": "Resultados e testes"
+    "message": "Resolução de problemas"
   },
   "sections.resources.2.label": {
-    "message": "Documentação pfSense"
+    "message": "Registo de alterações"
   },
   "sections.resources.3.label": {
-    "message": "Código-fonte"
+    "message": "Comunicar um problema"
   },
   "sections.resources.4.label": {
-    "message": "Blogue"
+    "message": "Código-fonte"
+  },
+  "sections.project.0.label": {
+    "message": "Patrocinar"
+  },
+  "sections.project.1.label": {
+    "message": "Documentação pfSense"
+  },
+  "sections.project.2.label": {
+    "message": "Outros projetos"
+  },
+  "sections.legal.0.label": {
+    "message": "Licença"
+  },
+  "cta.label": {
+    "message": "Pronto para manter os prefixos IPv6 alinhados?"
   },
   "copyright": {
     "message": "Copyright © 2023-2026 Jacky Liang. Publicado sob a licença MIT."

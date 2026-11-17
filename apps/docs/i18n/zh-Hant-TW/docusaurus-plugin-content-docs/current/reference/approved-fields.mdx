@@ -17,17 +17,17 @@ sidebar_position: 3
 
 import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
 
-查看每個<Terminology title="「欄位」分頁上共用一個開關的一組欄位" to="/docs/reference/terminology#field-group">欄位群組</Terminology>可以改寫的確切 pfSense 設定路徑，以及每條路徑會重新載入的服務。
+查看每個<Terminology title="一個開關管住一整類設定" to="/docs/reference/terminology#fields-and-change-plans">欄位群組</Terminology>可以改寫的確切 pfSense 設定路徑，以及每條路徑會重新載入的服務。
 
 ## 欄位矩陣 \{#field-matrix}
 
 路徑採用 pfSense 中 `config_get_path()` 與 `config_set_path()` 所使用的斜線分隔語法。在下列路徑中，`<index>` 代表清單中的位置，`<interface>` 代表介面鍵（例如 `lan`），`<boundary>` 代表 `from` 或 `to`，`<side>` 代表 `source` 或 `destination`，`<section>` 則代表其他套件的設定鍵。
 
-| <Terminology title="「欄位」分頁上共用一個開關的一組欄位" to="/docs/reference/terminology#field-group">群組</Terminology>              | 路徑                                                                               | 選取條件                                                                   | 服務                      |
+| <Terminology title="一個開關管住一整類設定" to="/docs/reference/terminology#fields-and-change-plans">群組</Terminology>         | 路徑                                                                               | 選取條件                                                                   | 服務                      |
 |--------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|------------------------------------------------------------------------|-------------------------|
 | 別名                                                                                                                 | `aliases/alias/<index>/address`                                                  | `type` 為 `host` 或 `network`                                            | `filter`                |
 | 靜態介面                                                                                                               | `interfaces/<interface>/ipaddrv6`                                                | 值中包含 `:`                                                               | `interfaces`            |
-| <Terminology title="額外的介面位址，例如 CARP 或 IP Alias" to="/docs/reference/terminology#virtual-ip">虛擬 IP 位址</Terminology> | `virtualip/vip/<index>/subnet`                                                   | `mode` 為 `carp` 或 `ipalias`                                            | `interfaces`            |
+| <Terminology title="介面上的額外位址，例如 CARP VIP" to="/docs/reference/terminology#pfsense-features">虛擬 IP 位址</Terminology> | `virtualip/vip/<index>/subnet`                                                   | `mode` 為 `carp` 或 `ipalias`                                            | `interfaces`            |
 | IPsec                                                                                                              | `ipsec/phase2/<index>/localid/address`                                           | `mode` 為 `tunnel6` 或 `vti`，且 `localid/type` 為 `address` 或 `network`    | `ipsec`                 |
 | IPsec                                                                                                              | `ipsec/phase2/<index>/natlocalid/address`                                        | `mode` 為 `tunnel6` 或 `vti`，且 `natlocalid/type` 為 `address` 或 `network` | `ipsec`                 |
 | OpenVPN                                                                                                            | `openvpn/openvpn-server/<index>/tunnel_networkv6`                                | `tunnel_networkv6_type` 不是 `track6`                                    | `openvpn`               |
@@ -63,7 +63,7 @@ import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
 
 - 除了下列三種清單，每個欄位都只保存單一值。
 - 別名的 `address` 是以空白字元分隔的清單。
-- 伺服器與<Terminology title="伺服器上針對個別用戶端的 OpenVPN 設定" to="/docs/reference/terminology#client-specific-override">用戶端特定覆寫</Terminology>中的 OpenVPN `local_networkv6` 是以逗號與空白字元分隔的清單。
+- 伺服器與<Terminology title="只對一個用戶端生效的 OpenVPN 設定" to="/docs/reference/terminology#pfsense-features">用戶端特定覆寫</Terminology>中的 OpenVPN `local_networkv6` 是以逗號與空白字元分隔的清單。
 - DNS 解析器主機覆寫的 `ip` 是以逗號與空白字元分隔的清單。
 - 其他套件設定中的值與「其他設定」群組中的值都是文字。文字中的每個位址都會個別比對，其餘部分維持原樣。
 - 以 Base64 儲存的值會先解碼，再以文字比對，值有變更時會重新編碼。
@@ -72,14 +72,14 @@ import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
 ## 比對規則 \{#matching-rules}
 
 - 每個項目可以帶有 `/0` 到 `/128` 的 CIDR 尾碼，尾碼會被保留。帶有其他尾碼的項目維持不變。
-- 只有當項目的位址依先前的<Terminology title="開頭的網路位元數，例如 /56" to="/docs/reference/terminology#prefix-length">前綴長度</Terminology>屬於先前的前綴時，才會被變更。
-- 新值的開頭位元依目前的<Terminology title="開頭的網路位元數，例如 /56" to="/docs/reference/terminology#prefix-length">前綴長度</Terminology>取自目前的<Terminology title="pfSense 回報的監控介面全域位址" to="/docs/reference/terminology#source-address">來源位址</Terminology>，其餘位元都取自該項目本身。新值會以<Terminology title="位址的小寫、最短標準寫法" to="/docs/reference/terminology#canonical-form">標準形式</Terminology>寫入。
-- 不是<Terminology title="位於 2000::/3 內的公用 IPv6 位址" to="/docs/reference/terminology#global-unicast-address">全域單播位址</Terminology>的項目會原樣保留，包括 DHCPv6 設定在<Terminology title="位址取自另一介面委派前綴的介面" to="/docs/reference/terminology#tracked-interface">追蹤介面</Terminology>上保存的 `::1000` 這類尾碼。
+- 只有當項目的位址依先前的<Terminology title="/56 或 /64，表示多少位元用來識別網路" to="/docs/reference/terminology#addresses-and-prefixes">前綴長度</Terminology>屬於先前的前綴時，才會被變更。
+- 新值的開頭位元依目前的<Terminology title="/56 或 /64，表示多少位元用來識別網路" to="/docs/reference/terminology#addresses-and-prefixes">前綴長度</Terminology>取自目前的<Terminology title="每次執行讀取前綴所用的即時位址" to="/docs/reference/terminology#interfaces-and-detection">來源位址</Terminology>，其餘位元都取自該項目本身。新值會以<Terminology title="簡短的小寫寫法，例如 2001:db8::1" to="/docs/reference/terminology#addresses-and-prefixes">標準形式</Terminology>寫入。
+- 不是<Terminology title="位於 2000::/3 內的公用 IPv6 位址，唯一會用到的類型" to="/docs/reference/terminology#addresses-and-prefixes">全域單播位址</Terminology>的項目會原樣保留，包括 DHCPv6 設定在<Terminology title="以另一個介面的前綴產生 IPv6 的介面" to="/docs/reference/terminology#interfaces-and-detection">追蹤介面</Terminology>上保存的 `::1000` 這類尾碼。
 - 新值與舊值相同的欄位不計為變更。
 
 ## 欄位識別碼 \{#field-identities}
 
-「欄位」分頁上的每個<Terminology title="勾選狀態與群組開關相反的單一欄位" to="/docs/reference/terminology#field-exception">欄位例外</Terminology>都會儲存為一個識別碼，以項目本身而非其清單位置來命名：
+「欄位」分頁上的每個<Terminology title="勾選狀態與所屬群組開關不同的單一欄位" to="/docs/reference/terminology#fields-and-change-plans">欄位例外</Terminology>都會儲存為一個識別碼，以項目本身而非其清單位置來命名：
 
 | 項目           | 欄位識別碼                                                                                                                           |
 |--------------|---------------------------------------------------------------------------------------------------------------------------------|
@@ -145,7 +145,7 @@ import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
 - 描述。
 - 其他套件設定中，名稱表明為憑證、金鑰、密碼、機密、雜湊或描述的值。
 
-`host` 與 `network` 以外的別名類型、`carp` 與 `ipalias` 以外的<Terminology title="額外的介面位址，例如 CARP 或 IP Alias" to="/docs/reference/terminology#virtual-ip">虛擬 IP</Terminology> 模式，以及矩陣之外的所有其他路徑，都會改為顯示其設定名稱。重新載入取決於路徑：`gateways` 與 `staticroutes` 使用 `routing`，`system/dnsserver` 使用 `dns`，`unbound` 與 `dnsmasq` 使用各自的 DNS 服務，`ipsec`、`openvpn`、`filter`、`aliases`、`nat`、`dhcpdv6`、`interfaces` 與 `virtualip` 使用上述重新載入，其他套件的區段會重新套用，而描述、憑證與所有其他路徑不會重新載入任何內容。
+`host` 與 `network` 以外的別名類型、`carp` 與 `ipalias` 以外的<Terminology title="介面上的額外位址，例如 CARP VIP" to="/docs/reference/terminology#pfsense-features">虛擬 IP</Terminology> 模式，以及矩陣之外的所有其他路徑，都會改為顯示其設定名稱。重新載入取決於路徑：`gateways` 與 `staticroutes` 使用 `routing`，`system/dnsserver` 使用 `dns`，`unbound` 與 `dnsmasq` 使用各自的 DNS 服務，`ipsec`、`openvpn`、`filter`、`aliases`、`nat`、`dhcpdv6`、`interfaces` 與 `virtualip` 使用上述重新載入，其他套件的區段會重新套用，而描述、憑證與所有其他路徑不會重新載入任何內容。
 
 ## 寫入與驗證 \{#write-and-verification}
 

@@ -1,11 +1,12 @@
 ---
 id: build-and-release
 title: Compilación y publicación
-description: Comprueba, prepara y compila el paquete de pfSense en FreeBSD y después adjunta el .pkg y las sumas de comprobación a una versión de GitHub con el flujo de publicación.
+description: Comprueba, prepara, compila y firma el paquete de pfSense en FreeBSD y adjunta paquetes, sumas y firmas a una versión de GitHub.
 keywords:
   - pfsense ipv6 prefix updater
   - compilación
   - flujo de publicación
+  - firma de versiones
   - freebsd ports
   - pruebas de php
 tags:
@@ -17,11 +18,11 @@ sidebar_position: 1
 
 import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
 
-Comprueba, prepara y empaqueta pfSense IPv6 Prefix Updater y después publica el paquete en una versión de GitHub.
+Comprueba, prepara y empaqueta IPv6 Prefix Updater for pfSense y después publica el paquete en una versión de GitHub.
 
 ## Requisitos \{#requirements}
 
-- **Node.js 22 o 24** — Los manifiestos de la raíz y del espacio de trabajo aceptan `^22 || ^24`.
+- **Node.js 22, 24 o 26** — Los manifiestos de la raíz y del espacio de trabajo aceptan `^22 || ^24 || ^26`.
 - **PHP o Docker** — Las suites de PHP usan un `php` local si existe o, si no, la imagen `php:8.3-cli-alpine` mediante Docker. `PHP_TEST_IMAGE` sustituye la imagen.
 - **FreeBSD para empaquetar** — `npm run deploy` solo se ejecuta en FreeBSD, con `PFSENSE_PORTS_DIR` apuntando a una copia de trabajo de FreeBSD-ports de pfSense.
 
@@ -46,20 +47,66 @@ PFSENSE_PORTS_DIR=/path/to/FreeBSD-ports npm run deploy --workspace pfsense-pkg-
 
 ## Flujo de publicación \{#release-workflow}
 
-`.github/workflows/pfsense-ipv6-prefix-updater.yml` se ejecuta cuando se publica una versión en GitHub, o manualmente con la etiqueta de una versión existente:
+El trabajo `publish-pfsense-packages-ipv6-prefix-updater` de `.github/workflows/nova-publish-project.yml`, generado por Nova, se ejecuta en el flujo de publicación:
 
 1. Valida y prepara el port en un runner de Ubuntu.
-2. Inicia una VM de FreeBSD cuya versión procede de la variable de repositorio `PFSENSE_FREEBSD_VERSION`, o `15` si no está definida.
-3. Obtiene la rama `devel` del repositorio FreeBSD-ports de pfSense y ejecuta la compilación del paquete.
-4. Sube `build/release` como artefacto del flujo de trabajo, que se conserva 7 días, y adjunta los mismos archivos a la versión, sustituyendo los recursos existentes.
+2. Cuando el secreto `PFSENSE_RELEASE_SIGNING_KEY` está definido, obtiene la clave pública de `PFSENSE_RELEASE_SIGNING_KEY` y la añade a `usr/local/share/pfSense-pkg-Ipv6PrefixUpdater/release-signing.pub` en el port preparado.
+3. Compila el paquete en FreeBSD con el checkout configurado de FreeBSD-ports de pfSense.
+4. Cuando el secreto está definido, firma cada `.pkg` como `<file>.pkg.sig` con `ssh-keygen -Y sign -n pfSense-pkg-Ipv6PrefixUpdater`.
+5. Sube los paquetes, las sumas y las firmas como artefacto del flujo durante 7 días y adjunta los mismos archivos a la versión.
 
-Se recomienda establecer `PFSENSE_FREEBSD_VERSION` en la versión principal de FreeBSD de la versión de pfSense a la que te diriges, y no publicar un paquete compilado para otra versión principal. El comando `pkg add` de la guía de instalación descarga `pfSense-pkg-Ipv6PrefixUpdater.pkg` de la versión que GitHub marque como la más reciente.
+La compilación marca el paquete para cualquier versión de FreeBSD porque no contiene código compilado, por lo que un solo paquete se instala en todas las versiones compatibles de pfSense. `PFSENSE_FREEBSD_VERSION` solo selecciona la versión de FreeBSD que usa la VM de compilación. El comando `pkg add` de la guía de instalación descarga `pfSense-pkg-Ipv6PrefixUpdater.pkg` de la versión que GitHub marque como la más reciente.
+
+## Firma de versiones \{#release-signing}
+
+La única configuración de firma es el secreto de repositorio `PFSENSE_RELEASE_SIGNING_KEY`, que contiene una clave privada OpenSSH Ed25519 sin cifrar.
+
+1. En 1Password, elige **New Item → SSH Key → Generate a New Key → Ed25519**.
+2. En el campo de la clave privada, elige **Export**, selecciona el formato OpenSSH y no establezcas contraseña.
+3. Comprueba el portapapeles antes de guardar el secreto:
+
+   ```bash
+   pbpaste | head -1
+   ```
+
+   El comando debe mostrar `-----BEGIN OPENSSH PRIVATE KEY-----`.
+
+4. Envía el portapapeles directamente a GitHub o lee un archivo exportado:
+
+   ```bash
+   pbpaste | gh secret set PFSENSE_RELEASE_SIGNING_KEY
+   gh secret set PFSENSE_RELEASE_SIGNING_KEY < <file>
+   ```
+
+5. Elimina el archivo de la clave privada exportada después de guardar el secreto.
+
+Sin el secreto, los paquetes no incluyen una clave pública y las versiones no se firman. Para cambiar la clave, añade la nueva clave pública `ssh-ed25519 ...` a `release-signing.pub`, publica una versión mientras la clave anterior siga siendo el secreto y después sustituye el secreto por la clave nueva.
+
+Si se pierde la clave de firma, las copias instaladas no pueden autenticar una versión firmada por la clave de sustitución. Cada instalación afectada necesita ejecutar una vez el comando manual `pkg add -f` para instalar un paquete que contenga la nueva clave pública.
+
+## Probar endpoints de actualización en una VM \{#test-update-endpoints-in-a-vm}
+
+La CLI acepta dos variables de entorno únicamente para pruebas controladas en una VM:
+
+- `IPV6_PREFIX_UPDATER_RELEASES_API` sustituye la URL de la API de la última versión.
+- `IPV6_PREFIX_UPDATER_DOWNLOAD_PREFIX` sustituye el prefijo de URL permitido para los archivos de la versión.
+
+Solo las lee `/usr/local/sbin/ipv6-prefix-updater`; nunca se guardan en la configuración del paquete ni las lee directamente la WebGUI. Define todas las sustituciones necesarias en la misma invocación de la CLI:
+
+```shell
+IPV6_PREFIX_UPDATER_RELEASES_API=http://192.0.2.10/latest.json \
+IPV6_PREFIX_UPDATER_DOWNLOAD_PREFIX=http://192.0.2.10/releases/ \
+/usr/local/sbin/ipv6-prefix-updater --check-updates
+```
+
+Usa `--self-update` en lugar de `--check-updates` para probar todo el proceso de descarga, suma SHA-256, firma de versión, metadatos del paquete y `pkg add -f`.
 
 ## Suites de pruebas de PHP \{#php-test-suites}
 
-- **`tests/domain.php`**: la <Terminology title="escritura estándar más corta y en minúsculas de una dirección" to="/docs/reference/terminology#canonical-form">forma canónica</Terminology>, los límites `/48` y `/64`, el enmascaramiento, los <Terminology title="bits de la dirección tras el prefijo delegado" to="/docs/reference/terminology#host-portion">bits de host</Terminology> en `/53`, las direcciones rechazadas, la planificación sin cambios, el filtrado por prefijo anterior y un cambio de longitud tratado como <Terminology title="cambio respecto al último prefijo o longitud correctos" to="/docs/reference/terminology#prefix-transition">cambio de prefijo</Terminology>.
-- **`tests/runtime.php`**: el análisis de cada <Terminology title="grupo de campos con un interruptor en la pestaña Campos" to="/docs/reference/terminology#field-group">grupo de campos</Terminology>, las excepciones de campos individuales, la nueva aplicación de los ajustes de otros paquetes, el <Terminology title="archivo del paquete con la referencia y la última ejecución" to="/docs/reference/terminology#package-state">estado del paquete</Terminology> atómico, el <Terminology title="protección que impide dos comprobaciones a la vez" to="/docs/reference/terminology#run-lock">bloqueo de ejecución</Terminology>, las plataformas no compatibles y las comprobaciones programadas desactivadas. También cubre el orden de la transacción y los fallos en la escritura, la copia de seguridad, la verificación previa de recargas, las recargas y la notificación, además de la <Terminology title="resultado: el prefijo cambió, pero ningún campo aprobado coincidió" to="/docs/reference/terminology#warning">Advertencia</Terminology> sin coincidencias.
-- **`tests/pfsense-adapter.php`**: una actualización forzada de la dirección sin alternativa de <Terminology title="dirección fe80:: que solo funciona en un enlace" to="/docs/reference/terminology#link-local-address">enlace local</Terminology>, la copia de seguridad antes del guardado de solo escritura y una copia de seguridad fallida que se detiene antes de la escritura.
+- **`tests/domain.php`**: la <Terminology title="La forma corta y en minúsculas, como 2001:db8::1" to="/docs/reference/terminology#addresses-and-prefixes">forma canónica</Terminology>, los límites `/48` y `/64`, el enmascaramiento, los <Terminology title="Los bits después del prefijo, que siempre se copian sin cambios" to="/docs/reference/terminology#addresses-and-prefixes">bits de host</Terminology> en `/53`, las direcciones rechazadas, la planificación sin cambios, el filtrado por prefijo anterior y un cambio de longitud tratado como <Terminology title="Tu prefijo cambió, así que el paquete se pone a trabajar" to="/docs/reference/terminology#baselines-and-transitions">cambio de prefijo</Terminology>.
+- **`tests/runtime.php`**: el análisis de cada <Terminology title="Un solo interruptor para todo un tipo de ajuste" to="/docs/reference/terminology#fields-and-change-plans">grupo de campos</Terminology>, las excepciones de campos individuales, la nueva aplicación de los ajustes de otros paquetes, el <Terminology title="El archivo con cada referencia, que sobrevive a una reinstalación" to="/docs/reference/terminology#running-checks">estado del paquete</Terminology> atómico, el <Terminology title="Impide que dos comprobaciones se ejecuten a la vez" to="/docs/reference/terminology#running-checks">bloqueo de ejecución</Terminology>, las plataformas no compatibles y las comprobaciones programadas desactivadas. También cubre el orden de la transacción y los fallos en la escritura, la copia de seguridad, la verificación previa de recargas, las recargas y la notificación, además de la <Terminology title="El prefijo cambió, pero ningún campo aprobado usaba el anterior" to="/docs/reference/terminology#run-outcomes">Advertencia</Terminology> sin coincidencias.
+- **`tests/pfsense-adapter.php`**: una actualización forzada de la dirección sin alternativa de <Terminology title="Una dirección fe80 que nunca se usa como origen" to="/docs/reference/terminology#addresses-and-prefixes">enlace local</Terminology>, la copia de seguridad antes del guardado de solo escritura y una copia de seguridad fallida que se detiene antes de la escritura.
+- **`tests/updates.php`**: comparación de versiones, procesamiento de versiones y validación de URL, programaciones aleatorias estables, deduplicación de avisos, resúmenes de la API de GitHub, alternativas `.sha256`, procesamiento de claves de firma, salida de allowed-signers, argumentos exactos y entrada estándar de `ssh-keygen`, firmas válidas, claves y espacios de nombres incorrectos, y paquetes manipulados.
 - **`tests/translations.php`** y **`tests/webgui-localization.php`**: catálogos completos para cada identificador de idioma de pfSense, y el formulario de Configuración y los mensajes de validación localizados.
 
 ## Sitio de documentación \{#documentation-site}

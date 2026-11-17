@@ -15,10 +15,10 @@
     "message": "Oppdag endringer i delegerte prefikser, oppdater bare godkjente pfSense-felt, bevar vertsbiter og verifiser hver transaksjon."
   },
   "home.hero.primaryAction": {
-    "message": "Installer og konfigurer"
+    "message": "Kom i gang"
   },
   "home.hero.secondaryAction": {
-    "message": "Se sikker virkemåte"
+    "message": "Les mer"
   },
   "home.preview.ariaLabel": {
     "message": "Lengde på delegert prefiks: /56"
@@ -43,30 +43,6 @@
   },
   "home.preview.result": {
     "message": "Testkjøringen fant 2 godkjente feltendring(er) for 2001:db8:abcd:8800::/56; konfigurasjonen ble ikke endret."
-  },
-  "home.workflow.eyebrow": {
-    "message": "Sikkerhet og drift"
-  },
-  "home.workflow.heading": {
-    "message": "Sikker transaksjon"
-  },
-  "home.workflow.detect": {
-    "message": "Observert kildeadresse"
-  },
-  "home.workflow.plan": {
-    "message": "Endrede felt"
-  },
-  "home.workflow.backup": {
-    "message": "Konfigurasjonssikkerhetskopi opprettet"
-  },
-  "home.workflow.write": {
-    "message": "Gjeldende prefiks"
-  },
-  "home.workflow.verify": {
-    "message": "Vellykket"
-  },
-  "home.workflow.notify": {
-    "message": "Varsler"
   },
   "home.features.interface.title": {
     "message": "Overvåkede grensesnitt"
@@ -104,70 +80,67 @@
   "home.features.notify.description": {
     "message": "Bruk konfigurerte pfSense-varslingskanaler etter en verifisert vellykket prefiksoppdatering. Kontroller uten endring varsler aldri."
   },
-  "home.stats.heading": {
-    "message": "Sikkerhet og drift"
-  },
-  "home.stats.boundaries": {
-    "message": "Lengde på delegert prefiks"
-  },
-  "home.stats.backups": {
-    "message": "Konfigurasjonssikkerhetskopi opprettet"
-  },
-  "home.stats.writes": {
-    "message": "Endrede felt"
-  },
-  "home.stats.noChange": {
-    "message": "Det aktive IPv6-prefikset er uendret; ingen godkjente konfigurasjonsmål ble lest eller skrevet."
-  },
-  "home.routes.eyebrow": {
-    "message": "Veiledninger"
-  },
-  "home.routes.heading": {
-    "message": "Installer og konfigurer"
-  },
-  "home.routes.install.title": {
-    "message": "Installer pakken"
-  },
-  "home.routes.install.description": {
-    "message": "Kjør denne kommandoen i et pfSense-skall for å installere den nyeste utgaven direkte fra GitHub."
-  },
-  "home.routes.open": {
-    "message": "Begynn å lese"
-  },
-  "home.routes.configure.title": {
-    "message": "Overvåkede grensesnitt / Lengde på delegert prefiks"
-  },
-  "home.routes.configure.description": {
-    "message": "Legg til én rad per grensesnitt der den primære aktive globale IPv6-adressen bærer et delegert prefiks. Ved DHCPv6 med bare prefiks på WAN velger du et sporet grensesnitt nedstrøms. Vertsbiter etter prefikslengden bevares nøyaktig, og adressen pfSense velger for hvert grensesnitt, vises på Status-fanen."
-  },
-  "home.routes.status.title": {
-    "message": "Status / Kommandoutdata"
-  },
-  "home.routes.status.description": {
-    "message": "Kjør nå kan oppdatere godkjente felt etter en oppdaget endring. Testkjøring registrerer bare en forhåndsvisning og skriver aldri brannmurkonfigurasjonen."
-  },
-  "home.routes.troubleshoot.title": {
-    "message": "Feilsøking"
-  },
-  "home.routes.troubleshoot.description": {
-    "message": "Hvis kildeadressen er feil, velger du det nedstrøms sporede grensesnittet som faktisk har den globale adressen; ikke kompenser med en gjettet lengde."
-  },
-  "home.spotlight.heading": {
-    "message": "Kommandoutdata"
-  },
-  "home.spotlight.description": {
-    "message": "Kontroller hver kjøring på statussiden: kildeadresse, avledet prefiks, sikkerhetskopi og resultat."
-  },
-  "home.spotlight.statusAction": {
-    "message": "Status / Kommandoutdata"
-  },
-  "home.spotlight.testsAction": {
-    "message": "Resultater og tester"
-  },
   "home.blogPreview.heading": {
     "message": "Fra bloggen"
   },
   "home.blogPreview.description": {
-    "message": "Utgivelsesmerknader, oppsettsveiledninger og innlegg om dynamiske IPv6-prefikser."
+    "message": "Lanseringer, milepæler og nytt i IPv6 Prefix Updater for pfSense."
+  },
+  "home.showcase.heading": {
+    "message": "Inne i pfSense WebGUI"
+  },
+  "home.showcase.tabsLabel": {
+    "message": "Sider i IPv6 Prefix Updater"
+  },
+  "home.showcase.settings.label": {
+    "message": "Innstillinger"
+  },
+  "home.showcase.settings.heading": {
+    "message": "Overvåk grensesnittene som bærer prefikset ditt"
+  },
+  "home.showcase.settings.description": {
+    "message": "Legg til en rad for hvert grensesnitt som får IPv6-adressen sin fra Internett-leverandøren, angi prefikslengden den delegerer, og velg når pfSense ser etter en endring."
+  },
+  "home.showcase.settings.link": {
+    "message": "Velg grensesnitt og prefiks"
+  },
+  "home.showcase.settings.alt": {
+    "message": "IPv6 Prefix Updater-siden Innstillinger med to overvåkede grensesnitt og prefikslengdene deres"
+  },
+  "home.showcase.status.heading": {
+    "message": "En kjøring skal aldri være en svart boks"
+  },
+  "home.showcase.status.description": {
+    "message": "Status-fanen viser siste prefiks og adresse for hvert grensesnitt, hva siste kjøring endret, om det ble tatt en sikkerhetskopi, og hvilke tjenester som ble lastet inn på nytt."
+  },
+  "home.showcase.status.link": {
+    "message": "Les veiledningen for Status"
+  },
+  "home.showcase.status.alt": {
+    "message": "IPv6 Prefix Updater-siden Status med gjeldende tilstand for hvert grensesnitt og siste kjøring"
+  },
+  "home.showcase.fields.label": {
+    "message": "Felt"
+  },
+  "home.showcase.fields.heading": {
+    "message": "Du bestemmer hva som endres"
+  },
+  "home.showcase.fields.description": {
+    "message": "Velg hvilke konfigurasjonsfelt som følger prefikset, angi unntak og gå gjennom innstillingene til andre pakker før noe skrives."
+  },
+  "home.showcase.fields.link": {
+    "message": "Velg feltene"
+  },
+  "home.showcase.fields.alt": {
+    "message": "IPv6 Prefix Updater-siden Felt med statiske grensesnitt og aliaser valgt"
+  },
+  "home.showcase.settings.title": {
+    "message": "pfSense.home.arpa - Pakke: Tjenester: IPv6-prefiksoppdatering: Innstillinger"
+  },
+  "home.showcase.status.title": {
+    "message": "pfSense.home.arpa - Tjenester: IPv6-prefiksoppdatering: Status"
+  },
+  "home.showcase.fields.title": {
+    "message": "pfSense.home.arpa - Tjenester: IPv6-prefiksoppdatering: Felt"
   }
 }

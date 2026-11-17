@@ -1,33 +1,60 @@
 {
-  "layout.learn.title": {
-    "message": "Anleitungen"
+  "layout.docs.title": {
+    "message": "Dokumentation"
   },
   "layout.resources.title": {
     "message": "Ressourcen"
   },
-  "sections.learn.0.label": {
-    "message": "Installieren und konfigurieren"
+  "layout.project.title": {
+    "message": "Projekt"
   },
-  "sections.learn.1.label": {
-    "message": "Überwachte Schnittstellen / Länge des delegierten Präfixes"
+  "layout.legal.title": {
+    "message": "Rechtliches"
   },
-  "sections.learn.2.label": {
-    "message": "Status / Aktionen"
+  "sections.docs.0.label": {
+    "message": "Überblick"
   },
-  "sections.learn.3.label": {
-    "message": "Fehlerbehebung"
+  "sections.docs.1.label": {
+    "message": "Konfiguration"
   },
-  "sections.resources.0.label": {
-    "message": "Sicherheit und Betrieb"
+  "sections.docs.2.label": {
+    "message": "Betrieb"
+  },
+  "sections.docs.3.label": {
+    "message": "Sicherheit"
+  },
+  "sections.docs.4.label": {
+    "message": "Referenz"
+  },
+  "sections.docs.5.label": {
+    "message": "Mitwirken"
   },
   "sections.resources.1.label": {
-    "message": "Ergebnisse und Tests"
+    "message": "Fehlerbehebung"
   },
   "sections.resources.2.label": {
-    "message": "pfSense-Dokumentation"
+    "message": "Änderungsprotokoll"
   },
   "sections.resources.3.label": {
+    "message": "Problem melden"
+  },
+  "sections.resources.4.label": {
     "message": "Quellcode"
+  },
+  "sections.project.0.label": {
+    "message": "Sponsern"
+  },
+  "sections.project.1.label": {
+    "message": "pfSense-Dokumentation"
+  },
+  "sections.project.2.label": {
+    "message": "Weitere Projekte"
+  },
+  "sections.legal.0.label": {
+    "message": "Lizenz"
+  },
+  "cta.label": {
+    "message": "Bereit, IPv6-Präfixe abgestimmt zu halten?"
   },
   "copyright": {
     "message": "Copyright © 2023-2026 Jacky Liang. Veröffentlicht unter der MIT-Lizenz."

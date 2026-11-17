@@ -4,7 +4,7 @@
 
 ### Name and Description
 
-- **Project name:** pfSense IPv6 Prefix Updater
+- **Project name:** IPv6 Prefix Updater for pfSense
   (`pfsense-ipv6-prefix-updater`)
 - **Description:** A pfSense package that safely follows dynamic ISP IPv6 prefix changes
   across firewall configuration.
@@ -26,7 +26,6 @@ pfsense-ipv6-prefix-updater/
 |-- packages/
 |   `-- ipv6-prefix-updater/  - Nova pfSense package workspace and port files
 |-- assets/
-|   `-- legacy/               - Local previous installer and mutation-engine reference
 |-- conventions/              - Nova-generated coding conventions
 |-- scripts/                  - Root maintenance and Nova-linking scripts
 |-- tests/                    - Root project-contract tests
@@ -62,7 +61,6 @@ documentation workspaces from the configuration in `nova.config.json`.
 | `npm run check --workspace pfsense-pkg-ipv6-prefix-updater`  | Check scripts, tests, and the staged package definition    |
 | `npm run build --workspace pfsense-pkg-ipv6-prefix-updater`  | Stage the generated pfSense package tree                   |
 | `npm run deploy --workspace pfsense-pkg-ipv6-prefix-updater` | Build the package artifact with the generated shell script |
-| `php -l assets/legacy/update.php`                            | Check the legacy entry point while it remains a reference  |
 
 ### Environment Variables
 
@@ -77,13 +75,9 @@ pfSense package configuration and approved pfSense-owned storage.
 
 - Build the replacement package in `packages/ipv6-prefix-updater` using Nova's pfSense
   package scaffold.
-- Treat `assets/legacy/update.php`, `assets/legacy/lib/`, `assets/legacy/install.sh`, and the legacy README as
-  behavioral and compatibility inputs, not as the final package layout.
 - Preserve the working prefix calculation and safety knowledge, but re-review every
   configuration path before allowing the package to mutate it.
 - Do not keep runtime state, backups, or installed code under `/root` in the package.
-- Keep the legacy installer available for comparison until package installation,
-  upgrade, execution, and removal are verified.
 
 ## Architecture and Data
 
@@ -147,6 +141,9 @@ pfSense package configuration and approved pfSense-owned storage.
   permissions.
 - Keep the WebGUI thin: validate and persist settings there, while prefix detection and
   mutation remain independently testable domain logic.
+- Build every WebGUI page the way pfSense builds its own, following
+  [conventions/pfsense.md](conventions/pfsense.md): the Form API for forms, pfSense's
+  table and action-button markup for lists, and nothing placed directly in a `.panel-body`.
 
 #### Address and Mutation Rules
 

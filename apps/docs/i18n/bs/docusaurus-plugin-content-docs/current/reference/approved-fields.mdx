@@ -17,17 +17,17 @@ sidebar_position: 3
 
 import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
 
-Provjerite tačne putanje pfSense konfiguracije koje svaka <Terminology title="grupa polja s jednim prekidačem na kartici Polja" to="/docs/reference/terminology#field-group">grupa polja</Terminology> može prepisati i uslugu koju svaka od njih ponovo učitava.
+Provjerite tačne putanje pfSense konfiguracije koje svaka <Terminology title="Jedan prekidač za cijelu vrstu postavki" to="/docs/reference/terminology#fields-and-change-plans">grupa polja</Terminology> može prepisati i uslugu koju svaka od njih ponovo učitava.
 
 ## Matrica polja \{#field-matrix}
 
 Putanje koriste pfSense sintaksu s kosim crtama za `config_get_path()` i `config_set_path()`. U putanjama ispod, `<index>` označava poziciju u listi, `<interface>` ključ sučelja, na primjer `lan`, `<boundary>` vrijednost `from` ili `to`, `<side>` vrijednost `source` ili `destination`, a `<section>` ključ postavki drugog paketa.
 
-| <Terminology title="grupa polja s jednim prekidačem na kartici Polja" to="/docs/reference/terminology#field-group">Grupa</Terminology>            | Putanja                                                                          | Uslov odabira                                                                                                    | Usluga                  |
+| <Terminology title="Jedan prekidač za cijelu vrstu postavki" to="/docs/reference/terminology#fields-and-change-plans">Grupa</Terminology>         | Putanja                                                                          | Uslov odabira                                                                                                    | Usluga                  |
 |---------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|-------------------------|
 | Aliasi                                                                                                                                            | `aliases/alias/<index>/address`                                                  | `type` je `host` ili `network`                                                                                   | `filter`                |
 | Statička sučelja                                                                                                                                  | `interfaces/<interface>/ipaddrv6`                                                | Vrijednost sadrži `:`                                                                                            | `interfaces`            |
-| <Terminology title="dodatna adresa sučelja, npr. CARP ili IP Alias" to="/docs/reference/terminology#virtual-ip">Virtualne IP adrese</Terminology> | `virtualip/vip/<index>/subnet`                                                   | `mode` je `carp` ili `ipalias`                                                                                   | `interfaces`            |
+| <Terminology title="Dodatna adresa na sučelju, npr. CARP VIP" to="/docs/reference/terminology#pfsense-features">Virtualne IP adrese</Terminology> | `virtualip/vip/<index>/subnet`                                                   | `mode` je `carp` ili `ipalias`                                                                                   | `interfaces`            |
 | IPsec                                                                                                                                             | `ipsec/phase2/<index>/localid/address`                                           | `mode` je `tunnel6` ili `vti`, a `localid/type` je `address` ili `network`                                       | `ipsec`                 |
 | IPsec                                                                                                                                             | `ipsec/phase2/<index>/natlocalid/address`                                        | `mode` je `tunnel6` ili `vti`, a `natlocalid/type` je `address` ili `network`                                    | `ipsec`                 |
 | OpenVPN                                                                                                                                           | `openvpn/openvpn-server/<index>/tunnel_networkv6`                                | `tunnel_networkv6_type` nije `track6`                                                                            | `openvpn`               |
@@ -63,7 +63,7 @@ Prazne vrijednosti se preskaču, a duplirani ID cilja ili putanja zaustavlja pok
 
 - Svako polje sadrži jednu vrijednost, osim tri liste navedene ispod.
 - Alias `address` je lista razdvojena razmacima.
-- OpenVPN `local_networkv6` na serverima i u <Terminology title="OpenVPN postavke za jednog klijenta na serveru" to="/docs/reference/terminology#client-specific-override">klijentskim nadjačavanjima</Terminology> je lista razdvojena zarezima i razmacima.
+- OpenVPN `local_networkv6` na serverima i u <Terminology title="OpenVPN postavke koje važe za jednog klijenta" to="/docs/reference/terminology#pfsense-features">klijentskim nadjačavanjima</Terminology> je lista razdvojena zarezima i razmacima.
 - `ip` nadjačavanja hosta u DNS Resolveru je lista razdvojena zarezima i razmacima.
 - Vrijednosti u postavkama drugog paketa i u grupi Ostale postavke su tekst. Svaka adresa u tekstu podudara se zasebno, a ostatak ostaje kako je zapisan.
 - Vrijednost sačuvana u Base64 dekodira se, podudara kao tekst i ponovo kodira kada se promijeni.
@@ -72,14 +72,14 @@ Prazne vrijednosti se preskaču, a duplirani ID cilja ili putanja zaustavlja pok
 ## Pravila podudaranja \{#matching-rules}
 
 - Token se može završavati CIDR sufiksom od `/0` do `/128`, koji se zadržava. Token s bilo kojim drugim sufiksom ostaje nepromijenjen.
-- Token se mijenja samo kada njegova adresa pripada prethodnom prefiksu pri prethodnoj <Terminology title="broj vodećih mrežnih bitova, npr. /56" to="/docs/reference/terminology#prefix-length">dužini prefiksa</Terminology>.
-- Nova vrijednost uzima vodeće bitove iz trenutne <Terminology title="globalna adresa koju pfSense prijavljuje za nadzirano sučelje" to="/docs/reference/terminology#source-address">izvorne adrese</Terminology> pri trenutnoj <Terminology title="broj vodećih mrežnih bitova, npr. /56" to="/docs/reference/terminology#prefix-length">dužini prefiksa</Terminology>, a sve ostale bitove iz tokena. Upisuje se u <Terminology title="najkraći standardni zapis adrese malim slovima" to="/docs/reference/terminology#canonical-form">kanonskom obliku</Terminology>.
-- Tokeni koji nisu <Terminology title="javna IPv6 adresa unutar 2000::/3" to="/docs/reference/terminology#global-unicast-address">globalne unicast adrese</Terminology> prolaze nepromijenjeni, uključujući sufikse u obliku `::1000` koje DHCPv6 postavke sadrže na <Terminology title="sučelje adresirano iz dodijeljenog prefiksa drugog sučelja" to="/docs/reference/terminology#tracked-interface">sučelju tipa Track Interface</Terminology>.
+- Token se mijenja samo kada njegova adresa pripada prethodnom prefiksu pri prethodnoj <Terminology title="/56 ili /64 koji kaže koliko bitova imenuje mrežu" to="/docs/reference/terminology#addresses-and-prefixes">dužini prefiksa</Terminology>.
+- Nova vrijednost uzima vodeće bitove iz trenutne <Terminology title="Trenutna adresa iz koje svako pokretanje čita prefiks" to="/docs/reference/terminology#interfaces-and-detection">izvorne adrese</Terminology> pri trenutnoj <Terminology title="/56 ili /64 koji kaže koliko bitova imenuje mrežu" to="/docs/reference/terminology#addresses-and-prefixes">dužini prefiksa</Terminology>, a sve ostale bitove iz tokena. Upisuje se u <Terminology title="Kratki zapis malim slovima, npr. 2001:db8::1" to="/docs/reference/terminology#addresses-and-prefixes">kanonskom obliku</Terminology>.
+- Tokeni koji nisu <Terminology title="Javna IPv6 adresa u 2000::/3, jedina vrsta koja se koristi" to="/docs/reference/terminology#addresses-and-prefixes">globalne unicast adrese</Terminology> prolaze nepromijenjeni, uključujući sufikse u obliku `::1000` koje DHCPv6 postavke sadrže na <Terminology title="Praćeno sučelje koje gradi svoj IPv6 iz prefiksa drugog sučelja" to="/docs/reference/terminology#interfaces-and-detection">sučelju tipa Track Interface</Terminology>.
 - Polje čija je nova vrijednost jednaka staroj ne računa se kao promjena.
 
 ## Identiteti polja \{#field-identities}
 
-Svaki <Terminology title="pojedinačno polje označeno ili neoznačeno suprotno prekidaču svoje grupe" to="/docs/reference/terminology#field-exception">izuzetak polja</Terminology> na kartici Polja čuva se kao identitet koji imenuje unos umjesto njegove pozicije u listi:
+Svaki <Terminology title="Polje označeno drugačije od prekidača svoje grupe" to="/docs/reference/terminology#fields-and-change-plans">izuzetak polja</Terminology> na kartici Polja čuva se kao identitet koji imenuje unos umjesto njegove pozicije u listi:
 
 | Unos                      | Identitet polja                                                                                                                                                                             |
 |---------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -145,7 +145,7 @@ Svaka druga putanja konfiguracije čija vrijednost sadrži IPv6 adresu, kao teks
 - Opisi.
 - U postavkama drugog paketa, vrijednosti čiji naziv označava certifikat, ključ, lozinku, tajnu, hash ili opis.
 
-Tipovi aliasa osim `host` i `network`, načini rada <Terminology title="dodatna adresa sučelja, npr. CARP ili IP Alias" to="/docs/reference/terminology#virtual-ip">virtualnih IP adresa</Terminology> osim `carp` i `ipalias` i svaka druga putanja izvan matrice umjesto toga prikazuju naziv svoje postavke. Ponovno učitavanje zavisi od putanje: `gateways` i `staticroutes` koriste `routing`, `system/dnsserver` koristi `dns`, `unbound` i `dnsmasq` koriste svoju DNS uslugu, `ipsec`, `openvpn`, `filter`, `aliases`, `nat`, `dhcpdv6`, `interfaces` i `virtualip` koriste gore navedena ponovna učitavanja, odjeljak drugog paketa ponovo se primjenjuje, a opisi, certifikati i svaka druga putanja ne učitavaju ništa ponovo.
+Tipovi aliasa osim `host` i `network`, načini rada <Terminology title="Dodatna adresa na sučelju, npr. CARP VIP" to="/docs/reference/terminology#pfsense-features">virtualnih IP adresa</Terminology> osim `carp` i `ipalias` i svaka druga putanja izvan matrice umjesto toga prikazuju naziv svoje postavke. Ponovno učitavanje zavisi od putanje: `gateways` i `staticroutes` koriste `routing`, `system/dnsserver` koristi `dns`, `unbound` i `dnsmasq` koriste svoju DNS uslugu, `ipsec`, `openvpn`, `filter`, `aliases`, `nat`, `dhcpdv6`, `interfaces` i `virtualip` koriste gore navedena ponovna učitavanja, odjeljak drugog paketa ponovo se primjenjuje, a opisi, certifikati i svaka druga putanja ne učitavaju ništa ponovo.
 
 ## Upis i provjera \{#write-and-verification}
 

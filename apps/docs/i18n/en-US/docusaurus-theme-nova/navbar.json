@@ -1,22 +1,54 @@
 {
-  "item.label.Home": {
-    "message": "Home",
-    "description": "Navbar item with label \"Home\""
+  "item.label.Docs": {
+    "message": "Docs",
+    "description": "Navbar item with label \"Docs\""
   },
-  "item.label.Guides": {
-    "message": "Guides",
-    "description": "Navbar item with label \"Guides\""
+  "item.label.Overview": {
+    "message": "Overview",
+    "description": "Navbar item with label \"Overview\""
+  },
+  "item.label.Quick Start": {
+    "message": "Quick Start",
+    "description": "Navbar item with label \"Quick Start\""
+  },
+  "item.label.Configure": {
+    "message": "Configure",
+    "description": "Navbar item with label \"Configure\""
+  },
+  "item.label.Operate": {
+    "message": "Operate",
+    "description": "Navbar item with label \"Operate\""
   },
   "item.label.Safety": {
     "message": "Safety",
     "description": "Navbar item with label \"Safety\""
   },
-  "item.label.Troubleshooting": {
-    "message": "Troubleshooting",
-    "description": "Navbar item with label \"Troubleshooting\""
+  "item.label.Reference": {
+    "message": "Reference",
+    "description": "Navbar item with label \"Reference\""
+  },
+  "item.label.Contributing": {
+    "message": "Contributing",
+    "description": "Navbar item with label \"Contributing\""
   },
   "item.label.Blog": {
     "message": "Blog",
     "description": "Navbar item with label \"Blog\""
+  },
+  "item.label.Resources": {
+    "message": "Resources",
+    "description": "Navbar item with label \"Resources\""
+  },
+  "item.label.Troubleshooting": {
+    "message": "Troubleshooting",
+    "description": "Navbar item with label \"Troubleshooting\""
+  },
+  "item.label.Changelog": {
+    "message": "Changelog",
+    "description": "Navbar item with label \"Changelog\""
+  },
+  "item.label.Report an Issue": {
+    "message": "Report an Issue",
+    "description": "Navbar item with label \"Report an Issue\""
   }
 }

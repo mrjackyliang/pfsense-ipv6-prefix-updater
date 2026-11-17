@@ -1,0 +1,74 @@
+---
+id: updates
+title: Aktualisierungen
+description: Konfigurieren Sie Release-Prüfungen auf GitHub und installieren Sie über die Registerkarte Über Paketaktualisierungen, die durch SHA-256-Prüfsummen und Release-Signaturen geschützt sind.
+keywords:
+  - pfsense ipv6 prefix updater
+  - aktualisierungsprüfungen
+  - sha-256-prüfsumme
+  - release-signaturen
+  - pfsense benachrichtigungen
+  - selbstaktualisierung
+tags:
+  - reference
+  - updates
+  - security
+sidebar_position: 5
+---
+
+IPv6 Prefix Updater prüft seine GitHub-Releases, weil der pfSense Package Manager direkt von GitHub installierte Pakete nicht auflistet.
+
+## Was geprüft wird \{#what-is-checked}
+
+Die Prüfung ruft die Metadaten des neuesten Releases von GitHub ab und vergleicht dessen Version mit der installierten Paketversion. Sie speichert Prüfzeit, neueste Version, Release-Link, Veröffentlichungszeit, Benachrichtigungszustand und letzten Fehler in `/cf/conf/ipv6-prefix-updater/updates.json`. Die Firewall-Konfiguration wird nie an GitHub gesendet.
+
+Wählen Sie die Häufigkeit unter **Services → IPv6 Prefix Updater → Einstellungen → Paketaktualisierungen**:
+
+- **Täglich** läuft einmal am Tag zu einer Uhrzeit, die bei der Installation zufällig gewählt wird.
+- **Wöchentlich** ist der Standard und wählt ebenfalls einen stabilen Wochentag und eine stabile Uhrzeit.
+- **Monatlich** wählt einen stabilen Tag von 1 bis 28 und eine stabile Uhrzeit.
+- **Nie** entfernt die geplante Release-Prüfung.
+
+Der zufällige Zeitplan wird in der pfSense-Konfiguration gespeichert, daher verschiebt ihn weder das Speichern der Einstellungen noch eine Neuinstallation des Pakets. **Jetzt prüfen** auf der Registerkarte Über führt immer eine manuelle Prüfung aus, auch wenn die Häufigkeit **Nie** ist.
+
+## Netzwerkziele \{#network-destinations}
+
+Eine Aktualisierungsprüfung oder Aktualisierung kann diese von GitHub betriebenen Hosts kontaktieren:
+
+- `api.github.com` für die Metadaten des neuesten Releases und den veröffentlichten SHA-256-Digest.
+- `github.com` für die URL der Release-Datei.
+- `release-assets.githubusercontent.com`, den Download-Host von GitHub für Releases, nachdem die Anfrage nach der Datei weitergeleitet wurde.
+
+Anfragen verwenden eine Prüfung der TLS-Zertifikate, kurze Zeitlimits, einen eigenen User-Agent des Pakets und den in pfSense konfigurierten Proxy. Eine Antwort `403` oder `429` gilt als Ratenbegrenzung und löscht die letzten gültigen Release-Angaben nicht.
+
+## Hinweise \{#notices}
+
+Wenn eine neuere Version zum ersten Mal erscheint, fügt das Paket für diese Version einen pfSense-Glockenhinweis hinzu. Der Hinweis verlinkt auf die Registerkarte Über und bleibt standardmäßig lokal.
+
+Aktivieren Sie **Fernbenachrichtigungen**, um zusätzlich die in pfSense eingerichteten Kanäle wie E-Mail, Telegram, Pushover oder andere Fernkanäle zu nutzen. Das Paket erstellt trotzdem nur einen Hinweis pro neuer Version. Es schließt den Hinweis, sobald diese Version installiert ist oder eine spätere Prüfung das installierte Paket als aktuell erkennt.
+
+## Eine Aktualisierung installieren \{#install-an-update}
+
+Öffnen Sie **Services → IPv6 Prefix Updater → Über**. Wenn eine neuere Version verfügbar ist, startet **Auf _Version_ aktualisieren** einen Hintergrundauftrag, und die Seite zeigt seinen Fortschritt.
+
+Der Auftrag ruft das Release erneut ab und lädt die versionierte `.pkg` herunter. Er prüft das Paket gegen den Digest `sha256:<hex>` des Assets aus der GitHub-API; fehlt dieser Digest, lädt er stattdessen die passende `.pkg.sha256` aus demselben Release herunter.
+
+Release-Pakete enthalten die öffentlichen Signierschlüssel des Release-Workflows in `/usr/local/share/pfSense-pkg-Ipv6PrefixUpdater/release-signing.pub`. Führt diese Datei einen oder mehrere Schlüssel auf, akzeptiert eine installierte Kopie nur Aktualisierungen, die mit einem davon signiert sind; fehlt die Datei oder enthält sie nur Kommentare, bleiben Signaturprüfungen ausgeschaltet, und Aktualisierungen stützen sich allein auf die SHA-256-Prüfung.
+
+Nach der SHA-256-Prüfung lädt der Auftrag, wenn die installierte Schlüsseldatei einen Schlüssel enthält, die passende `.pkg.sig` aus demselben Release herunter und prüft sie mit `ssh-keygen -Y verify`, bevor er das Archiv liest. Ein Release ohne diese Signatur oder mit einer Signatur eines anderen Schlüssels wird abgelehnt, und die installierte Version bleibt erhalten.
+
+Danach bestätigt der Auftrag Paketname und -version des Archivs, bevor er `pkg add -f` ausführt. Gibt es keine der beiden Prüfsummenquellen, lehnt er die Aktualisierung ab und behält die installierte Version; die Paketsperre verhindert, dass sich ein Präfixlauf und eine Aktualisierung überschneiden.
+
+## Manuell installieren \{#install-manually}
+
+Ein Administrator kann die Datei weiterhin in einer pfSense-Shell installieren:
+
+```shell
+pkg add -f https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest/download/pfSense-pkg-Ipv6PrefixUpdater.pkg
+```
+
+Dieser manuelle Befehl umgeht sowohl die SHA-256-Prüfung als auch die Prüfung der Release-Signatur auf der Registerkarte Über. Prüfen Sie Release, Prüfsumme und Signatur, bevor Sie ihn verwenden.
+
+## Prüfungen ausschalten \{#turn-checks-off}
+
+Setzen Sie **Aktualisierungsprüfungen** auf **Nie** und speichern Sie die Registerkarte Einstellungen. Das Paket entfernt seinen Cron-Eintrag für Aktualisierungsprüfungen und stellt keine geplanten ausgehenden Aktualisierungsanfragen mehr. Die Präfixüberwachung behält ihren eigenen, unabhängigen Zeitplan, und **Jetzt prüfen** bleibt für eine vom Administrator ausgelöste Anfrage verfügbar.

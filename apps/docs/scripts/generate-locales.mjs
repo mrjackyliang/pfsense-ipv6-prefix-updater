@@ -248,7 +248,7 @@ const keyedSources = {
  */
 const homepageDefaults = {
   'home.meta.description': 'Keep local IPv6 addresses in pfSense working when your ISP changes the delegated prefix.',
-  'home.meta.title': 'pfSense IPv6 Prefix Updater - Safe Dynamic Prefix Updates',
+  'home.meta.title': 'IPv6 Prefix Updater for pfSense - Safe Dynamic Prefix Updates',
   'home.hero.eyebrow': 'Native pfSense package',
   'home.hero.heading': 'Keep dynamic IPv6 prefixes aligned safely.',
   'home.hero.tagline': 'Keep local IPv6 addresses in pfSense working when your ISP changes the delegated prefix.',
