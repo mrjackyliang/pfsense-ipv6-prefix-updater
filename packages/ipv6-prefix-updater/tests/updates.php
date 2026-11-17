@@ -708,6 +708,29 @@ assertUpdateFailure(
 
 @unlink($digestPath);
 
+$statusTestDirectory = makeUpdateTestDirectory();
+$statusTestPath = $statusTestDirectory . '/update-status.json';
+
+try {
+    UpdateManager::queueSelfUpdate('2.2.0', $statusTestPath);
+
+    $runningStatus = UpdateManager::readStatusState($statusTestPath, '2.1.0');
+
+    assertUpdateSame('running', $runningStatus['state'] ?? null, 'An install must stay running until pfSense reports the new version.');
+
+    $settledStatus = UpdateManager::readStatusState($statusTestPath, 'v2.2.0');
+
+    assertUpdateSame('succeeded', $settledStatus['state'] ?? null, 'A running install must settle once pfSense reports its version.');
+    assertUpdateSame('2.2.0', $settledStatus['version'] ?? null, 'The settled status must keep the installed version.');
+    assertUpdateSame(true, is_string($settledStatus['finished_at'] ?? null), 'The settled status must record when it finished.');
+
+    $savedStatus = UpdateManager::readStatusState($statusTestPath, '2.1.0');
+
+    assertUpdateSame('succeeded', $savedStatus['state'] ?? null, 'The settled status must be saved for later reads.');
+} finally {
+    removeUpdateTestDirectory($statusTestDirectory);
+}
+
 fwrite(STDOUT, "Update checks, notices, schedules, checksums, and signatures passed.\n");
 
 exit(0);

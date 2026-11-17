@@ -490,7 +490,12 @@ final class UpdateManager
     /**
      * Reads background update status for the About tab and polling request.
      *
-     * @param string $path - Status file path.
+     * A running install whose version pfSense now reports as installed is
+     * settled as succeeded, because pkg add -f can replace the package before
+     * the detached update writes its own final state.
+     *
+     * @param string      $path             - Status file path.
+     * @param string|null $installedVersion - Installed version, or null to read it from pfSense.
      *
      * @return array|null
      *
@@ -498,13 +503,17 @@ final class UpdateManager
      *
      * @since 2.1.0
      */
-    public static function readStatusState(string $path = PackagePaths::UPDATE_STATUS_FILE): ?array
-    {
+    public static function readStatusState(
+        string $path = PackagePaths::UPDATE_STATUS_FILE,
+        ?string $installedVersion = null,
+    ): ?array {
         if (is_readable($path) === false) {
             return null;
         }
 
-        return self::readJsonObject($path, Translator::translate('update_status_unreadable'));
+        $status = self::readJsonObject($path, Translator::translate('update_status_unreadable'));
+
+        return self::settleInstalledSelfUpdate($status, $path, $installedVersion);
     }
 
     /**
@@ -1515,6 +1524,54 @@ final class UpdateManager
         self::writeJsonAtomically($this->updatesFile, $state);
 
         return $state;
+    }
+
+    /**
+     * Marks a running install as succeeded once pfSense reports its version.
+     *
+     * @param array       $status           - Saved status.
+     * @param string      $path             - Status file path.
+     * @param string|null $installedVersion - Installed version, or null to read it from pfSense.
+     *
+     * @return array
+     *
+     * @since 2.1.1
+     * @private
+     */
+    private static function settleInstalledSelfUpdate(array $status, string $path, ?string $installedVersion): array
+    {
+        $statusVersion = $status['version'] ?? null;
+
+        if (($status['state'] ?? null) !== 'running' || !is_string($statusVersion) || $statusVersion === '') {
+            return $status;
+        }
+
+        $installedVersion ??= self::installedVersion();
+
+        if (
+            !is_string($installedVersion)
+            || self::normalizeVersion($installedVersion) !== self::normalizeVersion($statusVersion)
+        ) {
+            return $status;
+        }
+
+        $timestamp = gmdate(DATE_ATOM);
+        $settledStatus = [
+            'state' => 'succeeded',
+            'message' => Translator::translate('update_status_succeeded', [$statusVersion]),
+            'version' => $statusVersion,
+            'started_at' => $status['started_at'] ?? $timestamp,
+            'updated_at' => $timestamp,
+            'finished_at' => $timestamp,
+        ];
+
+        try {
+            self::writeJsonAtomically($path, $settledStatus);
+        } catch (Throwable) {
+            // The settled state is still returned when the status file can't be rewritten.
+        }
+
+        return $settledStatus;
     }
 
     /**

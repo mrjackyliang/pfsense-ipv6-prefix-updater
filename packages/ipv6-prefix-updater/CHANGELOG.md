@@ -1,5 +1,10 @@
 # pfsense-pkg-ipv6-prefix-updater
 
+## 2.1.1 - 2026-11-17
+
+### FIXED
+- An update installed from the About tab now shows as installed once pfSense reports the new version, instead of spinning on "Installing version" when the install replaced the package before the update could finish.
+
 ## 2.1.0 - 2026-11-17
 
 ### UPDATED
