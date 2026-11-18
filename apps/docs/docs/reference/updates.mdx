@@ -31,6 +31,8 @@ Choose the frequency under **Services → IPv6 Prefix Updater → Settings → P
 
 The random schedule is stored in the pfSense configuration, so saving settings or reinstalling the package does not move it. **Check Now** on the About tab always performs a manual check, including when the frequency is **Never**.
 
+A manual About-tab check can run while a prefix update is active. It files no notice and records the displayed version as already announced, so a later scheduled check does not announce it again.
+
 ## Network Destinations
 
 An update check or update can contact these GitHub-operated hosts:
@@ -50,6 +52,8 @@ Select **Remote Notifications** to opt in to pfSense's configured email, Telegra
 ## Install an Update
 
 Open **Services → IPv6 Prefix Updater → About**. When a newer version is available, **Update to _version_** starts a background job and the page shows its progress.
+
+If a prefix update is running, the background job shows that it is waiting and gives that task up to 30 minutes to finish before the install fails.
 
 The job fetches the release again and downloads the versioned `.pkg`. It checks the package against the GitHub API asset's `sha256:<hex>` digest; when that digest is absent, it downloads the matching `.pkg.sha256` asset from the same release instead.
 

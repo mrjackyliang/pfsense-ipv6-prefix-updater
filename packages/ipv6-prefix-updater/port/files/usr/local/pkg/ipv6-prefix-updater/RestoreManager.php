@@ -50,14 +50,63 @@ final class RestoreManager
     public const PACKAGE_NAME = 'pfSense-pkg-Ipv6PrefixUpdater';
 
     /**
-     * Safe upper bound for the generated command stored in the system crontab.
+     * Upper bound for the generated command stored in the system crontab.
      *
-     * FreeBSD cron uses a 1,000-byte command buffer. Leaving room below that limit
-     * prevents a future longer version from producing a truncated recovery entry.
+     * FreeBSD cron reads each command into a 1,000-byte buffer that also holds the
+     * terminating NUL, so a longer command would be truncated.
      *
      * @since 2.1.2
      */
-    public const CRON_COMMAND_MAX_LENGTH = 950;
+    public const CRON_COMMAND_MAX_LENGTH = 999;
+
+    /**
+     * Short package name shared by the log tag, cache folder, and pidfile.
+     *
+     * The recovery script derives every package-specific path from this one value,
+     * which keeps the cron command short and identical across packages.
+     *
+     * @since 2.1.3
+     */
+    public const SHORT_NAME = 'ipv6-prefix-updater';
+
+    /**
+     * GitHub repository that publishes the pinned release packages.
+     *
+     * @since 2.1.3
+     */
+    public const REPOSITORY = 'mrjackyliang/pfsense-ipv6-prefix-updater';
+
+    /**
+     * Persistent directory restored with the firewall configuration.
+     *
+     * The recovery job keeps at most one checksum-verified package here, named after
+     * its version, so a restore onto the same firewall can reinstall offline.
+     *
+     * @since 2.1.2
+     */
+    public const HEAL_DIRECTORY = '/conf/' . self::SHORT_NAME . '/restore-heal';
+
+    /**
+     * Pidfile that daemon(8) holds locked while one recovery run is working.
+     *
+     * A second run started by the next quarter-hour exits at once instead of
+     * downloading or installing alongside the first.
+     *
+     * @since 2.1.3
+     */
+    public const PID_FILE = '/var/run/' . self::SHORT_NAME . '-restore-heal.pid';
+
+    /**
+     * Recovery program shared byte for byte by every package built from Nova.
+     *
+     * Arguments: package name, repository, SHA-256, version, short name. It defers
+     * while pfSense restores packages, exits when the package is installed, reuses a
+     * verified cached copy, otherwise downloads and verifies the pinned release into
+     * the cache, then installs it. Every step logs under "<short name>-restore-heal".
+     *
+     * @since 2.1.3
+     */
+    public const SHELL_SCRIPT = 'p=$1;r=$2;h=$3;v=$4;g=$5-restore-heal;d=/conf/$5/restore-heal;n=$p-$v.pkg;c=$d/$n;t=$c.tmp;L(){ /usr/bin/logger -t $g "$1 $v";};[ -e /conf/needs_package_sync ]&&{ L deferred;exit 0;};/usr/local/sbin/pkg info -e $p&&exit 0;k(){ [ "$(/sbin/sha256 -q $1 2>/dev/null)" = $h ];};if k $c;then L cache;else /bin/rm -f $t;L fetch;/bin/mkdir -p $d&&/usr/bin/fetch -q -T 30 -o $t https://github.com/$r/releases/download/v$v/$n||{ /bin/rm -f $t;L fetch-failed;exit 1;};k $t||{ /bin/rm -f $t;L checksum-failed;exit 1;};/bin/rm -f $d/*.pkg;/bin/mv -f $t $c||{ L cache-failed;exit 1;};fi;L install;/usr/local/sbin/pkg add -f $c >/dev/null 2>&1||{ L install-failed;exit 1;};L installed';
 
     /**
      * Package name used by pfSense package registration.
@@ -87,47 +136,7 @@ final class RestoreManager
      *
      * @since 2.1.2
      */
-    private const DOWNLOAD_PREFIX = 'https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/download/';
-
-    /**
-     * Persistent directory restored with the firewall configuration.
-     *
-     * The stable package filename keeps at most one checksum-verified offline copy
-     * while the cron command pins its expected version, URL, and digest.
-     *
-     * @since 2.1.2
-     */
-    private const HEAL_DIRECTORY = '/conf/ipv6-prefix-updater/restore-heal';
-
-    /**
-     * Stable local package cache restored with configuration data.
-     *
-     * A stale cached version fails the new entry's digest and is replaced before
-     * installation, so one path can safely follow package upgrades.
-     *
-     * @since 2.1.2
-     */
-    private const CACHE_FILE = self::HEAL_DIRECTORY . '/package.pkg';
-
-    /**
-     * Temporary download path beside the persistent package cache.
-     *
-     * A download reaches the cache path only after its SHA-256 digest matches the
-     * value written by the installed release.
-     *
-     * @since 2.1.2
-     */
-    private const DOWNLOAD_FILE = self::CACHE_FILE . '.tmp';
-
-    /**
-     * pfSense flag indicating that stock package restoration is still active.
-     *
-     * The recovery command waits for pfSense to remove this flag before it checks
-     * or installs the independently distributed package.
-     *
-     * @since 2.1.2
-     */
-    private const PACKAGE_SYNC_FLAG = '/conf/needs_package_sync';
+    private const DOWNLOAD_PREFIX = 'https://github.com/' . self::REPOSITORY . '/releases/download/';
 
     /**
      * Closes false removal notices and files one localized reassurance.
@@ -314,14 +323,13 @@ final class RestoreManager
     }
 
     /**
-     * Removes the recovery cron item only for a deliberate package removal.
+     * Removes the recovery cron item for every deliberate package removal.
      *
-     * Restore-driven package work and a package's optional Keep Settings choice
-     * preserve the self-heal entry that a restored configuration still needs.
+     * Only restore-driven package work keeps the self-heal entry that a restored
+     * configuration still needs; any other removal leaves nothing to reinstall it.
      *
      * @param array $cronItems         - Existing pfSense cron items.
      * @param bool  $restoreInProgress - Whether pfSense is restoring packages.
-     * @param bool  $keepSettings      - Whether package settings must be retained.
      *
      * @return array
      *
@@ -330,9 +338,8 @@ final class RestoreManager
     public static function removeCronItems(
         array $cronItems,
         bool $restoreInProgress,
-        bool $keepSettings = false,
     ): array {
-        if ($restoreInProgress || $keepSettings) {
+        if ($restoreInProgress) {
             return $cronItems;
         }
 
@@ -342,8 +349,8 @@ final class RestoreManager
     /**
      * Builds the detached, package-file-independent recovery command.
      *
-     * The command uses only base-system tools, verifies either the restored cache or
-     * a pinned versioned download, and installs only the checksum-matching package.
+     * The shared recovery program receives validated, shell-quoted arguments, and
+     * daemon(8) holds a pidfile so overlapping runs exit at once.
      *
      * @param array $pin - Installed release pin.
      *
@@ -359,15 +366,135 @@ final class RestoreManager
             return null;
         }
 
-        $shellScript = self::shellScript($normalizedPin);
-
+        $arguments = array_map(
+            static fn (string $argument): string => escapeshellarg($argument),
+            [
+                self::PACKAGE_NAME,
+                self::REPOSITORY,
+                $normalizedPin['sha256'],
+                $normalizedPin['version'],
+                self::SHORT_NAME,
+            ],
+        );
         $command = self::CRON_MARKER
-            . ' /usr/sbin/daemon -f /bin/sh -c '
-            . escapeshellarg($shellScript);
+            . ' /usr/sbin/daemon -f -p '
+            . self::PID_FILE
+            . ' /bin/sh -c '
+            . escapeshellarg(self::SHELL_SCRIPT)
+            . ' rh '
+            . implode(' ', $arguments);
 
         return strlen($command) <= self::CRON_COMMAND_MAX_LENGTH
             ? $command
             : null;
+    }
+
+    /**
+     * Returns the cached package file name for one release version.
+     *
+     * @param string $version - Release version.
+     *
+     * @return string
+     *
+     * @since 2.1.3
+     */
+    public static function cacheFileName(string $version): string
+    {
+        return self::PACKAGE_NAME . '-' . $version . '.pkg';
+    }
+
+    /**
+     * Deletes cached files that do not belong to the current release pin.
+     *
+     * Older versions, interrupted downloads, and the earlier "package.pkg" cache
+     * name are removed so the folder holds at most the current verified package.
+     *
+     * @param string $version   - Installed release version.
+     * @param string $directory - Cache folder.
+     *
+     * @return void
+     *
+     * @since 2.1.3
+     */
+    public static function pruneCache(string $version, string $directory = self::HEAL_DIRECTORY): void
+    {
+        $keep = self::cacheFileName($version);
+
+        foreach (self::cacheEntries($directory) as $entry) {
+            if ($entry !== $keep) {
+                @unlink($directory . '/' . $entry);
+            }
+        }
+    }
+
+    /**
+     * Deletes the cache folder after a deliberate package removal.
+     *
+     * @param string $directory - Cache folder.
+     *
+     * @return void
+     *
+     * @since 2.1.3
+     */
+    public static function removeCache(string $directory = self::HEAL_DIRECTORY): void
+    {
+        foreach (self::cacheEntries($directory) as $entry) {
+            @unlink($directory . '/' . $entry);
+        }
+
+        if (is_dir($directory) && !is_link($directory)) {
+            @rmdir($directory);
+        }
+    }
+
+    /**
+     * Copies a verified, installed release package into the recovery cache.
+     *
+     * Callers pass only a package that already passed the release checksum and
+     * signature checks. The copy is written beside its final name and renamed into
+     * place, then older cached files are pruned.
+     *
+     * @param string $packagePath - Verified package file.
+     * @param string $version     - Its release version.
+     * @param string $directory   - Cache folder.
+     *
+     * @return void
+     *
+     * @throws RuntimeException When the cache cannot be written.
+     *
+     * @since 2.1.3
+     */
+    public static function storeVerifiedPackage(
+        string $packagePath,
+        string $version,
+        string $directory = self::HEAL_DIRECTORY,
+    ): void {
+        if (preg_match('/^[0-9]+(?:\.[0-9]+){1,3}(?:[-+][0-9A-Za-z.-]+)?$/', $version) !== 1) {
+            throw new RuntimeException('The cached release version is invalid.');
+        }
+
+        if (is_link($directory) || (file_exists($directory) && !is_dir($directory))) {
+            throw new RuntimeException('The restore-heal cache folder is invalid.');
+        }
+
+        if (!is_dir($directory) && !@mkdir($directory, 0700, true) && !is_dir($directory)) {
+            throw new RuntimeException('Unable to create the restore-heal cache folder.');
+        }
+
+        @chmod($directory, 0700);
+
+        $target = $directory . '/' . self::cacheFileName($version);
+        $temporary = $target . '.tmp';
+
+        @unlink($temporary);
+
+        if (!@copy($packagePath, $temporary) || !@chmod($temporary, 0600) || !@rename($temporary, $target)) {
+            @unlink($temporary);
+
+            throw new RuntimeException('Unable to write the restore-heal package cache.');
+        }
+
+        self::pruneCache($version, $directory);
     }
 
     /**
@@ -448,26 +575,24 @@ final class RestoreManager
         }
 
         $command = $cronItem['command'];
-        $versionMatched = preg_match('/;v=([^;]+);d=/', $command, $versionMatches) === 1;
-        $urlMatched = preg_match('/;u=([^;]+);h=/', $command, $urlMatches) === 1;
-        $sha256Matched = preg_match(
-            '/;h=([a-fA-F0-9]{64});l\(\)/',
+        $matched = preg_match(
+            "/ rh '[^']+' '[^']+' '([a-f0-9]{64})' '([^']+)' '[^']+'\\z/",
             $command,
-            $sha256Matches,
+            $matches,
         ) === 1;
 
-        if (
-            $versionMatched === false
-            || $urlMatched === false
-            || $sha256Matched === false
-        ) {
+        if ($matched === false) {
             return null;
         }
 
         $pin = self::normalizedPin([
-            'version' => $versionMatches[1],
-            'url' => $urlMatches[1],
-            'sha256' => $sha256Matches[1],
+            'version' => $matches[2],
+            'url' => self::DOWNLOAD_PREFIX
+                . 'v'
+                . $matches[2]
+                . '/'
+                . self::cacheFileName($matches[2]),
+            'sha256' => $matches[1],
         ]);
 
         if ($pin === null || self::buildCronCommand($pin) !== $command) {
@@ -653,38 +778,32 @@ final class RestoreManager
     }
 
     /**
-     * Creates the self-contained shell program run by the detached cron entry.
+     * Lists the regular files in the recovery cache folder.
      *
-     * A restored cache is trusted only after digest verification. Any absent or stale
-     * cache is replaced by the exact versioned asset before pkg is invoked.
+     * @param string $directory - Cache folder.
      *
-     * @param array{version: string, url: string, sha256: string} $pin - Normalized pin.
+     * @return list<string>
      *
-     * @return string
-     *
-     * @since 2.1.2
+     * @since 2.1.3
      * @private
      */
-    private static function shellScript(array $pin): string
+    private static function cacheEntries(string $directory): array
     {
-        $segments = [
-            '[ -e ' . self::PACKAGE_SYNC_FLAG . ' ]&&exit',
-            '/usr/local/sbin/pkg info -e ' . self::PACKAGE_NAME . ' >/dev/null 2>&1&&exit',
-            'v=' . $pin['version'],
-            'd=' . self::HEAL_DIRECTORY,
-            'f=$d/' . basename(self::CACHE_FILE),
-            't=$f' . substr(self::DOWNLOAD_FILE, strlen(self::CACHE_FILE)),
-            'u=' . $pin['url'],
-            'h=' . $pin['sha256'],
-            'l(){ logger -t ipv6-prefix-updater "restore heal: $*";}',
-            'q(){ l "$1 failed";exit 1;}',
-            'k(){ [ "$(sha256 -q "$1" 2>/dev/null)" = "$h" ];}',
-            'mkdir -p "$d"||q mkdir',
-            'if [ -f "$f" ]&&k "$f";then l "cache $v";else [ -f "$f" ]&&l "discard cache";rm -f "$f" "$t";l "fetch $v";fetch -q -o "$t" "$u"||q fetch;k "$t"||{ rm -f "$t";q checksum;};mv -f "$t" "$f"||q cache;fi',
-            'l "install $v"',
-            '/usr/local/sbin/pkg add -f "$f" >/dev/null 2>&1&&l "installed $v"||q install',
-        ];
+        if (!is_dir($directory) || is_link($directory)) {
+            return [];
+        }
 
-        return implode(';', $segments);
+        $entries = @scandir($directory);
+
+        if ($entries === false) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            $entries,
+            static fn (string $entry): bool => $entry !== '.'
+                && $entry !== '..'
+                && is_file($directory . '/' . $entry),
+        ));
     }
 }

@@ -23,7 +23,7 @@ import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
 
 ```text
 用法：ipv6-prefix-updater [--manual] [--dry-run] [--accept-current-prefix [--interface=NAME]] [--migrate-legacy]
-更新選項：--check-updates、--self-update。
+更新選項：--check-updates [--no-notice]、--self-update。
 ```
 
 由 pfSense 管理的前綴檢查 cron 項目會以 `root` 身分不帶選項執行該命令，另一個獨立的發行版本檢查項目則以 `--check-updates` 執行它。每次檢查之前，它也會將<Terminology title="1.x 版：由 Cron 套件執行的 update.php 指令碼" to="/docs/reference/terminology#package-origins">舊版更新器</Terminology>的所有遺留內容遷移到套件中。「狀態」分頁在 **立即執行** 時使用 `--manual`，在 **<Terminology title="預覽改動，但不寫入任何內容" to="/docs/reference/terminology#running-checks">試執行</Terminology>** 時使用 `--dry-run`，在基準復原時使用 `--accept-current-prefix`；「清理」分頁則使用 `--migrate-legacy`。
@@ -40,10 +40,11 @@ import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
 | `--interface=NAME`        | 將 `--accept-current-prefix` 限定於一個監控介面，以其內部名稱（例如 `lan`）指定。不使用此選項時，所有具有位址的監控介面都會被接受。                                                                                     |
 | `--migrate-legacy`        | 立即將<Terminology title="1.x 版：由 Cron 套件執行的 update.php 指令碼" to="/docs/reference/terminology#package-origins">舊版更新器</Terminology>遷移到套件中並列印每個步驟，不會執行前綴檢查。遷移回報警告時會以 `2` 結束。 |
 | `--check-updates`         | 在 GitHub 上檢查最新的套件發行版本，並將結果儲存到 `/cf/conf/ipv6-prefix-updater/updates.json`。[更新](/docs/reference/updates)說明了此檢查。                                                         |
+| `--no-notice`             | 讓 `--check-updates` 不建立更新通知，並將最新版本記錄為已通知。僅可與 `--check-updates` 一起使用。                                                                                                   |
 | `--self-update`           | 下載、驗證並安裝最新的發行版本，並將進度記錄到 `/cf/conf/ipv6-prefix-updater/update-status.json`。                                                                                             |
 | `--help`                  | 列印用法說明行與更新選項行，並以 `0` 結束。這兩行都不會列出 `--help` 本身。                                                                                                                          |
 
-任何其他選項都會向標準錯誤輸出 `未知選項：<option>`，並以 `64` 結束。將 `--accept-current-prefix` 與 `--dry-run` 一起使用同樣會以 `64` 結束；將 `--check-updates` 與 `--self-update` 一起使用，或將兩者之一與任何前綴選項一起使用，也是如此。
+任何其他選項都會向標準錯誤輸出 `未知選項：<option>`，並以 `64` 結束。將 `--accept-current-prefix` 與 `--dry-run` 一起使用同樣會以 `64` 結束；將 `--check-updates` 與 `--self-update` 一起使用，或將兩者之一與任何前綴選項一起使用，也是如此。未與 `--check-updates` 一起使用 `--no-notice` 時同樣會以 `64` 結束。
 
 ## 結束代碼 \{#exit-codes}
 
@@ -101,6 +102,7 @@ import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
 | `/cf/conf/ipv6-prefix-updater/update-status.json`                    | 最近一次自我更新的進度。                                                                                                                                                                        |
 | `/cf/conf/ipv6-prefix-updater/backups/`                              | **備份** 分頁中的副本，每份包含一個 `<id>.xml` 設定檔與一個 `<id>.json` 描述檔，權限皆為 `0600`。                                                                                                                 |
 | `/var/run/ipv6-prefix-updater.lock`                                  | <Terminology title="確保兩次檢查不會同時執行" to="/docs/reference/terminology#running-checks">執行鎖定</Terminology>，以非阻塞的 `flock` 持有，並記錄執行中的處理程序 ID。它在兩次執行之間會保留在磁碟上。                               |
+| `/var/run/ipv6-prefix-updater-release.lock`                          | 更新檢查和自我更新使用的發行版本鎖定，以 `flock` 持有。發行版本作業最多等候 30 秒以取得鎖定，鎖定檔案會在作業之間保留於磁碟上。                                                                                                              |
 
 ## 套件狀態格式 \{#package-state-format}
 

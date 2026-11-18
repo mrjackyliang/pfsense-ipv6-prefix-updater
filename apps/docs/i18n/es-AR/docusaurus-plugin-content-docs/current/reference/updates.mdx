@@ -31,6 +31,8 @@ Elegí la frecuencia en **Services → IPv6 Prefix Updater → Configuración �
 
 La programación aleatoria se guarda en la configuración de pfSense, así que ni guardar la configuración ni reinstalar el paquete la cambian. **Comprobar ahora** en la pestaña Acerca de siempre hace una comprobación manual, incluso cuando la frecuencia es **Nunca**.
 
+Una comprobación manual desde la pestaña Acerca de puede ejecutarse mientras hay una actualización del prefijo en curso. No crea ningún aviso y registra la versión mostrada como ya anunciada, así que una comprobación programada posterior no vuelve a anunciarla.
+
 ## Destinos de red \{#network-destinations}
 
 Una comprobación de actualizaciones o una actualización puede conectarse con estos hosts operados por GitHub:
@@ -50,6 +52,8 @@ Tildá **Notificaciones remotas** para sumar el correo, Telegram, Pushover u otr
 ## Instalar una actualización \{#install-an-update}
 
 Abrí **Services → IPv6 Prefix Updater → Acerca de**. Cuando hay una versión más nueva disponible, **Actualizar a _versión_** inicia una tarea en segundo plano y la página muestra su progreso.
+
+Si hay una actualización del prefijo en curso, la tarea en segundo plano muestra que está esperando y le da hasta 30 minutos para terminar antes de que falle la instalación.
 
 La tarea vuelve a consultar la versión y descarga el `.pkg` con número de versión. Compara el paquete con el resumen `sha256:<hex>` del recurso en la API de GitHub; si ese resumen no está, descarga en su lugar el `.pkg.sha256` correspondiente de la misma versión.
 

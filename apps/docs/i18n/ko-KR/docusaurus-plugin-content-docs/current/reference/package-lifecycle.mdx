@@ -54,7 +54,7 @@ pkg delete -f pfSense-pkg-Ipv6PrefixUpdater
 
 패키지는 `vital`로 표시되므로 pfSense 자체 업그레이드에서 설치된 상태로 유지되며, 일반 `pkg delete` 명령은 vital 패키지를 거부합니다.
 
-제거하면 두 cron 항목(접두사 확인과 릴리스 확인)이 모두 삭제되고, 업데이트 가능 알림이 닫히며, 실행 중인 작업이 잡고 있지 않은 경우 <Terminology title="두 확인이 동시에 실행되지 않게 막음" to="/docs/reference/terminology#running-checks">실행 잠금</Terminology> 파일도 삭제됩니다. <Terminology title="각 기준선을 담은 파일로, 다시 설치해도 유지됨" to="/docs/reference/terminology#running-checks">패키지 상태</Terminology>, `updates.json`, `update-status.json`, **백업** 탭의 사본은 `/cf/conf/ipv6-prefix-updater`에 남습니다.
+제거하면 두 cron 항목(접두사 확인과 릴리스 확인)이 모두 삭제되고, 업데이트 가능 알림이 닫히며, 해당 잠금을 잡고 있는 작업이 없을 때 각 작업 잠금 파일도 삭제됩니다. <Terminology title="각 기준선을 담은 파일로, 다시 설치해도 유지됨" to="/docs/reference/terminology#running-checks">패키지 상태</Terminology>, `updates.json`, `update-status.json`, **백업** 탭의 사본은 `/cf/conf/ipv6-prefix-updater`에 남습니다.
 
 pfSense 자체 업그레이드는 패키지가 `vital`이므로 설치된 상태로 유지하며, 보존된 상태 덕분에 제거 후 재설치해도 <Terminology title="변경을 판단하는 기준이 되는 기록된 시작 접두사" to="/docs/reference/terminology#baselines-and-transitions">기준선</Terminology>을 잃지 않습니다.
 

@@ -54,7 +54,7 @@ pkg delete -f pfSense-pkg-Ipv6PrefixUpdater
 
 Il pacchetto è contrassegnato come `vital`, quindi gli aggiornamenti di pfSense lo mantengono installato e un semplice `pkg delete` rifiuta i pacchetti vitali.
 
-La rimozione elimina entrambe le voci cron (controllo del prefisso e controllo delle release), chiude la segnalazione di aggiornamento disponibile e rimuove il file del <Terminology title="Impedisce che due controlli girino insieme" to="/docs/reference/terminology#running-checks">blocco di esecuzione</Terminology> quando nessuna esecuzione lo detiene. Mantiene lo <Terminology title="Il file con ogni linea di base, conservato anche dopo una reinstallazione" to="/docs/reference/terminology#running-checks">stato del pacchetto</Terminology>, `updates.json`, `update-status.json` e le copie della scheda **Backup** in `/cf/conf/ipv6-prefix-updater`.
+La rimozione elimina entrambe le voci cron (controllo del prefisso e controllo delle release), chiude la segnalazione di aggiornamento disponibile e rimuove ogni file di blocco delle operazioni quando nessuna operazione detiene quel blocco. Mantiene lo <Terminology title="Il file con ogni linea di base, conservato anche dopo una reinstallazione" to="/docs/reference/terminology#running-checks">stato del pacchetto</Terminology>, `updates.json`, `update-status.json` e le copie della scheda **Backup** in `/cf/conf/ipv6-prefix-updater`.
 
 Gli aggiornamenti di pfSense mantengono il pacchetto installato (è `vital`), e lo stato conservato fa sì che una rimozione e reinstallazione non perda mai una <Terminology title="Il prefisso di partenza registrato da cui si misurano i cambi" to="/docs/reference/terminology#baselines-and-transitions">linea di base</Terminology>.
 

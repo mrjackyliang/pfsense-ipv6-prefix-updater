@@ -52,9 +52,11 @@ Para restaurar una, pulsa **Descargar** y después sube el archivo en **Diagnost
 
 Después de una restauración completa de la configuración en el mismo cortafuegos, pfSense puede indicar que IPv6 Prefix Updater se ha eliminado aunque el paquete y sus ajustes no hayan cambiado. La siguiente sincronización de paquetes cierra ese aviso falso y lo sustituye por una confirmación con un enlace a la página **Acerca de** del paquete.
 
-Cuando restauras la configuración en un cortafuegos nuevo o reinstalado, la entrada de recuperación restaurada espera a que termine la sincronización de paquetes de pfSense y vuelve a intentarlo cada 15 minutos. Reinstala exactamente la versión del paquete que escribió la entrada solo después de verificar su suma SHA-256, usando el paquete almacenado en `/conf/ipv6-prefix-updater/restore-heal` cuando está disponible o, en caso contrario, la URL versionada fijada de la versión publicada.
+Cuando restauras la configuración en un cortafuegos nuevo o reinstalado, la entrada de recuperación restaurada espera a que termine la sincronización de paquetes de pfSense y vuelve a intentarlo cada 15 minutos. Reinstala exactamente la versión del paquete que escribió la entrada solo después de verificar su suma SHA-256, usando el paquete almacenado en `/conf/ipv6-prefix-updater/restore-heal` cuando está disponible o, en caso contrario, la URL versionada fijada de la versión publicada. Un paquete descargado se conserva allí después de superar la verificación de la suma SHA-256, al igual que una actualización instalada desde la pestaña **Acerca de**, por lo que una restauración en el mismo cortafuegos puede reinstalar el paquete sin acceso a internet.
 
-Una desinstalación deliberada del paquete elimina la entrada de recuperación.
+Solo se ejecuta un proceso de recuperación a la vez; si uno se inicia mientras otro aún está descargando o instalando el paquete, finaliza de inmediato. Cada paso se registra en el registro del sistema con la etiqueta `ipv6-prefix-updater-restore-heal`: `deferred` mientras pfSense aún restaura paquetes, después `cache` o `fetch`, `install` e `installed`, o `fetch-failed`, `checksum-failed`, `cache-failed` o `install-failed` cuando falla un paso.
+
+Una desinstalación deliberada del paquete elimina la entrada de recuperación y el paquete almacenado en caché.
 
 ## Cómo se etiquetan las revisiones \{#how-the-revisions-are-labelled}
 

@@ -10,6 +10,7 @@ use Throwable;
 
 require_once(__DIR__ . '/PackagePaths.php');
 require_once(__DIR__ . '/ReleasePinUnavailableException.php');
+require_once(__DIR__ . '/RestoreManager.php');
 require_once(__DIR__ . '/Translator.php');
 
 /**
@@ -158,14 +159,15 @@ final class UpdateManager
      * localized error and attempt timestamp for the About tab.
      *
      * @param bool $remoteNotifications - Whether pfSense may notify remote channels.
+     * @param bool $fileNotice          - Whether to file a new-version notice.
      *
      * @return array
      *
      * @throws Throwable When GitHub or local state cannot be read or written.
      *
-     * @since 2.1.0
+     * @since 2.1.3
      */
-    public function check(bool $remoteNotifications): array
+    public function check(bool $remoteNotifications, bool $fileNotice): array
     {
         $this->clearStatus();
 
@@ -188,6 +190,7 @@ final class UpdateManager
                 $this->installedVersion,
                 $release['version'],
                 $remoteNotifications,
+                $fileNotice,
             );
 
             self::writeJsonAtomically($this->updatesFile, $state);
@@ -564,6 +567,42 @@ final class UpdateManager
                 : $timestamp,
             'updated_at' => $timestamp,
             'finished_at' => $timestamp,
+        ]);
+    }
+
+    /**
+     * Marks a queued self-update as waiting for the running prefix task.
+     *
+     * The About tab keeps polling the same running job while the CLI waits for the
+     * package lock, preserving the queued version and original start timestamp.
+     *
+     * @param string $path - Status file path.
+     *
+     * @return void
+     *
+     * @since 2.1.3
+     */
+    public static function markQueuedSelfUpdateWaiting(
+        string $path = PackagePaths::UPDATE_STATUS_FILE,
+    ): void {
+        $timestamp = gmdate(DATE_ATOM);
+        $queuedState = null;
+
+        try {
+            $queuedState = self::readStatusState($path);
+        } catch (Throwable) {
+            // A fresh running state safely replaces malformed queued state.
+        }
+
+        self::writeJsonAtomically($path, [
+            'state' => 'running',
+            'message' => Translator::translate('update_waiting_for_task'),
+            'version' => is_array($queuedState) ? ($queuedState['version'] ?? null) : null,
+            'started_at' => is_array($queuedState)
+                ? ($queuedState['started_at'] ?? $timestamp)
+                : $timestamp,
+            'updated_at' => $timestamp,
+            'finished_at' => null,
         ]);
     }
 
@@ -1033,6 +1072,12 @@ final class UpdateManager
                 throw new RuntimeException(Translator::translate('update_install_failed', [$installResult['exit_code']]));
             }
 
+            try {
+                RestoreManager::storeVerifiedPackage($packagePath, $version);
+            } catch (Throwable $cacheThrowable) {
+                $this->logFailure($cacheThrowable);
+            }
+
             $state = $this->saveReleaseState($release, $version, $remoteNotifications);
 
             $this->writeStatus(
@@ -1116,21 +1161,29 @@ final class UpdateManager
      * @param string $installedVersion    - Installed version.
      * @param string $latestVersion       - Latest version.
      * @param bool   $remoteNotifications - Whether remote delivery is enabled.
+     * @param bool   $fileNotice          - Whether to file a new-version notice.
      *
      * @return array
      *
-     * @since 2.1.0
+     * @since 2.1.3
      */
     public static function synchronizeNotice(
         array $state,
         string $installedVersion,
         string $latestVersion,
         bool $remoteNotifications,
+        bool $fileNotice,
     ): array {
         if (self::isNewerVersion($installedVersion, $latestVersion) === false) {
             if (function_exists('close_notice')) {
                 \close_notice(self::NOTICE_ID);
             }
+
+            return $state;
+        }
+
+        if ($fileNotice === false) {
+            $state['notified_version'] = $latestVersion;
 
             return $state;
         }
@@ -1697,6 +1750,7 @@ final class UpdateManager
             $effectiveVersion,
             $release['version'],
             $remoteNotifications,
+            true,
         );
 
         self::writeJsonAtomically($this->updatesFile, $state);

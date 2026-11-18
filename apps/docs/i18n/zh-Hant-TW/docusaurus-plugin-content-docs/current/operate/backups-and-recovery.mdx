@@ -52,9 +52,11 @@ import backupList from './_assets_/backups-and-recovery-1.png';
 
 在同一台防火牆上完整還原設定後，即使 IPv6 前綴更新器套件及其設定沒有變更，pfSense 仍可能回報該套件已被移除。下一次套件同步會關閉這項錯誤通知，並以一則連結至套件**關於**頁面的確認通知取代。
 
-在新的或重新安裝的防火牆上還原設定時，還原的復原項目會等待 pfSense 套件同步完成，之後每 15 分鐘重試一次。它只會在驗證 SHA-256 檢查碼後重新安裝寫入該項目的確切套件版本；若 `/conf/ipv6-prefix-updater/restore-heal` 中有快取套件便使用該副本，否則使用固定的版本化發行 URL。
+在新的或重新安裝的防火牆上還原設定時，還原的復原項目會等待 pfSense 套件同步完成，之後每 15 分鐘重試一次。它只會在驗證 SHA-256 檢查碼後重新安裝寫入該項目的確切套件版本；若 `/conf/ipv6-prefix-updater/restore-heal` 中有快取套件便使用該副本，否則使用固定的版本化發行 URL。下載的套件通過檢查碼驗證後會保留在此處，從**關於**分頁安裝的更新也會保留在此處，因此還原到同一台防火牆時無需網際網路連線即可重新安裝套件。
 
-主動解除安裝套件會移除這個復原項目。
+一次只能執行一個復原作業；如果某個作業在另一個作業仍在下載或安裝套件時啟動，它會立即結束。每個步驟都會以 `ipv6-prefix-updater-restore-heal` 為識別名稱記錄在系統日誌中：pfSense 仍在還原套件時記錄 `deferred`，之後記錄 `cache` 或 `fetch`、`install` 和 `installed`；步驟失敗時則記錄 `fetch-failed`、`checksum-failed`、`cache-failed` 或 `install-failed`。
+
+主動解除安裝套件會移除這個復原項目和快取的套件。
 
 ## 修訂版本的標示方式 \{#how-the-revisions-are-labelled}
 

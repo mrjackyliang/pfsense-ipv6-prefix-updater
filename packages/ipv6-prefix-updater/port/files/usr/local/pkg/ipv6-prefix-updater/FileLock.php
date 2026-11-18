@@ -9,10 +9,10 @@ use RuntimeException;
 require_once(__DIR__ . '/Translator.php');
 
 /**
- * Coordinates package runs with a non-blocking filesystem lock.
+ * Coordinates package operations with a filesystem lock.
  *
- * The open descriptor owns the lock for the process lifetime. A second scheduled or
- * manual run exits without reading state or touching firewall configuration.
+ * The open descriptor owns the lock for the process lifetime. Callers may try once or
+ * wait for a bounded interval when the operation is safe to queue.
  *
  * @since 2.0.0
  */
@@ -59,18 +59,20 @@ final class FileLock
     }
 
     /**
-     * Attempts to acquire the package lock without waiting.
+     * Attempts to acquire the lock within a bounded interval.
      *
-     * A false result means another valid process owns the lock. Filesystem failures
-     * throw because execution cannot safely continue without coordination.
+     * A zero timeout makes one non-blocking attempt. A false result after the timeout
+     * means another valid process still owns the lock.
+     *
+     * @param int $timeoutSeconds - Maximum seconds to wait.
      *
      * @return bool
      *
      * @throws RuntimeException When the lock file cannot be opened or protected.
      *
-     * @since 2.0.0
+     * @since 2.1.3
      */
-    public function acquire(): bool
+    public function acquire(int $timeoutSeconds = 0): bool
     {
         if (is_resource($this->handle)) {
             return true;
@@ -88,10 +90,17 @@ final class FileLock
             throw new RuntimeException(Translator::translate('lock_unavailable'));
         }
 
-        if (flock($handle, LOCK_EX | LOCK_NB) === false) {
-            fclose($handle);
+        $timeoutSeconds = max(0, $timeoutSeconds);
+        $deadline = microtime(true) + $timeoutSeconds;
 
-            return false;
+        while (flock($handle, LOCK_EX | LOCK_NB) === false) {
+            if (microtime(true) >= $deadline) {
+                fclose($handle);
+
+                return false;
+            }
+
+            usleep(100_000);
         }
 
         ftruncate($handle, 0);

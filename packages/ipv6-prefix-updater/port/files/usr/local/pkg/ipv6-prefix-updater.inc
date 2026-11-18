@@ -543,6 +543,10 @@ function pfsensePackageIpv6PrefixUpdaterInstallRestoreCron(): void
                 );
             },
         );
+
+        if (is_string($installedVersion) && trim($installedVersion) !== '') {
+            RestoreManager::pruneCache(trim($installedVersion));
+        }
     } catch (Throwable $throwable) {
         pfsensePackageIpv6PrefixUpdaterLogRestoreFailure(
             'restore-heal cron synchronization',
@@ -552,18 +556,16 @@ function pfsensePackageIpv6PrefixUpdaterInstallRestoreCron(): void
 }
 
 /**
- * Removes the recovery entry unless configuration or settings must survive.
+ * Removes the recovery entry and cached package unless a restore is running.
  *
- * The optional Keep Settings argument supports packages with that lifecycle choice;
- * this package passes false and relies on pfSense's restore flag when appropriate.
- *
- * @param bool $keepSettings - Whether a deliberate removal retains settings.
+ * Only pfSense's restore flag keeps them, because a restored configuration still
+ * needs the entry; every deliberate removal leaves nothing that reinstalls it.
  *
  * @return void
  *
  * @since 2.1.2
  */
-function pfsensePackageIpv6PrefixUpdaterRemoveRestoreCron(bool $keepSettings = false): void
+function pfsensePackageIpv6PrefixUpdaterRemoveRestoreCron(): void
 {
     try {
         $cronItems = config_get_path('cron/item', []);
@@ -572,10 +574,13 @@ function pfsensePackageIpv6PrefixUpdaterRemoveRestoreCron(bool $keepSettings = f
         $synchronizedCronItems = RestoreManager::removeCronItems(
             $cronItems,
             $restoreInProgress,
-            $keepSettings,
         );
 
         pfsensePackageIpv6PrefixUpdaterWriteRestoreCronItems($synchronizedCronItems);
+
+        if ($restoreInProgress === false) {
+            RestoreManager::removeCache();
+        }
     } catch (Throwable $throwable) {
         pfsensePackageIpv6PrefixUpdaterLogRestoreFailure(
             'restore-heal cron removal',
@@ -603,16 +608,18 @@ function pfsensePackageIpv6PrefixUpdaterRemove(): void
 
     pfsensePackageIpv6PrefixUpdaterClosePackageNotices();
 
-    $fileLock = new FileLock(PackagePaths::LOCK_FILE);
+    foreach ([PackagePaths::LOCK_FILE, PackagePaths::RELEASE_LOCK_FILE] as $lockFile) {
+        $fileLock = new FileLock($lockFile);
 
-    try {
-        if ($fileLock->acquire()) {
-            @unlink(PackagePaths::LOCK_FILE);
+        try {
+            if ($fileLock->acquire()) {
+                @unlink($lockFile);
+            }
+        } catch (Throwable) {
+            // Removal must not fail when an active operation or filesystem owns the lock.
+        } finally {
+            $fileLock->release();
         }
-    } catch (Throwable) {
-        // Removal must not fail when an active run or filesystem owns the lock.
-    } finally {
-        $fileLock->release();
     }
 }
 

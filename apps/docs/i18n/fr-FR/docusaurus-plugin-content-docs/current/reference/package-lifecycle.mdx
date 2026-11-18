@@ -54,7 +54,7 @@ pkg delete -f pfSense-pkg-Ipv6PrefixUpdater
 
 Le paquet est marqué `vital`, donc les mises à niveau de pfSense le conservent et un simple `pkg delete` refuse les paquets marqués `vital`.
 
-La suppression efface les deux entrées cron (vérification du préfixe et recherche de mises à jour), ferme l’alerte de nouvelle version disponible et supprime le fichier de <Terminology title="Empêche deux vérifications de tourner en même temps" to="/docs/reference/terminology#running-checks">verrou d’exécution</Terminology> quand aucune exécution ne le détient. Elle conserve l’<Terminology title="Le fichier qui garde chaque référence, même après réinstallation" to="/docs/reference/terminology#running-checks">état du paquet</Terminology>, `updates.json`, `update-status.json` et les copies de l’onglet **Sauvegardes** dans `/cf/conf/ipv6-prefix-updater`.
+La suppression efface les deux entrées cron (vérification du préfixe et recherche de mises à jour), ferme l’alerte de nouvelle version disponible et supprime chaque fichier de verrou d’opération quand aucune opération ne détient ce verrou. Elle conserve l’<Terminology title="Le fichier qui garde chaque référence, même après réinstallation" to="/docs/reference/terminology#running-checks">état du paquet</Terminology>, `updates.json`, `update-status.json` et les copies de l’onglet **Sauvegardes** dans `/cf/conf/ipv6-prefix-updater`.
 
 Les mises à niveau de pfSense conservent le paquet installé (il est `vital`), et l’état conservé évite qu’une suppression suivie d’une réinstallation ne fasse perdre une <Terminology title="Le préfixe de départ enregistré, qui sert à mesurer les changements" to="/docs/reference/terminology#baselines-and-transitions">référence</Terminology>.
 

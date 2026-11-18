@@ -31,6 +31,8 @@ Choisissez la fréquence sous **Services → IPv6 Prefix Updater → Paramètres
 
 La planification aléatoire est enregistrée dans la configuration de pfSense ; enregistrer les paramètres ou réinstaller le paquet ne la déplace donc pas. **Vérifier maintenant**, dans l’onglet **À propos**, lance toujours une recherche manuelle, y compris quand la fréquence est **Jamais**.
 
+Une recherche manuelle depuis l’onglet À propos peut s’exécuter pendant une mise à jour du préfixe. Elle ne crée aucune alerte et enregistre la version affichée comme déjà annoncée, afin qu’une recherche planifiée ultérieure ne l’annonce pas.
+
 ## Destinations réseau \{#network-destinations}
 
 Une recherche de mises à jour ou une mise à jour peut contacter ces hôtes exploités par GitHub :
@@ -50,6 +52,8 @@ Cochez **Notifications distantes** pour l’envoyer aussi par l’e-mail, Telegr
 ## Installer une mise à jour \{#install-an-update}
 
 Ouvrez **Services → IPv6 Prefix Updater → À propos**. Quand une version plus récente est disponible, **Mettre à jour vers _version_** lance une tâche en arrière-plan, et la page affiche sa progression.
+
+Si une mise à jour du préfixe est en cours, la tâche en arrière-plan indique qu’elle attend et lui accorde jusqu’à 30 minutes pour se terminer avant que l’installation échoue.
 
 La tâche récupère de nouveau la version et télécharge le `.pkg` versionné. Elle contrôle le paquet avec l’empreinte `sha256:<hex>` du fichier dans l’API GitHub ; si cette empreinte est absente, elle télécharge à la place le fichier `.pkg.sha256` correspondant de la même version.
 

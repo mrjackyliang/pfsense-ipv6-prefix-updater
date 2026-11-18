@@ -54,7 +54,7 @@ pkg delete -f pfSense-pkg-Ipv6PrefixUpdater
 
 该软件包标记为 `vital`，因此 pfSense 自身升级会将其保持为已安装状态，而普通的 `pkg delete` 会拒绝删除 vital 软件包。
 
-移除操作会删除两个 cron 条目（前缀检查和版本检查），关闭有可用更新的通知，并在没有运行持有<Terminology title="确保两次检查不会同时运行" to="/docs/reference/terminology#running-checks">运行锁</Terminology>时删除其锁文件。它会保留 `/cf/conf/ipv6-prefix-updater` 中的<Terminology title="保存每条基线的文件，重装后依然保留" to="/docs/reference/terminology#running-checks">软件包状态</Terminology>、`updates.json`、`update-status.json` 和 **备份** 选项卡中的副本。
+移除操作会删除两个 cron 条目（前缀检查和版本检查），关闭有可用更新的通知，并在没有操作持有相应锁时删除每个操作锁文件。它会保留 `/cf/conf/ipv6-prefix-updater` 中的<Terminology title="保存每条基线的文件，重装后依然保留" to="/docs/reference/terminology#running-checks">软件包状态</Terminology>、`updates.json`、`update-status.json` 和 **备份** 选项卡中的副本。
 
 pfSense 自身升级会保留该软件包（它是 `vital` 软件包），而保留的软件包状态意味着移除并重新安装时绝不会丢失<Terminology title="记录下来的起始前缀，变化以它为准" to="/docs/reference/terminology#baselines-and-transitions">基线</Terminology>。
 

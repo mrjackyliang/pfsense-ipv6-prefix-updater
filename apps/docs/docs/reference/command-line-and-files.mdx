@@ -23,10 +23,10 @@ Run the package command from a shell and find the files, logs, and notices it us
 
 ```text
 Usage: ipv6-prefix-updater [--manual] [--dry-run] [--accept-current-prefix [--interface=NAME]] [--migrate-legacy]
-Update options: --check-updates, --self-update.
+Update options: --check-updates [--no-notice], --self-update.
 ```
 
-The pfSense-managed prefix-check cron entry runs the command as `root` without options, while a separate release-check entry runs it with `--check-updates`. Before each check it also moves any <Terminology title="Version 1.x: the update.php script run by Cron" to="/docs/reference/terminology#package-origins">legacy updater</Terminology> leftovers into the package. The Status tab uses `--manual` for **Run Now**, `--dry-run` for **<Terminology title="A preview of the changes that writes nothing" to="/docs/reference/terminology#running-checks">Dry Run</Terminology>**, and `--accept-current-prefix` for baseline recovery, and the Cleanup tab uses `--migrate-legacy`.
+The pfSense-managed prefix-check cron entry runs the command as `root` without options, while a separate release-check entry runs it with `--check-updates`. The About tab uses `--check-updates --no-notice` for a manual check. Before each prefix check, the command also moves any <Terminology title="Version 1.x: the update.php script run by Cron" to="/docs/reference/terminology#package-origins">legacy updater</Terminology> leftovers into the package. The Status tab uses `--manual` for **Run Now**, `--dry-run` for **<Terminology title="A preview of the changes that writes nothing" to="/docs/reference/terminology#running-checks">Dry Run</Terminology>**, and `--accept-current-prefix` for baseline recovery, and the Cleanup tab uses `--migrate-legacy`.
 
 Without options, the command behaves like a scheduled check and reports <Terminology title="A scheduled check skipped because scheduled updates are off" to="/docs/reference/terminology#run-outcomes">Disabled</Terminology> when **<Terminology title="Automatic checks on a schedule, off until you enable them" to="/docs/reference/terminology#running-checks">Enable Scheduled Updates</Terminology>** is off.
 
@@ -40,10 +40,11 @@ Without options, the command behaves like a scheduled check and reports <Termino
 | `--interface=NAME`        | Limits `--accept-current-prefix` to one monitored interface, given by its internal name such as `lan`. Without it, every monitored interface that has an address is accepted.                                                                                                                     |
 | `--migrate-legacy`        | Moves the <Terminology title="Version 1.x: the update.php script run by Cron" to="/docs/reference/terminology#package-origins">legacy updater</Terminology> into the package right away and prints each step, without running a prefix check. It exits with `2` when the move reported a warning. |
 | `--check-updates`         | Checks GitHub for the latest package release and saves the result in `/cf/conf/ipv6-prefix-updater/updates.json`. [Updates](/docs/reference/updates) describes the check.                                                                                                                         |
+| `--no-notice`             | Suppresses the update notice for `--check-updates` and records the latest version as notified. Valid only with `--check-updates`.                                                                                                                                                                 |
 | `--self-update`           | Downloads, verifies, and installs the latest release, recording progress in `/cf/conf/ipv6-prefix-updater/update-status.json`.                                                                                                                                                                    |
 | `--help`                  | Prints the usage line and the update options line, and exits with `0`. Neither line lists `--help` itself.                                                                                                                                                                                        |
 
-Any other option prints `Unknown option: <option>` to standard error and exits with `64`. Combining `--accept-current-prefix` with `--dry-run` also exits with `64`, as does combining `--check-updates` or `--self-update` with each other or with any prefix option.
+Any other option prints `Unknown option: <option>` to standard error and exits with `64`. Combining `--accept-current-prefix` with `--dry-run` also exits with `64`, as does combining `--check-updates` or `--self-update` with each other or with any prefix option. Using `--no-notice` without `--check-updates` also exits with `64`.
 
 ## Exit Codes
 
@@ -101,6 +102,7 @@ Field changes:
 | `/cf/conf/ipv6-prefix-updater/update-status.json`                    | Progress of the most recent self-update.                                                                                                                                                                                                                                                                    |
 | `/cf/conf/ipv6-prefix-updater/backups/`                              | The **Backups** tab copies, one `<id>.xml` configuration and one `<id>.json` description each, all `0600`.                                                                                                                                                                                                  |
 | `/var/run/ipv6-prefix-updater.lock`                                  | The <Terminology title="Keeps two checks from ever running at once" to="/docs/reference/terminology#running-checks">run lock</Terminology>, held with a non-blocking `flock` and holding the running process ID. It stays on disk between runs.                                                             |
+| `/var/run/ipv6-prefix-updater-release.lock`                          | The release lock for update checks and self-updates, held with `flock`. Release operations wait up to 30 seconds to acquire it, and the file stays on disk between operations.                                                                                                                              |
 
 ## Package State Format
 

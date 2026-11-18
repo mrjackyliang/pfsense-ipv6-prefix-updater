@@ -31,6 +31,8 @@ Scegli la frequenza in **Services → IPv6 Prefix Updater → Impostazioni → A
 
 La pianificazione casuale viene salvata nella configurazione di pfSense, quindi salvare le impostazioni o reinstallare il pacchetto non la sposta. **Controlla ora** nella scheda **Informazioni** esegue sempre un controllo manuale, anche quando la frequenza è **Mai**.
 
+Un controllo manuale dalla scheda Informazioni può essere eseguito mentre è in corso un aggiornamento del prefisso. Non crea segnalazioni e registra la versione visualizzata come già annunciata, quindi un controllo pianificato successivo non la annuncia di nuovo.
+
 ## Destinazioni di rete \{#network-destinations}
 
 Un controllo degli aggiornamenti o un aggiornamento può contattare questi host gestiti da GitHub:
@@ -50,6 +52,8 @@ Seleziona **Notifiche remote** per inviarla anche tramite email, Telegram, Pusho
 ## Installare un aggiornamento \{#install-an-update}
 
 Apri **Services → IPv6 Prefix Updater → Informazioni**. Quando è disponibile una versione più recente, **Aggiorna alla versione _versione_** avvia un’attività in background e la pagina ne mostra l’avanzamento.
+
+Se è in corso un aggiornamento del prefisso, l’attività in background mostra che è in attesa e concede fino a 30 minuti per completarlo prima che l’installazione non riesca.
 
 L’attività recupera di nuovo la release e scarica il `.pkg` con la versione nel nome. Controlla il pacchetto con il digest `sha256:<hex>` del file nell’API GitHub; quando il digest manca, scarica invece il file `.pkg.sha256` corrispondente dalla stessa release.
 

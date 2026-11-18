@@ -54,7 +54,7 @@ pkg delete -f pfSense-pkg-Ipv6PrefixUpdater
 
 Paket je označen kao `vital`, pa ga vlastite nadogradnje pfSense-a zadržavaju instaliranim, a obični `pkg delete` odbija vitalne pakete.
 
-Uklanjanje briše oba cron unosa (provjeru prefiksa i provjeru izdanja), zatvara obavijest o dostupnom ažuriranju i uklanja datoteku <Terminology title="Sprečava da se dvije provjere pokrenu istovremeno" to="/docs/reference/terminology#running-checks">zaključavanja pokretanja</Terminology> kada ga nijedno pokretanje ne drži. Zadržava <Terminology title="Datoteka sa svakim početnim stanjem, sačuvana i nakon reinstalacije" to="/docs/reference/terminology#running-checks">stanje paketa</Terminology>, `updates.json`, `update-status.json` i kopije s kartice **Sigurnosne kopije** u `/cf/conf/ipv6-prefix-updater`.
+Uklanjanje briše oba cron unosa (provjeru prefiksa i provjeru izdanja), zatvara obavijest o dostupnom ažuriranju i uklanja svaku datoteku zaključavanja operacije kada to zaključavanje ne drži nijedna operacija. Zadržava <Terminology title="Datoteka sa svakim početnim stanjem, sačuvana i nakon reinstalacije" to="/docs/reference/terminology#running-checks">stanje paketa</Terminology>, `updates.json`, `update-status.json` i kopije s kartice **Sigurnosne kopije** u `/cf/conf/ipv6-prefix-updater`.
 
 Vlastite nadogradnje pfSense-a zadržavaju paket instaliranim (on je `vital`), a zadržano stanje znači da uklanjanje i ponovna instalacija nikada ne gube <Terminology title="Zabilježeni početni prefiks od kojeg se mjere promjene" to="/docs/reference/terminology#baselines-and-transitions">početno stanje</Terminology>.
 

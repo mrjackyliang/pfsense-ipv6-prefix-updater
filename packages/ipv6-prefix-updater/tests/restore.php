@@ -598,19 +598,51 @@ assertRestoreSame(true, str_contains($refreshedCommand, '2.1.2'), 'The refreshed
 assertRestoreSame(true, str_contains($refreshedCommand, str_repeat('b', 64)), 'The refreshed command must pin the new SHA-256.');
 assertRestoreSame(false, str_contains($refreshedCommand, '/latest/'), 'The recovery command must never use a latest URL.');
 
-$deliberateRemovalCronItems = RestoreManager::removeCronItems($refreshedCronItems, false, false);
+$deliberateRemovalCronItems = RestoreManager::removeCronItems($refreshedCronItems, false);
 
 assertRestoreSame(0, count(restoreCronItems($deliberateRemovalCronItems)), 'A deliberate uninstall must remove recovery.');
 assertRestoreSame([$otherCronItem], $deliberateRemovalCronItems, 'A deliberate uninstall must preserve other cron entries.');
 assertRestoreSame(
     $refreshedCronItems,
-    RestoreManager::removeCronItems($refreshedCronItems, true, false),
+    RestoreManager::removeCronItems($refreshedCronItems, true),
     'Restore-driven removal must keep recovery.',
 );
+
+$legacyCronItems = [
+    $otherCronItem,
+    [
+        'minute' => '*/15',
+        'hour' => '*',
+        'mday' => '*',
+        'month' => '*',
+        'wday' => '*',
+        'who' => 'root',
+        'command' => RestoreManager::CRON_MARKER . " /usr/sbin/daemon -f /bin/sh -c '[ -e /conf/needs_package_sync ]&&exit;v=2.1.2;d=/conf/ipv6-prefix-updater/restore-heal;u=" . $secondPin['url'] . ';h=' . $secondPin['sha256'] . ";l(){ logger -t ipv6-prefix-updater \"restore heal: \$*\";}'",
+    ],
+];
+$legacyLookupCalls = 0;
+$legacyStoredCronItems = $legacyCronItems;
+
+RestoreManager::refreshCronItems(
+    $legacyCronItems,
+    '2.1.2',
+    static function (string $installedVersion) use (&$secondPin, &$legacyLookupCalls): array {
+        $legacyLookupCalls++;
+
+        return $secondPin;
+    },
+    static function (array $cronItems) use (&$legacyStoredCronItems): void {
+        $legacyStoredCronItems = $cronItems;
+    },
+    static function (Throwable $throwable): void {
+    },
+);
+
+assertRestoreSame(1, $legacyLookupCalls, 'An older-format entry for the installed version must count as stale.');
 assertRestoreSame(
-    $refreshedCronItems,
-    RestoreManager::removeCronItems($refreshedCronItems, false, true),
-    'Keep Settings must keep recovery.',
+    [RestoreManager::buildCronCommand($secondPin)],
+    array_column(restoreCronItems($legacyStoredCronItems), 'command'),
+    'An older-format entry must be replaced by the current command.',
 );
 
 $missingHashPin = $secondPin;
@@ -632,15 +664,80 @@ exec('/bin/sh -n -c ' . escapeshellarg($refreshedCommand) . ' 2>&1', $syntaxOutp
 assertRestoreSame(0, $syntaxExitCode, 'The generated recovery command must pass sh -n.');
 assertRestoreSame(true, str_contains($refreshedCommand, '/conf/needs_package_sync'), 'The command must wait for stock package sync.');
 assertRestoreSame(true, str_contains($refreshedCommand, 'pkg info -e'), 'The command must exit when the package is installed.');
-assertRestoreSame(true, str_contains($refreshedCommand, $secondPin['url']), 'The command must contain the pinned release URL.');
 assertRestoreSame(true, str_contains($refreshedCommand, $secondPin['sha256']), 'The command must contain the checksum.');
-assertRestoreSame(true, str_contains($refreshedCommand, 'sha256 -q'), 'The command must verify SHA-256 before installation.');
+assertRestoreSame(true, str_contains($refreshedCommand, '/sbin/sha256 -q'), 'The command must verify SHA-256 before installation.');
 assertRestoreSame(true, str_contains($refreshedCommand, 'pkg add -f'), 'The command must force-install the verified package.');
-assertRestoreSame(true, str_contains($refreshedCommand, 'daemon -f'), 'The command must detach from cron.');
+assertRestoreSame(
+    ': ipv6-prefix-updater-restore-heal; /usr/sbin/daemon -f -p /var/run/ipv6-prefix-updater-restore-heal.pid /bin/sh -c '
+        . escapeshellarg(RestoreManager::SHELL_SCRIPT)
+        . " rh 'pfSense-pkg-Ipv6PrefixUpdater' 'mrjackyliang/pfsense-ipv6-prefix-updater' '"
+        . str_repeat('b', 64)
+        . "' '2.1.2' 'ipv6-prefix-updater'",
+    $refreshedCommand,
+    'The command must be the shared recovery program with this package\'s arguments.',
+);
+assertRestoreSame(
+    'p=$1;r=$2;h=$3;v=$4;g=$5-restore-heal;d=/conf/$5/restore-heal;n=$p-$v.pkg;c=$d/$n;t=$c.tmp;L(){ /usr/bin/logger -t $g "$1 $v";};[ -e /conf/needs_package_sync ]&&{ L deferred;exit 0;};/usr/local/sbin/pkg info -e $p&&exit 0;k(){ [ "$(/sbin/sha256 -q $1 2>/dev/null)" = $h ];};if k $c;then L cache;else /bin/rm -f $t;L fetch;/bin/mkdir -p $d&&/usr/bin/fetch -q -T 30 -o $t https://github.com/$r/releases/download/v$v/$n||{ /bin/rm -f $t;L fetch-failed;exit 1;};k $t||{ /bin/rm -f $t;L checksum-failed;exit 1;};/bin/rm -f $d/*.pkg;/bin/mv -f $t $c||{ L cache-failed;exit 1;};fi;L install;/usr/local/sbin/pkg add -f $c >/dev/null 2>&1||{ L install-failed;exit 1;};L installed',
+    RestoreManager::SHELL_SCRIPT,
+    'The recovery program must match the shared Nova program byte for byte.',
+);
+
+$longVersion = '10.10.10';
+$longCommand = RestoreManager::buildCronCommand([
+    'version' => $longVersion,
+    'url' => 'https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/download/v' . $longVersion . '/pfSense-pkg-Ipv6PrefixUpdater-' . $longVersion . '.pkg',
+    'sha256' => str_repeat('c', 64),
+]);
+
+assertRestoreSame(true, is_string($longCommand), 'A two-digit version must still produce a command.');
 assertRestoreSame(
     true,
-    strlen($refreshedCommand) <= RestoreManager::CRON_COMMAND_MAX_LENGTH,
-    'The command must fit safely below the FreeBSD cron command limit.',
+    is_string($longCommand) && strlen($longCommand) < 1000,
+    'The command must fit the FreeBSD cron command buffer.',
 );
+
+$cacheDirectory = sys_get_temp_dir() . '/ipv6-prefix-updater-restore-cache-' . getmypid();
+$sourcePackage = sys_get_temp_dir() . '/ipv6-prefix-updater-restore-source-' . getmypid() . '.pkg';
+
+file_put_contents($sourcePackage, 'verified package');
+mkdir($cacheDirectory, 0700, true);
+file_put_contents($cacheDirectory . '/package.pkg', 'old cache name');
+file_put_contents($cacheDirectory . '/pfSense-pkg-Ipv6PrefixUpdater-2.1.1.pkg', 'old version');
+file_put_contents($cacheDirectory . '/pfSense-pkg-Ipv6PrefixUpdater-2.1.2.pkg.tmp', 'interrupted download');
+
+RestoreManager::storeVerifiedPackage($sourcePackage, '2.1.2', $cacheDirectory);
+
+$cacheEntries = array_values(array_diff(scandir($cacheDirectory), ['.', '..']));
+
+assertRestoreSame(
+    ['pfSense-pkg-Ipv6PrefixUpdater-2.1.2.pkg'],
+    $cacheEntries,
+    'Storing a verified package must keep only the current version.',
+);
+assertRestoreSame(
+    'verified package',
+    file_get_contents($cacheDirectory . '/pfSense-pkg-Ipv6PrefixUpdater-2.1.2.pkg'),
+    'The cached package must be the verified file.',
+);
+assertRestoreSame(
+    '0600',
+    substr(sprintf('%o', fileperms($cacheDirectory . '/pfSense-pkg-Ipv6PrefixUpdater-2.1.2.pkg')), -4),
+    'The cached package must be readable by root only.',
+);
+
+file_put_contents($cacheDirectory . '/pfSense-pkg-Ipv6PrefixUpdater-2.1.1.pkg', 'old version');
+RestoreManager::pruneCache('2.1.2', $cacheDirectory);
+
+assertRestoreSame(
+    ['pfSense-pkg-Ipv6PrefixUpdater-2.1.2.pkg'],
+    array_values(array_diff(scandir($cacheDirectory), ['.', '..'])),
+    'A new pin must prune cached files for other versions.',
+);
+
+RestoreManager::removeCache($cacheDirectory);
+
+assertRestoreSame(false, file_exists($cacheDirectory), 'A deliberate uninstall must remove the cache folder.');
+
+@unlink($sourcePackage);
 
 fwrite(STDOUT, "Configuration restore notices and recovery cron behavior passed.\n");

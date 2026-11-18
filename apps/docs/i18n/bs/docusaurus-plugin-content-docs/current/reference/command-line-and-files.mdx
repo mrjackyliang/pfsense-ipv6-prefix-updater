@@ -23,7 +23,7 @@ Pokrenite naredbu paketa iz ljuske i pronađite datoteke, dnevnike i obavijesti 
 
 ```text
 Upotreba: ipv6-prefix-updater [--manual] [--dry-run] [--accept-current-prefix [--interface=NAME]] [--migrate-legacy]
-Opcije ažuriranja: --check-updates, --self-update.
+Opcije ažuriranja: --check-updates [--no-notice], --self-update.
 ```
 
 Cron unos za provjeru prefiksa kojim upravlja pfSense pokreće naredbu kao `root` bez opcija, dok je zaseban unos za provjeru izdanja pokreće sa `--check-updates`. Prije svake provjere naredba također premješta u paket sve ostatke <Terminology title="Verzija 1.x: skripta update.php koju pokreće Cron paket" to="/docs/reference/terminology#package-origins">starog programa za ažuriranje</Terminology>. Kartica Status koristi `--manual` za **Pokreni sada**, `--dry-run` za **<Terminology title="Pregled promjena koji ništa ne upisuje" to="/docs/reference/terminology#running-checks">Probno pokretanje</Terminology>** i `--accept-current-prefix` za oporavak početnog stanja, a kartica Čišćenje koristi `--migrate-legacy`.
@@ -40,10 +40,11 @@ Bez opcija, naredba se ponaša kao zakazana provjera i prijavljuje ishod <Termin
 | `--interface=NAME`        | Ograničava `--accept-current-prefix` na jedno nadzirano sučelje, zadano njegovim internim nazivom, na primjer `lan`. Bez ove opcije prihvata se svako nadzirano sučelje koje ima adresu.                                                                                                                       |
 | `--migrate-legacy`        | Odmah premješta <Terminology title="Verzija 1.x: skripta update.php koju pokreće Cron paket" to="/docs/reference/terminology#package-origins">stari program za ažuriranje</Terminology> u paket i ispisuje svaki korak, bez provjere prefiksa. Završava s kodom `2` kada je premještanje prijavilo upozorenje. |
 | `--check-updates`         | Provjerava najnovije izdanje paketa na GitHubu i čuva rezultat u `/cf/conf/ipv6-prefix-updater/updates.json`. [Ažuriranja](/docs/reference/updates) opisuje provjeru.                                                                                                                                          |
+| `--no-notice`             | Sprječava obavijest o ažuriranju za `--check-updates` i bilježi najnoviju verziju kao već najavljenu. Važi samo uz `--check-updates`.                                                                                                                                                                          |
 | `--self-update`           | Preuzima, provjerava i instalira najnovije izdanje, a napredak bilježi u `/cf/conf/ipv6-prefix-updater/update-status.json`.                                                                                                                                                                                    |
 | `--help`                  | Ispisuje red za upotrebu i red s opcijama ažuriranja te završava s kodom `0`. Nijedan od ta dva reda ne navodi samu opciju `--help`.                                                                                                                                                                           |
 
-Svaka druga opcija ispisuje `Nepoznata opcija: <option>` na standardni izlaz za greške i završava s kodom `64`. Kombinovanje `--accept-current-prefix` sa `--dry-run` također završava s kodom `64`, kao i kombinovanje `--check-updates` ili `--self-update` međusobno ili s bilo kojom opcijom prefiksa.
+Svaka druga opcija ispisuje `Nepoznata opcija: <option>` na standardni izlaz za greške i završava s kodom `64`. Kombinovanje `--accept-current-prefix` sa `--dry-run` također završava s kodom `64`, kao i kombinovanje `--check-updates` ili `--self-update` međusobno ili s bilo kojom opcijom prefiksa. Opcija `--no-notice` bez `--check-updates` također završava s kodom `64`.
 
 ## Izlazni kodovi \{#exit-codes}
 
@@ -101,6 +102,7 @@ Promjene polja:
 | `/cf/conf/ipv6-prefix-updater/update-status.json`                    | Napredak posljednjeg samoažuriranja.                                                                                                                                                                                                                                                                                                                |
 | `/cf/conf/ipv6-prefix-updater/backups/`                              | Kopije s kartice **Sigurnosne kopije**, svaka kao jedna konfiguracija `<id>.xml` i jedan opis `<id>.json`, sve s dozvolama `0600`.                                                                                                                                                                                                                  |
 | `/var/run/ipv6-prefix-updater.lock`                                  | <Terminology title="Sprečava da se dvije provjere pokrenu istovremeno" to="/docs/reference/terminology#running-checks">Zaključavanje pokretanja</Terminology>, koje se drži neblokirajućim `flock` i sadrži ID pokrenutog procesa. Ostaje na disku između pokretanja.                                                                               |
+| `/var/run/ipv6-prefix-updater-release.lock`                          | Zaključavanje izdanja za provjere ažuriranja i samoažuriranja, koje se drži pomoću `flock`. Operacije izdanja čekaju do 30 sekundi da ga preuzmu, a datoteka ostaje na disku između operacija.                                                                                                                                                      |
 
 ## Format stanja paketa \{#package-state-format}
 

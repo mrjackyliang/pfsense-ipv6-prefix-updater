@@ -52,9 +52,11 @@ Um eine davon wiederherzustellen, wählen Sie **Herunterladen** und laden Sie di
 
 Nach einer vollständigen Konfigurationswiederherstellung auf derselben Firewall kann pfSense melden, dass IPv6 Prefix Updater entfernt wurde, obwohl das Paket und seine Einstellungen unverändert sind. Die nächste Paketsynchronisierung schließt diese falsche Meldung und ersetzt sie durch einen Hinweis mit einem Link zur **Info**-Seite des Pakets.
 
-Wenn du die Konfiguration auf einer neuen oder neu installierten Firewall wiederherstellst, wartet der wiederhergestellte Wiederherstellungseintrag auf den Abschluss der pfSense-Paketsynchronisierung und versucht es anschließend alle 15 Minuten erneut. Er installiert genau die Paketversion, die den Eintrag geschrieben hat, erst nach Prüfung ihrer SHA-256-Prüfsumme neu und verwendet dabei, falls vorhanden, das zwischengespeicherte Paket unter `/conf/ipv6-prefix-updater/restore-heal`, andernfalls die angeheftete versionsbezogene Release-URL.
+Wenn du die Konfiguration auf einer neuen oder neu installierten Firewall wiederherstellst, wartet der wiederhergestellte Wiederherstellungseintrag auf den Abschluss der pfSense-Paketsynchronisierung und versucht es anschließend alle 15 Minuten erneut. Er installiert genau die Paketversion, die den Eintrag geschrieben hat, erst nach Prüfung ihrer SHA-256-Prüfsumme neu und verwendet dabei, falls vorhanden, das zwischengespeicherte Paket unter `/conf/ipv6-prefix-updater/restore-heal`, andernfalls die angeheftete versionsbezogene Release-URL. Ein heruntergeladenes Paket bleibt dort gespeichert, nachdem es die Prüfsummenprüfung bestanden hat, und auch ein über den Reiter **Info** installiertes Update wird dort gespeichert, sodass bei einer Wiederherstellung auf derselben Firewall eine Neuinstallation ohne Internetzugang möglich ist.
 
-Bei einer absichtlichen Deinstallation des Pakets wird der Wiederherstellungseintrag entfernt.
+Es kann jeweils nur ein Wiederherstellungslauf ausgeführt werden; ein Lauf, der startet, während ein anderer noch ein Paket herunterlädt oder installiert, wird sofort beendet. Jeder Schritt wird im Systemprotokoll unter `ipv6-prefix-updater-restore-heal` protokolliert: `deferred`, solange pfSense noch Pakete wiederherstellt, danach `cache` oder `fetch`, `install` und `installed`; schlägt ein Schritt fehl, erscheint `fetch-failed`, `checksum-failed`, `cache-failed` oder `install-failed`.
+
+Bei einer absichtlichen Deinstallation des Pakets werden der Wiederherstellungseintrag und das zwischengespeicherte Paket entfernt.
 
 ## Wie die Revisionen beschriftet sind \{#how-the-revisions-are-labelled}
 

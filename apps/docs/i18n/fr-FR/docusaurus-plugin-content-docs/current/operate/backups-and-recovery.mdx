@@ -52,9 +52,11 @@ Pour en restaurer une, cliquez sur **Télécharger**, puis envoyez le fichier so
 
 Après une restauration complète de la configuration sur le même pare-feu, pfSense peut signaler qu’IPv6 Prefix Updater a été supprimé alors que le paquet et ses réglages sont inchangés. La synchronisation suivante des paquets ferme cet avis erroné et le remplace par un message rassurant avec un lien vers la page **À propos** du paquet.
 
-Lorsque vous restaurez la configuration sur un pare-feu neuf ou réinstallé, l’entrée de récupération restaurée attend la fin de la synchronisation des paquets de pfSense, puis réessaie toutes les 15 minutes. Elle ne réinstalle la version exacte du paquet qui a écrit l’entrée qu’après avoir vérifié sa somme SHA-256, à partir du paquet en cache dans `/conf/ipv6-prefix-updater/restore-heal` s’il est disponible ou, sinon, de l’URL de version épinglée.
+Lorsque vous restaurez la configuration sur un pare-feu neuf ou réinstallé, l’entrée de récupération restaurée attend la fin de la synchronisation des paquets de pfSense, puis réessaie toutes les 15 minutes. Elle ne réinstalle la version exacte du paquet qui a écrit l’entrée qu’après avoir vérifié sa somme SHA-256, à partir du paquet en cache dans `/conf/ipv6-prefix-updater/restore-heal` s’il est disponible ou, sinon, de l’URL de version épinglée. Un paquet téléchargé y est conservé après validation de sa somme de contrôle, tout comme une mise à jour installée depuis l’onglet **À propos**, ce qui permet à une restauration sur le même pare-feu de réinstaller le paquet sans accès à Internet.
 
-Une désinstallation volontaire du paquet supprime l’entrée de récupération.
+Une seule opération de récupération peut s’exécuter à la fois ; celle qui démarre pendant qu’une autre télécharge ou installe encore le paquet s’arrête immédiatement. Chaque étape est consignée dans le journal système sous `ipv6-prefix-updater-restore-heal` : `deferred` pendant que pfSense restaure encore les paquets, puis `cache` ou `fetch`, `install` et `installed`, ou `fetch-failed`, `checksum-failed`, `cache-failed` ou `install-failed` en cas d’échec d’une étape.
+
+Une désinstallation volontaire du paquet supprime l’entrée de récupération et le paquet mis en cache.
 
 ## Libellé des révisions \{#how-the-revisions-are-labelled}
 

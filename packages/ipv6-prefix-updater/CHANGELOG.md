@@ -1,5 +1,14 @@
 # pfsense-pkg-ipv6-prefix-updater
 
+## 2.1.3 - 2026-11-18
+
+### UPDATED
+- A manual Check for Updates on the About tab files no notice, since the About tab already shows the result, and later scheduled checks don't announce that version again.
+
+### FIXED
+- The configuration-restore recovery job calls system tools by full path, logs under ipv6-prefix-updater-restore-heal, keeps the About tab's verified update for offline reinstalls, and never starts a second run while one is still working.
+- Check for Updates on the About tab works while a prefix update runs instead of failing with "Another package operation is already running", and an update installed from the About tab waits for that prefix update to finish.
+
 ## 2.1.2 - 2026-11-18
 
 ### UPDATED

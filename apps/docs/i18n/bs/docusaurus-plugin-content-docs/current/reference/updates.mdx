@@ -31,6 +31,8 @@ Učestalost odaberite u **Services → IPv6 Prefix Updater → Postavke → Ažu
 
 Nasumični raspored čuva se u pfSense konfiguraciji, pa ga ni čuvanje postavki ni ponovna instalacija paketa ne pomjeraju. **Provjeri sada** na kartici O paketu uvijek izvodi ručnu provjeru, čak i kada je učestalost **Nikada**.
 
+Ručna provjera na kartici O paketu može se pokrenuti dok traje ažuriranje prefiksa. Ne dodaje obavijest i označava prikazanu verziju kao već najavljenu, pa je kasnija zakazana provjera neće ponovo najaviti.
+
 ## Mrežna odredišta \{#network-destinations}
 
 Provjera ažuriranja ili ažuriranje može kontaktirati ove hostove kojima upravlja GitHub:
@@ -50,6 +52,8 @@ Označite **Udaljene obavijesti** kako biste uključili i e-poštu, Telegram, Pu
 ## Instaliranje ažuriranja \{#install-an-update}
 
 Otvorite **Services → IPv6 Prefix Updater → O paketu**. Kada je dostupna novija verzija, **Ažuriraj na _verziju_** pokreće pozadinski posao, a stranica prikazuje njegov napredak.
+
+Ako je ažuriranje prefiksa u toku, pozadinski posao prikazuje da čeka i daje tom zadatku do 30 minuta da završi prije nego što instalacija ne uspije.
 
 Posao ponovo dohvata izdanje i preuzima `.pkg` s verzijom. Provjerava paket prema sažetku `sha256:<hex>` resursa iz GitHub API-ja; kada tog sažetka nema, umjesto toga preuzima odgovarajuću `.pkg.sha256` datoteku iz istog izdanja.
 

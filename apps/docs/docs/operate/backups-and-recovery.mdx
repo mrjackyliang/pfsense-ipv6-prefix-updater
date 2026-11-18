@@ -52,9 +52,11 @@ To restore one, select **Download**, then upload the file under **Diagnostics â†
 
 After a full configuration restore on the same firewall, pfSense may report that IPv6 Prefix Updater was removed even though the package and its settings are unchanged. The next package synchronization closes that false notice and replaces it with a reassurance linked to the package's **About** page.
 
-When you restore the configuration on a new or reinstalled firewall, the restored recovery entry waits for pfSense's package synchronization to finish and then retries every 15 minutes. It reinstalls the exact package version that wrote the entry only after verifying its SHA-256 checksum, using the cached package under `/conf/ipv6-prefix-updater/restore-heal` when available or its pinned versioned release URL otherwise.
+When you restore the configuration on a new or reinstalled firewall, the restored recovery entry waits for pfSense's package synchronization to finish and then retries every 15 minutes. It reinstalls the exact package version that wrote the entry only after verifying its SHA-256 checksum, using the cached package under `/conf/ipv6-prefix-updater/restore-heal` when available or its pinned versioned release URL otherwise. A downloaded package is kept there after it passes the checksum, and an update installed from the **About** tab is kept there too, so a restore onto the same firewall can reinstall without internet access.
 
-A deliberate package uninstall removes the recovery entry.
+Only one recovery run works at a time; a run that starts while another is still downloading or installing exits at once. Each step is logged in the system log under `ipv6-prefix-updater-restore-heal`: `deferred` while pfSense is still restoring packages, then `cache` or `fetch`, `install`, and `installed`, or `fetch-failed`, `checksum-failed`, `cache-failed` or `install-failed` when a step fails.
+
+A deliberate package uninstall removes the recovery entry and the cached package.
 
 ## How the Revisions Are Labelled
 

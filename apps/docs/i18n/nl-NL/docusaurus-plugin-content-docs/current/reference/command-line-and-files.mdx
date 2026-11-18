@@ -23,7 +23,7 @@ Voer de pakketopdracht uit vanuit een shell en vind de bestanden, logboeken en m
 
 ```text
 Gebruik: ipv6-prefix-updater [--manual] [--dry-run] [--accept-current-prefix [--interface=NAME]] [--migrate-legacy]
-Updateopties: --check-updates, --self-update.
+Updateopties: --check-updates [--no-notice], --self-update.
 ```
 
 De door pfSense beheerde cronjob voor de prefixcontrole voert de opdracht uit als `root`, zonder opties, terwijl een aparte cronjob voor de releasecontrole haar uitvoert met `--check-updates`. Vóór elke controle verplaatst de opdracht ook alle restanten van de <Terminology title="Versie 1.x: het script update.php, gestart door het Cron-pakket" to="/docs/reference/terminology#package-origins">legacy-updater</Terminology> naar het pakket. Het tabblad Status gebruikt `--manual` voor **Nu uitvoeren**, `--dry-run` voor **<Terminology title="Een voorbeeld van de wijzigingen dat niets schrijft" to="/docs/reference/terminology#running-checks">Testuitvoering</Terminology>** en `--accept-current-prefix` voor het herstel van de baseline, en het tabblad Opruimen gebruikt `--migrate-legacy`.
@@ -40,10 +40,11 @@ Zonder opties gedraagt de opdracht zich als een geplande controle en meldt ze <T
 | `--interface=NAME`        | Beperkt `--accept-current-prefix` tot één bewaakte interface, aangeduid met de interne naam, zoals `lan`. Zonder deze optie wordt elke bewaakte interface met een adres geaccepteerd.                                                                                                                                       |
 | `--migrate-legacy`        | Verplaatst de <Terminology title="Versie 1.x: het script update.php, gestart door het Cron-pakket" to="/docs/reference/terminology#package-origins">legacy-updater</Terminology> meteen naar het pakket en toont elke stap, zonder een prefixcontrole uit te voeren. Stopt met `2` als de overstap een waarschuwing meldde. |
 | `--check-updates`         | Controleert op GitHub de nieuwste pakketrelease en slaat het resultaat op in `/cf/conf/ipv6-prefix-updater/updates.json`. [Updates](/docs/reference/updates) beschrijft de controle.                                                                                                                                        |
+| `--no-notice`             | Onderdrukt de updatemelding voor `--check-updates` en registreert de nieuwste versie als al gemeld. Alleen geldig samen met `--check-updates`.                                                                                                                                                                              |
 | `--self-update`           | Downloadt, verifieert en installeert de nieuwste release, en legt de voortgang vast in `/cf/conf/ipv6-prefix-updater/update-status.json`.                                                                                                                                                                                   |
 | `--help`                  | Toont de gebruiksregel en de regel met updateopties, en stopt met `0`. Geen van beide regels noemt `--help` zelf.                                                                                                                                                                                                           |
 
-Elke andere optie schrijft `Onbekende optie: <option>` naar standaardfout en stopt met `64`. De combinatie van `--accept-current-prefix` en `--dry-run` stopt ook met `64`, net als het combineren van `--check-updates` of `--self-update` met elkaar of met een prefixoptie.
+Elke andere optie schrijft `Onbekende optie: <option>` naar standaardfout en stopt met `64`. De combinatie van `--accept-current-prefix` en `--dry-run` stopt ook met `64`, net als het combineren van `--check-updates` of `--self-update` met elkaar of met een prefixoptie. `--no-notice` zonder `--check-updates` stopt eveneens met `64`.
 
 ## Exitcodes \{#exit-codes}
 
@@ -101,6 +102,7 @@ Veldwijzigingen:
 | `/cf/conf/ipv6-prefix-updater/update-status.json`                    | De voortgang van de meest recente zelfupdate.                                                                                                                                                                                                                                                                                            |
 | `/cf/conf/ipv6-prefix-updater/backups/`                              | De kopieën van het tabblad **Back-ups**, elk met één configuratie `<id>.xml` en één beschrijving `<id>.json`, allemaal `0600`.                                                                                                                                                                                                           |
 | `/var/run/ipv6-prefix-updater.lock`                                  | De <Terminology title="Voorkomt dat twee controles tegelijk lopen" to="/docs/reference/terminology#running-checks">uitvoeringsvergrendeling</Terminology>, vastgehouden met een niet-blokkerende `flock` en met de proces-ID van het draaiende proces als inhoud. Het bestand blijft tussen uitvoeringen op de schijf staan.             |
+| `/var/run/ipv6-prefix-updater-release.lock`                          | De releasevergrendeling voor updatecontroles en zelfupdates, vastgehouden met `flock`. Releasebewerkingen wachten maximaal 30 seconden op de vergrendeling; het bestand blijft tussen bewerkingen op de schijf staan.                                                                                                                    |
 
 ## Indeling van de pakketstatus \{#package-state-format}
 

@@ -23,7 +23,7 @@ Uruchom polecenie pakietu z powłoki i znajdź pliki, dzienniki oraz komunikaty,
 
 ```text
 Użycie: ipv6-prefix-updater [--manual] [--dry-run] [--accept-current-prefix [--interface=NAME]] [--migrate-legacy]
-Opcje aktualizacji: --check-updates, --self-update.
+Opcje aktualizacji: --check-updates [--no-notice], --self-update.
 ```
 
 Zarządzany przez pfSense wpis cron sprawdzania prefiksu uruchamia polecenie jako `root` bez opcji, a osobny wpis sprawdzania wydań uruchamia je z `--check-updates`. Przed każdym sprawdzeniem przenosi ono też do pakietu wszelkie pozostałości <Terminology title="Wersja 1.x: skrypt update.php uruchamiany przez pakiet Cron" to="/docs/reference/terminology#package-origins">starszego aktualizatora</Terminology>. Karta Stan używa `--manual` dla **Uruchom teraz**, `--dry-run` dla **<Terminology title="Podgląd zmian, który niczego nie zapisuje" to="/docs/reference/terminology#running-checks">Próba</Terminology>** i `--accept-current-prefix` do odzyskiwania wartości bazowej, a karta Porządkowanie używa `--migrate-legacy`.
@@ -40,10 +40,11 @@ Bez opcji polecenie zachowuje się jak zaplanowane sprawdzenie i zgłasza wynik 
 | `--interface=NAME`        | Ogranicza `--accept-current-prefix` do jednego monitorowanego interfejsu, podanego przez jego wewnętrzną nazwę, na przykład `lan`. Bez tej opcji akceptowany jest każdy monitorowany interfejs, który ma adres.                                                                                                         |
 | `--migrate-legacy`        | Od razu przenosi <Terminology title="Wersja 1.x: skrypt update.php uruchamiany przez pakiet Cron" to="/docs/reference/terminology#package-origins">starszy aktualizator</Terminology> do pakietu i wypisuje każdy krok, bez sprawdzania prefiksu. Kończy działanie z kodem `2`, gdy przeniesienie zgłosiło ostrzeżenie. |
 | `--check-updates`         | Sprawdza w serwisie GitHub najnowsze wydanie pakietu i zapisuje wynik w `/cf/conf/ipv6-prefix-updater/updates.json`. Strona [Aktualizacje](/docs/reference/updates) opisuje to sprawdzenie.                                                                                                                             |
+| `--no-notice`             | Pomija powiadomienie o aktualizacji dla `--check-updates` i zapisuje najnowszą wersję jako już zgłoszoną. Działa wyłącznie z `--check-updates`.                                                                                                                                                                         |
 | `--self-update`           | Pobiera, weryfikuje i instaluje najnowsze wydanie, zapisując postęp w `/cf/conf/ipv6-prefix-updater/update-status.json`.                                                                                                                                                                                                |
 | `--help`                  | Wyświetla wiersz użycia i wiersz opcji aktualizacji, a następnie kończy działanie z kodem `0`. Żaden z tych wierszy nie wymienia samej opcji `--help`.                                                                                                                                                                  |
 
-Każda inna opcja wypisuje `Nieznana opcja: <option>` na standardowe wyjście błędów i kończy działanie z kodem `64`. Połączenie `--accept-current-prefix` z `--dry-run` również kończy działanie z kodem `64`, podobnie jak połączenie `--check-updates` lub `--self-update` ze sobą nawzajem albo z dowolną opcją prefiksu.
+Każda inna opcja wypisuje `Nieznana opcja: <option>` na standardowe wyjście błędów i kończy działanie z kodem `64`. Połączenie `--accept-current-prefix` z `--dry-run` również kończy działanie z kodem `64`, podobnie jak połączenie `--check-updates` lub `--self-update` ze sobą nawzajem albo z dowolną opcją prefiksu. Użycie `--no-notice` bez `--check-updates` również kończy działanie z kodem `64`.
 
 ## Kody wyjścia \{#exit-codes}
 
@@ -101,6 +102,7 @@ Zmiany pól:
 | `/cf/conf/ipv6-prefix-updater/update-status.json`                    | Postęp ostatniej samoaktualizacji.                                                                                                                                                                                                                                                                                             |
 | `/cf/conf/ipv6-prefix-updater/backups/`                              | Kopie z karty **Kopie zapasowe**, każda jako jedna konfiguracja `<id>.xml` i jeden opis `<id>.json`, wszystkie z uprawnieniami `0600`.                                                                                                                                                                                         |
 | `/var/run/ipv6-prefix-updater.lock`                                  | <Terminology title="Nie pozwala, by dwa sprawdzenia działały jednocześnie" to="/docs/reference/terminology#running-checks">Blokada uruchomienia</Terminology>, utrzymywana przez nieblokujące `flock` i zawierająca identyfikator działającego procesu. Pozostaje na dysku między uruchomieniami.                              |
+| `/var/run/ipv6-prefix-updater-release.lock`                          | Blokada wydań dla sprawdzania aktualizacji i samodzielnych aktualizacji, utrzymywana przez `flock`. Operacje wydań czekają na nią do 30 sekund, a plik pozostaje na dysku między operacjami.                                                                                                                                   |
 
 ## Format stanu pakietu \{#package-state-format}
 

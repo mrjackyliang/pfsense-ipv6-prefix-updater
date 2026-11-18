@@ -158,12 +158,15 @@ $requiredUpdateKeys = [
     'update_check_failed',
     'update_checks_off',
     'update_not_checked',
+    'release_operation_running',
     'update_available_notice',
     'update_status_checking',
     'update_status_current',
     'update_status_downloading',
     'update_status_installing',
     'update_status_queued',
+    'update_waiting_for_task',
+    'update_task_still_running',
     'update_status_succeeded',
     'update_status_verifying',
     'update_checksum_missing',
@@ -187,6 +190,11 @@ foreach ($expectedLocales as $locale) {
         $expectedUpdateKeys,
         array_keys($updateMessagesByLocale[$locale]),
         sprintf('Locale %s must contain every update key in canonical order.', $locale),
+    );
+    assertTranslationSame(
+        true,
+        str_contains($updateMessagesByLocale[$locale]['update_usage'], '--no-notice'),
+        sprintf('Locale %s must list --no-notice in the update usage text.', $locale),
     );
 
     if ($locale === 'en_US') {

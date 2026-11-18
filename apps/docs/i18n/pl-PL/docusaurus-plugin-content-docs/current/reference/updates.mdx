@@ -31,6 +31,8 @@ Częstotliwość wybierz w **Services → IPv6 Prefix Updater → Ustawienia →
 
 Losowy harmonogram jest zapisywany w konfiguracji pfSense, więc zapisanie ustawień ani ponowna instalacja pakietu go nie przesuwają. **Sprawdź teraz** na karcie Informacje zawsze wykonuje ręczne sprawdzenie, także gdy wybrano **Nigdy**.
 
+Ręczne sprawdzenie na karcie Informacje może działać podczas aktualizacji prefiksu. Nie tworzy powiadomienia i zapisuje wyświetloną wersję jako już ogłoszoną, więc późniejsze zaplanowane sprawdzenie nie ogłosi jej ponownie.
+
 ## Cele sieciowe \{#network-destinations}
 
 Sprawdzenie lub aktualizacja może łączyć się z tymi hostami obsługiwanymi przez GitHub:
@@ -50,6 +52,8 @@ Zaznacz **Zdalne powiadomienia**, aby korzystać ze skonfigurowanych w pfSense z
 ## Instalowanie aktualizacji \{#install-an-update}
 
 Otwórz **Services → IPv6 Prefix Updater → Informacje**. Gdy dostępna jest nowsza wersja, przycisk **Zaktualizuj do _wersja_** uruchamia zadanie w tle, a strona pokazuje jego postęp.
+
+Jeśli trwa aktualizacja prefiksu, zadanie w tle pokazuje oczekiwanie i czeka na jej zakończenie do 30 minut, zanim instalacja zakończy się niepowodzeniem.
 
 Zadanie ponownie pobiera dane wydania i pobiera plik `.pkg` z numerem wersji. Sprawdza pakiet względem skrótu `sha256:<hex>` zasobu w API GitHub; gdy tego skrótu brakuje, pobiera zamiast niego pasujący zasób `.pkg.sha256` z tego samego wydania.
 

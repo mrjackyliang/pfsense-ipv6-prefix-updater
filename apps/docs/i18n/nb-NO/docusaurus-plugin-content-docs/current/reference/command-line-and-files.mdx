@@ -23,7 +23,7 @@ Kjør pakkekommandoen fra et skall, og finn filene, loggene og varslene den bruk
 
 ```text
 Usage: ipv6-prefix-updater [--manual] [--dry-run] [--accept-current-prefix [--interface=NAME]] [--migrate-legacy]
-Update options: --check-updates, --self-update.
+Oppdateringsalternativer: --check-updates [--no-notice], --self-update.
 ```
 
 Cron-oppføringen for prefikskontrollen som pfSense styrer, kjører kommandoen som `root` uten alternativer, mens en egen oppføring for utgivelseskontrollen kjører den med `--check-updates`. Før hver kontroll flytter den også eventuelle rester etter det <Terminology title="Versjon 1.x: skriptet update.php, kjørt av Cron-pakken" to="/docs/reference/terminology#package-origins">eldre oppdateringsskriptet</Terminology> inn i pakken. Fanen Status bruker `--manual` for **Kjør nå**, `--dry-run` for **<Terminology title="En forhåndsvisning av endringene som ikke skriver noe" to="/docs/reference/terminology#running-checks">Testkjøring</Terminology>** og `--accept-current-prefix` for gjenoppretting av grunnlinjen, og fanen Opprydding bruker `--migrate-legacy`.
@@ -40,10 +40,11 @@ Uten alternativer oppfører kommandoen seg som en planlagt kontroll og rapporter
 | `--interface=NAME`        | Begrenser `--accept-current-prefix` til ett overvåket grensesnitt, angitt med det interne navnet, for eksempel `lan`. Uten dette alternativet godtas alle overvåkede grensesnitt som har en adresse.                                                                                                                             |
 | `--migrate-legacy`        | Flytter det <Terminology title="Versjon 1.x: skriptet update.php, kjørt av Cron-pakken" to="/docs/reference/terminology#package-origins">eldre oppdateringsskriptet</Terminology> inn i pakken med en gang og skriver ut hvert trinn, uten å kjøre en prefikskontroll. Avslutter med `2` når flyttingen rapporterte en advarsel. |
 | `--check-updates`         | Ser etter nyeste pakkeutgivelse på GitHub og lagrer resultatet i `/cf/conf/ipv6-prefix-updater/updates.json`. [Oppdateringer](/docs/reference/updates) beskriver kontrollen.                                                                                                                                                     |
+| `--no-notice`             | Skjuler oppdateringsvarselet for `--check-updates` og registrerer den nyeste versjonen som allerede varslet. Bare gyldig sammen med `--check-updates`.                                                                                                                                                                           |
 | `--self-update`           | Laster ned, verifiserer og installerer nyeste utgivelse, og registrerer fremdriften i `/cf/conf/ipv6-prefix-updater/update-status.json`.                                                                                                                                                                                         |
 | `--help`                  | Skriver ut brukslinjen og linjen med oppdateringsalternativer, og avslutter med `0`. Selve `--help` står ikke på noen av linjene.                                                                                                                                                                                                |
 
-Alle andre alternativer skriver ut `Ukjent alternativ: <option>` til standard feilutdata og avslutter med `64`. Å kombinere `--accept-current-prefix` med `--dry-run` avslutter også med `64`, og det samme gjør det å kombinere `--check-updates` eller `--self-update` med hverandre eller med et prefiksalternativ.
+Alle andre alternativer skriver ut `Ukjent alternativ: <option>` til standard feilutdata og avslutter med `64`. Å kombinere `--accept-current-prefix` med `--dry-run` avslutter også med `64`, og det samme gjør det å kombinere `--check-updates` eller `--self-update` med hverandre eller med et prefiksalternativ. `--no-notice` uten `--check-updates` avslutter også med `64`.
 
 ## Avslutningskoder \{#exit-codes}
 
@@ -101,6 +102,7 @@ Feltendringer:
 | `/cf/conf/ipv6-prefix-updater/update-status.json`                    | Fremdriften for den siste selvoppdateringen.                                                                                                                                                                                                                                                              |
 | `/cf/conf/ipv6-prefix-updater/backups/`                              | Kopiene i fanen **Sikkerhetskopier**, hver med én `<id>.xml`-konfigurasjon og én `<id>.json`-beskrivelse, alle med `0600`.                                                                                                                                                                                |
 | `/var/run/ipv6-prefix-updater.lock`                                  | <Terminology title="Hindrer at to kontroller kjører samtidig" to="/docs/reference/terminology#running-checks">Kjørelåsen</Terminology>, som holdes med en ikke-blokkerende `flock` og inneholder prosess-ID-en til kjøringen som pågår. Den blir liggende på disken mellom kjøringene.                    |
+| `/var/run/ipv6-prefix-updater-release.lock`                          | Utgivelseslåsen for oppdateringskontroller og egenoppdateringer, holdt med `flock`. Utgivelsesoperasjoner venter i opptil 30 sekunder på låsen, og filen blir liggende på disken mellom operasjonene.                                                                                                     |
 
 ## Format for pakketilstanden \{#package-state-format}
 

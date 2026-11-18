@@ -23,7 +23,7 @@ import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
 
 ```text
 用法：ipv6-prefix-updater [--manual] [--dry-run] [--accept-current-prefix [--interface=NAME]] [--migrate-legacy]
-更新选项：--check-updates、--self-update。
+更新选项：--check-updates [--no-notice]、--self-update。
 ```
 
 由 pfSense 管理的前缀检查 cron 条目以 `root` 身份不带选项运行该命令，另一个独立的版本检查条目则以 `--check-updates` 运行它。每次检查之前，它还会将<Terminology title="1.x 版本：由 Cron 软件包运行的 update.php 脚本" to="/docs/reference/terminology#package-origins">旧版更新器</Terminology>的所有遗留内容迁移到软件包中。“状态”选项卡在 **立即运行** 时使用 `--manual`，在 **<Terminology title="预览改动，但不写入任何内容" to="/docs/reference/terminology#running-checks">试运行</Terminology>** 时使用 `--dry-run`，在基线恢复时使用 `--accept-current-prefix`；“清理”选项卡则使用 `--migrate-legacy`。
@@ -40,10 +40,11 @@ import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
 | `--interface=NAME`        | 将 `--accept-current-prefix` 限定于一个监控接口，以其内部名称（如 `lan`）指定。不带此选项时，所有具有地址的监控接口都会被接受。                                                                                        |
 | `--migrate-legacy`        | 立即将<Terminology title="1.x 版本：由 Cron 软件包运行的 update.php 脚本" to="/docs/reference/terminology#package-origins">旧版更新器</Terminology>迁移到软件包中并打印每个步骤，不运行前缀检查。迁移报告了警告时以 `2` 退出。 |
 | `--check-updates`         | 在 GitHub 上检查最新的软件包版本，并将结果保存到 `/cf/conf/ipv6-prefix-updater/updates.json`。[更新](/docs/reference/updates)介绍了该检查。                                                           |
+| `--no-notice`             | 使 `--check-updates` 不创建更新通知，并将最新版本记录为已通知。仅可与 `--check-updates` 一起使用。                                                                                                    |
 | `--self-update`           | 下载、验证并安装最新版本，并将进度记录到 `/cf/conf/ipv6-prefix-updater/update-status.json`。                                                                                                 |
 | `--help`                  | 打印用法行和更新选项行，并以 `0` 退出。这两行都不列出 `--help` 本身。                                                                                                                              |
 
-任何其他选项都会向标准错误输出 `未知选项：<option>` 并以 `64` 退出。将 `--accept-current-prefix` 与 `--dry-run` 组合使用同样会以 `64` 退出；将 `--check-updates` 与 `--self-update` 组合使用，或将二者之一与任何前缀选项组合使用，也是如此。
+任何其他选项都会向标准错误输出 `未知选项：<option>` 并以 `64` 退出。将 `--accept-current-prefix` 与 `--dry-run` 组合使用同样会以 `64` 退出；将 `--check-updates` 与 `--self-update` 组合使用，或将二者之一与任何前缀选项组合使用，也是如此。不与 `--check-updates` 一起使用 `--no-notice` 时同样会以 `64` 退出。
 
 ## 退出码 \{#exit-codes}
 
@@ -101,6 +102,7 @@ import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
 | `/cf/conf/ipv6-prefix-updater/update-status.json`                    | 最近一次自我更新的进度。                                                                                                                                                                       |
 | `/cf/conf/ipv6-prefix-updater/backups/`                              | **备份** 选项卡中的副本，每份包含一个 `<id>.xml` 配置文件和一个 `<id>.json` 描述文件，权限均为 `0600`。                                                                                                             |
 | `/var/run/ipv6-prefix-updater.lock`                                  | <Terminology title="确保两次检查不会同时运行" to="/docs/reference/terminology#running-checks">运行锁</Terminology>，通过非阻塞的 `flock` 持有，并记录正在运行的进程 ID。它在两次运行之间保留在磁盘上。                                |
+| `/var/run/ipv6-prefix-updater-release.lock`                          | 更新检查和自更新使用的发布锁，通过 `flock` 持有。发布操作最多等待 30 秒来获取该锁，锁文件会在操作之间保留在磁盘上。                                                                                                                   |
 
 ## 软件包状态格式 \{#package-state-format}
 

@@ -52,9 +52,11 @@ Da biste vratili jednu, odaberite **Preuzmi**, a zatim otpremite datoteku u **Di
 
 Nakon potpunog vraćanja konfiguracije na istom vatrozidu, pfSense može prijaviti da je Ažuriranje IPv6 prefiksa uklonjeno iako paket i njegove postavke nisu promijenjeni. Sljedeća sinhronizacija paketa zatvara tu netačnu obavijest i zamjenjuje je potvrdom s vezom na stranicu **O programu** paketa.
 
-Kada vratite konfiguraciju na novi ili ponovo instalirani vatrozid, vraćeni unos za oporavak čeka da pfSense završi sinhronizaciju paketa, a zatim pokušava ponovo svakih 15 minuta. Ponovo instalira tačno onu verziju paketa koja je zapisala unos tek nakon provjere SHA-256 kontrolnog zbira, koristeći keširani paket iz `/conf/ipv6-prefix-updater/restore-heal` kada je dostupan ili inače njegov prikvačeni URL verzioniranog izdanja.
+Kada vratite konfiguraciju na novi ili ponovo instalirani vatrozid, vraćeni unos za oporavak čeka da pfSense završi sinhronizaciju paketa, a zatim pokušava ponovo svakih 15 minuta. Ponovo instalira tačno onu verziju paketa koja je zapisala unos tek nakon provjere SHA-256 kontrolnog zbira, koristeći keširani paket iz `/conf/ipv6-prefix-updater/restore-heal` kada je dostupan ili inače njegov prikvačeni URL verzioniranog izdanja. Preuzeti paket ostaje tamo nakon što prođe provjeru kontrolnog zbira, a tamo se čuva i ažuriranje instalirano s kartice **O programu**, pa se pri vraćanju na isti vatrozid paket može ponovo instalirati bez pristupa internetu.
 
-Namjerno uklanjanje paketa briše unos za oporavak.
+Istovremeno se izvršava samo jedan postupak oporavka; postupak koji se pokrene dok drugi još preuzima ili instalira paket odmah se završava. Svaki korak se bilježi u sistemskom dnevniku pod oznakom `ipv6-prefix-updater-restore-heal`: `deferred` dok pfSense još vraća pakete, zatim `cache` ili `fetch`, `install` i `installed`, odnosno `fetch-failed`, `checksum-failed`, `cache-failed` ili `install-failed` kada neki korak ne uspije.
+
+Namjerno uklanjanje paketa briše unos za oporavak i keširani paket.
 
 ## Kako su revizije označene \{#how-the-revisions-are-labelled}
 

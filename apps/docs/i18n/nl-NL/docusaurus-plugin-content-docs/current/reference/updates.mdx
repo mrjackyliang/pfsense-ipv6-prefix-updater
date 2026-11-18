@@ -31,6 +31,8 @@ Kies de frequentie onder **Services → IPv6 Prefix Updater → Instellingen →
 
 Het willekeurige schema wordt in de pfSense-configuratie opgeslagen, dus het opslaan van de instellingen of het opnieuw installeren van het pakket verschuift het niet. **Nu controleren** op het tabblad Over voert altijd een handmatige controle uit, ook als de frequentie **Nooit** is.
 
+Een handmatige controle op het tabblad Over kan worden uitgevoerd terwijl een prefixupdate actief is. De controle maakt geen melding en registreert de getoonde versie als al gemeld, zodat een latere geplande controle deze niet opnieuw meldt.
+
 ## Netwerkbestemmingen \{#network-destinations}
 
 Een updatecontrole of update kan deze door GitHub beheerde hosts benaderen:
@@ -50,6 +52,8 @@ Selecteer **Externe meldingen** om ook de in pfSense ingestelde e-mail, Telegram
 ## Een update installeren \{#install-an-update}
 
 Open **Services → IPv6 Prefix Updater → Over**. Als er een nieuwere versie beschikbaar is, start **Bijwerken naar _versie_** een achtergrondtaak en toont de pagina de voortgang ervan.
+
+Als een prefixupdate actief is, toont de achtergrondtaak dat ze wacht en krijgt de prefixupdate maximaal 30 minuten om te voltooien voordat de installatie mislukt.
 
 De taak haalt de release opnieuw op en downloadt de `.pkg` met versienummer. Ze controleert het pakket met de digest `sha256:<hex>` van het bestand in de GitHub API; ontbreekt die digest, dan downloadt ze in plaats daarvan het bijpassende bestand `.pkg.sha256` uit dezelfde release.
 

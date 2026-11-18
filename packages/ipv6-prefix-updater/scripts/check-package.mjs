@@ -430,6 +430,41 @@ if (commandLineEntryPoint.includes('case \'--migrate-legacy\':') === false
   throw new Error('The command-line entry point must expose the locked version 1.x cleanup action.');
 }
 
+/**
+ * Check Package - Release Lock Position.
+ *
+ * Finds the release-lock construction so the structural check can enforce the
+ * only valid acquisition order for self-updates.
+ *
+ * @since 2.1.3
+ */
+const releaseLockPosition = commandLineEntryPoint.indexOf('new FileLock(PackagePaths::RELEASE_LOCK_FILE)');
+
+/**
+ * Check Package - Update Package Lock Position.
+ *
+ * Finds the first package-lock construction after the release lock so release checks
+ * stay independent and self-updates take the package lock second.
+ *
+ * @since 2.1.3
+ */
+const updatePackageLockPosition = commandLineEntryPoint.indexOf('new FileLock(PackagePaths::LOCK_FILE)');
+
+if (releaseLockPosition === -1
+  || updatePackageLockPosition === -1
+  || updatePackageLockPosition < releaseLockPosition
+  || commandLineEntryPoint.includes('$releaseLock->acquire($releaseLockTimeoutSeconds)') === false
+  || commandLineEntryPoint.includes('$packageLock->acquire($packageLockTimeoutSeconds)') === false
+  || commandLineEntryPoint.includes('UpdateManager::markQueuedSelfUpdateWaiting()') === false
+  || commandLineEntryPoint.includes('update_task_still_running') === false) {
+  throw new Error('The update command must keep release-to-package lock ordering and bounded waits.');
+}
+
+if (commandLineEntryPoint.includes('case \'--no-notice\':') === false
+  || commandLineEntryPoint.includes('$updateManager->check($remoteNotifications, $fileNotice)') === false) {
+  throw new Error('The update command must pass the manual notice choice into release checks.');
+}
+
 if (commandLineEntryPoint.includes('case \'--check-updates\':') === false
   || commandLineEntryPoint.includes('case \'--self-update\':') === false
   || commandLineEntryPoint.includes('new UpdateManager(') === false) {
@@ -624,6 +659,8 @@ for (const aboutPageMarker of [
   'class="pkg-about-update',
   'name="check_updates"',
   'name="self_update"',
+  'PackagePaths::MANUAL_UPDATE_CHECK_COMMAND',
+  'Translator::translate(\'release_operation_running\')',
   'mwexec_bg(PackagePaths::SELF_UPDATE_COMMAND)',
   'UpdateManager::queueSelfUpdate(',
   'window.fetch(\'ipv6-prefix-updater-about.php?update_status=1\'',

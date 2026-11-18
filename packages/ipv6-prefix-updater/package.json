@@ -1,6 +1,6 @@
 {
   "name": "pfsense-pkg-ipv6-prefix-updater",
-  "version": "2.1.2",
+  "version": "2.1.3",
   "license": "MIT",
   "type": "module",
   "files": [

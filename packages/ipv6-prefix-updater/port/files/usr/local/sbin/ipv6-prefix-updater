@@ -13,15 +13,17 @@ use PfSense\Ipv6PrefixUpdater\Runtime\StateStore;
 use PfSense\Ipv6PrefixUpdater\Runtime\Translator;
 use PfSense\Ipv6PrefixUpdater\Runtime\UpdateManager;
 
-require_once('/usr/local/pkg/ipv6-prefix-updater/BackupStore.php');
-require_once('/usr/local/pkg/ipv6-prefix-updater/FileLock.php');
-require_once('/usr/local/pkg/ipv6-prefix-updater/LegacyMigrator.php');
-require_once('/usr/local/pkg/ipv6-prefix-updater/PackagePaths.php');
-require_once('/usr/local/pkg/ipv6-prefix-updater/PfSenseAdapter.php');
-require_once('/usr/local/pkg/ipv6-prefix-updater/PrefixUpdater.php');
-require_once('/usr/local/pkg/ipv6-prefix-updater/StateStore.php');
-require_once('/usr/local/pkg/ipv6-prefix-updater/Translator.php');
-require_once('/usr/local/pkg/ipv6-prefix-updater/UpdateManager.php');
+$packageRoot = dirname(__DIR__) . '/pkg/ipv6-prefix-updater';
+
+require_once($packageRoot . '/BackupStore.php');
+require_once($packageRoot . '/FileLock.php');
+require_once($packageRoot . '/LegacyMigrator.php');
+require_once($packageRoot . '/PackagePaths.php');
+require_once($packageRoot . '/PfSenseAdapter.php');
+require_once($packageRoot . '/PrefixUpdater.php');
+require_once($packageRoot . '/StateStore.php');
+require_once($packageRoot . '/Translator.php');
+require_once($packageRoot . '/UpdateManager.php');
 
 /**
  * Returns one test-only update override from the CLI environment.
@@ -44,29 +46,29 @@ function ipv6PrefixUpdaterEnvironmentOverride(string $name, string $fallback): s
 }
 
 /**
- * Runs a release check or checksum-verified self-update under the package lock.
+ * Runs a release check or checksum-verified self-update under release coordination.
  *
- * @param bool $selfUpdate - Whether to install instead of only checking.
+ * @param bool $selfUpdate                    - Whether to install instead of only checking.
+ * @param bool $fileNotice                    - Whether a check may file a release notice.
+ * @param int  $releaseLockTimeoutSeconds     - Maximum release-lock wait.
+ * @param int  $packageLockTimeoutSeconds     - Maximum package-lock wait.
  *
  * @return int
  *
- * @since 2.1.0
+ * @since 2.1.3
  */
-function runIpv6PrefixUpdaterUpdateCommand(bool $selfUpdate): int
-{
-    $fileLock = new FileLock(PackagePaths::LOCK_FILE);
+function runIpv6PrefixUpdaterUpdateCommand(
+    bool $selfUpdate,
+    bool $fileNotice,
+    int $releaseLockTimeoutSeconds = 30,
+    int $packageLockTimeoutSeconds = 1_800,
+): int {
+    $releaseLock = new FileLock(PackagePaths::RELEASE_LOCK_FILE);
+    $packageLock = null;
 
     try {
-        UpdateManager::assertEnvironment();
-
-        $installedVersion = UpdateManager::installedVersion();
-
-        if ($installedVersion === null) {
-            throw new RuntimeException(Translator::translate('update_installed_version_unknown'));
-        }
-
-        if ($fileLock->acquire() === false) {
-            $message = Translator::translate('lock_owned');
+        if ($releaseLock->acquire($releaseLockTimeoutSeconds) === false) {
+            $message = Translator::translate('release_operation_running');
 
             if ($selfUpdate) {
                 UpdateManager::failQueuedSelfUpdate($message);
@@ -75,6 +77,31 @@ function runIpv6PrefixUpdaterUpdateCommand(bool $selfUpdate): int
             fwrite(STDOUT, $message . PHP_EOL);
 
             return 0;
+        }
+
+        if ($selfUpdate) {
+            $packageLock = new FileLock(PackagePaths::LOCK_FILE);
+
+            if ($packageLock->acquire() === false) {
+                UpdateManager::markQueuedSelfUpdateWaiting();
+
+                if ($packageLock->acquire($packageLockTimeoutSeconds) === false) {
+                    $message = Translator::translate('update_task_still_running');
+
+                    UpdateManager::failQueuedSelfUpdate($message);
+                    fwrite(STDOUT, $message . PHP_EOL);
+
+                    return 0;
+                }
+            }
+        }
+
+        UpdateManager::assertEnvironment();
+
+        $installedVersion = UpdateManager::installedVersion();
+
+        if ($installedVersion === null) {
+            throw new RuntimeException(Translator::translate('update_installed_version_unknown'));
         }
 
         $settings = config_get_path('installedpackages/ipv6prefixupdater/config/0', []);
@@ -93,7 +120,7 @@ function runIpv6PrefixUpdaterUpdateCommand(bool $selfUpdate): int
         );
         $state = $selfUpdate
             ? $updateManager->selfUpdate($remoteNotifications)
-            : $updateManager->check($remoteNotifications);
+            : $updateManager->check($remoteNotifications, $fileNotice);
 
         if ($selfUpdate === false) {
             fwrite(STDOUT, Translator::translate(
@@ -116,7 +143,11 @@ function runIpv6PrefixUpdaterUpdateCommand(bool $selfUpdate): int
 
         return 1;
     } finally {
-        $fileLock->release();
+        if ($packageLock instanceof FileLock) {
+            $packageLock->release();
+        }
+
+        $releaseLock->release();
     }
 }
 
@@ -349,6 +380,8 @@ function ipv6PrefixUpdaterMain(array $arguments): int
     $migrateLegacy = false;
     $checkUpdates = false;
     $selfUpdate = false;
+    $noNotice = false;
+    $help = false;
     $onlyInterface = null;
 
     foreach (array_slice($arguments, 1) as $argument) {
@@ -398,13 +431,14 @@ function ipv6PrefixUpdaterMain(array $arguments): int
                 break;
             }
 
-            case '--help': {
-                fwrite(STDOUT, implode(PHP_EOL, [
-                    Translator::translate('usage'),
-                    Translator::translate('update_usage'),
-                ]) . PHP_EOL);
+            case '--no-notice': {
+                $noNotice = true;
+                break;
+            }
 
-                return 0;
+            case '--help': {
+                $help = true;
+                break;
             }
 
             default: {
@@ -428,14 +462,27 @@ function ipv6PrefixUpdaterMain(array $arguments): int
         || $migrateLegacy
         || $onlyInterface !== null;
 
-    if ($updateCommandCount > 1 || ($updateCommandCount === 1 && $hasPrefixOption)) {
+    if (
+        $updateCommandCount > 1
+        || ($updateCommandCount === 1 && $hasPrefixOption)
+        || ($noNotice && $checkUpdates === false)
+    ) {
         fwrite(STDERR, Translator::translate('update_option_conflict') . PHP_EOL);
 
         return 64;
     }
 
+    if ($help) {
+        fwrite(STDOUT, implode(PHP_EOL, [
+            Translator::translate('usage'),
+            Translator::translate('update_usage'),
+        ]) . PHP_EOL);
+
+        return 0;
+    }
+
     if ($updateCommandCount === 1) {
-        return runIpv6PrefixUpdaterUpdateCommand($selfUpdate);
+        return runIpv6PrefixUpdaterUpdateCommand($selfUpdate, $noNotice === false);
     }
 
     $platformAdapter = new PfSenseAdapter();

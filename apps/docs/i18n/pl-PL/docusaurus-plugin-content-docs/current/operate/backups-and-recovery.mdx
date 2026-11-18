@@ -52,9 +52,11 @@ Aby przywrócić kopię, wybierz **Pobierz**, a następnie prześlij plik w **Di
 
 Po pełnym przywróceniu konfiguracji na tej samej zaporze pfSense może zgłosić usunięcie IPv6 Prefix Updater, mimo że pakiet i jego ustawienia pozostały bez zmian. Następna synchronizacja pakietów zamyka to błędne powiadomienie i zastępuje je komunikatem z odnośnikiem do strony **Informacje** pakietu.
 
-Gdy przywrócisz konfigurację na nowej lub ponownie zainstalowanej zaporze, odtworzony wpis odzyskiwania czeka na zakończenie synchronizacji pakietów pfSense, a następnie ponawia próbę co 15 minut. Instaluje ponownie dokładnie tę wersję pakietu, która zapisała wpis, dopiero po sprawdzeniu jej sumy SHA-256, korzystając z pakietu w pamięci podręcznej `/conf/ipv6-prefix-updater/restore-heal`, jeśli jest dostępny, lub z przypiętego adresu URL wersjonowanego wydania.
+Gdy przywrócisz konfigurację na nowej lub ponownie zainstalowanej zaporze, odtworzony wpis odzyskiwania czeka na zakończenie synchronizacji pakietów pfSense, a następnie ponawia próbę co 15 minut. Instaluje ponownie dokładnie tę wersję pakietu, która zapisała wpis, dopiero po sprawdzeniu jej sumy SHA-256, korzystając z pakietu w pamięci podręcznej `/conf/ipv6-prefix-updater/restore-heal`, jeśli jest dostępny, lub z przypiętego adresu URL wersjonowanego wydania. Pobrany pakiet pozostaje tam po pomyślnej weryfikacji sumy kontrolnej, podobnie jak aktualizacja zainstalowana z karty **Informacje**, dzięki czemu przywrócenie na tej samej zaporze pozwala ponownie zainstalować pakiet bez dostępu do internetu.
 
-Celowe odinstalowanie pakietu usuwa wpis odzyskiwania.
+Jednocześnie może działać tylko jeden proces odzyskiwania; proces uruchomiony, gdy inny wciąż pobiera lub instaluje pakiet, natychmiast się kończy. Każdy krok jest rejestrowany w dzienniku systemowym pod nazwą `ipv6-prefix-updater-restore-heal`: `deferred`, gdy pfSense nadal przywraca pakiety, następnie `cache` lub `fetch`, `install` i `installed`, albo `fetch-failed`, `checksum-failed`, `cache-failed` lub `install-failed` w razie niepowodzenia kroku.
+
+Celowe odinstalowanie pakietu usuwa wpis odzyskiwania i pakiet z pamięci podręcznej.
 
 ## Jak oznaczane są rewizje \{#how-the-revisions-are-labelled}
 

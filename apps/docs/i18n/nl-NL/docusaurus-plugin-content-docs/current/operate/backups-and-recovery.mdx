@@ -52,9 +52,11 @@ Selecteer **Downloaden** om er een terug te zetten en upload het bestand daarna 
 
 Na een volledig configuratieherstel op dezelfde firewall kan pfSense melden dat IPv6 Prefix Updater is verwijderd, hoewel het pakket en de instellingen ongewijzigd zijn. De volgende pakketsynchronisatie sluit die onjuiste melding en vervangt haar door een geruststellend bericht met een koppeling naar de pagina **Over** van het pakket.
 
-Wanneer je de configuratie terugzet op een nieuwe of opnieuw geïnstalleerde firewall, wacht de herstelde herstelvermelding tot de pakketsynchronisatie van pfSense klaar is en probeert ze het daarna elke 15 minuten opnieuw. Ze installeert exact de pakketversie die de vermelding heeft geschreven pas nadat de SHA-256-controlesom is gecontroleerd, met het pakket in `/conf/ipv6-prefix-updater/restore-heal` wanneer dat beschikbaar is of anders met de vastgezette versiegebonden release-URL.
+Wanneer je de configuratie terugzet op een nieuwe of opnieuw geïnstalleerde firewall, wacht de herstelde herstelvermelding tot de pakketsynchronisatie van pfSense klaar is en probeert ze het daarna elke 15 minuten opnieuw. Ze installeert exact de pakketversie die de vermelding heeft geschreven pas nadat de SHA-256-controlesom is gecontroleerd, met het pakket in `/conf/ipv6-prefix-updater/restore-heal` wanneer dat beschikbaar is of anders met de vastgezette versiegebonden release-URL. Een gedownload pakket blijft daar bewaard nadat de controlesom is gecontroleerd, en ook een via het tabblad **Over** geïnstalleerde update wordt daar bewaard, zodat het pakket bij herstel op dezelfde firewall zonder internettoegang opnieuw kan worden geïnstalleerd.
 
-Bij een bewuste verwijdering van het pakket wordt de herstelvermelding verwijderd.
+Er kan maar één herstelproces tegelijk actief zijn; een proces dat start terwijl een ander proces het pakket nog downloadt of installeert, wordt meteen beëindigd. Elke stap wordt in het systeemlogboek vastgelegd onder `ipv6-prefix-updater-restore-heal`: `deferred` zolang pfSense nog pakketten herstelt, daarna `cache` of `fetch`, `install` en `installed`, of `fetch-failed`, `checksum-failed`, `cache-failed` of `install-failed` wanneer een stap mislukt.
+
+Bij een bewuste verwijdering van het pakket worden de herstelvermelding en het pakket in de cache verwijderd.
 
 ## Hoe de revisies zijn gelabeld \{#how-the-revisions-are-labelled}
 

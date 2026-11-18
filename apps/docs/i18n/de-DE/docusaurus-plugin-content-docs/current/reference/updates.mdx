@@ -31,6 +31,8 @@ Wählen Sie die Häufigkeit unter **Services → IPv6 Prefix Updater → Einstel
 
 Der zufällige Zeitplan wird in der pfSense-Konfiguration gespeichert, daher verschiebt ihn weder das Speichern der Einstellungen noch eine Neuinstallation des Pakets. **Jetzt prüfen** auf der Registerkarte Über führt immer eine manuelle Prüfung aus, auch wenn die Häufigkeit **Nie** ist.
 
+Eine manuelle Prüfung auf der Registerkarte Über kann während einer Präfixaktualisierung ausgeführt werden. Sie erstellt keinen Hinweis und speichert die angezeigte Version als bereits angekündigt, sodass eine spätere geplante Prüfung sie nicht erneut ankündigt.
+
 ## Netzwerkziele \{#network-destinations}
 
 Eine Aktualisierungsprüfung oder Aktualisierung kann diese von GitHub betriebenen Hosts kontaktieren:
@@ -50,6 +52,8 @@ Aktivieren Sie **Fernbenachrichtigungen**, um zusätzlich die in pfSense eingeri
 ## Eine Aktualisierung installieren \{#install-an-update}
 
 Öffnen Sie **Services → IPv6 Prefix Updater → Über**. Wenn eine neuere Version verfügbar ist, startet **Auf _Version_ aktualisieren** einen Hintergrundauftrag, und die Seite zeigt seinen Fortschritt.
+
+Wenn eine Präfixaktualisierung läuft, zeigt der Hintergrundauftrag den Wartezustand an und wartet bis zu 30 Minuten auf ihren Abschluss, bevor die Installation fehlschlägt.
 
 Der Auftrag ruft das Release erneut ab und lädt die versionierte `.pkg` herunter. Er prüft das Paket gegen den Digest `sha256:<hex>` des Assets aus der GitHub-API; fehlt dieser Digest, lädt er stattdessen die passende `.pkg.sha256` aus demselben Release herunter.
 

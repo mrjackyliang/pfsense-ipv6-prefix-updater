@@ -52,9 +52,11 @@ Per ripristinarne uno, fai clic su **Scarica**, poi carica il file in **Diagnost
 
 Dopo un ripristino completo della configurazione sullo stesso firewall, pfSense può segnalare che IPv6 Prefix Updater è stato rimosso anche se il pacchetto e le sue impostazioni non sono cambiati. La successiva sincronizzazione dei pacchetti chiude l’avviso errato e lo sostituisce con un messaggio rassicurante collegato alla pagina **Informazioni** del pacchetto.
 
-Quando ripristini la configurazione su un firewall nuovo o reinstallato, la voce di recupero ripristinata attende il completamento della sincronizzazione dei pacchetti di pfSense e poi riprova ogni 15 minuti. Reinstalla l’esatta versione del pacchetto che ha scritto la voce solo dopo averne verificato la somma SHA-256, usando il pacchetto nella cache `/conf/ipv6-prefix-updater/restore-heal` quando disponibile oppure il relativo URL di release versionato e fissato.
+Quando ripristini la configurazione su un firewall nuovo o reinstallato, la voce di recupero ripristinata attende il completamento della sincronizzazione dei pacchetti di pfSense e poi riprova ogni 15 minuti. Reinstalla l’esatta versione del pacchetto che ha scritto la voce solo dopo averne verificato la somma SHA-256, usando il pacchetto nella cache `/conf/ipv6-prefix-updater/restore-heal` quando disponibile oppure il relativo URL di release versionato e fissato. Un pacchetto scaricato viene conservato lì dopo aver superato la verifica della somma di controllo, così come un aggiornamento installato dalla scheda **Informazioni**, in modo che un ripristino sullo stesso firewall possa reinstallare il pacchetto senza accesso a Internet.
 
-La disinstallazione intenzionale del pacchetto rimuove la voce di recupero.
+Può essere eseguita una sola procedura di recupero alla volta; una procedura avviata mentre un’altra sta ancora scaricando o installando il pacchetto termina immediatamente. Ogni passaggio viene registrato nel log di sistema sotto `ipv6-prefix-updater-restore-heal`: `deferred` mentre pfSense sta ancora ripristinando i pacchetti, quindi `cache` o `fetch`, `install` e `installed`, oppure `fetch-failed`, `checksum-failed`, `cache-failed` o `install-failed` quando un passaggio non riesce.
+
+La disinstallazione intenzionale del pacchetto rimuove la voce di recupero e il pacchetto nella cache.
 
 ## Come sono etichettate le revisioni \{#how-the-revisions-are-labelled}
 

@@ -54,7 +54,7 @@ pkg delete -f pfSense-pkg-Ipv6PrefixUpdater
 
 Het pakket is gemarkeerd als `vital`, zodat de eigen upgrades van pfSense het geïnstalleerd houden en een gewone `pkg delete` vitale pakketten weigert.
 
-Het verwijderen wist beide cronjobs (prefixcontrole en releasecontrole), sluit de melding over een beschikbare update en verwijdert het bestand van de <Terminology title="Voorkomt dat twee controles tegelijk lopen" to="/docs/reference/terminology#running-checks">uitvoeringsvergrendeling</Terminology> als geen uitvoering het vasthoudt. De <Terminology title="Het bestand met elke baseline, bewaard bij herinstallatie" to="/docs/reference/terminology#running-checks">pakketstatus</Terminology>, `updates.json`, `update-status.json` en de kopieën van het tabblad **Back-ups** in `/cf/conf/ipv6-prefix-updater` blijven bewaard.
+Het verwijderen wist beide cronjobs (prefixcontrole en releasecontrole), sluit de melding over een beschikbare update en verwijdert elk vergrendelingsbestand als geen bewerking die vergrendeling vasthoudt. De <Terminology title="Het bestand met elke baseline, bewaard bij herinstallatie" to="/docs/reference/terminology#running-checks">pakketstatus</Terminology>, `updates.json`, `update-status.json` en de kopieën van het tabblad **Back-ups** in `/cf/conf/ipv6-prefix-updater` blijven bewaard.
 
 De eigen upgrades van pfSense houden het pakket geïnstalleerd (het is `vital`), en door de bewaarde status gaat bij verwijderen en herinstalleren nooit een <Terminology title="De vastgelegde startprefix waaraan wijzigingen worden gemeten" to="/docs/reference/terminology#baselines-and-transitions">baseline</Terminology> verloren.
 

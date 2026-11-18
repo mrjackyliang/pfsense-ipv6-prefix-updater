@@ -52,9 +52,11 @@ import backupList from './_assets_/backups-and-recovery-1.png';
 
 在同一台防火墙上完整恢复配置后，即使 IPv6 前缀更新器软件包及其设置未发生变化，pfSense 也可能报告该软件包已被删除。下一次软件包同步会关闭这一错误通知，并替换为一条链接到软件包**关于**页面的确认通知。
 
-在新的或重新安装的防火墙上恢复配置时，恢复的修复条目会等待 pfSense 软件包同步完成，然后每 15 分钟重试一次。它只会在验证 SHA-256 校验和后重新安装写入该条目的确切软件包版本；如果 `/conf/ipv6-prefix-updater/restore-heal` 中有缓存的软件包，就使用该副本，否则使用固定的版本化发布 URL。
+在新的或重新安装的防火墙上恢复配置时，恢复的修复条目会等待 pfSense 软件包同步完成，然后每 15 分钟重试一次。它只会在验证 SHA-256 校验和后重新安装写入该条目的确切软件包版本；如果 `/conf/ipv6-prefix-updater/restore-heal` 中有缓存的软件包，就使用该副本，否则使用固定的版本化发布 URL。下载的软件包通过校验和验证后会保留在此处，从**关于**选项卡安装的更新也会保留在此处，因此恢复到同一台防火墙时无需互联网连接即可重新安装软件包。
 
-主动卸载软件包会删除此恢复条目。
+一次只能执行一个恢复任务；如果某个任务在另一个任务仍在下载或安装软件包时启动，它会立即退出。每个步骤都会以 `ipv6-prefix-updater-restore-heal` 为标识记录在系统日志中：pfSense 仍在恢复软件包时记录 `deferred`，随后记录 `cache` 或 `fetch`、`install` 和 `installed`；步骤失败时则记录 `fetch-failed`、`checksum-failed`、`cache-failed` 或 `install-failed`。
+
+主动卸载软件包会删除此恢复条目和缓存的软件包。
 
 ## 修订版本如何标注 \{#how-the-revisions-are-labelled}
 

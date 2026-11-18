@@ -31,6 +31,8 @@ Escolha a frequência em **Services → IPv6 Prefix Updater → Configurações 
 
 O agendamento aleatório fica salvo na configuração do pfSense, então salvar as configurações ou reinstalar o pacote não o altera. **Verificar agora** na guia Sobre sempre faz uma verificação manual, inclusive quando a frequência é **Nunca**.
 
+Uma verificação manual na guia Sobre pode ser executada durante uma atualização de prefixo. Ela não cria aviso e registra a versão exibida como já anunciada, para que uma verificação agendada posterior não volte a anunciá-la.
+
 ## Destinos de rede \{#network-destinations}
 
 Uma verificação ou atualização pode acessar estes hosts operados pelo GitHub:
@@ -50,6 +52,8 @@ Marque **Notificações remotas** para enviar também pelos canais remotos confi
 ## Instalar uma atualização \{#install-an-update}
 
 Abra **Services → IPv6 Prefix Updater → Sobre**. Quando há uma versão mais nova disponível, **Atualizar para _versão_** inicia uma tarefa em segundo plano, e a página mostra o progresso dela.
+
+Se uma atualização de prefixo estiver em andamento, a tarefa em segundo plano mostra que está aguardando e espera até 30 minutos pela conclusão antes de a instalação falhar.
 
 A tarefa busca a versão de novo e baixa o `.pkg` com versão. Ela confere o pacote com o resumo `sha256:<hex>` do arquivo na API do GitHub; quando esse resumo está ausente, baixa o arquivo `.pkg.sha256` correspondente da mesma versão.
 

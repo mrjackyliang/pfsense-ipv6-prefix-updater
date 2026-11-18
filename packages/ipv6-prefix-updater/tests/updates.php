@@ -2,9 +2,13 @@
 
 declare(strict_types=1);
 
+use PfSense\Ipv6PrefixUpdater\Runtime\FileLock;
+use PfSense\Ipv6PrefixUpdater\Runtime\PackagePaths;
 use PfSense\Ipv6PrefixUpdater\Runtime\Translator;
 use PfSense\Ipv6PrefixUpdater\Runtime\UpdateManager;
 
+require_once(__DIR__ . '/../port/files/usr/local/pkg/ipv6-prefix-updater/FileLock.php');
+require_once(__DIR__ . '/../port/files/usr/local/pkg/ipv6-prefix-updater/PackagePaths.php');
 require_once(__DIR__ . '/../port/files/usr/local/pkg/ipv6-prefix-updater/Translator.php');
 require_once(__DIR__ . '/../port/files/usr/local/pkg/ipv6-prefix-updater/UpdateManager.php');
 require_once(__DIR__ . '/stubs/notices.inc');
@@ -114,6 +118,54 @@ function removeUpdateTestDirectory(string $directory): void
 }
 
 /**
+ * Runs the package CLI with arguments that finish before pfSense integration.
+ *
+ * Parser regressions can inspect exact exit codes and translated errors without a
+ * firewall because invalid combinations stop before environment checks begin.
+ *
+ * @param list<string> $arguments - CLI arguments after the executable name.
+ *
+ * @return array{exit_code: int, stdout: string, stderr: string}
+ *
+ * @throws RuntimeException When the PHP process cannot be started.
+ *
+ * @since 2.1.3
+ */
+function runUpdateCli(array $arguments): array
+{
+    $command = [
+        PHP_BINARY,
+        __DIR__ . '/../port/files/usr/local/sbin/ipv6-prefix-updater',
+        ...$arguments,
+    ];
+    $descriptorSpecification = [
+        0 => ['pipe', 'r'],
+        1 => ['pipe', 'w'],
+        2 => ['pipe', 'w'],
+    ];
+    $pipes = [];
+    $process = proc_open($command, $descriptorSpecification, $pipes);
+
+    if (!is_resource($process)) {
+        throw new RuntimeException('Could not start the update CLI test process.');
+    }
+
+    fclose($pipes[0]);
+
+    $standardOutput = stream_get_contents($pipes[1]);
+    $standardError = stream_get_contents($pipes[2]);
+
+    fclose($pipes[1]);
+    fclose($pipes[2]);
+
+    return [
+        'exit_code' => proc_close($process),
+        'stdout' => is_string($standardOutput) ? $standardOutput : '',
+        'stderr' => is_string($standardError) ? $standardError : '',
+    ];
+}
+
+/**
  * Writes one ssh-keygen stub that records arguments and standard input.
  *
  * The executable simulates both successful and failed verification without
@@ -193,6 +245,25 @@ function findUpdateSshKeygen(): ?string
 assertUpdateSame(true, UpdateManager::isNewerVersion('2.0.1', 'v2.1.0'), 'A leading v must be ignored.');
 assertUpdateSame(false, UpdateManager::isNewerVersion('v2.1.0', '2.1.0'), 'Equal normalized versions are current.');
 assertUpdateSame(false, UpdateManager::isNewerVersion('2.2.0', 'v2.1.9'), 'An older release is not an update.');
+assertUpdateSame(
+    '/var/run/ipv6-prefix-updater-release.lock',
+    PackagePaths::RELEASE_LOCK_FILE,
+    'Release operations must use the package-named release lock path.',
+);
+assertUpdateSame(
+    PackagePaths::UPDATE_CHECK_COMMAND . ' --no-notice',
+    PackagePaths::MANUAL_UPDATE_CHECK_COMMAND,
+    'The About tab command must add only the manual notice-suppression flag.',
+);
+
+$invalidNoNoticeResult = runUpdateCli(['--no-notice']);
+
+assertUpdateSame(64, $invalidNoNoticeResult['exit_code'], '--no-notice without --check-updates must be a usage error.');
+assertUpdateSame(
+    Translator::translate('update_option_conflict'),
+    trim($invalidNoNoticeResult['stderr']),
+    'The invalid --no-notice combination must use the existing update usage error.',
+);
 
 $releaseJson = json_encode([
     'tag_name' => 'v2.1.0',
@@ -295,7 +366,16 @@ assertUpdateSame(null, UpdateManager::cronFields('never', $schedule), 'Never mus
 $noticeState = [
     'notified_version' => null,
 ];
-$noticeState = UpdateManager::synchronizeNotice($noticeState, '2.0.1', '2.1.0', false);
+$manualNoticeState = UpdateManager::synchronizeNotice($noticeState, '2.0.1', '2.1.0', true, false);
+
+assertUpdateSame('2.1.0', $manualNoticeState['notified_version'], 'A manual check must record the version as seen.');
+assertUpdateSame(0, count($noticeTestFileCalls), 'A manual check must not file a local or remote notice.');
+
+$manualNoticeState = UpdateManager::synchronizeNotice($manualNoticeState, '2.0.1', '2.1.0', true, true);
+
+assertUpdateSame(0, count($noticeTestFileCalls), 'A later scheduled check must not announce the manually seen version.');
+
+$noticeState = UpdateManager::synchronizeNotice($noticeState, '2.0.1', '2.1.0', false, true);
 
 assertUpdateSame('2.1.0', $noticeState['notified_version'], 'The noticed version must be persisted.');
 assertUpdateSame(1, count($noticeTestFileCalls), 'A new version must create one notice.');
@@ -308,14 +388,14 @@ assertUpdateSame('IPv6 Prefix Updater', $noticeTestFileCalls[0]['category'], 'Th
 assertUpdateSame(true, $noticeTestFileCalls[0]['localOnly'], 'Remote notifications must be off by default.');
 assertUpdateSame(UpdateManager::ABOUT_PAGE, $noticeTestFileCalls[0]['url'], 'The notice must link to the About tab.');
 
-$noticeState = UpdateManager::synchronizeNotice($noticeState, '2.0.1', '2.1.0', true);
+$noticeState = UpdateManager::synchronizeNotice($noticeState, '2.0.1', '2.1.0', true, true);
 assertUpdateSame(1, count($noticeTestFileCalls), 'The same version must not create a duplicate notice.');
 
-$noticeState = UpdateManager::synchronizeNotice($noticeState, '2.0.1', '2.2.0', true);
+$noticeState = UpdateManager::synchronizeNotice($noticeState, '2.0.1', '2.2.0', true, true);
 assertUpdateSame(2, count($noticeTestFileCalls), 'A later version must create one new notice.');
 assertUpdateSame(false, $noticeTestFileCalls[1]['localOnly'], 'The opt-in must allow pfSense remote notifications.');
 
-UpdateManager::synchronizeNotice($noticeState, '2.2.0', '2.2.0', true);
+UpdateManager::synchronizeNotice($noticeState, '2.2.0', '2.2.0', true, true);
 assertUpdateSame(
     UpdateManager::NOTICE_ID,
     $noticeTestCloseCalls[array_key_last($noticeTestCloseCalls)],
@@ -655,6 +735,89 @@ assertUpdateFailure(
 );
 
 @unlink($digestPath);
+
+$lockTestDirectory = makeUpdateTestDirectory();
+$packageLockPath = $lockTestDirectory . '/ipv6-prefix-updater.lock';
+$releaseLockPath = $lockTestDirectory . '/ipv6-prefix-updater-release.lock';
+$lockStatusPath = $lockTestDirectory . '/update-status.json';
+$packageLockOwner = new FileLock($packageLockPath);
+$checkReleaseLock = new FileLock($releaseLockPath);
+$releaseLockOwner = new FileLock($releaseLockPath);
+$releaseLockContender = new FileLock($releaseLockPath);
+$selfUpdateReleaseLock = new FileLock($releaseLockPath);
+$selfUpdatePackageLock = new FileLock($packageLockPath);
+
+try {
+    assertUpdateSame(true, $packageLockOwner->acquire(), 'The prefix task must own the package lock for concurrency tests.');
+    assertUpdateSame(
+        true,
+        $checkReleaseLock->acquire(0),
+        'A release check must acquire its separate lock while the package lock is held.',
+    );
+
+    $checkReleaseLock->release();
+
+    assertUpdateSame(true, $releaseLockOwner->acquire(), 'The first release operation must acquire the release lock.');
+    assertUpdateSame(
+        false,
+        $releaseLockContender->acquire(0),
+        'A second release operation must stop after its injected zero-second wait.',
+    );
+    assertUpdateSame(
+        'An update check or install is already running.',
+        Translator::translate('release_operation_running'),
+        'A busy release lock must report the release-operation message.',
+    );
+
+    $releaseLockOwner->release();
+
+    UpdateManager::queueSelfUpdate('2.2.0', $lockStatusPath);
+
+    assertUpdateSame(true, $selfUpdateReleaseLock->acquire(), 'A self-update must acquire the release lock first.');
+    assertUpdateSame(
+        false,
+        $selfUpdatePackageLock->acquire(0),
+        'A self-update must wait on a package lock held by the prefix task.',
+    );
+
+    UpdateManager::markQueuedSelfUpdateWaiting($lockStatusPath);
+
+    $waitingStatus = UpdateManager::readStatusState($lockStatusPath, '2.1.0');
+
+    assertUpdateSame('running', $waitingStatus['state'] ?? null, 'The queued self-update must remain running while it waits.');
+    assertUpdateSame(
+        'Waiting for the running prefix update to finish.',
+        $waitingStatus['message'] ?? null,
+        'The About tab must show that the self-update is waiting for the prefix task.',
+    );
+    assertUpdateSame(
+        false,
+        $selfUpdatePackageLock->acquire(0),
+        'The injected zero-second package-lock wait must expire while the prefix task still owns the lock.',
+    );
+
+    $taskStillRunningMessage = Translator::translate('update_task_still_running');
+
+    UpdateManager::failQueuedSelfUpdate($taskStillRunningMessage, $lockStatusPath);
+
+    $failedWaitingStatus = UpdateManager::readStatusState($lockStatusPath, '2.1.0');
+
+    assertUpdateSame('failed', $failedWaitingStatus['state'] ?? null, 'A timed-out self-update wait must fail the queued job.');
+    assertUpdateSame(
+        'A prefix update is still running. Try again when it finishes.',
+        $failedWaitingStatus['message'] ?? null,
+        'The timed-out self-update wait must report the running prefix task.',
+    );
+} finally {
+    $selfUpdatePackageLock->release();
+    $selfUpdateReleaseLock->release();
+    $releaseLockContender->release();
+    $releaseLockOwner->release();
+    $checkReleaseLock->release();
+    $packageLockOwner->release();
+
+    removeUpdateTestDirectory($lockTestDirectory);
+}
 
 $statusTestDirectory = makeUpdateTestDirectory();
 $statusTestPath = $statusTestDirectory . '/update-status.json';

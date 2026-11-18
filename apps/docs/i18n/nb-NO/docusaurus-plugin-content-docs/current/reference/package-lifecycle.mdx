@@ -54,7 +54,7 @@ pkg delete -f pfSense-pkg-Ipv6PrefixUpdater
 
 Pakken er merket som `vital`, så pfSense sine egne oppgraderinger beholder den installert, og vanlig `pkg delete` avviser vitale pakker.
 
-Fjerningen sletter begge cron-oppføringene (prefikskontroll og utgivelseskontroll), lukker varselet om tilgjengelig oppdatering og fjerner filen for <Terminology title="Hindrer at to kontroller kjører samtidig" to="/docs/reference/terminology#running-checks">kjørelåsen</Terminology> når ingen kjøring holder den. Den beholder <Terminology title="Filen med hver grunnlinje, beholdt ved ny installasjon" to="/docs/reference/terminology#running-checks">pakketilstanden</Terminology>, `updates.json`, `update-status.json` og kopiene i fanen **Sikkerhetskopier** i `/cf/conf/ipv6-prefix-updater`.
+Fjerningen sletter begge cron-oppføringene (prefikskontroll og utgivelseskontroll), lukker varselet om tilgjengelig oppdatering og fjerner hver operasjonslåsfil når ingen operasjon holder den aktuelle låsen. Den beholder <Terminology title="Filen med hver grunnlinje, beholdt ved ny installasjon" to="/docs/reference/terminology#running-checks">pakketilstanden</Terminology>, `updates.json`, `update-status.json` og kopiene i fanen **Sikkerhetskopier** i `/cf/conf/ipv6-prefix-updater`.
 
 pfSense sine egne oppgraderinger beholder pakken installert (den er `vital`), og den bevarte tilstanden gjør at en fjerning og reinstallasjon aldri mister en <Terminology title="Det registrerte startprefikset som endringer måles fra" to="/docs/reference/terminology#baselines-and-transitions">grunnlinje</Terminology>.
 

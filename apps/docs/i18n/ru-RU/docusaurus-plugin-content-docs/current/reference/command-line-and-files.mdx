@@ -23,7 +23,7 @@ import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
 
 ```text
 Использование: ipv6-prefix-updater [--manual] [--dry-run] [--accept-current-prefix [--interface=NAME]] [--migrate-legacy]
-Параметры обновления: --check-updates, --self-update.
+Параметры обновления: --check-updates [--no-notice], --self-update.
 ```
 
 Запись cron для проверки префикса под управлением pfSense запускает команду от имени `root` без параметров, а отдельная запись для проверки выпусков запускает её с `--check-updates`. Перед каждой проверкой команда также переносит в пакет все остатки <Terminology title="Версия 1.x: скрипт update.php, запускаемый пакетом Cron" to="/docs/reference/terminology#package-origins">устаревшего скрипта обновления</Terminology>. Вкладка «Состояние» использует `--manual` для кнопки **Запустить сейчас**, `--dry-run` для кнопки **<Terminology title="Предпросмотр изменений, который ничего не записывает" to="/docs/reference/terminology#running-checks">Пробный запуск</Terminology>** и `--accept-current-prefix` для восстановления базового значения, а вкладка «Очистка» — `--migrate-legacy`.
@@ -40,10 +40,11 @@ import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
 | `--interface=NAME`        | Ограничивает `--accept-current-prefix` одним контролируемым интерфейсом, который задаётся внутренним именем, например `lan`. Без этого параметра текущий префикс принимается для каждого контролируемого интерфейса, у которого есть адрес.                                                                                  |
 | `--migrate-legacy`        | Сразу переносит <Terminology title="Версия 1.x: скрипт update.php, запускаемый пакетом Cron" to="/docs/reference/terminology#package-origins">устаревший скрипт обновления</Terminology> в пакет и выводит каждый шаг, не выполняя проверку префикса. Завершается с кодом `2`, если при переносе было выдано предупреждение. |
 | `--check-updates`         | Проверяет на GitHub последний выпуск пакета и сохраняет результат в `/cf/conf/ipv6-prefix-updater/updates.json`. Проверка описана в разделе [Обновления](/docs/reference/updates).                                                                                                                                           |
+| `--no-notice`             | Не создаёт уведомление об обновлении при `--check-updates` и отмечает последнюю версию как уже объявленную. Допустим только вместе с `--check-updates`.                                                                                                                                                                      |
 | `--self-update`           | Загружает, проверяет и устанавливает последний выпуск, записывая ход выполнения в `/cf/conf/ipv6-prefix-updater/update-status.json`.                                                                                                                                                                                         |
 | `--help`                  | Выводит строку использования и строку параметров обновления и завершается с кодом `0`. Ни одна из этих строк не упоминает сам `--help`.                                                                                                                                                                                      |
 
-Любой другой параметр выводит `Неизвестный параметр: <option>` в стандартный поток ошибок и завершается с кодом `64`. Сочетание `--accept-current-prefix` с `--dry-run` также завершается с кодом `64`, как и сочетание `--check-updates` или `--self-update` друг с другом или с любым параметром префикса.
+Любой другой параметр выводит `Неизвестный параметр: <option>` в стандартный поток ошибок и завершается с кодом `64`. Сочетание `--accept-current-prefix` с `--dry-run` также завершается с кодом `64`, как и сочетание `--check-updates` или `--self-update` друг с другом или с любым параметром префикса. Использование `--no-notice` без `--check-updates` также завершается с кодом `64`.
 
 ## Коды завершения \{#exit-codes}
 
@@ -101,6 +102,7 @@ import { Terminology } from '@cbnventures/docusaurus-preset-nova/blocks';
 | `/cf/conf/ipv6-prefix-updater/update-status.json`                    | Ход последнего самообновления.                                                                                                                                                                                                                                                                                                                |
 | `/cf/conf/ipv6-prefix-updater/backups/`                              | Копии для вкладки **Резервные копии**: для каждой — конфигурация `<id>.xml` и описание `<id>.json`, все с правами `0600`.                                                                                                                                                                                                                     |
 | `/var/run/ipv6-prefix-updater.lock`                                  | <Terminology title="Не даёт двум проверкам идти одновременно" to="/docs/reference/terminology#running-checks">Блокировка запуска</Terminology>, которая удерживается неблокирующим `flock` и содержит идентификатор выполняющегося процесса. Остаётся на диске между запусками.                                                               |
+| `/var/run/ipv6-prefix-updater-release.lock`                          | Блокировка выпуска для проверок обновлений и самообновлений, удерживаемая с помощью `flock`. Операции выпуска ждут её освобождения до 30 секунд, а файл остаётся на диске между операциями.                                                                                                                                                   |
 
 ## Формат состояния пакета \{#package-state-format}
 

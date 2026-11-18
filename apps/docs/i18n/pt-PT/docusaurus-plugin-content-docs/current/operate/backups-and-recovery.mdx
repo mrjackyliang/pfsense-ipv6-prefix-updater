@@ -52,9 +52,11 @@ Para restaurar uma, selecione **Transferir** e depois carregue o ficheiro em **D
 
 Após um restauro completo da configuração na mesma firewall, o pfSense pode indicar que o IPv6 Prefix Updater foi removido, apesar de o pacote e as respetivas definições não terem sido alterados. A sincronização de pacotes seguinte fecha esse aviso incorreto e substitui-o por uma confirmação com ligação à página **Sobre** do pacote.
 
-Quando restaura a configuração numa firewall nova ou reinstalada, a entrada de recuperação restaurada aguarda que a sincronização de pacotes do pfSense termine e tenta novamente a cada 15 minutos. Reinstala exatamente a versão do pacote que escreveu a entrada apenas depois de verificar a respetiva soma SHA-256, utilizando o pacote em cache em `/conf/ipv6-prefix-updater/restore-heal` quando disponível ou, caso contrário, o URL fixado da versão publicada.
+Quando restaura a configuração numa firewall nova ou reinstalada, a entrada de recuperação restaurada aguarda que a sincronização de pacotes do pfSense termine e tenta novamente a cada 15 minutos. Reinstala exatamente a versão do pacote que escreveu a entrada apenas depois de verificar a respetiva soma SHA-256, utilizando o pacote em cache em `/conf/ipv6-prefix-updater/restore-heal` quando disponível ou, caso contrário, o URL fixado da versão publicada. Um pacote transferido fica guardado nesse local depois de a respetiva soma SHA-256 ser verificada, tal como uma atualização instalada a partir do separador **Sobre**, para que um restauro na mesma firewall possa reinstalar o pacote sem acesso à Internet.
 
-Uma desinstalação deliberada do pacote remove a entrada de recuperação.
+Apenas um processo de recuperação pode estar ativo de cada vez; um processo iniciado enquanto outro ainda está a transferir ou instalar o pacote termina de imediato. Cada passo é registado no registo do sistema sob `ipv6-prefix-updater-restore-heal`: `deferred` enquanto o pfSense ainda está a restaurar pacotes, depois `cache` ou `fetch`, `install` e `installed`, ou `fetch-failed`, `checksum-failed`, `cache-failed` ou `install-failed` quando um passo falha.
+
+Uma desinstalação deliberada do pacote remove a entrada de recuperação e o pacote em cache.
 
 ## Como as revisões são identificadas \{#how-the-revisions-are-labelled}
 

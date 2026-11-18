@@ -63,10 +63,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['check_updates'])) {
         $actionOutputLines = [];
 
-        exec(PackagePaths::UPDATE_CHECK_COMMAND . ' 2>&1', $actionOutputLines, $returnCode);
+        exec(PackagePaths::MANUAL_UPDATE_CHECK_COMMAND . ' 2>&1', $actionOutputLines, $returnCode);
         $actionOutput = implode(PHP_EOL, $actionOutputLines);
+        $operationRunningMessages = [
+            Translator::translate('lock_owned'),
+            Translator::translate('release_operation_running'),
+        ];
 
-        if ($returnCode !== 0 || trim($actionOutput) === Translator::translate('lock_owned')) {
+        if ($returnCode !== 0 || in_array(trim($actionOutput), $operationRunningMessages, true)) {
             $updateActionError = $actionOutput !== ''
                 ? $actionOutput
                 : Translator::translate('update_check_failed_transport');

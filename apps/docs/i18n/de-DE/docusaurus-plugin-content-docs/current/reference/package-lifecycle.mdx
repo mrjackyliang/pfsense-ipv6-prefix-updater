@@ -54,7 +54,7 @@ pkg delete -f pfSense-pkg-Ipv6PrefixUpdater
 
 Das Paket ist als `vital` markiert, sodass pfSense-eigene Upgrades es installiert lassen und `pkg delete` ohne `-f` solche Pakete ablehnt.
 
-Die Entfernung löscht beide Cron-Einträge (Präfixprüfung und Release-Prüfung), schließt den Hinweis auf eine verfügbare Aktualisierung und entfernt die Datei der <Terminology title="Verhindert, dass zwei Prüfungen gleichzeitig laufen" to="/docs/reference/terminology#running-checks">Laufsperre</Terminology>, wenn kein Lauf sie hält. Sie behält den <Terminology title="Die Datei mit jeder Basislinie, bleibt bei Neuinstallation erhalten" to="/docs/reference/terminology#running-checks">Paketzustand</Terminology>, `updates.json`, `update-status.json` und die Kopien der Registerkarte **Sicherungen** in `/cf/conf/ipv6-prefix-updater`.
+Die Entfernung löscht beide Cron-Einträge (Präfixprüfung und Release-Prüfung), schließt den Hinweis auf eine verfügbare Aktualisierung und entfernt jede Vorgangssperrdatei, wenn kein Vorgang die jeweilige Sperre hält. Sie behält den <Terminology title="Die Datei mit jeder Basislinie, bleibt bei Neuinstallation erhalten" to="/docs/reference/terminology#running-checks">Paketzustand</Terminology>, `updates.json`, `update-status.json` und die Kopien der Registerkarte **Sicherungen** in `/cf/conf/ipv6-prefix-updater`.
 
 pfSense-eigene Upgrades lassen das Paket installiert (es ist `vital`), und der beibehaltene Zustand sorgt dafür, dass bei einer Entfernung und Neuinstallation nie eine <Terminology title="Das erfasste Startpräfix, an dem Änderungen gemessen werden" to="/docs/reference/terminology#baselines-and-transitions">Basislinie</Terminology> verloren geht.
 

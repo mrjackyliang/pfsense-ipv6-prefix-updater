@@ -67,6 +67,16 @@ final class PackagePaths
     public const LOCK_FILE = '/var/run/ipv6-prefix-updater.lock';
 
     /**
+     * Release-check and self-update lock.
+     *
+     * Release metadata work stays independent of a running prefix update, while one
+     * release operation at a time may read or replace the saved update state.
+     *
+     * @since 2.1.3
+     */
+    public const RELEASE_LOCK_FILE = '/var/run/ipv6-prefix-updater-release.lock';
+
+    /**
      * Package command run by cron and the WebGUI.
      *
      * @since 2.0.0
@@ -79,6 +89,16 @@ final class PackagePaths
      * @since 2.1.0
      */
     public const UPDATE_CHECK_COMMAND = self::COMMAND . ' --check-updates';
+
+    /**
+     * Manual release-check command used by the About tab.
+     *
+     * The explicit flag records the release as seen without filing a redundant pfSense
+     * notice while the administrator is already viewing the result.
+     *
+     * @since 2.1.3
+     */
+    public const MANUAL_UPDATE_CHECK_COMMAND = self::UPDATE_CHECK_COMMAND . ' --no-notice';
 
     /**
      * Package command launched in the background by the About tab.

@@ -31,6 +31,8 @@ Velg frekvensen under **Services → IPv6 Prefix Updater → Innstillinger → P
 
 Den tilfeldige tidsplanen lagres i pfSense-konfigurasjonen, så den flyttes ikke når du lagrer innstillingene eller installerer pakken på nytt. **Sjekk nå** i fanen **Om** utfører alltid en manuell kontroll, også når frekvensen er **Aldri**.
 
+En manuell kontroll i Om-fanen kan kjøres mens en prefiksoppdatering pågår. Den oppretter ikke noe varsel og registrerer den viste versjonen som allerede varslet, slik at en senere planlagt kontroll ikke varsler om den på nytt.
+
 ## Nettverksmål \{#network-destinations}
 
 En oppdateringskontroll eller oppdatering kan kontakte disse vertene som drives av GitHub:
@@ -50,6 +52,8 @@ Velg **Eksterne varsler** for også å sende det via e-post, Telegram, Pushover 
 ## Installer en oppdatering \{#install-an-update}
 
 Åpne **Services → IPv6 Prefix Updater → Om**. Når en nyere versjon er tilgjengelig, starter **Oppdater til _versjon_** en bakgrunnsjobb, og siden viser fremdriften.
+
+Hvis en prefiksoppdatering kjører, viser bakgrunnsjobben at den venter og gir oppdateringen opptil 30 minutter på å bli ferdig før installasjonen mislykkes.
 
 Jobben henter utgivelsen på nytt og laster ned den versjonerte `.pkg`-filen. Den kontrollerer pakken mot `sha256:<hex>`-kontrollsummen for filen i GitHub API-et; når den mangler, laster den i stedet ned den samsvarende `.pkg.sha256`-filen fra samme utgivelse.
 
