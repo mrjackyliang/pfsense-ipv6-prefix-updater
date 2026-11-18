@@ -48,6 +48,14 @@ Przechowywanych jest tylko 10 najnowszych kopii zapasowych pakietu, a zaimportow
 
 Aby przywrócić kopię, wybierz **Pobierz**, a następnie prześlij plik w **Diagnostics → Backup & Restore → Restore Backup**. Przywrócenie zastępuje całą konfigurację, więc poniższe ostrzeżenia dotyczą także tych plików.
 
+## Przywracanie konfiguracji \{#restoring-a-configuration}
+
+Po pełnym przywróceniu konfiguracji na tej samej zaporze pfSense może zgłosić usunięcie IPv6 Prefix Updater, mimo że pakiet i jego ustawienia pozostały bez zmian. Następna synchronizacja pakietów zamyka to błędne powiadomienie i zastępuje je komunikatem z odnośnikiem do strony **Informacje** pakietu.
+
+Gdy przywrócisz konfigurację na nowej lub ponownie zainstalowanej zaporze, odtworzony wpis odzyskiwania czeka na zakończenie synchronizacji pakietów pfSense, a następnie ponawia próbę co 15 minut. Instaluje ponownie dokładnie tę wersję pakietu, która zapisała wpis, dopiero po sprawdzeniu jej sumy SHA-256, korzystając z pakietu w pamięci podręcznej `/conf/ipv6-prefix-updater/restore-heal`, jeśli jest dostępny, lub z przypiętego adresu URL wersjonowanego wydania.
+
+Celowe odinstalowanie pakietu usuwa wpis odzyskiwania.
+
 ## Jak oznaczane są rewizje \{#how-the-revisions-are-labelled}
 
 Każda aktualizacja pozostawia w <Terminology title="Zapisane wersje konfiguracji pfSense do przywrócenia" to="/docs/reference/terminology#backups-and-service-reloads">Config History</Terminology> dwie rewizje i tylko starsza z nich cofa aktualizację:

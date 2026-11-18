@@ -43,6 +43,16 @@ final class PackagePaths
     public const UPDATE_STATUS_FILE = self::DATA_DIRECTORY . '/update-status.json';
 
     /**
+     * pfSense package-reinstall flag created during a full configuration restore.
+     *
+     * Deliberate removal may delete the recovery cron entry, while restore-driven
+     * lifecycle work must preserve it for a firewall that lacks the package files.
+     *
+     * @since 2.1.2
+     */
+    public const PACKAGE_SYNC_FLAG = '/conf/needs_package_sync';
+
+    /**
      * Configuration backups kept by the package.
      *
      * @since 2.0.0

@@ -9,6 +9,7 @@ use PfSense\Ipv6PrefixUpdater\Runtime\FileLock;
 use PfSense\Ipv6PrefixUpdater\Runtime\LegacyMigrator;
 use PfSense\Ipv6PrefixUpdater\Runtime\PackagePaths;
 use PfSense\Ipv6PrefixUpdater\Runtime\PfSenseAdapter;
+use PfSense\Ipv6PrefixUpdater\Runtime\RestoreManager;
 use PfSense\Ipv6PrefixUpdater\Runtime\StateStore;
 use PfSense\Ipv6PrefixUpdater\Runtime\Translator;
 use PfSense\Ipv6PrefixUpdater\Runtime\UpdateManager;
@@ -25,6 +26,7 @@ require_once(__DIR__ . '/ipv6-prefix-updater/LegacyMigrator.php');
 require_once(__DIR__ . '/ipv6-prefix-updater/MonitoredInterfaces.php');
 require_once(__DIR__ . '/ipv6-prefix-updater/PackagePaths.php');
 require_once(__DIR__ . '/ipv6-prefix-updater/PfSenseAdapter.php');
+require_once(__DIR__ . '/ipv6-prefix-updater/RestoreManager.php');
 require_once(__DIR__ . '/ipv6-prefix-updater/StateStore.php');
 require_once(__DIR__ . '/ipv6-prefix-updater/Translator.php');
 require_once(__DIR__ . '/ipv6-prefix-updater/UpdateManager.php');
@@ -42,6 +44,162 @@ require_once(__DIR__ . '/ipv6-prefix-updater/UpdateManager.php');
 function pfsensePackageIpv6PrefixUpdaterTranslate(string $key, array $arguments = []): string
 {
     return Translator::translate($key, $arguments);
+}
+
+/**
+ * Logs a restore-recovery failure without allowing logging to throw.
+ *
+ * Configuration restore checks run inside pfSense package synchronization, so a
+ * notice, network, configuration, or logging failure must not stop later packages.
+ *
+ * @param string    $operation - Failed restore-recovery operation.
+ * @param Throwable $throwable - Captured failure.
+ *
+ * @return void
+ *
+ * @since 2.1.2
+ */
+function pfsensePackageIpv6PrefixUpdaterLogRestoreFailure(
+    string $operation,
+    Throwable $throwable,
+): void {
+    try {
+        if (function_exists('log_error')) {
+            log_error(sprintf(
+                'IPv6 Prefix Updater: %s failed: %s',
+                $operation,
+                $throwable->getMessage(),
+            ));
+        }
+    } catch (Throwable) {
+        // Restore recovery must never stop pfSense package synchronization.
+    }
+}
+
+/**
+ * Replaces pfSense's false package-removal notice with a reassurance.
+ *
+ * A full restore can misclassify this independently distributed package while
+ * leaving its files and settings intact. Exact localized matching avoids closing
+ * any unrelated package notice.
+ *
+ * @return void
+ *
+ * @since 2.1.2
+ */
+function pfsensePackageIpv6PrefixUpdaterReconcileRestoreNotice(): void
+{
+    try {
+        if (
+            function_exists('get_notices') === false
+            || function_exists('close_notice') === false
+            || function_exists('file_notice') === false
+        ) {
+            return;
+        }
+
+        $installedPackages = config_get_path('installedpackages/package', []);
+        $notices = get_notices();
+
+        if ($notices === false) {
+            return;
+        }
+
+        if (!is_array($installedPackages) || !is_array($notices)) {
+            return;
+        }
+
+        $falseNoticeTemplate = gettext(
+            'Package %s does not exist in '
+                . 'current %s version and it has been removed.',
+        );
+        $reassuranceNotice = pfsensePackageIpv6PrefixUpdaterTranslate('restore_reassurance_notice');
+        $category = pfsensePackageIpv6PrefixUpdaterTranslate('brand');
+        $productLabel = (string) g_get('product_label');
+
+        RestoreManager::reconcileFalseRemovalNotices(
+            $installedPackages,
+            $notices,
+            $productLabel,
+            $falseNoticeTemplate,
+            $reassuranceNotice,
+            $category,
+            UpdateManager::ABOUT_PAGE,
+            static function (string $noticeIdentifier): void {
+                close_notice($noticeIdentifier);
+            },
+            static function (
+                string $noticeIdentifier,
+                string $notice,
+                string $noticeCategory,
+                string $url,
+                int $priority,
+                bool $localOnly,
+            ): void {
+                file_notice(
+                    $noticeIdentifier,
+                    $notice,
+                    $noticeCategory,
+                    $url,
+                    $priority,
+                    $localOnly,
+                );
+            },
+        );
+    } catch (Throwable $throwable) {
+        pfsensePackageIpv6PrefixUpdaterLogRestoreFailure(
+            'restore notice reconciliation',
+            $throwable,
+        );
+    }
+}
+
+/**
+ * Closes every queued update or restore-reassurance notice for this package.
+ *
+ * pfSense keys notices by filing time and removes only one entry per call. Package
+ * removal therefore resolves each stored package notice to its queue key first.
+ *
+ * @return void
+ *
+ * @since 2.1.2
+ */
+function pfsensePackageIpv6PrefixUpdaterClosePackageNotices(): void
+{
+    if (
+        function_exists('get_notices') === false
+        || function_exists('close_notice') === false
+    ) {
+        return;
+    }
+
+    $notices = get_notices();
+
+    if ($notices === false || !is_array($notices)) {
+        return;
+    }
+
+    $storedNoticeIdentifiers = [
+        htmlentities(UpdateManager::NOTICE_ID),
+        htmlentities(RestoreManager::REASSURANCE_NOTICE_ID),
+    ];
+
+    foreach ($notices as $noticeQueueIdentifier => $notice) {
+        if (!is_array($notice)) {
+            continue;
+        }
+
+        $storedNoticeIdentifier = $notice['id'] ?? null;
+
+        if (
+            !is_string($storedNoticeIdentifier)
+            || !in_array($storedNoticeIdentifier, $storedNoticeIdentifiers, true)
+        ) {
+            continue;
+        }
+
+        close_notice($noticeQueueIdentifier);
+    }
 }
 
 /**
@@ -320,7 +478,114 @@ function pfsensePackageIpv6PrefixUpdaterGetSchedule(string $schedule): array
 }
 
 /**
- * Removes the package cron jobs, available-update notice, and idle lock file.
+ * Writes changed restore-recovery cron items and regenerates the crontab.
+ *
+ * The configuration write and configure_cron() call follow pfSense's cron helper
+ * boundary while one comparison keeps repeated package synchronization idempotent.
+ *
+ * @param array $cronItems - Complete synchronized cron item list.
+ *
+ * @return void
+ *
+ * @since 2.1.2
+ */
+function pfsensePackageIpv6PrefixUpdaterWriteRestoreCronItems(array $cronItems): void
+{
+    $storedCronItems = config_get_path('cron/item', []);
+    $storedCronItems = is_array($storedCronItems) ? $storedCronItems : [];
+
+    if ($storedCronItems === $cronItems) {
+        return;
+    }
+
+    if (count($cronItems) === 0) {
+        config_del_path('cron/item');
+    } else {
+        config_set_path('cron/item', $cronItems);
+    }
+
+    write_config(pfsensePackageIpv6PrefixUpdaterTranslate('restore_heal_cron_revision'));
+    configure_cron();
+}
+
+/**
+ * Keeps the installed release's recovery cron entry current.
+ *
+ * Exact current commands skip lookup and writes. Transient lookup failures preserve
+ * stored entries, while definitive unavailable pins remove only tagged entries.
+ *
+ * @return void
+ *
+ * @since 2.1.2
+ */
+function pfsensePackageIpv6PrefixUpdaterInstallRestoreCron(): void
+{
+    try {
+        $cronItems = config_get_path('cron/item', []);
+        $cronItems = is_array($cronItems) ? $cronItems : [];
+        $installedVersion = UpdateManager::installedReleaseVersion();
+
+        RestoreManager::refreshCronItems(
+            $cronItems,
+            $installedVersion,
+            static function (string $lookupVersion): array {
+                $updateManager = new UpdateManager($lookupVersion);
+
+                return $updateManager->resolveRestoreHealPin();
+            },
+            static function (array $synchronizedCronItems): void {
+                pfsensePackageIpv6PrefixUpdaterWriteRestoreCronItems($synchronizedCronItems);
+            },
+            static function (Throwable $throwable): void {
+                pfsensePackageIpv6PrefixUpdaterLogRestoreFailure(
+                    'restore-heal pin refresh',
+                    $throwable,
+                );
+            },
+        );
+    } catch (Throwable $throwable) {
+        pfsensePackageIpv6PrefixUpdaterLogRestoreFailure(
+            'restore-heal cron synchronization',
+            $throwable,
+        );
+    }
+}
+
+/**
+ * Removes the recovery entry unless configuration or settings must survive.
+ *
+ * The optional Keep Settings argument supports packages with that lifecycle choice;
+ * this package passes false and relies on pfSense's restore flag when appropriate.
+ *
+ * @param bool $keepSettings - Whether a deliberate removal retains settings.
+ *
+ * @return void
+ *
+ * @since 2.1.2
+ */
+function pfsensePackageIpv6PrefixUpdaterRemoveRestoreCron(bool $keepSettings = false): void
+{
+    try {
+        $cronItems = config_get_path('cron/item', []);
+        $cronItems = is_array($cronItems) ? $cronItems : [];
+        $restoreInProgress = file_exists(PackagePaths::PACKAGE_SYNC_FLAG);
+        $synchronizedCronItems = RestoreManager::removeCronItems(
+            $cronItems,
+            $restoreInProgress,
+            $keepSettings,
+        );
+
+        pfsensePackageIpv6PrefixUpdaterWriteRestoreCronItems($synchronizedCronItems);
+    } catch (Throwable $throwable) {
+        pfsensePackageIpv6PrefixUpdaterLogRestoreFailure(
+            'restore-heal cron removal',
+            $throwable,
+        );
+    }
+}
+
+/**
+ * Removes the package cron jobs, queued package notices, and idle lock file.
  *
  * Baselines and backups in the package data directory are kept. pfSense removes and
  * reinstalls packages during upgrades, and deleting the baseline there would let the
@@ -334,10 +599,9 @@ function pfsensePackageIpv6PrefixUpdaterRemove(): void
 {
     install_cron_job(PackagePaths::COMMAND, false);
     install_cron_job(PackagePaths::UPDATE_CHECK_COMMAND, false);
+    pfsensePackageIpv6PrefixUpdaterRemoveRestoreCron();
 
-    if (function_exists('close_notice')) {
-        close_notice(UpdateManager::NOTICE_ID);
-    }
+    pfsensePackageIpv6PrefixUpdaterClosePackageNotices();
 
     $fileLock = new FileLock(PackagePaths::LOCK_FILE);
 
@@ -412,8 +676,10 @@ function pfsensePackageIpv6PrefixUpdaterMigrateLegacy(): bool
  */
 function pfsensePackageIpv6PrefixUpdaterSync(): void
 {
+    pfsensePackageIpv6PrefixUpdaterReconcileRestoreNotice();
     pfsensePackageIpv6PrefixUpdaterInstallCron(pfsensePackageIpv6PrefixUpdaterMigrateLegacy());
     pfsensePackageIpv6PrefixUpdaterInstallUpdateCron();
+    pfsensePackageIpv6PrefixUpdaterInstallRestoreCron();
 }
 
 /**

@@ -100,6 +100,42 @@ foreach ($expectedLocales as $locale) {
     );
 }
 
+$restoreMessagesByLocale = require(__DIR__ . '/../port/files/usr/local/pkg/ipv6-prefix-updater/RestoreTranslations.php');
+$expectedRestoreKeys = [
+    'restore_reassurance_notice',
+    'restore_heal_cron_revision',
+];
+
+assertTranslationSame(
+    'IPv6 Prefix Updater is still installed and its settings are unchanged. '
+        . 'pfSense reported it as removed after the configuration restore only because it isn\'t installed '
+        . 'from Netgate\'s package repository. No action is needed.',
+    $restoreMessagesByLocale['en_US']['restore_reassurance_notice'],
+    'The English restore reassurance must retain the approved wording.',
+);
+
+foreach ($expectedLocales as $locale) {
+    assertTranslationSame(
+        $expectedRestoreKeys,
+        array_keys($restoreMessagesByLocale[$locale]),
+        sprintf('Locale %s must contain every restore key in canonical order.', $locale),
+    );
+
+    if ($locale === 'en_US') {
+        continue;
+    }
+
+    foreach ($expectedRestoreKeys as $expectedRestoreKey) {
+        if ($restoreMessagesByLocale[$locale][$expectedRestoreKey] === $restoreMessagesByLocale['en_US'][$expectedRestoreKey]) {
+            throw new RuntimeException(sprintf(
+                'Locale %s must translate restore message %s.',
+                $locale,
+                $expectedRestoreKey,
+            ));
+        }
+    }
+}
+
 $updateMessagesByLocale = require(__DIR__ . '/../port/files/usr/local/pkg/ipv6-prefix-updater/UpdateTranslations.php');
 $expectedUpdateKeys = array_keys($updateMessagesByLocale['en_US']);
 $requiredUpdateKeys = [

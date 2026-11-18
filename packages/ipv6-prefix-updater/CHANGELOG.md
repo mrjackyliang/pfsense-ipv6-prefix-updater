@@ -1,5 +1,13 @@
 # pfsense-pkg-ipv6-prefix-updater
 
+## 2.1.2 - 2026-11-18
+
+### UPDATED
+- The About tab's tested releases include pfSense CE 2.9.1 and pfSense Plus 26.07.1, which both passed install, update, a prefix change, and removal end to end.
+
+### FIXED
+- A full configuration restore no longer leaves pfSense's false "has been removed" notice behind: on the same firewall IPv6 Prefix Updater replaces it with a notice that the package and its settings are unchanged, and on a new firewall it reinstalls itself within 15 minutes from its checksum-verified release.
+
 ## 2.1.1 - 2026-11-17
 
 ### FIXED

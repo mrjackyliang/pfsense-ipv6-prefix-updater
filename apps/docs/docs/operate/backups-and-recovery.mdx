@@ -48,6 +48,14 @@ Only the newest 10 package backups are kept, while imported legacy backups stay 
 
 To restore one, select **Download**, then upload the file under **Diagnostics → Backup & Restore → Restore Backup**. Restoring replaces the whole configuration, so the warnings below apply to these files too.
 
+## Restoring a Configuration
+
+After a full configuration restore on the same firewall, pfSense may report that IPv6 Prefix Updater was removed even though the package and its settings are unchanged. The next package synchronization closes that false notice and replaces it with a reassurance linked to the package's **About** page.
+
+When you restore the configuration on a new or reinstalled firewall, the restored recovery entry waits for pfSense's package synchronization to finish and then retries every 15 minutes. It reinstalls the exact package version that wrote the entry only after verifying its SHA-256 checksum, using the cached package under `/conf/ipv6-prefix-updater/restore-heal` when available or its pinned versioned release URL otherwise.
+
+A deliberate package uninstall removes the recovery entry.
+
 ## How the Revisions Are Labelled
 
 Each update leaves two revisions in <Terminology title="pfSense's saved config revisions you can restore" to="/docs/reference/terminology#backups-and-service-reloads">Config History</Terminology>, and only the older one undoes the update:

@@ -48,6 +48,14 @@ import backupList from './_assets_/backups-and-recovery-1.png';
 
 若要還原其中一個備份，請選取 **下載**，然後在 **Diagnostics → Backup & Restore → Restore Backup**（診斷 → 備份與還原 → 還原備份）中上傳該檔案。還原會取代整份設定，因此下文的警告同樣適用於這些檔案。
 
+## 還原設定 \{#restoring-a-configuration}
+
+在同一台防火牆上完整還原設定後，即使 IPv6 前綴更新器套件及其設定沒有變更，pfSense 仍可能回報該套件已被移除。下一次套件同步會關閉這項錯誤通知，並以一則連結至套件**關於**頁面的確認通知取代。
+
+在新的或重新安裝的防火牆上還原設定時，還原的復原項目會等待 pfSense 套件同步完成，之後每 15 分鐘重試一次。它只會在驗證 SHA-256 檢查碼後重新安裝寫入該項目的確切套件版本；若 `/conf/ipv6-prefix-updater/restore-heal` 中有快取套件便使用該副本，否則使用固定的版本化發行 URL。
+
+主動解除安裝套件會移除這個復原項目。
+
 ## 修訂版本的標示方式 \{#how-the-revisions-are-labelled}
 
 每次更新都會在<Terminology title="pfSense 保存、可供還原的設定修訂" to="/docs/reference/terminology#backups-and-service-reloads">設定歷程</Terminology>中留下兩個修訂版本，只有較舊的那一個才能撤銷這次更新：

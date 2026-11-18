@@ -18,6 +18,9 @@ pkg/ipv6-prefix-updater/PfSenseAdapter.php
 pkg/ipv6-prefix-updater/PlatformAdapter.php
 pkg/ipv6-prefix-updater/PrefixChangePlanner.php
 pkg/ipv6-prefix-updater/PrefixUpdater.php
+pkg/ipv6-prefix-updater/ReleasePinUnavailableException.php
+pkg/ipv6-prefix-updater/RestoreManager.php
+pkg/ipv6-prefix-updater/RestoreTranslations.php
 pkg/ipv6-prefix-updater/StateStore.php
 pkg/ipv6-prefix-updater/TestedReleases.php
 pkg/ipv6-prefix-updater/Translations.php

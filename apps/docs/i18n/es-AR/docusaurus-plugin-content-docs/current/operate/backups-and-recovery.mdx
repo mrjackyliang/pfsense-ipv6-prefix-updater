@@ -48,6 +48,14 @@ Solo se conservan las 10 copias de seguridad más recientes del paquete, mientra
 
 Para restaurar una, hacé clic en **Descargar** y después subí el archivo en **Diagnostics → Backup & Restore → Restore Backup**. Restaurar reemplaza toda la configuración, así que las advertencias de más abajo también se aplican a estos archivos.
 
+## Restaurar una configuración \{#restoring-a-configuration}
+
+Después de una restauración completa de la configuración en el mismo firewall, pfSense puede informar que IPv6 Prefix Updater se eliminó aunque el paquete y su configuración no hayan cambiado. La siguiente sincronización de paquetes cierra ese aviso falso y lo reemplaza por una confirmación con un enlace a la página **Acerca de** del paquete.
+
+Cuando restaurás la configuración en un firewall nuevo o reinstalado, la entrada de recuperación restaurada espera a que termine la sincronización de paquetes de pfSense y vuelve a intentarlo cada 15 minutos. Reinstala exactamente la versión del paquete que escribió la entrada solo después de verificar su suma SHA-256, usando el paquete guardado en `/conf/ipv6-prefix-updater/restore-heal` cuando está disponible o, de lo contrario, la URL versionada fijada de la versión publicada.
+
+Una desinstalación deliberada del paquete elimina la entrada de recuperación.
+
 ## Cómo se etiquetan las revisiones \{#how-the-revisions-are-labelled}
 
 Cada actualización deja dos revisiones en el <Terminology title="Las revisiones de configuración guardadas en pfSense que podés restaurar" to="/docs/reference/terminology#backups-and-service-reloads">historial de configuración</Terminology>, y solo la más vieja deshace la actualización:

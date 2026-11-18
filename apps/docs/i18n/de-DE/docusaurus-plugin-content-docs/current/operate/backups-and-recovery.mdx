@@ -48,6 +48,14 @@ Nur die 10 neuesten Paketsicherungen werden behalten, während importierte Legac
 
 Um eine davon wiederherzustellen, wählen Sie **Herunterladen** und laden Sie die Datei dann unter **Diagnostics → Backup & Restore → Restore Backup** hoch. Die Wiederherstellung ersetzt die gesamte Konfiguration, daher gelten die Warnungen weiter unten auch für diese Dateien.
 
+## Konfiguration wiederherstellen \{#restoring-a-configuration}
+
+Nach einer vollständigen Konfigurationswiederherstellung auf derselben Firewall kann pfSense melden, dass IPv6 Prefix Updater entfernt wurde, obwohl das Paket und seine Einstellungen unverändert sind. Die nächste Paketsynchronisierung schließt diese falsche Meldung und ersetzt sie durch einen Hinweis mit einem Link zur **Info**-Seite des Pakets.
+
+Wenn du die Konfiguration auf einer neuen oder neu installierten Firewall wiederherstellst, wartet der wiederhergestellte Wiederherstellungseintrag auf den Abschluss der pfSense-Paketsynchronisierung und versucht es anschließend alle 15 Minuten erneut. Er installiert genau die Paketversion, die den Eintrag geschrieben hat, erst nach Prüfung ihrer SHA-256-Prüfsumme neu und verwendet dabei, falls vorhanden, das zwischengespeicherte Paket unter `/conf/ipv6-prefix-updater/restore-heal`, andernfalls die angeheftete versionsbezogene Release-URL.
+
+Bei einer absichtlichen Deinstallation des Pakets wird der Wiederherstellungseintrag entfernt.
+
 ## Wie die Revisionen beschriftet sind \{#how-the-revisions-are-labelled}
 
 Jede Aktualisierung hinterlässt zwei Revisionen in der <Terminology title="Die gespeicherten Konfigurationsstände von pfSense zum Wiederherstellen" to="/docs/reference/terminology#backups-and-service-reloads">Config History</Terminology>, und nur die ältere macht die Aktualisierung rückgängig:

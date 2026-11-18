@@ -11,6 +11,7 @@ if command -v php >/dev/null 2>&1; then
 	php "${workspace_directory}/tests/domain.php"
 	php "${workspace_directory}/tests/runtime.php"
 	php "${workspace_directory}/tests/pfsense-adapter.php"
+	php "${workspace_directory}/tests/restore.php"
 	php "${workspace_directory}/tests/translations.php"
 	php "${workspace_directory}/tests/updates.php"
 	php "${workspace_directory}/tests/webgui-localization.php"
@@ -25,7 +26,7 @@ if command -v docker >/dev/null 2>&1; then
 		--volume "${workspace_directory}:/workspace:ro" \
 		--workdir /workspace \
 		"${php_test_image}" \
-		sh -c 'find ./port/files ./tests -type f \( -name "*.php" -o -name "*.inc" -o -name "ipv6-prefix-updater" \) -exec php -l {} \; && php ./tests/domain.php && php ./tests/runtime.php && php ./tests/pfsense-adapter.php && php ./tests/translations.php && php ./tests/updates.php && php ./tests/webgui-localization.php'
+		sh -c 'find ./port/files ./tests -type f \( -name "*.php" -o -name "*.inc" -o -name "ipv6-prefix-updater" \) -exec php -l {} \; && php ./tests/domain.php && php ./tests/runtime.php && php ./tests/pfsense-adapter.php && php ./tests/restore.php && php ./tests/translations.php && php ./tests/updates.php && php ./tests/webgui-localization.php'
 fi
 
 echo "PHP domain tests require either a local php executable or Docker." >&2

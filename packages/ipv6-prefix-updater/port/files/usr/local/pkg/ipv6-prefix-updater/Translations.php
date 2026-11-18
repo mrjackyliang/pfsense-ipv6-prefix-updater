@@ -2520,12 +2520,14 @@ $updatedMessagePluralsByLocale['ru_RU'] = [
 
 $aboutMessagesByLocale = require(__DIR__ . '/AboutTranslations.php');
 $updateMessagesByLocale = require(__DIR__ . '/UpdateTranslations.php');
+$restoreMessagesByLocale = require(__DIR__ . '/RestoreTranslations.php');
 $migrationByLocale = require(__DIR__ . '/MigrationTranslations.php');
 $fieldMessagesByLocale = require(__DIR__ . '/FieldTranslations.php');
 
 foreach ($baseCatalogs as $locale => $messages) {
     $aboutMessages = $aboutMessagesByLocale[$locale] ?? [];
     $updateMessages = $updateMessagesByLocale[$locale] ?? [];
+    $restoreMessages = $restoreMessagesByLocale[$locale] ?? [];
     $baselineRecovery = $baselineRecoveryByLocale[$locale];
     $runtimeErrors = $runtimeErrorsByLocale[$locale];
     $updatedMessagePlurals = $updatedMessagePluralsByLocale[$locale];
@@ -2538,6 +2540,10 @@ foreach ($baseCatalogs as $locale => $messages) {
 
     if (array_keys($updateMessages) !== array_keys($updateMessagesByLocale['en_US'])) {
         throw new RuntimeException(sprintf('Update translations for locale "%s" are incomplete.', $locale));
+    }
+
+    if (array_keys($restoreMessages) !== array_keys($restoreMessagesByLocale['en_US'])) {
+        throw new RuntimeException(sprintf('Restore translations for locale "%s" are incomplete.', $locale));
     }
 
     if (array_keys($migration) !== array_keys($migrationByLocale['en_US'])) {
@@ -2564,6 +2570,7 @@ foreach ($baseCatalogs as $locale => $messages) {
         $messages,
         $aboutMessages,
         $updateMessages,
+        $restoreMessages,
         $baselineRecovery,
         $updatedMessagePlurals,
         $runtimeErrors,

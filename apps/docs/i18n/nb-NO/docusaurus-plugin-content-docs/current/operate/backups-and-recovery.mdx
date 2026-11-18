@@ -48,6 +48,14 @@ Bare de 10 nyeste sikkerhetskopiene fra pakken beholdes, mens importerte sikkerh
 
 For å gjenopprette en av dem velger du **Last ned** og laster deretter opp filen under **Diagnostics → Backup & Restore → Restore Backup**. Gjenoppretting erstatter hele konfigurasjonen, så advarslene nedenfor gjelder også for disse filene.
 
+## Gjenopprett en konfigurasjon \{#restoring-a-configuration}
+
+Etter en full konfigurasjonsgjenoppretting på samme brannmur kan pfSense melde at IPv6 Prefix Updater ble fjernet selv om pakken og innstillingene er uendret. Neste pakkesynkronisering lukker det feilaktige varselet og erstatter det med en bekreftelse som lenker til pakkens **Om**-side.
+
+Når du gjenoppretter konfigurasjonen på en ny eller reinstallert brannmur, venter den gjenopprettede oppføringen til pfSense er ferdig med pakkesynkroniseringen og prøver deretter igjen hvert 15. minutt. Den installerer nøyaktig pakkeversjonen som skrev oppføringen, men bare etter at SHA-256-kontrollsummen er bekreftet, ved å bruke den bufrede pakken i `/conf/ipv6-prefix-updater/restore-heal` når den finnes eller ellers den festede versjonerte utgivelsesadressen.
+
+En bevisst avinstallering av pakken fjerner gjenopprettingsoppføringen.
+
 ## Slik er revisjonene merket \{#how-the-revisions-are-labelled}
 
 Hver oppdatering etterlater to revisjoner i <Terminology title="De lagrede konfigurasjonsrevisjonene i pfSense som kan gjenopprettes" to="/docs/reference/terminology#backups-and-service-reloads">Config History</Terminology>, og bare den eldre av dem angrer oppdateringen:

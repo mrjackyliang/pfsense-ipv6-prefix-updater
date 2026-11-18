@@ -67,6 +67,12 @@ do-install:
 		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/PrefixUpdater.php \
 		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/ReleasePinUnavailableException.php \
+		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/RestoreManager.php \
+		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/RestoreTranslations.php \
+		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/StateStore.php \
 		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/TestedReleases.php \

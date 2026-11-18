@@ -7,59 +7,7 @@ use PfSense\Ipv6PrefixUpdater\Runtime\UpdateManager;
 
 require_once(__DIR__ . '/../port/files/usr/local/pkg/ipv6-prefix-updater/Translator.php');
 require_once(__DIR__ . '/../port/files/usr/local/pkg/ipv6-prefix-updater/UpdateManager.php');
-
-/** @var list<array> Captured pfSense notices. */
-$updateTestNotices = [];
-
-/** @var list<string> Captured closed pfSense notice identifiers. */
-$updateTestClosedNotices = [];
-
-if (function_exists('file_notice') === false) {
-    /**
-     * Captures one pfSense notice for update tests.
-     *
-     * @param string $id        - Notice identifier.
-     * @param string $notice    - Notice text.
-     * @param string $category  - Notice category.
-     * @param string $url       - Notice link.
-     * @param int    $priority  - Notice priority.
-     * @param bool   $localOnly - Whether remote channels are suppressed.
-     *
-     * @return void
-     *
-     * @since 2.1.0
-     */
-    function file_notice(
-        string $id,
-        string $notice,
-        string $category = 'General',
-        string $url = '',
-        int $priority = 1,
-        bool $localOnly = false,
-    ): void {
-        global $updateTestNotices;
-
-        $updateTestNotices[] = compact('id', 'notice', 'category', 'url', 'priority', 'localOnly');
-    }
-}
-
-if (function_exists('close_notice') === false) {
-    /**
-     * Captures one closed pfSense notice identifier.
-     *
-     * @param string $id - Notice identifier.
-     *
-     * @return void
-     *
-     * @since 2.1.0
-     */
-    function close_notice(string $id): void
-    {
-        global $updateTestClosedNotices;
-
-        $updateTestClosedNotices[] = $id;
-    }
-}
+require_once(__DIR__ . '/stubs/notices.inc');
 
 /**
  * Asserts strict equality for update regression checks.
@@ -350,27 +298,27 @@ $noticeState = [
 $noticeState = UpdateManager::synchronizeNotice($noticeState, '2.0.1', '2.1.0', false);
 
 assertUpdateSame('2.1.0', $noticeState['notified_version'], 'The noticed version must be persisted.');
-assertUpdateSame(1, count($updateTestNotices), 'A new version must create one notice.');
+assertUpdateSame(1, count($noticeTestFileCalls), 'A new version must create one notice.');
 assertUpdateSame(
     'IPv6 Prefix Updater 2.1.0 is available.',
-    $updateTestNotices[0]['notice'],
+    $noticeTestFileCalls[0]['notice'],
     'The bell notice must use plain localized package and version text.',
 );
-assertUpdateSame('IPv6 Prefix Updater', $updateTestNotices[0]['category'], 'The notice category must be the package name.');
-assertUpdateSame(true, $updateTestNotices[0]['localOnly'], 'Remote notifications must be off by default.');
-assertUpdateSame(UpdateManager::ABOUT_PAGE, $updateTestNotices[0]['url'], 'The notice must link to the About tab.');
+assertUpdateSame('IPv6 Prefix Updater', $noticeTestFileCalls[0]['category'], 'The notice category must be the package name.');
+assertUpdateSame(true, $noticeTestFileCalls[0]['localOnly'], 'Remote notifications must be off by default.');
+assertUpdateSame(UpdateManager::ABOUT_PAGE, $noticeTestFileCalls[0]['url'], 'The notice must link to the About tab.');
 
 $noticeState = UpdateManager::synchronizeNotice($noticeState, '2.0.1', '2.1.0', true);
-assertUpdateSame(1, count($updateTestNotices), 'The same version must not create a duplicate notice.');
+assertUpdateSame(1, count($noticeTestFileCalls), 'The same version must not create a duplicate notice.');
 
 $noticeState = UpdateManager::synchronizeNotice($noticeState, '2.0.1', '2.2.0', true);
-assertUpdateSame(2, count($updateTestNotices), 'A later version must create one new notice.');
-assertUpdateSame(false, $updateTestNotices[1]['localOnly'], 'The opt-in must allow pfSense remote notifications.');
+assertUpdateSame(2, count($noticeTestFileCalls), 'A later version must create one new notice.');
+assertUpdateSame(false, $noticeTestFileCalls[1]['localOnly'], 'The opt-in must allow pfSense remote notifications.');
 
 UpdateManager::synchronizeNotice($noticeState, '2.2.0', '2.2.0', true);
 assertUpdateSame(
     UpdateManager::NOTICE_ID,
-    $updateTestClosedNotices[array_key_last($updateTestClosedNotices)],
+    $noticeTestCloseCalls[array_key_last($noticeTestCloseCalls)],
     'The notice must close when the installed version is current.',
 );
 

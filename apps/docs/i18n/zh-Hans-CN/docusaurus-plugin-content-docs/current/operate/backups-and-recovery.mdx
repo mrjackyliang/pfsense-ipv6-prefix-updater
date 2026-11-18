@@ -48,6 +48,14 @@ import backupList from './_assets_/backups-and-recovery-1.png';
 
 要恢复某个备份，请选择 **下载**，然后在 **Diagnostics → Backup & Restore → Restore Backup**（诊断 → 备份与恢复 → 恢复备份）中上传该文件。恢复会替换整个配置，因此下文的警告同样适用于这些文件。
 
+## 恢复配置 \{#restoring-a-configuration}
+
+在同一台防火墙上完整恢复配置后，即使 IPv6 前缀更新器软件包及其设置未发生变化，pfSense 也可能报告该软件包已被删除。下一次软件包同步会关闭这一错误通知，并替换为一条链接到软件包**关于**页面的确认通知。
+
+在新的或重新安装的防火墙上恢复配置时，恢复的修复条目会等待 pfSense 软件包同步完成，然后每 15 分钟重试一次。它只会在验证 SHA-256 校验和后重新安装写入该条目的确切软件包版本；如果 `/conf/ipv6-prefix-updater/restore-heal` 中有缓存的软件包，就使用该副本，否则使用固定的版本化发布 URL。
+
+主动卸载软件包会删除此恢复条目。
+
 ## 修订版本如何标注 \{#how-the-revisions-are-labelled}
 
 每次更新都会在<Terminology title="pfSense 保存的可供恢复的配置修订" to="/docs/reference/terminology#backups-and-service-reloads">配置历史</Terminology>中留下两个修订版本，只有较旧的那个才能撤销此次更新：

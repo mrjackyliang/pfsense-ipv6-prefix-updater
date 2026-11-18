@@ -9,6 +9,7 @@ use RuntimeException;
 use Throwable;
 
 require_once(__DIR__ . '/PackagePaths.php');
+require_once(__DIR__ . '/ReleasePinUnavailableException.php');
 require_once(__DIR__ . '/Translator.php');
 
 /**
@@ -23,6 +24,16 @@ final class UpdateManager
 {
     /** GitHub latest-release API endpoint. @since 2.1.0 */
     public const RELEASES_API = 'https://api.github.com/repos/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest';
+
+    /**
+     * GitHub release-by-tag API prefix used for installed-version recovery pins.
+     *
+     * Appending the normalized installed tag resolves immutable release metadata
+     * without consulting GitHub's moving latest-release endpoint.
+     *
+     * @since 2.1.2
+     */
+    public const RELEASE_TAG_API_PREFIX = 'https://api.github.com/repos/mrjackyliang/pfsense-ipv6-prefix-updater/releases/tags/';
 
     /** Allowed prefix for release asset URLs returned by GitHub. @since 2.1.0 */
     public const DOWNLOAD_PREFIX = 'https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/download/';
@@ -66,13 +77,14 @@ final class UpdateManager
      * The WebGUI never constructs endpoint overrides. Only the CLI reads the
      * documented test environment variables and passes their values here.
      *
-     * @param string $installedVersion - Installed package version.
-     * @param string $releasesApi      - Latest-release API endpoint.
-     * @param string $downloadPrefix   - Allowed release asset URL prefix.
-     * @param string $updatesFile      - Persistent update metadata path.
-     * @param string $statusFile       - Background update status path.
-     * @param string $signingKeysFile  - Test-only release signing key path.
-     * @param string $sshKeygenCommand - Test-only OpenSSH executable path.
+     * @param string $installedVersion    - Installed package version.
+     * @param string $releasesApi         - Latest-release API endpoint.
+     * @param string $downloadPrefix      - Allowed release asset URL prefix.
+     * @param string $updatesFile         - Persistent update metadata path.
+     * @param string $statusFile          - Background update status path.
+     * @param string $signingKeysFile     - Test-only release signing key path.
+     * @param string $sshKeygenCommand    - Test-only OpenSSH executable path.
+     * @param string $releaseTagApiPrefix - Release-by-tag API prefix.
      *
      * @since 2.1.0
      */
@@ -84,6 +96,7 @@ final class UpdateManager
         private readonly string $statusFile = PackagePaths::UPDATE_STATUS_FILE,
         private readonly string $signingKeysFile = self::SIGNING_KEYS_FILE,
         private readonly string $sshKeygenCommand = self::SSH_KEYGEN_COMMAND,
+        private readonly string $releaseTagApiPrefix = self::RELEASE_TAG_API_PREFIX,
     ) {
     }
 
@@ -248,41 +261,108 @@ final class UpdateManager
             }
         }
 
-        $packageInfoPath = self::PACKAGE_DATA_DIRECTORY . '/info.xml';
+        return self::readInstalledPackageInfoVersion();
+    }
 
-        if (is_readable($packageInfoPath) === false) {
-            return null;
+    /**
+     * Returns the installed release version for configuration-restore pinning.
+     *
+     * Shipped package metadata is preferred because a restored configuration may
+     * describe an older backup while the package files on this firewall are newer.
+     * The normal installed-package lookup remains the fallback for lifecycle edges.
+     *
+     * @return string|null
+     *
+     * @since 2.1.2
+     */
+    public static function installedReleaseVersion(): ?string
+    {
+        return self::readInstalledPackageInfoVersion() ?? self::installedVersion();
+    }
+
+    /**
+     * Resolves a checksum-verified pin for the currently installed release.
+     *
+     * Configuration-restore recovery needs the installed version rather than the
+     * latest release. GitHub's API digest is preferred, with the same release's
+     * checksum asset used as the fallback shared by self-update verification.
+     *
+     * @return array{version: string, url: string, sha256: string}
+     *
+     * @throws ReleasePinUnavailableException When the installed release has no pin.
+     * @throws Throwable                      When lookup fails transiently.
+     *
+     * @since 2.1.2
+     */
+    public function resolveRestoreHealPin(): array
+    {
+        $normalizedInstalledVersion = self::normalizeVersion($this->installedVersion);
+
+        if (
+            preg_match(
+                '/^[0-9]+(?:\.[0-9]+){1,3}(?:[-+][0-9A-Za-z.-]+)?$/',
+                $normalizedInstalledVersion,
+            ) !== 1
+        ) {
+            throw new ReleasePinUnavailableException(
+                'The installed version is not a published release version.',
+            );
         }
 
-        if (function_exists('parse_xml_config_pkg') === false) {
-            $xmlParserPath = '/etc/inc/xmlparse.inc';
+        $releaseTag = 'v' . $normalizedInstalledVersion;
+        $releaseApi = $this->releaseTagApiPrefix . rawurlencode($releaseTag);
+        $release = $this->fetchRelease($releaseApi, true);
 
-            if (is_readable($xmlParserPath) === false) {
-                return null;
+        if ($release['version'] !== $normalizedInstalledVersion) {
+            throw new ReleasePinUnavailableException(
+                'The installed version does not match the published release.',
+            );
+        }
+
+        $assets = self::selectUpdateAssets($release, $this->downloadPrefix);
+        $expectedDigest = $assets['digest'];
+        $temporaryDirectory = null;
+
+        try {
+            if (is_array($assets['checksum'])) {
+                $temporaryDirectory = $this->createTemporaryDirectory();
+                $checksumPath = $temporaryDirectory . '/' . $assets['checksum']['name'];
+
+                $this->downloadFile(
+                    $assets['checksum']['url'],
+                    $checksumPath,
+                    self::AUXILIARY_DOWNLOAD_LIMIT,
+                    true,
+                );
+
+                $checksumContents = @file_get_contents($checksumPath);
+
+                if (!is_string($checksumContents)) {
+                    throw new RuntimeException(Translator::translate('update_download_failed'));
+                }
+
+                $expectedDigest = self::checksumDigest($checksumContents);
             }
-
-            require_once($xmlParserPath);
+        } finally {
+            if (is_string($temporaryDirectory)) {
+                $this->removeTemporaryDirectory($temporaryDirectory);
+            }
         }
 
-        $packageInfo = parse_xml_config_pkg($packageInfoPath, 'pfsensepkgs');
-        $packageInfoPackage = is_array($packageInfo) ? ($packageInfo['package'] ?? null) : null;
-
-        if (!is_array($packageInfoPackage)) {
-            return null;
+        if (
+            !is_string($expectedDigest)
+            || preg_match('/^sha256:([a-fA-F0-9]{64})$/', $expectedDigest, $digestMatches) !== 1
+        ) {
+            throw new ReleasePinUnavailableException(
+                'The installed release has no usable SHA-256 checksum.',
+            );
         }
 
-        $packageInfoVersion = $packageInfoPackage['version'] ?? null;
-
-        if (!is_string($packageInfoVersion)) {
-            $packageInfoPackageFirst = $packageInfoPackage[0] ?? null;
-            $packageInfoVersion = is_array($packageInfoPackageFirst)
-                ? ($packageInfoPackageFirst['version'] ?? null)
-                : null;
-        }
-
-        return (is_string($packageInfoVersion) && $packageInfoVersion !== '')
-            ? $packageInfoVersion
-            : null;
+        return [
+            'version' => $normalizedInstalledVersion,
+            'url' => $assets['package']['url'],
+            'sha256' => strtolower($digestMatches[1]),
+        ];
     }
 
     /**
@@ -654,7 +734,8 @@ final class UpdateManager
      *
      * @return array{package: array, digest: string|null, checksum: array|null, signature: array|null}
      *
-     * @throws RuntimeException When required assets or their URLs are invalid.
+     * @throws ReleasePinUnavailableException When no usable SHA-256 source exists.
+     * @throws RuntimeException               When required package data is invalid.
      *
      * @since 2.1.0
      */
@@ -722,7 +803,9 @@ final class UpdateManager
         }
 
         if (!is_array($checksumAsset)) {
-            throw new RuntimeException(Translator::translate('update_checksum_missing', [$checksumAssetName]));
+            throw new ReleasePinUnavailableException(
+                Translator::translate('update_checksum_missing', [$checksumAssetName]),
+            );
         }
 
         $checksumAssetUrl = $checksumAsset['url'] ?? null;
@@ -731,7 +814,7 @@ final class UpdateManager
             !is_string($checksumAssetUrl)
             || self::isAllowedAssetUrl($checksumAssetUrl, $downloadPrefix) === false
         ) {
-            throw new RuntimeException(Translator::translate('update_asset_url_invalid'));
+            throw new ReleasePinUnavailableException(Translator::translate('update_asset_url_invalid'));
         }
 
         return [
@@ -1164,19 +1247,25 @@ final class UpdateManager
     /**
      * Downloads one release asset with pfSense proxy and TLS settings.
      *
-     * @param string $url       - Validated asset URL.
-     * @param string $path      - Private destination path.
-     * @param int    $byteLimit - Maximum accepted download size.
+     * @param string $url                      - Validated asset URL.
+     * @param string $path                     - Private destination path.
+     * @param int    $byteLimit                - Maximum accepted download size.
+     * @param bool   $notFoundMeansUnavailable - Whether HTTP 404 is definitive.
      *
      * @return void
      *
-     * @throws RuntimeException When transport or HTTP validation fails.
+     * @throws ReleasePinUnavailableException When a required asset is absent.
+     * @throws RuntimeException               When transport or HTTP validation fails.
      *
      * @since 2.1.0
      * @private
      */
-    private function downloadFile(string $url, string $path, int $byteLimit): void
-    {
+    private function downloadFile(
+        string $url,
+        string $path,
+        int $byteLimit,
+        bool $notFoundMeansUnavailable = false,
+    ): void {
         $fileHandle = fopen($path, 'wb');
 
         if ($fileHandle === false || chmod($path, 0600) === false) {
@@ -1236,6 +1325,14 @@ final class UpdateManager
             throw new RuntimeException(Translator::translate('update_download_too_large'));
         }
 
+        if ($statusCode === 404 && $notFoundMeansUnavailable) {
+            @unlink($path);
+
+            throw new ReleasePinUnavailableException(
+                Translator::translate('update_download_failed_detail', [(string) $statusCode]),
+            );
+        }
+
         if ($result !== true || $statusCode < 200 || $statusCode >= 300) {
             @unlink($path);
             $detail = $curlError !== '' ? $curlError : (string) $statusCode;
@@ -1256,8 +1353,32 @@ final class UpdateManager
      */
     private function fetchLatestRelease(): array
     {
+        return $this->fetchRelease($this->releasesApi);
+    }
+
+    /**
+     * Fetches and parses one GitHub release API endpoint.
+     *
+     * Latest-version checks and installed-version recovery pins share identical
+     * transport, proxy, rate-limit, status, and response validation.
+     *
+     * @param string $releaseApi              - GitHub release API endpoint.
+     * @param bool   $notFoundMeansUnavailable - Whether HTTP 404 is definitive.
+     *
+     * @return array
+     *
+     * @throws ReleasePinUnavailableException When the requested release is absent.
+     * @throws RuntimeException               When GitHub rejects the request transiently.
+     *
+     * @since 2.1.2
+     * @private
+     */
+    private function fetchRelease(
+        string $releaseApi,
+        bool $notFoundMeansUnavailable = false,
+    ): array {
         $responseHeaders = [];
-        $curlHandle = curl_init($this->releasesApi);
+        $curlHandle = curl_init($releaseApi);
 
         if ($curlHandle === false) {
             throw new RuntimeException(Translator::translate('update_check_failed_transport'));
@@ -1275,7 +1396,7 @@ final class UpdateManager
             return strlen($headerLine);
         };
 
-        $this->configureCurl($curlHandle, $this->releasesApi, [
+        $this->configureCurl($curlHandle, $releaseApi, [
             CURLOPT_HEADERFUNCTION => $headerCallback,
             CURLOPT_HTTPHEADER => [
                 'Accept: application/vnd.github+json',
@@ -1289,6 +1410,12 @@ final class UpdateManager
         $curlError = curl_error($curlHandle);
 
         curl_close($curlHandle);
+
+        if ($statusCode === 404 && $notFoundMeansUnavailable) {
+            throw new ReleasePinUnavailableException(
+                Translator::translate('update_http_failed', [$statusCode]),
+            );
+        }
 
         if ($response === false) {
             throw new RuntimeException(Translator::translate('update_check_failed_detail', [$curlError]));
@@ -1376,6 +1503,57 @@ final class UpdateManager
     private static function normalizeVersion(string $version): string
     {
         return preg_replace('/^[vV]/', '', trim($version), 1) ?? trim($version);
+    }
+
+    /**
+     * Reads the version shipped with the installed package files.
+     *
+     * This metadata reflects the package actually present on disk even when a full
+     * configuration restore replaces pfSense's installed-package record with an older
+     * backup.
+     *
+     * @return string|null
+     *
+     * @since 2.1.2
+     * @private
+     */
+    private static function readInstalledPackageInfoVersion(): ?string
+    {
+        $packageInfoPath = self::PACKAGE_DATA_DIRECTORY . '/info.xml';
+
+        if (is_readable($packageInfoPath) === false) {
+            return null;
+        }
+
+        if (function_exists('parse_xml_config_pkg') === false) {
+            $xmlParserPath = '/etc/inc/xmlparse.inc';
+
+            if (is_readable($xmlParserPath) === false) {
+                return null;
+            }
+
+            require_once($xmlParserPath);
+        }
+
+        $packageInfo = parse_xml_config_pkg($packageInfoPath, 'pfsensepkgs');
+        $packageInfoPackage = is_array($packageInfo) ? ($packageInfo['package'] ?? null) : null;
+
+        if (!is_array($packageInfoPackage)) {
+            return null;
+        }
+
+        $packageInfoVersion = $packageInfoPackage['version'] ?? null;
+
+        if (!is_string($packageInfoVersion)) {
+            $packageInfoPackageFirst = $packageInfoPackage[0] ?? null;
+            $packageInfoVersion = is_array($packageInfoPackageFirst)
+                ? ($packageInfoPackageFirst['version'] ?? null)
+                : null;
+        }
+
+        return (is_string($packageInfoVersion) && $packageInfoVersion !== '')
+            ? $packageInfoVersion
+            : null;
     }
 
     /**

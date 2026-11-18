@@ -48,6 +48,14 @@ Kartica **Services → IPv6 Prefix Updater → Sigurnosne kopije** navodi vlasti
 
 Da biste vratili jednu, odaberite **Preuzmi**, a zatim otpremite datoteku u **Diagnostics → Backup & Restore → Restore Backup**. Vraćanje zamjenjuje cijelu konfiguraciju, pa se upozorenja u nastavku odnose i na ove datoteke.
 
+## Vraćanje konfiguracije \{#restoring-a-configuration}
+
+Nakon potpunog vraćanja konfiguracije na istom vatrozidu, pfSense može prijaviti da je Ažuriranje IPv6 prefiksa uklonjeno iako paket i njegove postavke nisu promijenjeni. Sljedeća sinhronizacija paketa zatvara tu netačnu obavijest i zamjenjuje je potvrdom s vezom na stranicu **O programu** paketa.
+
+Kada vratite konfiguraciju na novi ili ponovo instalirani vatrozid, vraćeni unos za oporavak čeka da pfSense završi sinhronizaciju paketa, a zatim pokušava ponovo svakih 15 minuta. Ponovo instalira tačno onu verziju paketa koja je zapisala unos tek nakon provjere SHA-256 kontrolnog zbira, koristeći keširani paket iz `/conf/ipv6-prefix-updater/restore-heal` kada je dostupan ili inače njegov prikvačeni URL verzioniranog izdanja.
+
+Namjerno uklanjanje paketa briše unos za oporavak.
+
 ## Kako su revizije označene \{#how-the-revisions-are-labelled}
 
 Svako ažuriranje ostavlja dvije revizije u <Terminology title="Sačuvane revizije konfiguracije u pfSense-u koje možete vratiti" to="/docs/reference/terminology#backups-and-service-reloads">Config History</Terminology>, a samo starija poništava ažuriranje:
