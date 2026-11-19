@@ -1,5 +1,10 @@
 # pfsense-pkg-ipv6-prefix-updater
 
+## 2.1.4 - 2026-11-19
+
+### FIXED
+- Check for Updates offers a new version only once its package, checksum, and signature are attached to the release, so Update never fails while a release is still being built.
+
 ## 2.1.3 - 2026-11-18
 
 ### UPDATED

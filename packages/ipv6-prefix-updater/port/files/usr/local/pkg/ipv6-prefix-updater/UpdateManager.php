@@ -176,6 +176,21 @@ final class UpdateManager
 
         try {
             $release = $this->fetchLatestRelease();
+
+            // GitHub publishes the release before its build attaches the package. A newer
+            // release that can't be installed yet stays unseen until its files are there.
+            if (
+                self::isNewerVersion($this->installedVersion, $release['version'])
+                && $this->releaseInstallable($release) === false
+            ) {
+                $state['checked_at'] = $checkedAt;
+                $state['last_error'] = null;
+
+                self::writeJsonAtomically($this->updatesFile, $state);
+
+                return $state;
+            }
+
             $state = [
                 'checked_at' => $checkedAt,
                 'latest_version' => $release['version'],
@@ -205,6 +220,30 @@ final class UpdateManager
 
             throw $throwable;
         }
+    }
+
+    /**
+     * Applies the self-update's own asset and signature rules.
+     *
+     * A release is offered only once its package, checksum, and required
+     * signature are attached, so Update never fails while a build is running.
+     *
+     * @param array $release - Parsed release.
+     *
+     * @return bool
+     *
+     * @since 2.1.4
+     */
+    public function releaseInstallable(array $release): bool
+    {
+        try {
+            $assets = self::selectUpdateAssets($release, $this->downloadPrefix);
+            $signingKeys = self::readSigningKeys($this->signingKeysFile);
+        } catch (Throwable) {
+            return false;
+        }
+
+        return count($signingKeys) === 0 || is_array($assets['signature']);
     }
 
     /**
