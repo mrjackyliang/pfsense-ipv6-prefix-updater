@@ -9,6 +9,7 @@ import {
 import { fileURLToPath } from 'node:url';
 
 import {
+  curlCallPattern,
   releaseSigningKeyPattern,
   semanticVersionPattern,
 } from './regex.mjs';
@@ -55,9 +56,12 @@ const requiredFiles = [
   'port/files/usr/local/pkg/ipv6-prefix-updater/ConfigurationChangePlanner.php',
   'port/files/usr/local/pkg/ipv6-prefix-updater/ConfigurationFieldDetector.php',
   'port/files/usr/local/pkg/ipv6-prefix-updater/ConfigurationTargetScanner.php',
+  'port/files/usr/local/pkg/ipv6-prefix-updater/CurlHttpClient.php',
   'port/files/usr/local/pkg/ipv6-prefix-updater/FieldSelection.php',
   'port/files/usr/local/pkg/ipv6-prefix-updater/FieldTranslations.php',
   'port/files/usr/local/pkg/ipv6-prefix-updater/FileLock.php',
+  'port/files/usr/local/pkg/ipv6-prefix-updater/GitHubReleaseSource.php',
+  'port/files/usr/local/pkg/ipv6-prefix-updater/HttpClient.php',
   'port/files/usr/local/pkg/ipv6-prefix-updater/Ipv6Prefix.php',
   'port/files/usr/local/pkg/ipv6-prefix-updater/LegacyInstallation.php',
   'port/files/usr/local/pkg/ipv6-prefix-updater/LegacyMigrator.php',
@@ -69,6 +73,7 @@ const requiredFiles = [
   'port/files/usr/local/pkg/ipv6-prefix-updater/PrefixChangePlanner.php',
   'port/files/usr/local/pkg/ipv6-prefix-updater/PrefixUpdater.php',
   'port/files/usr/local/pkg/ipv6-prefix-updater/ReleasePinUnavailableException.php',
+  'port/files/usr/local/pkg/ipv6-prefix-updater/ReleaseSource.php',
   'port/files/usr/local/pkg/ipv6-prefix-updater/RestoreManager.php',
   'port/files/usr/local/pkg/ipv6-prefix-updater/RestoreTranslations.php',
   'port/files/usr/local/pkg/ipv6-prefix-updater/StateStore.php',
@@ -570,37 +575,46 @@ if (webGuiXml.includes('<fieldname>scope_') === true) {
 }
 
 /**
- * Check Package - Runtime Configuration Sources.
+ * Check Package - Lifecycle Include.
  *
- * Both the lifecycle include and execution adapter must read the same normalized key
- * used by pfSense's generic package editor.
+ * Loads the pfSense lifecycle include so its settings reads can be checked against
+ * the platform adapter.
  *
- * @since 2.0.0
+ * @since 2.1.5
  */
-const runtimeConfigurationSources = await Promise.all([
-  readFile(
-    join(workspaceDirectory, 'port', 'files', 'usr', 'local', 'pkg', 'ipv6-prefix-updater.inc'),
-    'utf-8',
-  ),
-  readFile(
-    join(
-      workspaceDirectory,
-      'port',
-      'files',
-      'usr',
-      'local',
-      'pkg',
-      'ipv6-prefix-updater',
-      'PfSenseAdapter.php',
-    ),
-    'utf-8',
-  ),
-]);
+const lifecycleInclude = await readFile(
+  join(workspaceDirectory, 'port', 'files', 'usr', 'local', 'pkg', 'ipv6-prefix-updater.inc'),
+  'utf-8',
+);
 
-for (const runtimeConfigurationSource of runtimeConfigurationSources) {
-  if (runtimeConfigurationSource.includes('installedpackages/ipv6prefixupdater/config/0') === false) {
-    throw new Error('Every runtime settings reader must use the normalized WebGUI configuration key.');
-  }
+/**
+ * Check Package - Platform Adapter Source.
+ *
+ * Loads the pfSense adapter, the only runtime file that reads the settings record
+ * from the pfSense configuration.
+ *
+ * @since 2.1.5
+ */
+const platformAdapterSource = await readFile(
+  join(
+    workspaceDirectory,
+    'port',
+    'files',
+    'usr',
+    'local',
+    'pkg',
+    'ipv6-prefix-updater',
+    'PfSenseAdapter.php',
+  ),
+  'utf-8',
+);
+
+if (platformAdapterSource.includes('installedpackages/ipv6prefixupdater/config/0') === false) {
+  throw new Error('The platform adapter must read settings from the normalized WebGUI configuration key.');
+}
+
+if (lifecycleInclude.includes('pfsensePackageIpv6PrefixUpdaterPlatform()->getSettings()') === false) {
+  throw new Error('The lifecycle include must read settings through the platform adapter.');
 }
 
 /**
@@ -693,13 +707,94 @@ const updateManagerSource = await readFile(
   'utf-8',
 );
 
-for (const updateSecurityMarker of [
+/**
+ * Check Package - HTTP Client Source.
+ *
+ * Holds the transport security settings for release checks and downloads, since
+ * the cURL client is the only runtime file that sends HTTP requests.
+ *
+ * @since 2.1.5
+ */
+const httpClientSource = await readFile(
+  join(
+    workspaceDirectory,
+    'port',
+    'files',
+    'usr',
+    'local',
+    'pkg',
+    'ipv6-prefix-updater',
+    'CurlHttpClient.php',
+  ),
+  'utf-8',
+);
+
+for (const transportSecurityMarker of [
   'set_curlproxy($curlHandle)',
   'CURLOPT_SSL_VERIFYHOST => 2',
   'CURLOPT_SSL_VERIFYPEER => true',
   'CURLOPT_CONNECTTIMEOUT => 5',
   'CURLOPT_MAXFILESIZE_LARGE',
   'CURLOPT_XFERINFOFUNCTION',
+]) {
+  if (httpClientSource.includes(transportSecurityMarker) === false) {
+    throw new Error(`The HTTP client is missing required content: ${transportSecurityMarker}`);
+  }
+}
+
+/**
+ * Check Package - Release Source File.
+ *
+ * Holds the GitHub release endpoints and JSON parsing, which no other runtime file
+ * may repeat.
+ *
+ * @since 2.1.5
+ */
+const releaseSourceFile = await readFile(
+  join(
+    workspaceDirectory,
+    'port',
+    'files',
+    'usr',
+    'local',
+    'pkg',
+    'ipv6-prefix-updater',
+    'GitHubReleaseSource.php',
+  ),
+  'utf-8',
+);
+
+if (releaseSourceFile.includes('https://api.github.com/repos/') === false
+  || releaseSourceFile.includes('browser_download_url') === false) {
+  throw new Error('The GitHub release source must own the release API endpoints and JSON parsing.');
+}
+
+/**
+ * Check Package - Runtime Sources.
+ *
+ * Loads every PHP runtime file so third-party HTTP and GitHub API details can be
+ * confined to their adapters.
+ *
+ * @since 2.1.5
+ */
+const runtimeSources = await Promise.all(payloadFiles
+  .filter((payloadFile) => payloadFile.endsWith('.php') || payloadFile.endsWith('.inc'))
+  .map(async (payloadFile) => ({
+    name: relative(localPayloadDirectory, payloadFile).split(sep).join('/'),
+    source: await readFile(payloadFile, 'utf-8'),
+  })));
+
+for (const runtimeSource of runtimeSources) {
+  if (runtimeSource.name.endsWith('/CurlHttpClient.php') === false && curlCallPattern.test(runtimeSource.source) === true) {
+    throw new Error(`Only the cURL HTTP client may call cURL: ${runtimeSource.name}`);
+  }
+
+  if (runtimeSource.name.endsWith('/GitHubReleaseSource.php') === false && runtimeSource.source.includes('api.github.com') === true) {
+    throw new Error(`Only the GitHub release source may call the GitHub API: ${runtimeSource.name}`);
+  }
+}
+
+for (const updateSecurityMarker of [
   'hash_file(\'sha256\'',
   '\'.sha256\'',
   '\'.sig\'',
@@ -724,6 +819,8 @@ for (const environmentOverride of [
   'IPV6_PREFIX_UPDATER_DOWNLOAD_PREFIX',
 ]) {
   if (updateManagerSource.includes(environmentOverride) === true
+    || releaseSourceFile.includes(environmentOverride) === true
+    || httpClientSource.includes(environmentOverride) === true
     || aboutPage.includes(environmentOverride) === true) {
     throw new Error(`Test override ${environmentOverride} must be read only by the CLI.`);
   }

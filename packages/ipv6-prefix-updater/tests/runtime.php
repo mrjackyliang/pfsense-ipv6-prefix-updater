@@ -508,6 +508,250 @@ final class FakePlatformAdapter implements PlatformAdapter
             throw new RuntimeException('Write failure.');
         }
     }
+
+    /**
+     * Confirms the simulated update environment.
+     *
+     * The coordinator never runs update checks, so this shares the general switch.
+     *
+     * @return void
+     *
+     * @since 2.1.5
+     */
+    public function assertUpdateEnvironment(): void
+    {
+        $this->assertEnvironment();
+    }
+
+    /**
+     * Returns the simulated owner of a settings section.
+     *
+     * @param string $section - Settings section under "installedpackages".
+     *
+     * @return string|null
+     *
+     * @since 2.1.5
+     */
+    public function findPackageOwner(string $section): ?string
+    {
+        return $this->packageOwners[$section] ?? null;
+    }
+
+    /**
+     * Returns no simulated installed packages.
+     *
+     * @return array
+     *
+     * @since 2.1.5
+     */
+    public function getInstalledPackages(): array
+    {
+        return [];
+    }
+
+    /**
+     * Returns no configured language, so the translator stays in English.
+     *
+     * @return string|null
+     *
+     * @since 2.1.5
+     */
+    public function getConfiguredLanguage(): ?string
+    {
+        return null;
+    }
+
+    /**
+     * Returns each simulated interface described by its own name.
+     *
+     * @return array<string, string>
+     *
+     * @since 2.1.5
+     */
+    public function getInterfaceDescriptions(): array
+    {
+        return array_combine($this->interfaces, $this->interfaces);
+    }
+
+    /**
+     * Returns no description, so labels show the friendly name alone.
+     *
+     * @param string $interface - Friendly interface name.
+     *
+     * @return string
+     *
+     * @since 2.1.5
+     */
+    public function getInterfaceDescription(string $interface): string
+    {
+        return '';
+    }
+
+    /**
+     * Returns an empty simulated notice queue.
+     *
+     * @return array<int|string, mixed>|null
+     *
+     * @since 2.1.5
+     */
+    public function getNoticeQueue(): ?array
+    {
+        return null;
+    }
+
+    /**
+     * Ignores a simulated notice close.
+     *
+     * @param int|string $identifier - Queue key or stored notice identifier.
+     *
+     * @return void
+     *
+     * @since 2.1.5
+     */
+    public function closeNotice(int|string $identifier): void
+    {
+    }
+
+    /**
+     * Records one raw simulated notice.
+     *
+     * @param string $identifier - Notice identifier.
+     * @param string $message    - Notice text.
+     * @param string $category   - Notice category.
+     * @param string $url        - Notice link.
+     * @param int    $priority   - pfSense notice priority.
+     * @param bool   $localOnly  - Whether remote delivery is disabled.
+     *
+     * @return void
+     *
+     * @since 2.1.5
+     */
+    public function fileNotice(
+        string $identifier,
+        string $message,
+        string $category,
+        string $url,
+        int $priority,
+        bool $localOnly,
+    ): void {
+        $this->notices[] = [
+            'identifier' => $identifier,
+            'message' => $message,
+            'priority' => $priority,
+            'local_only' => $localOnly,
+            'page' => $url,
+        ];
+    }
+
+    /**
+     * Returns the simulated product label.
+     *
+     * @return string
+     *
+     * @since 2.1.5
+     */
+    public function getProductLabel(): string
+    {
+        return 'pfSense';
+    }
+
+    /**
+     * Returns pfSense source text untranslated.
+     *
+     * @param string $text - pfSense source text.
+     *
+     * @return string
+     *
+     * @since 2.1.5
+     */
+    public function translatePlatformText(string $text): string
+    {
+        return $text;
+    }
+
+    /**
+     * Removes one simulated configuration path.
+     *
+     * @param string $path - Configuration path.
+     *
+     * @return void
+     *
+     * @since 2.1.5
+     */
+    public function deleteConfigurationValue(string $path): void
+    {
+        $this->transactionEvents[] = 'delete:' . $path;
+    }
+
+    /**
+     * Records a simulated default configuration save.
+     *
+     * @param string $description - Configuration revision description.
+     *
+     * @return void
+     *
+     * @since 2.1.5
+     */
+    public function saveConfiguration(string $description): void
+    {
+        $this->transactionEvents[] = 'save';
+    }
+
+    /**
+     * Records one simulated cron job change.
+     *
+     * @param string $command  - Command the job runs.
+     * @param bool   $active   - Whether the job is installed or removed.
+     * @param string $minute   - Minute field.
+     * @param string $hour     - Hour field.
+     * @param string $monthDay - Day-of-month field.
+     * @param string $month    - Month field.
+     * @param string $weekDay  - Day-of-week field.
+     * @param string $who      - User the job runs as.
+     *
+     * @return void
+     *
+     * @since 2.1.5
+     */
+    public function installCronJob(
+        string $command,
+        bool $active,
+        string $minute = '0',
+        string $hour = '*',
+        string $monthDay = '*',
+        string $month = '*',
+        string $weekDay = '*',
+        string $who = 'root',
+    ): void {
+        $this->transactionEvents[] = ($active ? 'cron-install:' : 'cron-remove:') . $command;
+    }
+
+    /**
+     * Records a simulated crontab regeneration.
+     *
+     * @return void
+     *
+     * @since 2.1.5
+     */
+    public function regenerateCrontab(): void
+    {
+        $this->reloadCron();
+    }
+
+    /**
+     * Returns no parsed package XML.
+     *
+     * @param string $path        - XML file path.
+     * @param string $rootElement - Expected root element.
+     *
+     * @return mixed
+     *
+     * @since 2.1.5
+     */
+    public function parsePackageXml(string $path, string $rootElement): mixed
+    {
+        return null;
+    }
 }
 
 /**

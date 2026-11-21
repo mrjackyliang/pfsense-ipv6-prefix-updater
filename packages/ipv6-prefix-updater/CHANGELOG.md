@@ -1,5 +1,12 @@
 # pfsense-pkg-ipv6-prefix-updater
 
+## 2.1.5 - 2026-11-21
+
+### UPDATED
+- Nova 0.49.0, which type-checks the package's scripts and tests without `skipLibCheck` and keeps error stack traces on one line in non-interactive output such as CI logs.
+- Package Manager listing and package description, which now match the project's short and long descriptions.
+- pfSense configuration, notice, and cron calls in the lifecycle hooks, CLI, update checks, and Fields tab, which now all go through the platform adapter, while GitHub release checks and downloads go through their own release-source and HTTP adapters. The package check fails when any other file makes those calls directly.
+
 ## 2.1.4 - 2026-11-19
 
 ### FIXED

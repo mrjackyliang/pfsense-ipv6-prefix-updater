@@ -1,4 +1,14 @@
 /**
+ * Regex - Curl Call Pattern.
+ *
+ * Matches one PHP cURL function call such as "curl_exec(". Function names in strings
+ * and translation keys like "update_curl_unavailable" do not match.
+ *
+ * @since 2.1.5
+ */
+export const curlCallPattern = /\bcurl_[a-z_]+\s*\(/;
+
+/**
  * Regex - Release Signing Key Pattern.
  *
  * Matches one OpenSSH Ed25519 public key accepted by release verification.

@@ -5,6 +5,7 @@ declare(strict_types=1);
 
 use PfSense\Ipv6PrefixUpdater\Runtime\BackupStore;
 use PfSense\Ipv6PrefixUpdater\Runtime\FileLock;
+use PfSense\Ipv6PrefixUpdater\Runtime\GitHubReleaseSource;
 use PfSense\Ipv6PrefixUpdater\Runtime\LegacyMigrator;
 use PfSense\Ipv6PrefixUpdater\Runtime\PackagePaths;
 use PfSense\Ipv6PrefixUpdater\Runtime\PfSenseAdapter;
@@ -17,6 +18,7 @@ $packageRoot = dirname(__DIR__) . '/pkg/ipv6-prefix-updater';
 
 require_once($packageRoot . '/BackupStore.php');
 require_once($packageRoot . '/FileLock.php');
+require_once($packageRoot . '/GitHubReleaseSource.php');
 require_once($packageRoot . '/LegacyMigrator.php');
 require_once($packageRoot . '/PackagePaths.php');
 require_once($packageRoot . '/PfSenseAdapter.php');
@@ -104,18 +106,19 @@ function runIpv6PrefixUpdaterUpdateCommand(
             throw new RuntimeException(Translator::translate('update_installed_version_unknown'));
         }
 
-        $settings = config_get_path('installedpackages/ipv6prefixupdater/config/0', []);
-        $settings = is_array($settings) ? $settings : [];
+        $settings = (new PfSenseAdapter())->getSettings();
         $remoteNotifications = ($settings['update_remote_notifications'] ?? '') === 'on';
         $updateManager = new UpdateManager(
             $installedVersion,
-            ipv6PrefixUpdaterEnvironmentOverride(
-                'IPV6_PREFIX_UPDATER_RELEASES_API',
-                UpdateManager::RELEASES_API,
-            ),
-            ipv6PrefixUpdaterEnvironmentOverride(
-                'IPV6_PREFIX_UPDATER_DOWNLOAD_PREFIX',
-                UpdateManager::DOWNLOAD_PREFIX,
+            new GitHubReleaseSource(
+                ipv6PrefixUpdaterEnvironmentOverride(
+                    'IPV6_PREFIX_UPDATER_RELEASES_API',
+                    GitHubReleaseSource::RELEASES_API,
+                ),
+                ipv6PrefixUpdaterEnvironmentOverride(
+                    'IPV6_PREFIX_UPDATER_DOWNLOAD_PREFIX',
+                    GitHubReleaseSource::DOWNLOAD_PREFIX,
+                ),
             ),
         );
         $state = $selfUpdate

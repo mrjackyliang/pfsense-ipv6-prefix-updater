@@ -82,7 +82,7 @@ function ipv6PrefixUpdaterFieldsBaselines(): array
  */
 function ipv6PrefixUpdaterFieldsDetect(array $selection): array
 {
-    $configuration = config_get_path('', []);
+    $configuration = pfsensePackageIpv6PrefixUpdaterPlatform()->getConfigurationValue('') ?? [];
 
     return ConfigurationFieldDetector::detect(
         is_array($configuration) ? $configuration : [],

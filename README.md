@@ -37,7 +37,7 @@
 <!-- nova-region: introduction -->
 ## Introduction
 
-IPv6 Prefix Updater for pfSense is a native package for networks with dynamic IPv6 Prefix Delegation. It detects prefix changes, safely updates approved pfSense configuration references while preserving host portions, and provides package-managed installation, scheduling, backups, status, and notifications.
+Follow your ISP's new IPv6 prefix across interfaces, virtual IPs, aliases, firewall rules, NAT, DHCPv6, and the other pfSense fields you pick, keeping the host part of each address. Updates run on a schedule, back up first, and report their status and notifications in the WebGUI.
 <!-- nova-region-end: introduction -->
 
 <!-- nova-region: documentation -->

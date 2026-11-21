@@ -6,6 +6,9 @@ namespace PfSense\Ipv6PrefixUpdater\Runtime;
 
 use RuntimeException;
 
+require_once(__DIR__ . '/PfSenseAdapter.php');
+require_once(__DIR__ . '/PlatformAdapter.php');
+
 /**
  * Translates package-owned text independently of pfSense's core gettext domain.
  *
@@ -22,6 +25,9 @@ final class Translator
 
     /** @var array<string, array<string, string>>|null Loaded translation catalogs. @since 2.0.0 */
     private static ?array $catalogs = null;
+
+    /** @var PlatformAdapter|null Adapter that reads the pfSense language. @since 2.1.5 */
+    private static ?PlatformAdapter $platform = null;
 
     /**
      * Returns every pfSense language identifier supported by this package.
@@ -49,12 +55,12 @@ final class Translator
     {
         $locale = self::DEFAULT_LOCALE;
 
-        if (function_exists('config_get_path')) {
-            $configuredLocale = config_get_path('system/language', self::DEFAULT_LOCALE);
+        self::$platform ??= new PfSenseAdapter();
 
-            if (is_string($configuredLocale) && $configuredLocale !== '') {
-                $locale = $configuredLocale;
-            }
+        $configuredLocale = self::$platform->getConfiguredLanguage();
+
+        if (is_string($configuredLocale) && $configuredLocale !== '') {
+            $locale = $configuredLocale;
         }
 
         return array_key_exists($locale, self::catalogs()) ? $locale : self::DEFAULT_LOCALE;

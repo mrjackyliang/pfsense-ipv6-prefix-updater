@@ -7,6 +7,7 @@ namespace PfSense\Ipv6PrefixUpdater\Runtime;
 use RuntimeException;
 use Throwable;
 
+require_once(__DIR__ . '/GitHubReleaseSource.php');
 require_once(__DIR__ . '/ReleasePinUnavailableException.php');
 
 /**
@@ -132,11 +133,11 @@ final class RestoreManager
      * Trusted prefix for versioned release package URLs.
      *
      * Recovery pins may reference only this repository and never a moving latest
-     * download URL.
+     * download URL. The release source owns the URL itself.
      *
      * @since 2.1.2
      */
-    private const DOWNLOAD_PREFIX = 'https://github.com/' . self::REPOSITORY . '/releases/download/';
+    private const DOWNLOAD_PREFIX = GitHubReleaseSource::DOWNLOAD_PREFIX;
 
     /**
      * Closes false removal notices and files one localized reassurance.

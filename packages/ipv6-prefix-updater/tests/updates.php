@@ -3,15 +3,184 @@
 declare(strict_types=1);
 
 use PfSense\Ipv6PrefixUpdater\Runtime\FileLock;
+use PfSense\Ipv6PrefixUpdater\Runtime\GitHubReleaseSource;
+use PfSense\Ipv6PrefixUpdater\Runtime\HttpClient;
 use PfSense\Ipv6PrefixUpdater\Runtime\PackagePaths;
+use PfSense\Ipv6PrefixUpdater\Runtime\ReleasePinUnavailableException;
+use PfSense\Ipv6PrefixUpdater\Runtime\ReleaseSource;
 use PfSense\Ipv6PrefixUpdater\Runtime\Translator;
 use PfSense\Ipv6PrefixUpdater\Runtime\UpdateManager;
 
 require_once(__DIR__ . '/../port/files/usr/local/pkg/ipv6-prefix-updater/FileLock.php');
+require_once(__DIR__ . '/../port/files/usr/local/pkg/ipv6-prefix-updater/GitHubReleaseSource.php');
+require_once(__DIR__ . '/../port/files/usr/local/pkg/ipv6-prefix-updater/HttpClient.php');
 require_once(__DIR__ . '/../port/files/usr/local/pkg/ipv6-prefix-updater/PackagePaths.php');
+require_once(__DIR__ . '/../port/files/usr/local/pkg/ipv6-prefix-updater/ReleasePinUnavailableException.php');
+require_once(__DIR__ . '/../port/files/usr/local/pkg/ipv6-prefix-updater/ReleaseSource.php');
 require_once(__DIR__ . '/../port/files/usr/local/pkg/ipv6-prefix-updater/Translator.php');
 require_once(__DIR__ . '/../port/files/usr/local/pkg/ipv6-prefix-updater/UpdateManager.php');
 require_once(__DIR__ . '/stubs/notices.inc');
+
+/**
+ * Answers release-source HTTP requests from canned responses without a network.
+ *
+ * Recorded requests let tests prove which GitHub endpoint and headers the release
+ * source used, and download bodies are written to the caller's open file.
+ *
+ * @since 2.1.5
+ */
+final class FakeHttpClient implements HttpClient
+{
+    /** @var list<array{url: string, headers: list<string>}> Recorded requests. */
+    public array $requests = [];
+
+    /** @var array{initialized: bool, status: int, body: string|false, error: string} Next GET response. */
+    public array $getResponse = [
+        'initialized' => true,
+        'status' => 200,
+        'body' => '{}',
+        'error' => '',
+    ];
+
+    /** @var string Body written by the next download. */
+    public string $downloadBody = '';
+
+    /** @var array{initialized: bool, completed: bool, status: int, error: string, too_large: bool} Next download result. */
+    public array $downloadResponse = [
+        'initialized' => true,
+        'completed' => true,
+        'status' => 200,
+        'error' => '',
+        'too_large' => false,
+    ];
+
+    /**
+     * Records one GET request and returns the canned response.
+     *
+     * @param string       $url     - Request URL.
+     * @param list<string> $headers - Request header lines.
+     *
+     * @return array{initialized: bool, status: int, body: string|false, error: string}
+     *
+     * @since 2.1.5
+     */
+    public function get(string $url, array $headers): array
+    {
+        $this->requests[] = ['url' => $url, 'headers' => $headers];
+
+        return $this->getResponse;
+    }
+
+    /**
+     * Records one download and writes the canned body into the open file.
+     *
+     * @param string       $url        - Request URL.
+     * @param resource     $fileHandle - Open, writable destination file.
+     * @param list<string> $headers    - Request header lines.
+     * @param int          $byteLimit  - Largest accepted response in bytes.
+     *
+     * @return array{initialized: bool, completed: bool, status: int, error: string, too_large: bool}
+     *
+     * @since 2.1.5
+     */
+    public function download(string $url, mixed $fileHandle, array $headers, int $byteLimit): array
+    {
+        $this->requests[] = ['url' => $url, 'headers' => $headers];
+
+        fwrite($fileHandle, $this->downloadBody);
+
+        return $this->downloadResponse;
+    }
+}
+
+/**
+ * Serves one canned release to the update coordinator.
+ *
+ * It proves update checks consume only the project-owned release array and never
+ * reach GitHub themselves.
+ *
+ * @since 2.1.5
+ */
+final class FakeReleaseSource implements ReleaseSource
+{
+    /** @var int Number of latest-release requests. */
+    public int $latestRequests = 0;
+
+    /**
+     * Creates a source that always returns the same release.
+     *
+     * @param array $release - Project-owned release.
+     *
+     * @since 2.1.5
+     */
+    public function __construct(
+        private readonly array $release,
+    ) {
+    }
+
+    /**
+     * Returns the fake asset prefix.
+     *
+     * @return string
+     *
+     * @since 2.1.5
+     */
+    public function assetUrlPrefix(): string
+    {
+        return 'https://downloads.example.test/releases/';
+    }
+
+    /**
+     * Returns the canned release.
+     *
+     * @return array
+     *
+     * @since 2.1.5
+     */
+    public function fetchLatestRelease(): array
+    {
+        $this->latestRequests += 1;
+
+        return $this->release;
+    }
+
+    /**
+     * Returns the canned release for any version.
+     *
+     * @param string $version - Normalized release version.
+     *
+     * @return array
+     *
+     * @since 2.1.5
+     */
+    public function fetchRelease(string $version): array
+    {
+        return $this->release;
+    }
+
+    /**
+     * Rejects downloads, which update checks never make.
+     *
+     * @param string $url                      - Validated asset URL.
+     * @param string $path                     - Private destination path.
+     * @param int    $byteLimit                - Largest accepted download in bytes.
+     * @param bool   $notFoundMeansUnavailable - Whether a missing asset is definitive.
+     *
+     * @return void
+     *
+     * @throws RuntimeException Always.
+     *
+     * @since 2.1.5
+     */
+    public function downloadAsset(
+        string $url,
+        string $path,
+        int $byteLimit,
+        bool $notFoundMeansUnavailable = false,
+    ): void {
+        throw new RuntimeException('Update checks must not download assets.');
+    }
+}
 
 /**
  * Asserts strict equality for update regression checks.
@@ -272,17 +441,17 @@ $releaseJson = json_encode([
     'assets' => [
         [
             'name' => 'pfSense-pkg-Ipv6PrefixUpdater-2.1.0.pkg',
-            'browser_download_url' => UpdateManager::DOWNLOAD_PREFIX . 'v2.1.0/pfSense-pkg-Ipv6PrefixUpdater-2.1.0.pkg',
+            'browser_download_url' => GitHubReleaseSource::DOWNLOAD_PREFIX . 'v2.1.0/pfSense-pkg-Ipv6PrefixUpdater-2.1.0.pkg',
             'digest' => 'sha256:' . str_repeat('a', 64),
         ],
         [
             'name' => 'pfSense-pkg-Ipv6PrefixUpdater-2.1.0.pkg.sig',
-            'browser_download_url' => UpdateManager::DOWNLOAD_PREFIX . 'v2.1.0/pfSense-pkg-Ipv6PrefixUpdater-2.1.0.pkg.sig',
+            'browser_download_url' => GitHubReleaseSource::DOWNLOAD_PREFIX . 'v2.1.0/pfSense-pkg-Ipv6PrefixUpdater-2.1.0.pkg.sig',
             'digest' => null,
         ],
     ],
 ], JSON_THROW_ON_ERROR);
-$release = UpdateManager::parseReleaseJson($releaseJson);
+$release = GitHubReleaseSource::parseReleaseJson($releaseJson);
 
 assertUpdateSame('2.1.0', $release['version'], 'Release parsing must normalize the Git tag.');
 assertUpdateSame(2, count($release['assets']), 'Release parsing must retain valid assets.');
@@ -462,12 +631,12 @@ $checksumRelease = [
     'assets' => [
         [
             'name' => 'pfSense-pkg-Ipv6PrefixUpdater-2.1.0.pkg',
-            'url' => UpdateManager::DOWNLOAD_PREFIX . 'v2.1.0/pfSense-pkg-Ipv6PrefixUpdater-2.1.0.pkg',
+            'url' => GitHubReleaseSource::DOWNLOAD_PREFIX . 'v2.1.0/pfSense-pkg-Ipv6PrefixUpdater-2.1.0.pkg',
             'digest' => null,
         ],
         [
             'name' => $checksumAssetName,
-            'url' => UpdateManager::DOWNLOAD_PREFIX . 'v2.1.0/' . $checksumAssetName,
+            'url' => GitHubReleaseSource::DOWNLOAD_PREFIX . 'v2.1.0/' . $checksumAssetName,
             'digest' => null,
         ],
     ],
@@ -879,6 +1048,158 @@ try {
     assertUpdateSame('succeeded', $savedStatus['state'] ?? null, 'The settled status must be saved for later reads.');
 } finally {
     removeUpdateTestDirectory($statusTestDirectory);
+}
+
+$fakeHttpClient = new FakeHttpClient();
+$fakeHttpClient->getResponse['body'] = $releaseJson;
+$gitHubReleaseSource = new GitHubReleaseSource(httpClient: $fakeHttpClient);
+$latestRelease = $gitHubReleaseSource->fetchLatestRelease();
+
+assertUpdateSame('2.1.0', $latestRelease['version'], 'The GitHub source must return the parsed latest release.');
+assertUpdateSame(
+    [
+        'url' => GitHubReleaseSource::RELEASES_API,
+        'headers' => [
+            'Accept: application/vnd.github+json',
+            'X-GitHub-Api-Version: 2022-11-28',
+        ],
+    ],
+    $fakeHttpClient->requests[0],
+    'The latest release must come from the GitHub latest-release endpoint with GitHub API headers.',
+);
+
+$gitHubReleaseSource->fetchRelease('2.1.0');
+
+assertUpdateSame(
+    GitHubReleaseSource::RELEASE_TAG_API_PREFIX . 'v2.1.0',
+    $fakeHttpClient->requests[1]['url'],
+    'A pinned release must come from the release-by-tag endpoint.',
+);
+
+$fakeHttpClient->getResponse['status'] = 404;
+
+try {
+    $gitHubReleaseSource->fetchRelease('9.9.9');
+
+    throw new RuntimeException('A missing pinned release must be definitive.');
+} catch (ReleasePinUnavailableException $releasePinUnavailableException) {
+    assertUpdateSame(
+        Translator::translate('update_http_failed', [404]),
+        $releasePinUnavailableException->getMessage(),
+        'A missing pinned release must report its HTTP status.',
+    );
+}
+
+$fakeHttpClient->getResponse['status'] = 403;
+
+assertUpdateFailure(
+    static fn (): array => $gitHubReleaseSource->fetchLatestRelease(),
+    Translator::translate('update_rate_limited'),
+);
+
+$fakeHttpClient->getResponse = [
+    'initialized' => true,
+    'status' => 0,
+    'body' => false,
+    'error' => 'Could not resolve host',
+];
+
+assertUpdateFailure(
+    static fn (): array => $gitHubReleaseSource->fetchLatestRelease(),
+    Translator::translate('update_check_failed_detail', ['Could not resolve host']),
+);
+
+$fakeHttpClient->getResponse['initialized'] = false;
+
+assertUpdateFailure(
+    static fn (): array => $gitHubReleaseSource->fetchLatestRelease(),
+    Translator::translate('update_check_failed_transport'),
+);
+
+$downloadTestDirectory = makeUpdateTestDirectory();
+
+try {
+    $downloadPath = $downloadTestDirectory . '/package.pkg';
+    $fakeHttpClient->downloadBody = 'package-bytes';
+
+    $gitHubReleaseSource->downloadAsset('https://downloads.example.test/package.pkg', $downloadPath, 1024);
+
+    assertUpdateSame('package-bytes', file_get_contents($downloadPath), 'A downloaded asset must be written to its private path.');
+    assertUpdateSame(0600, fileperms($downloadPath) & 0777, 'A downloaded asset must be owner-only.');
+    assertUpdateSame(
+        ['Accept: application/octet-stream'],
+        $fakeHttpClient->requests[count($fakeHttpClient->requests) - 1]['headers'],
+        'Asset downloads must ask for the raw file.',
+    );
+
+    $fakeHttpClient->downloadResponse['too_large'] = true;
+
+    assertUpdateFailure(
+        static function () use ($gitHubReleaseSource, $downloadPath): void {
+            $gitHubReleaseSource->downloadAsset('https://downloads.example.test/package.pkg', $downloadPath, 4);
+        },
+        Translator::translate('update_download_too_large'),
+    );
+    assertUpdateSame(false, file_exists($downloadPath), 'An oversized download must be removed.');
+
+    $fakeHttpClient->downloadResponse['too_large'] = false;
+    $fakeHttpClient->downloadResponse['status'] = 404;
+
+    try {
+        $gitHubReleaseSource->downloadAsset('https://downloads.example.test/package.pkg', $downloadPath, 1024, true);
+
+        throw new RuntimeException('A missing required asset must be definitive.');
+    } catch (ReleasePinUnavailableException) {
+        assertUpdateSame(false, file_exists($downloadPath), 'A missing asset download must be removed.');
+    }
+
+    $fakeHttpClient->downloadResponse['status'] = 500;
+
+    assertUpdateFailure(
+        static function () use ($gitHubReleaseSource, $downloadPath): void {
+            $gitHubReleaseSource->downloadAsset('https://downloads.example.test/package.pkg', $downloadPath, 1024);
+        },
+        Translator::translate('update_download_failed_detail', ['500']),
+    );
+} finally {
+    removeUpdateTestDirectory($downloadTestDirectory);
+}
+
+$fakeReleaseSource = new FakeReleaseSource([
+    'tag' => 'v2.1.0',
+    'version' => '2.1.0',
+    'release_url' => GitHubReleaseSource::RELEASE_PAGE_PREFIX . 'tag/v2.1.0',
+    'published_at' => '2026-11-06T12:00:00Z',
+    'assets' => [
+        [
+            'name' => 'pfSense-pkg-Ipv6PrefixUpdater-2.1.0.pkg',
+            'url' => 'https://downloads.example.test/releases/v2.1.0/pfSense-pkg-Ipv6PrefixUpdater-2.1.0.pkg',
+            'digest' => 'sha256:' . str_repeat('b', 64),
+        ],
+    ],
+]);
+$checkTestDirectory = makeUpdateTestDirectory();
+
+try {
+    $checkManager = new UpdateManager(
+        installedVersion: '2.0.1',
+        releaseSource: $fakeReleaseSource,
+        updatesFile: $checkTestDirectory . '/updates.json',
+        statusFile: $checkTestDirectory . '/update-status.json',
+        signingKeysFile: $checkTestDirectory . '/missing.pub',
+    );
+    $checkState = $checkManager->check(false, false);
+
+    assertUpdateSame(1, $fakeReleaseSource->latestRequests, 'An update check must read the latest release from its source.');
+    assertUpdateSame('2.1.0', $checkState['latest_version'], 'An update check must save the source release version.');
+    assertUpdateSame('2.1.0', $checkState['notified_version'], 'A check without a notice must still record the seen version.');
+    assertUpdateSame(
+        $checkState,
+        UpdateManager::readUpdatesState($checkTestDirectory . '/updates.json'),
+        'An update check must persist the state it returns.',
+    );
+} finally {
+    removeUpdateTestDirectory($checkTestDirectory);
 }
 
 fwrite(STDOUT, "Update checks, notices, schedules, checksums, and signatures passed.\n");

@@ -429,6 +429,10 @@ final class PfSenseAdapter implements PlatformAdapter
      */
     public function log(string $message): void
     {
+        if (function_exists('log_error') === false) {
+            return;
+        }
+
         \log_error('IPv6 Prefix Updater: ' . $message);
     }
 
@@ -735,6 +739,357 @@ final class PfSenseAdapter implements PlatformAdapter
         if (!is_array($result)) {
             throw new RuntimeException(Translator::translate('configuration_write_failed'));
         }
+    }
+
+    /**
+     * Confirms the configuration, proxy, notice, logging, and cURL APIs used by updates.
+     *
+     * Fixed system includes provide those functions without loading the interface
+     * APIs that prefix mutation needs.
+     *
+     * @return void
+     *
+     * @throws RuntimeException When the runtime is not a supported pfSense host.
+     *
+     * @since 2.1.5
+     */
+    public function assertUpdateEnvironment(): void
+    {
+        if (PHP_OS_FAMILY !== 'BSD' || file_exists('/etc/version') === false) {
+            throw new RuntimeException(Translator::translate('environment_unsupported'));
+        }
+
+        $requiredFiles = [
+            '/etc/inc/config.inc',
+            '/etc/inc/notices.inc',
+            '/etc/inc/pfsense-utils.inc',
+        ];
+
+        foreach ($requiredFiles as $requiredFile) {
+            if (is_readable($requiredFile) === false) {
+                throw new RuntimeException(Translator::translate('dependency_unavailable', [$requiredFile]));
+            }
+
+            require_once($requiredFile);
+        }
+
+        $requiredFunctions = [
+            'close_notice',
+            'config_get_path',
+            'file_notice',
+            'log_error',
+            'set_curlproxy',
+        ];
+
+        foreach ($requiredFunctions as $requiredFunction) {
+            if (function_exists($requiredFunction) === false) {
+                throw new RuntimeException(Translator::translate('dependency_unavailable', [$requiredFunction]));
+            }
+        }
+
+        if (function_exists('curl_init') === false) {
+            throw new RuntimeException(Translator::translate('update_curl_unavailable'));
+        }
+    }
+
+    /**
+     * Returns pfSense's installed-package records through the configuration API.
+     *
+     * Without a loaded configuration API, or with a malformed record list, the result
+     * is empty, matching how the About tab falls back to the shipped "info.xml".
+     *
+     * @return array
+     *
+     * @since 2.1.5
+     */
+    public function getInstalledPackages(): array
+    {
+        if (function_exists('config_get_path') === false) {
+            return [];
+        }
+
+        $installedPackages = \config_get_path('installedpackages/package', []);
+
+        return is_array($installedPackages) ? $installedPackages : [];
+    }
+
+    /**
+     * Returns the pfSense language identifier, or null without a configuration API.
+     *
+     * A missing setting reads as the translator's default locale, as before.
+     *
+     * @return string|null
+     *
+     * @since 2.1.5
+     */
+    public function getConfiguredLanguage(): ?string
+    {
+        if (function_exists('config_get_path') === false) {
+            return null;
+        }
+
+        $configuredLanguage = \config_get_path('system/language', Translator::DEFAULT_LOCALE);
+
+        return is_string($configuredLanguage) ? $configuredLanguage : null;
+    }
+
+    /**
+     * Returns every configured interface, including unassigned ones, with its description.
+     *
+     * A malformed result becomes an empty list, so callers treat every interface as
+     * unknown instead of failing.
+     *
+     * @return array<string, string>
+     *
+     * @since 2.1.5
+     */
+    public function getInterfaceDescriptions(): array
+    {
+        $interfaces = \get_configured_interface_with_descr(true);
+
+        return is_array($interfaces) ? $interfaces : [];
+    }
+
+    /**
+     * Returns the pfSense description of one friendly interface.
+     *
+     * Older pfSense releases without the lookup return an empty string, so the caller
+     * shows the friendly name alone.
+     *
+     * @param string $interface - Friendly interface name.
+     *
+     * @return string
+     *
+     * @since 2.1.5
+     */
+    public function getInterfaceDescription(string $interface): string
+    {
+        if (function_exists('convert_friendly_interface_to_friendly_descr') === false) {
+            return '';
+        }
+
+        return (string) \convert_friendly_interface_to_friendly_descr($interface);
+    }
+
+    /**
+     * Returns pfSense's notice queue, or null when it is unavailable or empty.
+     *
+     * pfSense returns false for both a missing and an empty notice file, so neither
+     * is treated as a malformed queue.
+     *
+     * @return array<int|string, mixed>|null
+     *
+     * @since 2.1.5
+     */
+    public function getNoticeQueue(): ?array
+    {
+        if (
+            function_exists('get_notices') === false
+            || function_exists('close_notice') === false
+            || function_exists('file_notice') === false
+        ) {
+            return null;
+        }
+
+        $notices = \get_notices();
+
+        return is_array($notices) ? $notices : null;
+    }
+
+    /**
+     * Closes one pfSense notice by queue key or stored identifier.
+     *
+     * Contexts without the notice API skip the call, as package removal and update
+     * checks always have.
+     *
+     * @param int|string $identifier - Queue key or stored notice identifier.
+     *
+     * @return void
+     *
+     * @since 2.1.5
+     */
+    public function closeNotice(int|string $identifier): void
+    {
+        if (function_exists('close_notice') === false) {
+            return;
+        }
+
+        \close_notice($identifier);
+    }
+
+    /**
+     * Files one pfSense notice with every field given exactly.
+     *
+     * pfSense escapes the fields before saving them. Callers pass identifiers and
+     * categories that later lookups rely on, so nothing is rewritten here.
+     *
+     * @param string $identifier - Notice identifier.
+     * @param string $message    - Notice text.
+     * @param string $category   - Notice category.
+     * @param string $url        - Notice link.
+     * @param int    $priority   - pfSense notice priority.
+     * @param bool   $localOnly  - Whether remote delivery is disabled.
+     *
+     * @return void
+     *
+     * @since 2.1.5
+     */
+    public function fileNotice(
+        string $identifier,
+        string $message,
+        string $category,
+        string $url,
+        int $priority,
+        bool $localOnly,
+    ): void {
+        \file_notice(
+            $identifier,
+            $message,
+            $category,
+            $url,
+            $priority,
+            $localOnly,
+        );
+    }
+
+    /**
+     * Returns the product label from pfSense's globals.
+     *
+     * pfSense uses this label inside its own package-removal notice.
+     *
+     * @return string
+     *
+     * @since 2.1.5
+     */
+    public function getProductLabel(): string
+    {
+        return (string) \g_get('product_label');
+    }
+
+    /**
+     * Translates one pfSense source string through gettext.
+     *
+     * pfSense binds its own catalog, so the result matches the text pfSense itself
+     * wrote into a notice.
+     *
+     * @param string $text - pfSense source text.
+     *
+     * @return string
+     *
+     * @since 2.1.5
+     */
+    public function translatePlatformText(string $text): string
+    {
+        return \gettext($text);
+    }
+
+    /**
+     * Removes one exact configuration path through pfSense's supported API.
+     *
+     * @param string $path - Configuration path.
+     *
+     * @return void
+     *
+     * @since 2.1.5
+     */
+    public function deleteConfigurationValue(string $path): void
+    {
+        \config_del_path($path);
+    }
+
+    /**
+     * Saves the configuration with pfSense's default backup and synchronization.
+     *
+     * Package page and lifecycle saves have always used pfSense's default write, so
+     * the result is not checked the way a planned run's commit is.
+     *
+     * @param string $description - Configuration revision description.
+     *
+     * @return void
+     *
+     * @since 2.1.5
+     */
+    public function saveConfiguration(string $description): void
+    {
+        \write_config($description);
+    }
+
+    /**
+     * Adds, replaces, or removes one cron job through pfSense's cron helper.
+     *
+     * @param string $command  - Command the job runs.
+     * @param bool   $active   - Whether the job is installed or removed.
+     * @param string $minute   - Minute field.
+     * @param string $hour     - Hour field.
+     * @param string $monthDay - Day-of-month field.
+     * @param string $month    - Month field.
+     * @param string $weekDay  - Day-of-week field.
+     * @param string $who      - User the job runs as.
+     *
+     * @return void
+     *
+     * @since 2.1.5
+     */
+    public function installCronJob(
+        string $command,
+        bool $active,
+        string $minute = '0',
+        string $hour = '*',
+        string $monthDay = '*',
+        string $month = '*',
+        string $weekDay = '*',
+        string $who = 'root',
+    ): void {
+        \install_cron_job(
+            $command,
+            $active,
+            $minute,
+            $hour,
+            $monthDay,
+            $month,
+            $weekDay,
+            $who,
+        );
+    }
+
+    /**
+     * Regenerates the system crontab with the cron helper the caller already loaded.
+     *
+     * @return void
+     *
+     * @since 2.1.5
+     */
+    public function regenerateCrontab(): void
+    {
+        \configure_cron();
+    }
+
+    /**
+     * Parses one package XML file with pfSense's parser, loading it when needed.
+     *
+     * Null means the parser can't be loaded, which callers treat the same as an
+     * unreadable file.
+     *
+     * @param string $path        - XML file path.
+     * @param string $rootElement - Expected root element.
+     *
+     * @return mixed
+     *
+     * @since 2.1.5
+     */
+    public function parsePackageXml(string $path, string $rootElement): mixed
+    {
+        if (function_exists('parse_xml_config_pkg') === false) {
+            $xmlParserPath = '/etc/inc/xmlparse.inc';
+
+            if (is_readable($xmlParserPath) === false) {
+                return null;
+            }
+
+            require_once($xmlParserPath);
+        }
+
+        return \parse_xml_config_pkg($path, $rootElement);
     }
 
     /**

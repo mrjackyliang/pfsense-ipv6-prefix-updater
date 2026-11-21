@@ -163,8 +163,25 @@ pfSense package configuration and approved pfSense-owned storage.
 
 #### PHP and Shell Safety
 
-- Keep pfSense-specific calls behind adapters where pure prefix and change-planning logic
-  can be tested without a firewall.
+- Keep every pfSense and third-party call behind a project-owned adapter, so an upstream
+  change touches one file:
+  - pfSense configuration reads and writes, notices, cron, logging, interface lookups,
+    and package XML parsing go through `PlatformAdapter`, implemented only by
+    `PfSenseAdapter.php`. The lifecycle include, the CLI, `UpdateManager.php`, and
+    `Translator.php` call the adapter; `pfsensePackageIpv6PrefixUpdaterPlatform()` in
+    the include returns the shared instance for hooks and package pages.
+  - Release checks, downloads, and restore pins read releases through `ReleaseSource`.
+    `GitHubReleaseSource.php` alone owns the GitHub URLs and release JSON and returns
+    project-owned release arrays.
+  - HTTP goes through `HttpClient`. `CurlHttpClient.php` is the only file that calls cURL
+    or `set_curlproxy()`.
+  - pfSense hook functions in the lifecycle include keep their names and signatures and
+    only delegate. Package pages still use pfSense's WebGUI page helpers (`gettext()`
+    breadcrumbs, `g_get()` on the About tab, `mwexec_bg()`) directly.
+  - `scripts/check-package.mjs` fails when a runtime file other than the adapters calls
+    cURL or the GitHub API.
+- Tests use fakes of these interfaces (`FakePlatformAdapter`, `FakeHttpClient`,
+  `FakeReleaseSource`) or stubbed pfSense functions, never a firewall or the network.
 - Escape output rendered in the WebGUI and validate every persisted setting again at
   execution time.
 - Do not build shell commands by concatenating paths, interface names, addresses, or

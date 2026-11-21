@@ -9,6 +9,7 @@ use PfSense\Ipv6PrefixUpdater\Runtime\FileLock;
 use PfSense\Ipv6PrefixUpdater\Runtime\LegacyMigrator;
 use PfSense\Ipv6PrefixUpdater\Runtime\PackagePaths;
 use PfSense\Ipv6PrefixUpdater\Runtime\PfSenseAdapter;
+use PfSense\Ipv6PrefixUpdater\Runtime\PlatformAdapter;
 use PfSense\Ipv6PrefixUpdater\Runtime\RestoreManager;
 use PfSense\Ipv6PrefixUpdater\Runtime\StateStore;
 use PfSense\Ipv6PrefixUpdater\Runtime\Translator;
@@ -26,6 +27,7 @@ require_once(__DIR__ . '/ipv6-prefix-updater/LegacyMigrator.php');
 require_once(__DIR__ . '/ipv6-prefix-updater/MonitoredInterfaces.php');
 require_once(__DIR__ . '/ipv6-prefix-updater/PackagePaths.php');
 require_once(__DIR__ . '/ipv6-prefix-updater/PfSenseAdapter.php');
+require_once(__DIR__ . '/ipv6-prefix-updater/PlatformAdapter.php');
 require_once(__DIR__ . '/ipv6-prefix-updater/RestoreManager.php');
 require_once(__DIR__ . '/ipv6-prefix-updater/StateStore.php');
 require_once(__DIR__ . '/ipv6-prefix-updater/Translator.php');
@@ -47,6 +49,25 @@ function pfsensePackageIpv6PrefixUpdaterTranslate(string $key, array $arguments 
 }
 
 /**
+ * Returns the platform adapter that every lifecycle hook and package page shares.
+ *
+ * Hooks and pages reach pfSense's configuration, notice, cron, and interface APIs
+ * only through it, so pfSense API changes stay inside the adapter.
+ *
+ * @return PlatformAdapter
+ *
+ * @since 2.1.5
+ */
+function pfsensePackageIpv6PrefixUpdaterPlatform(): PlatformAdapter
+{
+    static $platformAdapter = null;
+
+    $platformAdapter ??= new PfSenseAdapter();
+
+    return $platformAdapter;
+}
+
+/**
  * Logs a restore-recovery failure without allowing logging to throw.
  *
  * Configuration restore checks run inside pfSense package synchronization, so a
@@ -64,13 +85,11 @@ function pfsensePackageIpv6PrefixUpdaterLogRestoreFailure(
     Throwable $throwable,
 ): void {
     try {
-        if (function_exists('log_error')) {
-            log_error(sprintf(
-                'IPv6 Prefix Updater: %s failed: %s',
-                $operation,
-                $throwable->getMessage(),
-            ));
-        }
+        pfsensePackageIpv6PrefixUpdaterPlatform()->log(sprintf(
+            '%s failed: %s',
+            $operation,
+            $throwable->getMessage(),
+        ));
     } catch (Throwable) {
         // Restore recovery must never stop pfSense package synchronization.
     }
@@ -90,32 +109,26 @@ function pfsensePackageIpv6PrefixUpdaterLogRestoreFailure(
 function pfsensePackageIpv6PrefixUpdaterReconcileRestoreNotice(): void
 {
     try {
-        if (
-            function_exists('get_notices') === false
-            || function_exists('close_notice') === false
-            || function_exists('file_notice') === false
-        ) {
+        $platformAdapter = pfsensePackageIpv6PrefixUpdaterPlatform();
+        $notices = $platformAdapter->getNoticeQueue();
+
+        if ($notices === null) {
             return;
         }
 
-        $installedPackages = config_get_path('installedpackages/package', []);
-        $notices = get_notices();
+        $installedPackages = $platformAdapter->getConfigurationValue('installedpackages/package') ?? [];
 
-        if ($notices === false) {
+        if (!is_array($installedPackages)) {
             return;
         }
 
-        if (!is_array($installedPackages) || !is_array($notices)) {
-            return;
-        }
-
-        $falseNoticeTemplate = gettext(
+        $falseNoticeTemplate = $platformAdapter->translatePlatformText(
             'Package %s does not exist in '
                 . 'current %s version and it has been removed.',
         );
         $reassuranceNotice = pfsensePackageIpv6PrefixUpdaterTranslate('restore_reassurance_notice');
         $category = pfsensePackageIpv6PrefixUpdaterTranslate('brand');
-        $productLabel = (string) g_get('product_label');
+        $productLabel = $platformAdapter->getProductLabel();
 
         RestoreManager::reconcileFalseRemovalNotices(
             $installedPackages,
@@ -125,8 +138,8 @@ function pfsensePackageIpv6PrefixUpdaterReconcileRestoreNotice(): void
             $reassuranceNotice,
             $category,
             UpdateManager::ABOUT_PAGE,
-            static function (string $noticeIdentifier): void {
-                close_notice($noticeIdentifier);
+            static function (string $noticeIdentifier) use ($platformAdapter): void {
+                $platformAdapter->closeNotice($noticeIdentifier);
             },
             static function (
                 string $noticeIdentifier,
@@ -135,8 +148,8 @@ function pfsensePackageIpv6PrefixUpdaterReconcileRestoreNotice(): void
                 string $url,
                 int $priority,
                 bool $localOnly,
-            ): void {
-                file_notice(
+            ) use ($platformAdapter): void {
+                $platformAdapter->fileNotice(
                     $noticeIdentifier,
                     $notice,
                     $noticeCategory,
@@ -166,16 +179,10 @@ function pfsensePackageIpv6PrefixUpdaterReconcileRestoreNotice(): void
  */
 function pfsensePackageIpv6PrefixUpdaterClosePackageNotices(): void
 {
-    if (
-        function_exists('get_notices') === false
-        || function_exists('close_notice') === false
-    ) {
-        return;
-    }
+    $platformAdapter = pfsensePackageIpv6PrefixUpdaterPlatform();
+    $notices = $platformAdapter->getNoticeQueue();
 
-    $notices = get_notices();
-
-    if ($notices === false || !is_array($notices)) {
+    if ($notices === null) {
         return;
     }
 
@@ -198,7 +205,7 @@ function pfsensePackageIpv6PrefixUpdaterClosePackageNotices(): void
             continue;
         }
 
-        close_notice($noticeQueueIdentifier);
+        $platformAdapter->closeNotice($noticeQueueIdentifier);
     }
 }
 
@@ -299,9 +306,9 @@ function pfsensePackageIpv6PrefixUpdaterLocalizePackageGui(array &$package): voi
                 // row uses a plain select filled with the configured interfaces instead.
                 if (($rowField['fieldname'] ?? '') === 'interface') {
                     $interfaceOptions = [];
-                    $interfaces = get_configured_interface_with_descr(true);
+                    $interfaces = pfsensePackageIpv6PrefixUpdaterPlatform()->getInterfaceDescriptions();
 
-                    foreach ((is_array($interfaces) ? $interfaces : []) as $interfaceName => $interfaceDescription) {
+                    foreach ($interfaces as $interfaceName => $interfaceDescription) {
                         $interfaceOptions[] = [
                             'name' => (string) $interfaceDescription,
                             'value' => (string) $interfaceName,
@@ -374,9 +381,7 @@ function pfsensePackageIpv6PrefixUpdaterTabs(string $active): array
  */
 function pfsensePackageIpv6PrefixUpdaterInterfaceLabel(string $interface): string
 {
-    $description = function_exists('convert_friendly_interface_to_friendly_descr')
-        ? (string) convert_friendly_interface_to_friendly_descr($interface)
-        : '';
+    $description = pfsensePackageIpv6PrefixUpdaterPlatform()->getInterfaceDescription($interface);
 
     return ($description === '' || $description === $interface)
         ? $interface
@@ -395,9 +400,7 @@ function pfsensePackageIpv6PrefixUpdaterInterfaceLabel(string $interface): strin
  */
 function pfsensePackageIpv6PrefixUpdaterGetSettings(): array
 {
-    $settings = config_get_path('installedpackages/ipv6prefixupdater/config/0', []);
-
-    return is_array($settings) ? $settings : [];
+    return pfsensePackageIpv6PrefixUpdaterPlatform()->getSettings();
 }
 
 /**
@@ -411,7 +414,7 @@ function pfsensePackageIpv6PrefixUpdaterGetSettings(): array
  */
 function pfsensePackageIpv6PrefixUpdaterGetFieldSelection(): array
 {
-    return FieldSelection::fromStorage(config_get_path(PackagePaths::FIELD_SELECTION_PATH));
+    return FieldSelection::fromStorage(pfsensePackageIpv6PrefixUpdaterPlatform()->getFieldSelection());
 }
 
 /**
@@ -428,8 +431,10 @@ function pfsensePackageIpv6PrefixUpdaterGetFieldSelection(): array
  */
 function pfsensePackageIpv6PrefixUpdaterSaveFieldSelection(array $selection): void
 {
-    config_set_path(PackagePaths::FIELD_SELECTION_PATH, FieldSelection::toStorage($selection));
-    write_config(pfsensePackageIpv6PrefixUpdaterTranslate('fields_revision'));
+    $platformAdapter = pfsensePackageIpv6PrefixUpdaterPlatform();
+
+    $platformAdapter->setConfigurationValue(PackagePaths::FIELD_SELECTION_PATH, FieldSelection::toStorage($selection));
+    $platformAdapter->saveConfiguration(pfsensePackageIpv6PrefixUpdaterTranslate('fields_revision'));
 }
 
 /**
@@ -480,8 +485,8 @@ function pfsensePackageIpv6PrefixUpdaterGetSchedule(string $schedule): array
 /**
  * Writes changed restore-recovery cron items and regenerates the crontab.
  *
- * The configuration write and configure_cron() call follow pfSense's cron helper
- * boundary while one comparison keeps repeated package synchronization idempotent.
+ * The adapter's configuration save and crontab regeneration follow pfSense's cron
+ * helper boundary while one comparison keeps repeated package synchronization idempotent.
  *
  * @param array $cronItems - Complete synchronized cron item list.
  *
@@ -491,7 +496,8 @@ function pfsensePackageIpv6PrefixUpdaterGetSchedule(string $schedule): array
  */
 function pfsensePackageIpv6PrefixUpdaterWriteRestoreCronItems(array $cronItems): void
 {
-    $storedCronItems = config_get_path('cron/item', []);
+    $platformAdapter = pfsensePackageIpv6PrefixUpdaterPlatform();
+    $storedCronItems = $platformAdapter->getConfigurationValue('cron/item') ?? [];
     $storedCronItems = is_array($storedCronItems) ? $storedCronItems : [];
 
     if ($storedCronItems === $cronItems) {
@@ -499,13 +505,13 @@ function pfsensePackageIpv6PrefixUpdaterWriteRestoreCronItems(array $cronItems):
     }
 
     if (count($cronItems) === 0) {
-        config_del_path('cron/item');
+        $platformAdapter->deleteConfigurationValue('cron/item');
     } else {
-        config_set_path('cron/item', $cronItems);
+        $platformAdapter->setConfigurationValue('cron/item', $cronItems);
     }
 
-    write_config(pfsensePackageIpv6PrefixUpdaterTranslate('restore_heal_cron_revision'));
-    configure_cron();
+    $platformAdapter->saveConfiguration(pfsensePackageIpv6PrefixUpdaterTranslate('restore_heal_cron_revision'));
+    $platformAdapter->regenerateCrontab();
 }
 
 /**
@@ -521,7 +527,7 @@ function pfsensePackageIpv6PrefixUpdaterWriteRestoreCronItems(array $cronItems):
 function pfsensePackageIpv6PrefixUpdaterInstallRestoreCron(): void
 {
     try {
-        $cronItems = config_get_path('cron/item', []);
+        $cronItems = pfsensePackageIpv6PrefixUpdaterPlatform()->getConfigurationValue('cron/item') ?? [];
         $cronItems = is_array($cronItems) ? $cronItems : [];
         $installedVersion = UpdateManager::installedReleaseVersion();
 
@@ -568,7 +574,7 @@ function pfsensePackageIpv6PrefixUpdaterInstallRestoreCron(): void
 function pfsensePackageIpv6PrefixUpdaterRemoveRestoreCron(): void
 {
     try {
-        $cronItems = config_get_path('cron/item', []);
+        $cronItems = pfsensePackageIpv6PrefixUpdaterPlatform()->getConfigurationValue('cron/item') ?? [];
         $cronItems = is_array($cronItems) ? $cronItems : [];
         $restoreInProgress = file_exists(PackagePaths::PACKAGE_SYNC_FLAG);
         $synchronizedCronItems = RestoreManager::removeCronItems(
@@ -602,8 +608,10 @@ function pfsensePackageIpv6PrefixUpdaterRemoveRestoreCron(): void
  */
 function pfsensePackageIpv6PrefixUpdaterRemove(): void
 {
-    install_cron_job(PackagePaths::COMMAND, false);
-    install_cron_job(PackagePaths::UPDATE_CHECK_COMMAND, false);
+    $platformAdapter = pfsensePackageIpv6PrefixUpdaterPlatform();
+
+    $platformAdapter->installCronJob(PackagePaths::COMMAND, false);
+    $platformAdapter->installCronJob(PackagePaths::UPDATE_CHECK_COMMAND, false);
     pfsensePackageIpv6PrefixUpdaterRemoveRestoreCron();
 
     pfsensePackageIpv6PrefixUpdaterClosePackageNotices();
@@ -655,15 +663,15 @@ function pfsensePackageIpv6PrefixUpdaterMigrateLegacy(): bool
         return $report['status'] === 'deferred';
     } catch (Throwable $throwable) {
         $message = pfsensePackageIpv6PrefixUpdaterTranslate('legacy_failed', [$throwable->getMessage()]);
+        $failurePlatformAdapter = pfsensePackageIpv6PrefixUpdaterPlatform();
 
-        log_error('IPv6 Prefix Updater: ' . $message);
-        file_notice(
-            'ipv6-prefix-updater-legacy-migration',
+        $failurePlatformAdapter->log($message);
+        $failurePlatformAdapter->notice(
+            'legacy-migration',
             $message,
-            'IPv6 Prefix Updater',
-            '/ipv6-prefix-updater-cleanup.php',
             2,
             true,
+            '/ipv6-prefix-updater-cleanup.php',
         );
 
         return true;
@@ -701,7 +709,8 @@ function pfsensePackageIpv6PrefixUpdaterSync(): void
  */
 function pfsensePackageIpv6PrefixUpdaterGetUpdateSchedule(): array
 {
-    $storedSchedule = config_get_path(PackagePaths::UPDATE_SCHEDULE_PATH, []);
+    $platformAdapter = pfsensePackageIpv6PrefixUpdaterPlatform();
+    $storedSchedule = $platformAdapter->getConfigurationValue(PackagePaths::UPDATE_SCHEDULE_PATH) ?? [];
     $storedSchedule = is_array($storedSchedule) ? $storedSchedule : [];
     $schedule = UpdateManager::stableCronSchedule($storedSchedule);
     $normalizedStoredSchedule = [];
@@ -715,8 +724,8 @@ function pfsensePackageIpv6PrefixUpdaterGetUpdateSchedule(): array
     }
 
     if ($normalizedStoredSchedule !== $schedule) {
-        config_set_path(PackagePaths::UPDATE_SCHEDULE_PATH, $schedule);
-        write_config(pfsensePackageIpv6PrefixUpdaterTranslate('settings_saved'));
+        $platformAdapter->setConfigurationValue(PackagePaths::UPDATE_SCHEDULE_PATH, $schedule);
+        $platformAdapter->saveConfiguration(pfsensePackageIpv6PrefixUpdaterTranslate('settings_saved'));
     }
 
     return $schedule;
@@ -734,9 +743,10 @@ function pfsensePackageIpv6PrefixUpdaterGetUpdateSchedule(): array
  */
 function pfsensePackageIpv6PrefixUpdaterInstallUpdateCron(): void
 {
+    $platformAdapter = pfsensePackageIpv6PrefixUpdaterPlatform();
     $command = PackagePaths::UPDATE_CHECK_COMMAND;
 
-    install_cron_job($command, false);
+    $platformAdapter->installCronJob($command, false);
 
     $settings = pfsensePackageIpv6PrefixUpdaterGetSettings();
     $frequency = (string) ($settings['update_check_frequency'] ?? 'weekly');
@@ -756,7 +766,7 @@ function pfsensePackageIpv6PrefixUpdaterInstallUpdateCron(): void
 
     [$minute, $hour, $dayOfMonth, $month, $dayOfWeek] = $fields;
 
-    install_cron_job(
+    $platformAdapter->installCronJob(
         $command,
         true,
         $minute,
@@ -783,15 +793,16 @@ function pfsensePackageIpv6PrefixUpdaterInstallUpdateCron(): void
  */
 function pfsensePackageIpv6PrefixUpdaterInstallCron(bool $retryMigration = false): void
 {
+    $platformAdapter = pfsensePackageIpv6PrefixUpdaterPlatform();
     $command = PackagePaths::COMMAND;
 
-    install_cron_job($command, false);
+    $platformAdapter->installCronJob($command, false);
 
     $settings = pfsensePackageIpv6PrefixUpdaterGetSettings();
 
     if (($settings['enabled'] ?? '') !== 'on') {
         if ($retryMigration) {
-            install_cron_job($command, true, '*/15', '*', '*', '*', '*', 'root');
+            $platformAdapter->installCronJob($command, true, '*/15', '*', '*', '*', '*', 'root');
         }
 
         return;
@@ -800,7 +811,7 @@ function pfsensePackageIpv6PrefixUpdaterInstallCron(bool $retryMigration = false
     $schedule = (string) ($settings['update_frequency'] ?? 'hourly');
     [$minute, $hour, $dayOfMonth, $month, $dayOfWeek] = pfsensePackageIpv6PrefixUpdaterGetSchedule($schedule);
 
-    install_cron_job(
+    $platformAdapter->installCronJob(
         $command,
         true,
         $minute,
@@ -828,7 +839,7 @@ function pfsensePackageIpv6PrefixUpdaterInstallCron(bool $retryMigration = false
 function pfsensePackageIpv6PrefixUpdaterValidate(array $post, array &$inputErrors): void
 {
     $rows = MonitoredInterfaces::fromPost($post);
-    $interfaces = get_configured_interface_with_descr(true);
+    $interfaces = pfsensePackageIpv6PrefixUpdaterPlatform()->getInterfaceDescriptions();
     $seenInterfaces = [];
     $interfaceError = count($rows) === 0;
     $prefixLengthError = false;

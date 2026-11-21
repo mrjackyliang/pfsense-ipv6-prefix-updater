@@ -14,6 +14,7 @@ declare(strict_types=1);
 ##|*MATCH=ipv6-prefix-updater-about.php*
 ##|-PRIV
 
+use PfSense\Ipv6PrefixUpdater\Runtime\GitHubReleaseSource;
 use PfSense\Ipv6PrefixUpdater\Runtime\PackagePaths;
 use PfSense\Ipv6PrefixUpdater\Runtime\TestedReleases;
 use PfSense\Ipv6PrefixUpdater\Runtime\Translator;
@@ -22,6 +23,7 @@ use PfSense\Ipv6PrefixUpdater\Runtime\UpdateManager;
 require_once('guiconfig.inc');
 require_once('pfsense-utils.inc');
 require_once('/usr/local/pkg/ipv6-prefix-updater.inc');
+require_once('/usr/local/pkg/ipv6-prefix-updater/GitHubReleaseSource.php');
 require_once('/usr/local/pkg/ipv6-prefix-updater/PackagePaths.php');
 require_once('/usr/local/pkg/ipv6-prefix-updater/TestedReleases.php');
 require_once('/usr/local/pkg/ipv6-prefix-updater/Translator.php');
@@ -140,7 +142,7 @@ if (is_string($checkedAt) && $checkedAt !== '') {
 }
 
 $releaseUrl = $updateState['release_url'] ?? null;
-$releaseUrl = is_string($releaseUrl) && UpdateManager::isAllowedReleaseUrl($releaseUrl)
+$releaseUrl = is_string($releaseUrl) && GitHubReleaseSource::isAllowedReleaseUrl($releaseUrl)
     ? $releaseUrl
     : null;
 $updateAvailable = is_string($installedPackageVersion)

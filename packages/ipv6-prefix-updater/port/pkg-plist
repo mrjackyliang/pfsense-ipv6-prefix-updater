@@ -5,9 +5,12 @@ pkg/ipv6-prefix-updater/BackupStore.php
 pkg/ipv6-prefix-updater/ConfigurationChangePlanner.php
 pkg/ipv6-prefix-updater/ConfigurationFieldDetector.php
 pkg/ipv6-prefix-updater/ConfigurationTargetScanner.php
+pkg/ipv6-prefix-updater/CurlHttpClient.php
 pkg/ipv6-prefix-updater/FieldSelection.php
 pkg/ipv6-prefix-updater/FieldTranslations.php
 pkg/ipv6-prefix-updater/FileLock.php
+pkg/ipv6-prefix-updater/GitHubReleaseSource.php
+pkg/ipv6-prefix-updater/HttpClient.php
 pkg/ipv6-prefix-updater/Ipv6Prefix.php
 pkg/ipv6-prefix-updater/LegacyInstallation.php
 pkg/ipv6-prefix-updater/LegacyMigrator.php
@@ -19,6 +22,7 @@ pkg/ipv6-prefix-updater/PlatformAdapter.php
 pkg/ipv6-prefix-updater/PrefixChangePlanner.php
 pkg/ipv6-prefix-updater/PrefixUpdater.php
 pkg/ipv6-prefix-updater/ReleasePinUnavailableException.php
+pkg/ipv6-prefix-updater/ReleaseSource.php
 pkg/ipv6-prefix-updater/RestoreManager.php
 pkg/ipv6-prefix-updater/RestoreTranslations.php
 pkg/ipv6-prefix-updater/StateStore.php

@@ -1,4 +1,4 @@
-IPv6 Prefix Updater keeps approved pfSense configuration references aligned with a
-dynamic ISP-delegated IPv6 prefix. It preserves host bits, backs up before writing,
-reloads only affected subsystems, and exposes scheduling, dry runs, and status in the
-pfSense WebGUI.
+Follow your ISP's new IPv6 prefix across interfaces, virtual IPs, aliases,
+firewall rules, NAT, DHCPv6, and the other pfSense fields you pick, keeping the
+host part of each address. Updates run on a schedule, back up first, and report
+their status and notifications in the WebGUI.

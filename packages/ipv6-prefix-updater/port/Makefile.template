@@ -41,11 +41,17 @@ do-install:
 		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/ConfigurationTargetScanner.php \
 		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/CurlHttpClient.php \
+		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/FieldSelection.php \
 		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/FieldTranslations.php \
 		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/FileLock.php \
+		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/GitHubReleaseSource.php \
+		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/HttpClient.php \
 		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/Ipv6Prefix.php \
 		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
@@ -68,6 +74,8 @@ do-install:
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/PrefixUpdater.php \
 		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/ReleasePinUnavailableException.php \
+		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
+	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/ReleaseSource.php \
 		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater
 	${INSTALL_DATA} ${FILESDIR}${PREFIX}/pkg/ipv6-prefix-updater/RestoreManager.php \
 		${STAGEDIR}${PREFIX}/pkg/ipv6-prefix-updater

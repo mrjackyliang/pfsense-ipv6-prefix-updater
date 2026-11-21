@@ -39,7 +39,7 @@ env:
 jobs:
   build:
     runs-on: "ubuntu-24.04"
-    timeout-minutes: 15
+    timeout-minutes: 30
     permissions:
       contents: "read"
     steps:
@@ -57,12 +57,12 @@ jobs:
           package-manager-cache: false
 
       - name: "Install packages"
-        timeout-minutes: 15
+        timeout-minutes: 20
         run: "npm install"
         working-directory: "${{ env.ROOT_DIR }}"
 
       - name: "Check project"
-        timeout-minutes: 15
+        timeout-minutes: 30
         env:
           GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
         run: |
@@ -70,13 +70,13 @@ jobs:
         working-directory: "${{ env.ROOT_DIR }}"
 
       - name: "Build project"
-        timeout-minutes: 15
+        timeout-minutes: 30
         run: |
           npm run build -- --workspace pfsense-ipv6-prefix-updater-docs --workspace pfsense-pkg-ipv6-prefix-updater --artifact documentation
         working-directory: "${{ env.ROOT_DIR }}"
 
       - name: "Validate build artifacts"
-        timeout-minutes: 15
+        timeout-minutes: 30
         run: |
           set -euo pipefail
 
@@ -169,7 +169,7 @@ jobs:
 
       - name: "Upload assembled artifact (documentation)"
         uses: "actions/upload-artifact@v7"
-        timeout-minutes: 15
+        timeout-minutes: 30
         with:
           name: "artifact-documentation"
           retention-days: 1
@@ -181,7 +181,7 @@ jobs:
   publish-github-pages-apps-docs:
     needs: "build"
     runs-on: "ubuntu-24.04"
-    timeout-minutes: 15
+    timeout-minutes: 30
     permissions:
       contents: "read"
       pages: "write"
@@ -193,13 +193,13 @@ jobs:
 
       - name: "Download build artifacts"
         uses: "actions/download-artifact@v8"
-        timeout-minutes: 15
+        timeout-minutes: 30
         with:
           name: "artifact-documentation"
           path: "build/documentation"
 
       - name: "Check GitHub Pages status"
-        timeout-minutes: 15
+        timeout-minutes: 30
         run: |
           if gh api "repos/${{ github.repository }}/pages" > /dev/null 2>&1; then
             echo "[Pages] GitHub Pages is enabled."
@@ -219,19 +219,19 @@ jobs:
       - name: "Upload artifact to GitHub Pages"
         if: "${{ env.PUBLISH == 'true' && env.PAGES_ENABLED == 'true' }}"
         uses: "actions/upload-pages-artifact@v5"
-        timeout-minutes: 15
+        timeout-minutes: 30
         with:
           path: "build/documentation"
 
       - name: "Deploy to GitHub Pages"
         if: "${{ env.PUBLISH == 'true' && env.PAGES_ENABLED == 'true' }}"
         uses: "actions/deploy-pages@v5"
-        timeout-minutes: 15
+        timeout-minutes: 30
 
   publish-pfsense-packages-ipv6-prefix-updater:
     needs: "build"
     runs-on: "ubuntu-24.04"
-    timeout-minutes: 15
+    timeout-minutes: 30
     permissions:
       contents: "write"
     steps:
@@ -240,7 +240,7 @@ jobs:
         timeout-minutes: 5
 
       - name: "Validate and stage port"
-        timeout-minutes: 15
+        timeout-minutes: 30
         run: |
           node "./packages/ipv6-prefix-updater/scripts/check-package.mjs"
           node "./packages/ipv6-prefix-updater/scripts/stage-package.mjs"
@@ -305,7 +305,7 @@ jobs:
 
       - name: "Build on FreeBSD"
         uses: "vmactions/freebsd-vm@v1"
-        timeout-minutes: 15
+        timeout-minutes: 30
         with:
           release: "${{ vars.PFSENSE_FREEBSD_VERSION || '15' }}"
           copyback: true
@@ -408,7 +408,7 @@ jobs:
 
       - name: "Upload workflow artifact"
         uses: "actions/upload-artifact@v7"
-        timeout-minutes: 15
+        timeout-minutes: 30
         with:
           name: "pfsense-ipv6-prefix-updater"
           path: "./packages/ipv6-prefix-updater/build/release/*"
@@ -418,7 +418,7 @@ jobs:
 
       - name: "Upload GitHub release assets"
         if: "${{ env.PUBLISH == 'true' }}"
-        timeout-minutes: 15
+        timeout-minutes: 30
         env:
           GH_TOKEN: "${{ github.token }}"
           RELEASE_TAG: "${{ github.event.release.tag_name || inputs.tag }}"

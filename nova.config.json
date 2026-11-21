@@ -5,8 +5,8 @@
       "slug": "pfsense-ipv6-prefix-updater"
     },
     "description": {
-      "short": "A pfSense package that safely follows dynamic ISP IPv6 prefix changes across firewall configuration",
-      "long": "IPv6 Prefix Updater for pfSense is a native package for networks with dynamic IPv6 Prefix Delegation. It detects prefix changes, safely updates approved pfSense configuration references while preserving host portions, and provides package-managed installation, scheduling, backups, status, and notifications."
+      "short": "Keep pfSense on your current IPv6 prefix when your ISP hands out a new one",
+      "long": "Follow your ISP's new IPv6 prefix across interfaces, virtual IPs, aliases, firewall rules, NAT, DHCPv6, and the other pfSense fields you pick, keeping the host part of each address. Updates run on a schedule, back up first, and report their status and notifications in the WebGUI."
     },
     "keywords": [
       "pfsense",
@@ -165,9 +165,156 @@
     ],
     "issueTemplate": {
       "bugReportFields": [
-        "php",
-        "pfsense"
-      ]
+        "pfsense",
+        "pfsense-package",
+        "web",
+        "screenshots",
+        "notifications"
+      ],
+      "customQuestions": {
+        "bug": [
+          {
+            "type": "dropdown",
+            "id": "configuration-area",
+            "attributes": {
+              "label": "Affected Configuration Area",
+              "description": "Select the pfSense configuration area involved.",
+              "options": [
+                "Monitored Interface",
+                "Virtual IP",
+                "Alias",
+                "Firewall Rule",
+                "NAT",
+                "DHCPv6",
+                "IPsec",
+                "OpenVPN",
+                "WireGuard",
+                "Schedule",
+                "Backup or Restore",
+                "Status or Notification",
+                "Other"
+              ]
+            },
+            "validations": {
+              "required": true
+            }
+          },
+          {
+            "type": "input",
+            "id": "prefix-length",
+            "attributes": {
+              "label": "Prefix Length",
+              "description": "Enter only the configured prefix length from 48 through 64. Do not include the full prefix."
+            },
+            "validations": {
+              "required": true
+            }
+          },
+          {
+            "type": "dropdown",
+            "id": "run-result",
+            "attributes": {
+              "label": "Run Result",
+              "description": "Select the reported updater result.",
+              "options": [
+                "No Change",
+                "Success",
+                "Warning",
+                "Failure",
+                "Not Sure"
+              ]
+            },
+            "validations": {
+              "required": false
+            }
+          }
+        ],
+        "feature": [
+          {
+            "type": "dropdown",
+            "id": "configuration-area",
+            "attributes": {
+              "label": "Affected Configuration Area",
+              "description": "Select the pfSense configuration area involved.",
+              "options": [
+                "Monitored Interface",
+                "Virtual IP",
+                "Alias",
+                "Firewall Rule",
+                "NAT",
+                "DHCPv6",
+                "IPsec",
+                "OpenVPN",
+                "WireGuard",
+                "Schedule",
+                "Backup or Restore",
+                "Status or Notification",
+                "Other"
+              ]
+            },
+            "validations": {
+              "required": true
+            }
+          }
+        ],
+        "support": [
+          {
+            "type": "dropdown",
+            "id": "configuration-area",
+            "attributes": {
+              "label": "Affected Configuration Area",
+              "description": "Select the pfSense configuration area involved.",
+              "options": [
+                "Monitored Interface",
+                "Virtual IP",
+                "Alias",
+                "Firewall Rule",
+                "NAT",
+                "DHCPv6",
+                "IPsec",
+                "OpenVPN",
+                "WireGuard",
+                "Schedule",
+                "Backup or Restore",
+                "Status or Notification",
+                "Other"
+              ]
+            },
+            "validations": {
+              "required": true
+            }
+          },
+          {
+            "type": "input",
+            "id": "prefix-length",
+            "attributes": {
+              "label": "Prefix Length",
+              "description": "Enter only the configured prefix length from 48 through 64. Do not include the full prefix."
+            },
+            "validations": {
+              "required": true
+            }
+          },
+          {
+            "type": "dropdown",
+            "id": "run-result",
+            "attributes": {
+              "label": "Run Result",
+              "description": "Select the reported updater result.",
+              "options": [
+                "No Change",
+                "Success",
+                "Warning",
+                "Failure",
+                "Not Sure"
+              ]
+            },
+            "validations": {
+              "required": false
+            }
+          }
+        ]
+      }
     }
   },
   "workflows": [
@@ -197,7 +344,7 @@
         "release"
       ],
       "runsOn": "ubuntu-24.04",
-      "timeoutMinutes": 15,
+      "timeoutMinutes": 30,
       "build": [
         "./packages/ipv6-prefix-updater",
         "./apps/docs"
@@ -225,7 +372,9 @@
     "fundSources": [
       "https://github.com/sponsors/mrjackyliang",
       "https://liang.nyc/paypal"
-    ]
+    ],
+    "privacyPolicy": "https://github.com/mrjackyliang/mrjackyliang/blob/HEAD/PRIVACY.md",
+    "termsOfUse": "https://github.com/mrjackyliang/mrjackyliang/blob/HEAD/TERMS.md"
   },
   "readme": {
     "badges": [
@@ -244,7 +393,10 @@
     "./packages/ipv6-prefix-updater": {
       "name": "pfsense-pkg-ipv6-prefix-updater",
       "role": "package",
-      "policy": "trackable"
+      "policy": "trackable",
+      "pfsense": {
+        "comment": "IPv6 Prefix Updater package for pfSense"
+      }
     },
     "./apps/docs": {
       "name": "pfsense-ipv6-prefix-updater-docs",
@@ -337,6 +489,11 @@
         "enabled": true
       }
     },
+    "pfsense": {
+      "sync-identity": {
+        "enabled": true
+      }
+    },
     "read-me": {
       "update-badges": {
         "enabled": true
@@ -351,6 +508,11 @@
         "enabled": true
       },
       "update-introduction": {
+        "enabled": true
+      }
+    },
+    "tsconfig": {
+      "sync-references": {
         "enabled": true
       }
     },

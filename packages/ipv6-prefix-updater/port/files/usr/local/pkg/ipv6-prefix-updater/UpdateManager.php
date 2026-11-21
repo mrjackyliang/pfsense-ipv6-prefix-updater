@@ -8,37 +8,26 @@ use JsonException;
 use RuntimeException;
 use Throwable;
 
+require_once(__DIR__ . '/GitHubReleaseSource.php');
 require_once(__DIR__ . '/PackagePaths.php');
+require_once(__DIR__ . '/PfSenseAdapter.php');
+require_once(__DIR__ . '/PlatformAdapter.php');
 require_once(__DIR__ . '/ReleasePinUnavailableException.php');
+require_once(__DIR__ . '/ReleaseSource.php');
 require_once(__DIR__ . '/RestoreManager.php');
 require_once(__DIR__ . '/Translator.php');
 
 /**
- * Checks GitHub releases and installs checksum-verified package updates.
+ * Checks package releases and installs checksum-verified package updates.
  *
- * Scheduled checks, notices, and the About tab share this boundary so release
- * parsing and every verification step remain independently testable.
+ * Scheduled checks, notices, and the About tab share this boundary so every
+ * verification step remains independently testable. Releases come from a
+ * ReleaseSource and pfSense calls go through the PlatformAdapter.
  *
  * @since 2.1.0
  */
 final class UpdateManager
 {
-    /** GitHub latest-release API endpoint. @since 2.1.0 */
-    public const RELEASES_API = 'https://api.github.com/repos/mrjackyliang/pfsense-ipv6-prefix-updater/releases/latest';
-
-    /**
-     * GitHub release-by-tag API prefix used for installed-version recovery pins.
-     *
-     * Appending the normalized installed tag resolves immutable release metadata
-     * without consulting GitHub's moving latest-release endpoint.
-     *
-     * @since 2.1.2
-     */
-    public const RELEASE_TAG_API_PREFIX = 'https://api.github.com/repos/mrjackyliang/pfsense-ipv6-prefix-updater/releases/tags/';
-
-    /** Allowed prefix for release asset URLs returned by GitHub. @since 2.1.0 */
-    public const DOWNLOAD_PREFIX = 'https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/download/';
-
     /** Stable pfSense notice identifier for available releases. @since 2.1.0 */
     public const NOTICE_ID = 'ipv6-prefix-updater-update-available';
 
@@ -57,12 +46,6 @@ final class UpdateManager
     /** About page linked by the pfSense bell notice. @since 2.1.0 */
     public const ABOUT_PAGE = '/ipv6-prefix-updater-about.php';
 
-    /** GitHub repository release page prefix accepted for display. @since 2.1.0 */
-    public const RELEASE_PAGE_PREFIX = 'https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/releases/';
-
-    /** User agent sent with every GitHub request. @since 2.1.0 */
-    private const USER_AGENT = 'pfSense-pkg-Ipv6PrefixUpdater';
-
     /** Largest accepted package release asset in bytes. @since 2.1.0 */
     private const PACKAGE_DOWNLOAD_LIMIT = 64 * 1024 * 1024;
 
@@ -73,39 +56,48 @@ final class UpdateManager
     private const PKG_COMMAND = '/usr/local/sbin/pkg';
 
     /**
-     * Creates an update coordinator with production or test-only CLI endpoints.
+     * Platform adapter shared by the static update helpers.
+     *
+     * Notices, logging, and installed-package reads go through it. Null means not
+     * created yet.
+     *
+     * @var PlatformAdapter|null
+     *
+     * @since 2.1.5
+     * @private
+     */
+    private static ?PlatformAdapter $platform = null;
+
+    /**
+     * Creates an update coordinator with a production or test release source.
      *
      * The WebGUI never constructs endpoint overrides. Only the CLI reads the
-     * documented test environment variables and passes their values here.
+     * documented test environment variables and passes them to the release source.
      *
-     * @param string $installedVersion    - Installed package version.
-     * @param string $releasesApi         - Latest-release API endpoint.
-     * @param string $downloadPrefix      - Allowed release asset URL prefix.
-     * @param string $updatesFile         - Persistent update metadata path.
-     * @param string $statusFile          - Background update status path.
-     * @param string $signingKeysFile     - Test-only release signing key path.
-     * @param string $sshKeygenCommand    - Test-only OpenSSH executable path.
-     * @param string $releaseTagApiPrefix - Release-by-tag API prefix.
+     * @param string        $installedVersion - Installed package version.
+     * @param ReleaseSource $releaseSource    - Where releases and their assets come from.
+     * @param string        $updatesFile      - Persistent update metadata path.
+     * @param string        $statusFile       - Background update status path.
+     * @param string        $signingKeysFile  - Test-only release signing key path.
+     * @param string        $sshKeygenCommand - Test-only OpenSSH executable path.
      *
      * @since 2.1.0
      */
     public function __construct(
         private readonly string $installedVersion,
-        private readonly string $releasesApi = self::RELEASES_API,
-        private readonly string $downloadPrefix = self::DOWNLOAD_PREFIX,
+        private readonly ReleaseSource $releaseSource = new GitHubReleaseSource(),
         private readonly string $updatesFile = PackagePaths::UPDATES_FILE,
         private readonly string $statusFile = PackagePaths::UPDATE_STATUS_FILE,
         private readonly string $signingKeysFile = self::SIGNING_KEYS_FILE,
         private readonly string $sshKeygenCommand = self::SSH_KEYGEN_COMMAND,
-        private readonly string $releaseTagApiPrefix = self::RELEASE_TAG_API_PREFIX,
     ) {
     }
 
     /**
      * Confirms the pfSense APIs needed by update operations are available.
      *
-     * Fixed system includes provide configuration, proxy, notice, and logging
-     * functions without loading the prefix-mutation adapter.
+     * The platform adapter loads fixed system includes for configuration, proxy,
+     * notice, and logging functions without loading the interface APIs.
      *
      * @return void
      *
@@ -115,41 +107,7 @@ final class UpdateManager
      */
     public static function assertEnvironment(): void
     {
-        if (PHP_OS_FAMILY !== 'BSD' || file_exists('/etc/version') === false) {
-            throw new RuntimeException(Translator::translate('environment_unsupported'));
-        }
-
-        $requiredFiles = [
-            '/etc/inc/config.inc',
-            '/etc/inc/notices.inc',
-            '/etc/inc/pfsense-utils.inc',
-        ];
-
-        foreach ($requiredFiles as $requiredFile) {
-            if (is_readable($requiredFile) === false) {
-                throw new RuntimeException(Translator::translate('dependency_unavailable', [$requiredFile]));
-            }
-
-            require_once($requiredFile);
-        }
-
-        $requiredFunctions = [
-            'close_notice',
-            'config_get_path',
-            'file_notice',
-            'log_error',
-            'set_curlproxy',
-        ];
-
-        foreach ($requiredFunctions as $requiredFunction) {
-            if (function_exists($requiredFunction) === false) {
-                throw new RuntimeException(Translator::translate('dependency_unavailable', [$requiredFunction]));
-            }
-        }
-
-        if (function_exists('curl_init') === false) {
-            throw new RuntimeException(Translator::translate('update_curl_unavailable'));
-        }
+        self::platform()->assertUpdateEnvironment();
     }
 
     /**
@@ -175,7 +133,7 @@ final class UpdateManager
         $checkedAt = gmdate(DATE_ATOM);
 
         try {
-            $release = $this->fetchLatestRelease();
+            $release = $this->releaseSource->fetchLatestRelease();
 
             // GitHub publishes the release before its build attaches the package. A newer
             // release that can't be installed yet stays unseen until its files are there.
@@ -237,7 +195,7 @@ final class UpdateManager
     public function releaseInstallable(array $release): bool
     {
         try {
-            $assets = self::selectUpdateAssets($release, $this->downloadPrefix);
+            $assets = self::selectUpdateAssets($release, $this->releaseSource->assetUrlPrefix());
             $signingKeys = self::readSigningKeys($this->signingKeysFile);
         } catch (Throwable) {
             return false;
@@ -285,21 +243,15 @@ final class UpdateManager
      */
     public static function installedVersion(): ?string
     {
-        if (function_exists('config_get_path')) {
-            $installedPackages = config_get_path('installedpackages/package', []);
+        foreach (self::platform()->getInstalledPackages() as $installedPackage) {
+            if (!is_array($installedPackage) || ($installedPackage['name'] ?? null) !== 'Ipv6PrefixUpdater') {
+                continue;
+            }
 
-            if (is_array($installedPackages)) {
-                foreach ($installedPackages as $installedPackage) {
-                    if (!is_array($installedPackage) || ($installedPackage['name'] ?? null) !== 'Ipv6PrefixUpdater') {
-                        continue;
-                    }
+            $installedPackageVersion = $installedPackage['version'] ?? null;
 
-                    $installedPackageVersion = $installedPackage['version'] ?? null;
-
-                    if (is_string($installedPackageVersion) && $installedPackageVersion !== '') {
-                        return $installedPackageVersion;
-                    }
-                }
+            if (is_string($installedPackageVersion) && $installedPackageVersion !== '') {
+                return $installedPackageVersion;
             }
         }
 
@@ -351,9 +303,7 @@ final class UpdateManager
             );
         }
 
-        $releaseTag = 'v' . $normalizedInstalledVersion;
-        $releaseApi = $this->releaseTagApiPrefix . rawurlencode($releaseTag);
-        $release = $this->fetchRelease($releaseApi, true);
+        $release = $this->releaseSource->fetchRelease($normalizedInstalledVersion);
 
         if ($release['version'] !== $normalizedInstalledVersion) {
             throw new ReleasePinUnavailableException(
@@ -361,7 +311,7 @@ final class UpdateManager
             );
         }
 
-        $assets = self::selectUpdateAssets($release, $this->downloadPrefix);
+        $assets = self::selectUpdateAssets($release, $this->releaseSource->assetUrlPrefix());
         $expectedDigest = $assets['digest'];
         $temporaryDirectory = null;
 
@@ -370,7 +320,7 @@ final class UpdateManager
                 $temporaryDirectory = $this->createTemporaryDirectory();
                 $checksumPath = $temporaryDirectory . '/' . $assets['checksum']['name'];
 
-                $this->downloadFile(
+                $this->releaseSource->downloadAsset(
                     $assets['checksum']['url'],
                     $checksumPath,
                     self::AUXILIARY_DOWNLOAD_LIMIT,
@@ -410,8 +360,8 @@ final class UpdateManager
     /**
      * Validates a release asset URL against the configured repository prefix.
      *
-     * Tests may pass a VM endpoint prefix, while production accepts only the fixed
-     * GitHub repository download path.
+     * Tests may pass a VM endpoint prefix, while production accepts only the release
+     * source's fixed repository download path.
      *
      * @param string $url            - Asset URL.
      * @param string $downloadPrefix - Allowed prefix.
@@ -420,25 +370,9 @@ final class UpdateManager
      *
      * @since 2.1.0
      */
-    public static function isAllowedAssetUrl(string $url, string $downloadPrefix = self::DOWNLOAD_PREFIX): bool
+    public static function isAllowedAssetUrl(string $url, string $downloadPrefix = GitHubReleaseSource::DOWNLOAD_PREFIX): bool
     {
         return $downloadPrefix !== '' && str_starts_with($url, $downloadPrefix);
-    }
-
-    /**
-     * Validates a release page before the About tab renders it as a link.
-     *
-     * Only this repository's HTTPS release pages are accepted from persistent state.
-     *
-     * @param string $url - Release page URL.
-     *
-     * @return bool
-     *
-     * @since 2.1.0
-     */
-    public static function isAllowedReleaseUrl(string $url): bool
-    {
-        return str_starts_with($url, self::RELEASE_PAGE_PREFIX);
     }
 
     /**
@@ -460,86 +394,6 @@ final class UpdateManager
         $normalizedLatestVersion = self::normalizeVersion($latestVersion);
 
         return version_compare($normalizedLatestVersion, $normalizedInstalledVersion, '>');
-    }
-
-    /**
-     * Parses and validates GitHub's latest-release response.
-     *
-     * The normalized result contains only fields needed by checks and installation;
-     * malformed external data fails closed before it reaches persistent state.
-     *
-     * @param string $json - Release JSON.
-     *
-     * @return array
-     *
-     * @throws RuntimeException When required release fields are missing or invalid.
-     *
-     * @since 2.1.0
-     */
-    public static function parseReleaseJson(string $json): array
-    {
-        try {
-            $releaseData = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
-        } catch (JsonException $jsonException) {
-            throw new RuntimeException(Translator::translate('update_release_json_invalid'), 0, $jsonException);
-        }
-
-        if (!is_array($releaseData)) {
-            throw new RuntimeException(Translator::translate('update_release_json_invalid'));
-        }
-
-        $tag = $releaseData['tag_name'] ?? null;
-        $releaseUrl = $releaseData['html_url'] ?? null;
-        $publishedAt = $releaseData['published_at'] ?? null;
-        $releaseAssets = $releaseData['assets'] ?? null;
-
-        if (
-            !is_string($tag)
-            || $tag === ''
-            || !is_string($releaseUrl)
-            || self::isAllowedReleaseUrl($releaseUrl) === false
-            || !is_string($publishedAt)
-            || $publishedAt === ''
-            || !is_array($releaseAssets)
-        ) {
-            throw new RuntimeException(Translator::translate('update_release_json_invalid'));
-        }
-
-        $version = self::normalizeVersion($tag);
-
-        if (preg_match('/^[0-9]+(?:\.[0-9]+){1,3}(?:[-+][0-9A-Za-z.-]+)?$/', $version) !== 1) {
-            throw new RuntimeException(Translator::translate('update_release_version_invalid'));
-        }
-
-        $assets = [];
-
-        foreach ($releaseAssets as $releaseAsset) {
-            if (!is_array($releaseAsset)) {
-                continue;
-            }
-
-            $releaseAssetName = $releaseAsset['name'] ?? null;
-            $releaseAssetUrl = $releaseAsset['browser_download_url'] ?? null;
-            $releaseAssetDigest = $releaseAsset['digest'] ?? null;
-
-            if (!is_string($releaseAssetName) || !is_string($releaseAssetUrl)) {
-                continue;
-            }
-
-            $assets[] = [
-                'name' => $releaseAssetName,
-                'url' => $releaseAssetUrl,
-                'digest' => is_string($releaseAssetDigest) ? $releaseAssetDigest : null,
-            ];
-        }
-
-        return [
-            'tag' => $tag,
-            'version' => $version,
-            'release_url' => $releaseUrl,
-            'published_at' => $publishedAt,
-            'assets' => $assets,
-        ];
     }
 
     /**
@@ -819,7 +673,7 @@ final class UpdateManager
      */
     public static function selectUpdateAssets(
         array $release,
-        string $downloadPrefix = self::DOWNLOAD_PREFIX,
+        string $downloadPrefix = GitHubReleaseSource::DOWNLOAD_PREFIX,
     ): array {
         $version = (string) ($release['version'] ?? '');
         $packageAssetName = self::PACKAGE_NAME . '-' . $version . '.pkg';
@@ -996,7 +850,7 @@ final class UpdateManager
 
         try {
             $signingKeys = self::readSigningKeys($this->signingKeysFile);
-            $release = $this->fetchLatestRelease();
+            $release = $this->releaseSource->fetchLatestRelease();
             $version = $release['version'];
 
             if (self::isNewerVersion($this->installedVersion, $version) === false) {
@@ -1013,7 +867,7 @@ final class UpdateManager
                 return $state;
             }
 
-            $assets = self::selectUpdateAssets($release, $this->downloadPrefix);
+            $assets = self::selectUpdateAssets($release, $this->releaseSource->assetUrlPrefix());
 
             if (count($signingKeys) > 0 && !is_array($assets['signature'])) {
                 $signatureAssetName = $assets['package']['name'] . '.sig';
@@ -1035,7 +889,7 @@ final class UpdateManager
                 null,
             );
 
-            $this->downloadFile(
+            $this->releaseSource->downloadAsset(
                 $assets['package']['url'],
                 $packagePath,
                 self::PACKAGE_DOWNLOAD_LIMIT,
@@ -1046,7 +900,7 @@ final class UpdateManager
             if (is_array($assets['checksum'])) {
                 $checksumPath = $temporaryDirectory . '/' . $assets['checksum']['name'];
 
-                $this->downloadFile(
+                $this->releaseSource->downloadAsset(
                     $assets['checksum']['url'],
                     $checksumPath,
                     self::AUXILIARY_DOWNLOAD_LIMIT,
@@ -1076,7 +930,7 @@ final class UpdateManager
             if (count($signingKeys) > 0 && is_array($assets['signature'])) {
                 $signaturePath = $temporaryDirectory . '/' . $assets['signature']['name'];
 
-                $this->downloadFile(
+                $this->releaseSource->downloadAsset(
                     $assets['signature']['url'],
                     $signaturePath,
                     self::AUXILIARY_DOWNLOAD_LIMIT,
@@ -1214,9 +1068,7 @@ final class UpdateManager
         bool $fileNotice,
     ): array {
         if (self::isNewerVersion($installedVersion, $latestVersion) === false) {
-            if (function_exists('close_notice')) {
-                \close_notice(self::NOTICE_ID);
-            }
+            self::platform()->closeNotice(self::NOTICE_ID);
 
             return $state;
         }
@@ -1236,7 +1088,7 @@ final class UpdateManager
             $latestVersion,
         ]);
 
-        \file_notice(
+        self::platform()->fileNotice(
             self::NOTICE_ID,
             $message,
             Translator::translate('brand'),
@@ -1337,236 +1189,10 @@ final class UpdateManager
     }
 
     /**
-     * Downloads one release asset with pfSense proxy and TLS settings.
+     * Logs one safe update failure through the platform log.
      *
-     * @param string $url                      - Validated asset URL.
-     * @param string $path                     - Private destination path.
-     * @param int    $byteLimit                - Maximum accepted download size.
-     * @param bool   $notFoundMeansUnavailable - Whether HTTP 404 is definitive.
-     *
-     * @return void
-     *
-     * @throws ReleasePinUnavailableException When a required asset is absent.
-     * @throws RuntimeException               When transport or HTTP validation fails.
-     *
-     * @since 2.1.0
-     * @private
-     */
-    private function downloadFile(
-        string $url,
-        string $path,
-        int $byteLimit,
-        bool $notFoundMeansUnavailable = false,
-    ): void {
-        $fileHandle = fopen($path, 'wb');
-
-        if ($fileHandle === false || chmod($path, 0600) === false) {
-            if (is_resource($fileHandle)) {
-                fclose($fileHandle);
-            }
-
-            throw new RuntimeException(Translator::translate('update_download_failed'));
-        }
-
-        $curlHandle = curl_init($url);
-
-        if ($curlHandle === false) {
-            fclose($fileHandle);
-
-            throw new RuntimeException(Translator::translate('update_download_failed'));
-        }
-
-        $downloadTooLarge = false;
-        $progressCallback = static function (
-            mixed $unusedHandle,
-            float $downloadTotal,
-            float $downloadedCount,
-            float $uploadTotal,
-            float $uploadedCount,
-        ) use (&$downloadTooLarge, $byteLimit): int {
-            if ($downloadedCount > $byteLimit) {
-                $downloadTooLarge = true;
-
-                return 1;
-            }
-
-            return 0;
-        };
-
-        $this->configureCurl($curlHandle, $url, [
-            CURLOPT_FILE => $fileHandle,
-            CURLOPT_HTTPHEADER => [
-                'Accept: application/octet-stream',
-            ],
-            CURLOPT_MAXFILESIZE_LARGE => $byteLimit,
-            CURLOPT_NOPROGRESS => false,
-            CURLOPT_XFERINFOFUNCTION => $progressCallback,
-        ]);
-
-        $result = curl_exec($curlHandle);
-        $statusCode = (int) curl_getinfo($curlHandle, CURLINFO_RESPONSE_CODE);
-        $curlErrorCode = curl_errno($curlHandle);
-        $curlError = curl_error($curlHandle);
-
-        curl_close($curlHandle);
-        fclose($fileHandle);
-
-        if ($downloadTooLarge || $curlErrorCode === CURLE_FILESIZE_EXCEEDED) {
-            @unlink($path);
-
-            throw new RuntimeException(Translator::translate('update_download_too_large'));
-        }
-
-        if ($statusCode === 404 && $notFoundMeansUnavailable) {
-            @unlink($path);
-
-            throw new ReleasePinUnavailableException(
-                Translator::translate('update_download_failed_detail', [(string) $statusCode]),
-            );
-        }
-
-        if ($result !== true || $statusCode < 200 || $statusCode >= 300) {
-            @unlink($path);
-            $detail = $curlError !== '' ? $curlError : (string) $statusCode;
-
-            throw new RuntimeException(Translator::translate('update_download_failed_detail', [$detail]));
-        }
-    }
-
-    /**
-     * Fetches and parses the latest GitHub release.
-     *
-     * @return array
-     *
-     * @throws RuntimeException When GitHub rejects or rate-limits the request.
-     *
-     * @since 2.1.0
-     * @private
-     */
-    private function fetchLatestRelease(): array
-    {
-        return $this->fetchRelease($this->releasesApi);
-    }
-
-    /**
-     * Fetches and parses one GitHub release API endpoint.
-     *
-     * Latest-version checks and installed-version recovery pins share identical
-     * transport, proxy, rate-limit, status, and response validation.
-     *
-     * @param string $releaseApi              - GitHub release API endpoint.
-     * @param bool   $notFoundMeansUnavailable - Whether HTTP 404 is definitive.
-     *
-     * @return array
-     *
-     * @throws ReleasePinUnavailableException When the requested release is absent.
-     * @throws RuntimeException               When GitHub rejects the request transiently.
-     *
-     * @since 2.1.2
-     * @private
-     */
-    private function fetchRelease(
-        string $releaseApi,
-        bool $notFoundMeansUnavailable = false,
-    ): array {
-        $responseHeaders = [];
-        $curlHandle = curl_init($releaseApi);
-
-        if ($curlHandle === false) {
-            throw new RuntimeException(Translator::translate('update_check_failed_transport'));
-        }
-
-        $headerCallback = static function (mixed $unusedHandle, string $headerLine) use (&$responseHeaders): int {
-            $separatorPosition = strpos($headerLine, ':');
-
-            if ($separatorPosition !== false) {
-                $headerName = strtolower(trim(substr($headerLine, 0, $separatorPosition)));
-                $headerValue = trim(substr($headerLine, $separatorPosition + 1));
-                $responseHeaders[$headerName] = $headerValue;
-            }
-
-            return strlen($headerLine);
-        };
-
-        $this->configureCurl($curlHandle, $releaseApi, [
-            CURLOPT_HEADERFUNCTION => $headerCallback,
-            CURLOPT_HTTPHEADER => [
-                'Accept: application/vnd.github+json',
-                'X-GitHub-Api-Version: 2022-11-28',
-            ],
-            CURLOPT_RETURNTRANSFER => true,
-        ]);
-
-        $response = curl_exec($curlHandle);
-        $statusCode = (int) curl_getinfo($curlHandle, CURLINFO_RESPONSE_CODE);
-        $curlError = curl_error($curlHandle);
-
-        curl_close($curlHandle);
-
-        if ($statusCode === 404 && $notFoundMeansUnavailable) {
-            throw new ReleasePinUnavailableException(
-                Translator::translate('update_http_failed', [$statusCode]),
-            );
-        }
-
-        if ($response === false) {
-            throw new RuntimeException(Translator::translate('update_check_failed_detail', [$curlError]));
-        }
-
-        if ($statusCode === 403 || $statusCode === 429) {
-            throw new RuntimeException(Translator::translate('update_rate_limited'));
-        }
-
-        if ($statusCode < 200 || $statusCode >= 300) {
-            throw new RuntimeException(Translator::translate('update_http_failed', [$statusCode]));
-        }
-
-        if (!is_string($response)) {
-            throw new RuntimeException(Translator::translate('update_release_json_invalid'));
-        }
-
-        return self::parseReleaseJson($response);
-    }
-
-    /**
-     * Applies shared cURL safety, timeout, redirect, and proxy options.
-     *
-     * @param mixed  $curlHandle - cURL handle.
-     * @param string $url        - Initial request URL.
-     * @param array  $options    - Operation-specific cURL options.
-     *
-     * @return void
-     *
-     * @since 2.1.0
-     * @private
-     */
-    private function configureCurl(mixed $curlHandle, string $url, array $options): void
-    {
-        $scheme = parse_url($url, PHP_URL_SCHEME);
-        $allowedProtocols = $scheme === 'http'
-            ? CURLPROTO_HTTP | CURLPROTO_HTTPS
-            : CURLPROTO_HTTPS;
-        $sharedOptions = [
-            CURLOPT_CONNECTTIMEOUT => 5,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_MAXREDIRS => 3,
-            CURLOPT_PROTOCOLS => $allowedProtocols,
-            CURLOPT_REDIR_PROTOCOLS => $allowedProtocols,
-            CURLOPT_SSL_VERIFYHOST => 2,
-            CURLOPT_SSL_VERIFYPEER => true,
-            CURLOPT_TIMEOUT => 20,
-            CURLOPT_USERAGENT => self::USER_AGENT,
-        ];
-
-        if (curl_setopt_array($curlHandle, $options + $sharedOptions) === false) {
-            throw new RuntimeException(Translator::translate('update_check_failed_transport'));
-        }
-
-        \set_curlproxy($curlHandle);
-    }
-
-    /**
-     * Logs one safe update failure through pfSense.
+     * Contexts without pfSense's logger skip the message, so logging never hides the
+     * original failure.
      *
      * @param Throwable $throwable - Failure to log.
      *
@@ -1577,9 +1203,25 @@ final class UpdateManager
      */
     private function logFailure(Throwable $throwable): void
     {
-        if (function_exists('log_error')) {
-            \log_error('IPv6 Prefix Updater: ' . $throwable->getMessage());
-        }
+        self::platform()->log($throwable->getMessage());
+    }
+
+    /**
+     * Returns the platform adapter shared by the static update helpers.
+     *
+     * The production adapter is created on first use; it loads no pfSense include
+     * until a method needs one.
+     *
+     * @return PlatformAdapter
+     *
+     * @since 2.1.5
+     * @private
+     */
+    private static function platform(): PlatformAdapter
+    {
+        self::$platform ??= new PfSenseAdapter();
+
+        return self::$platform;
     }
 
     /**
@@ -1617,17 +1259,7 @@ final class UpdateManager
             return null;
         }
 
-        if (function_exists('parse_xml_config_pkg') === false) {
-            $xmlParserPath = '/etc/inc/xmlparse.inc';
-
-            if (is_readable($xmlParserPath) === false) {
-                return null;
-            }
-
-            require_once($xmlParserPath);
-        }
-
-        $packageInfo = parse_xml_config_pkg($packageInfoPath, 'pfsensepkgs');
+        $packageInfo = self::platform()->parsePackageXml($packageInfoPath, 'pfsensepkgs');
         $packageInfoPackage = is_array($packageInfo) ? ($packageInfo['package'] ?? null) : null;
 
         if (!is_array($packageInfoPackage)) {

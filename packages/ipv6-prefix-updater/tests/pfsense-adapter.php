@@ -342,6 +342,183 @@ if (function_exists('mwexec') === false) {
     }
 }
 
+if (function_exists('config_del_path') === false) {
+    /**
+     * Records one simulated configuration path removal.
+     *
+     * @param string $path - Configuration path.
+     *
+     * @return void
+     *
+     * @since 2.1.5
+     */
+    function config_del_path(string $path): void
+    {
+        global $adapterTestEvents;
+
+        $adapterTestEvents[] = 'config_del_path:' . $path;
+    }
+}
+
+if (function_exists('install_cron_job') === false) {
+    /**
+     * Records one simulated cron job change with every field pfSense receives.
+     *
+     * @param string $command  - Command the job runs.
+     * @param bool   $active   - Whether the job is installed or removed.
+     * @param string $minute   - Minute field.
+     * @param string $hour     - Hour field.
+     * @param string $monthDay - Day-of-month field.
+     * @param string $month    - Month field.
+     * @param string $weekDay  - Day-of-week field.
+     * @param string $who      - User the job runs as.
+     *
+     * @return void
+     *
+     * @since 2.1.5
+     */
+    function install_cron_job(
+        string $command,
+        bool $active = false,
+        string $minute = '0',
+        string $hour = '*',
+        string $monthDay = '*',
+        string $month = '*',
+        string $weekDay = '*',
+        string $who = 'root',
+    ): void {
+        global $adapterTestEvents;
+
+        $adapterTestEvents[] = sprintf(
+            'install_cron_job:%s:%s:%s %s %s %s %s:%s',
+            $command,
+            ($active) ? 'on' : 'off',
+            $minute,
+            $hour,
+            $monthDay,
+            $month,
+            $weekDay,
+            $who,
+        );
+    }
+}
+
+if (function_exists('configure_cron') === false) {
+    /**
+     * Records one simulated crontab regeneration.
+     *
+     * @return void
+     *
+     * @since 2.1.5
+     */
+    function configure_cron(): void
+    {
+        global $adapterTestEvents;
+
+        $adapterTestEvents[] = 'configure_cron';
+    }
+}
+
+if (function_exists('get_configured_interface_with_descr') === false) {
+    /**
+     * Returns two simulated configured interfaces.
+     *
+     * @param bool $includeUnassigned - Whether unassigned interfaces are requested.
+     *
+     * @return array<string, string>
+     *
+     * @since 2.1.5
+     */
+    function get_configured_interface_with_descr(bool $includeUnassigned = false): array
+    {
+        return ($includeUnassigned) ? ['lan' => 'LAN', 'opt1' => 'GUEST'] : ['lan' => 'LAN'];
+    }
+}
+
+if (function_exists('convert_friendly_interface_to_friendly_descr') === false) {
+    /**
+     * Returns the simulated description of one friendly interface.
+     *
+     * @param string $interface - Friendly interface name.
+     *
+     * @return string
+     *
+     * @since 2.1.5
+     */
+    function convert_friendly_interface_to_friendly_descr(string $interface): string
+    {
+        return strtoupper($interface);
+    }
+}
+
+if (function_exists('g_get') === false) {
+    /**
+     * Returns the simulated pfSense product label.
+     *
+     * @param string $key - Global value key.
+     *
+     * @return mixed
+     *
+     * @since 2.1.5
+     */
+    function g_get(string $key): mixed
+    {
+        return ($key === 'product_label') ? 'pfSense' : null;
+    }
+}
+
+if (function_exists('gettext') === false) {
+    /**
+     * Returns pfSense source text when the gettext extension is absent.
+     *
+     * @param string $message - Source message.
+     *
+     * @return string
+     *
+     * @since 2.1.5
+     */
+    function gettext(string $message): string
+    {
+        return $message;
+    }
+}
+
+if (function_exists('log_error') === false) {
+    /**
+     * Records one simulated system log message.
+     *
+     * @param string $message - Error log message.
+     *
+     * @return void
+     *
+     * @since 2.1.5
+     */
+    function log_error(string $message): void
+    {
+        global $adapterTestEvents;
+
+        $adapterTestEvents[] = 'log_error:' . $message;
+    }
+}
+
+if (function_exists('parse_xml_config_pkg') === false) {
+    /**
+     * Returns a simulated parsed package XML record.
+     *
+     * @param string $path        - XML file path.
+     * @param string $rootElement - Expected root element.
+     *
+     * @return array
+     *
+     * @since 2.1.5
+     */
+    function parse_xml_config_pkg(string $path, string $rootElement): array
+    {
+        return ['path' => $path, 'root' => $rootElement];
+    }
+}
+
+require_once(__DIR__ . '/stubs/notices.inc');
 require_once(__DIR__ . '/../port/files/usr/local/pkg/ipv6-prefix-updater/PfSenseAdapter.php');
 
 /**
@@ -543,6 +720,89 @@ assertAdapterSame(
 );
 assertAdapterSame([], $adapterTestEvents, 'A failed package lookup must not reload anything.');
 
-fwrite(STDOUT, "9 pfSense adapter regression checks passed.\n");
+$adapterTestEvents = [];
+
+$platformAdapter->deleteConfigurationValue('cron/item');
+$platformAdapter->saveConfiguration('Lifecycle save test');
+$platformAdapter->installCronJob('/usr/local/sbin/example-check', false);
+$platformAdapter->installCronJob('/usr/local/sbin/example-check', true, '15', '4', '*', '*', '2', 'root');
+$platformAdapter->regenerateCrontab();
+
+assertAdapterSame(
+    [
+        'config_del_path:cron/item',
+        'write:Lifecycle save test:backup:synchronize',
+        'install_cron_job:/usr/local/sbin/example-check:off:0 * * * *:root',
+        'install_cron_job:/usr/local/sbin/example-check:on:15 4 * * 2:root',
+        'configure_cron',
+    ],
+    $adapterTestEvents,
+    'Lifecycle saves must keep pfSense\'s default backup, and cron removals must pass pfSense\'s default fields.',
+);
+
+assertAdapterSame(
+    ['lan' => 'LAN', 'opt1' => 'GUEST'],
+    $platformAdapter->getInterfaceDescriptions(),
+    'Interface descriptions must include unassigned interfaces.',
+);
+assertAdapterSame('OPT1', $platformAdapter->getInterfaceDescription('opt1'), 'One interface description must come from pfSense.');
+assertAdapterSame('pfSense', $platformAdapter->getProductLabel(), 'The product label must come from pfSense globals.');
+assertAdapterSame('Removed.', $platformAdapter->translatePlatformText('Removed.'), 'pfSense text must pass through gettext.');
+
+$adapterTestConfiguration = [
+    'installedpackages/package' => [['name' => 'Ipv6PrefixUpdater', 'version' => '2.1.0']],
+    'system/language' => 'zh_Hant_TW',
+];
+
+assertAdapterSame(
+    [['name' => 'Ipv6PrefixUpdater', 'version' => '2.1.0']],
+    $platformAdapter->getInstalledPackages(),
+    'Installed packages must be read through the configuration API.',
+);
+assertAdapterSame('zh_Hant_TW', $platformAdapter->getConfiguredLanguage(), 'The language must be read through the configuration API.');
+
+$adapterTestConfiguration = [
+    'installedpackages/package' => 'malformed',
+];
+
+assertAdapterSame([], $platformAdapter->getInstalledPackages(), 'A malformed installed-package list must read as empty.');
+assertAdapterSame(
+    ['path' => '/tmp/info.xml', 'root' => 'pfsensepkgs'],
+    $platformAdapter->parsePackageXml('/tmp/info.xml', 'pfsensepkgs'),
+    'Package XML must be parsed by pfSense\'s parser.',
+);
+
+assertAdapterSame(null, $platformAdapter->getNoticeQueue(), 'An empty notice queue must read as null.');
+
+$platformAdapter->fileNotice('example-notice', 'Example message', 'Example', '/example.php', 1, true);
+
+$noticeQueue = $platformAdapter->getNoticeQueue();
+
+assertAdapterSame(1, count($noticeQueue ?? []), 'A filed notice must appear in the queue.');
+assertAdapterSame(
+    ['example-notice', 'Example', '/example.php'],
+    [
+        $noticeQueue[array_key_first($noticeQueue)]['id'],
+        $noticeQueue[array_key_first($noticeQueue)]['category'],
+        $noticeQueue[array_key_first($noticeQueue)]['url'],
+    ],
+    'A raw notice must keep its identifier, category, and link exactly.',
+);
+
+$platformAdapter->closeNotice(array_key_first($noticeQueue));
+
+assertAdapterSame(null, $platformAdapter->getNoticeQueue(), 'Closing a notice by queue key must remove it.');
+
+$adapterTestEvents = [];
+
+$platformAdapter->log('Example failure');
+
+assertAdapterSame(
+    ['log_error:IPv6 Prefix Updater: Example failure'],
+    $adapterTestEvents,
+    'Log messages must keep the package prefix.',
+);
+
+fwrite(STDOUT, "23 pfSense adapter regression checks passed.\n");
 
 exit(0);
