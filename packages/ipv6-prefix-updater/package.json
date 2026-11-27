@@ -1,6 +1,6 @@
 {
   "name": "pfsense-pkg-ipv6-prefix-updater",
-  "version": "2.1.5",
+  "version": "2.1.6",
   "license": "MIT",
   "type": "module",
   "files": [
@@ -27,7 +27,7 @@
     "node": "^22 || ^24 || ^26"
   },
   "dependencies": {
-    "@cbnventures/nova": "0.49.0"
+    "@cbnventures/nova": "0.54.0"
   },
   "devDependencies": {
     "@types/node": "24.9.1",

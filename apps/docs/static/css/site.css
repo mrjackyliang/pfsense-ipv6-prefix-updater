@@ -5,18 +5,12 @@
  */
 
 html:root {
-  --nova-color-text-muted: #526071;
-  --nova-color-text-soft: #667085;
-  --nova-color-text-inverse: #ffffff;
-}
-
-html:root[data-theme="dark"] {
-  --nova-color-text-muted: #c0cad8;
-  --nova-color-text-soft: #a7b4c6;
+  --nova-color-text-muted: color-mix(in srgb, var(--nova-color-text), var(--nova-color-background) 28%);
+  --nova-color-text-soft: color-mix(in srgb, var(--nova-color-text), var(--nova-color-background) 40%);
 }
 
 html:root[data-theme="dark"] .nova-cta-primary {
-  color: #082f2b;
+  color: var(--nova-color-primary-950);
 }
 
 html:root .nova-doc-paginator-label {

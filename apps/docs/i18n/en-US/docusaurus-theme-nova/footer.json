@@ -82,5 +82,13 @@
   "copyright": {
     "message": "Copyright © 2023-2026 Jacky Liang. Released under MIT.",
     "description": "The footer copyright text"
+  },
+  "sections.legal.1.label": {
+    "message": "Terms of Use",
+    "description": "Label of link 2 in footer section \"legal\""
+  },
+  "sections.legal.2.label": {
+    "message": "Privacy Policy",
+    "description": "Label of link 3 in footer section \"legal\""
   }
 }

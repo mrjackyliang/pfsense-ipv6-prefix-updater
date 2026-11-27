@@ -1,5 +1,10 @@
 # pfsense-pkg-ipv6-prefix-updater
 
+## 2.1.6 - 2026-11-27
+
+### UPDATED
+- The documentation site now loads Google Analytics and Microsoft Clarity directly instead of through Google Tag Manager and has its own fonts and colors, and the project uses Nova 0.54.0.
+
 ## 2.1.5 - 2026-11-21
 
 ### UPDATED

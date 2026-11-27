@@ -282,15 +282,31 @@ const config: DocusaurusNovaConfig = {
             light: '#B45309',
             dark: '#FBBF24',
           },
-          text: undefined,
-          border: undefined,
-          warning: undefined,
-          danger: undefined,
+          text: {
+            light: '#1D2F2E',
+            dark: '#DDE9E8',
+          },
+          border: {
+            light: '#C8DAD9',
+            dark: '#384D4B',
+          },
+          warning: {
+            light: '#B08B11',
+            dark: '#F1C841',
+          },
+          danger: {
+            light: '#B83223',
+            dark: '#EF6B5D',
+          },
+          success: {
+            light: '#1F8452',
+            dark: '#4ED090',
+          },
         },
         fonts: {
-          display: undefined,
-          body: undefined,
-          code: undefined,
+          display: 'Barlow Semi Condensed',
+          body: 'Barlow',
+          code: 'Roboto Mono',
         },
         navbar: undefined,
         footer: undefined,
@@ -347,8 +363,11 @@ const config: DocusaurusNovaConfig = {
 
       // Analytics.
       analytics: {
-        gtm: {
-          containerId: 'GTM-NJN3C25S',
+        googleAnalytics: {
+          measurementId: 'G-4P0KHCMPS3',
+        },
+        clarity: {
+          projectId: 'zjw8yxuvyg',
         },
       },
 
@@ -629,10 +648,20 @@ const config: DocusaurusNovaConfig = {
             href: 'https://www.mrjackyliang.com/work/',
           },
         ],
-        legal: [{
-          label: 'License',
-          href: 'https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/blob/HEAD/LICENSE',
-        }],
+        legal: [
+          {
+            label: 'License',
+            href: 'https://github.com/mrjackyliang/pfsense-ipv6-prefix-updater/blob/HEAD/LICENSE',
+          },
+          {
+            label: 'Terms of Use',
+            href: 'https://mrjackyliang.github.io/mrjackyliang/terms/',
+          },
+          {
+            label: 'Privacy Policy',
+            href: 'https://mrjackyliang.github.io/mrjackyliang/privacy/',
+          },
+        ],
       },
       layout: {
         docs: {
